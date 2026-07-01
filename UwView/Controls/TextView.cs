@@ -10,49 +10,34 @@ using UwView.Core;
 
 namespace UwView.Controls;
 
-public enum NavigationMode { Page, Line }
-
 /// <summary>
-/// 2 億行を扱う自前描画・仮想化テキスト面（§4.5）。
-/// 画面に見えている行だけを LineDocument から取得して Render で描く。
-/// ページモード（バイト位置基準）と行モード（行番号基準）の 2 状態を持つ。
+/// 2 億行を扱う自前描画・仮想化テキスト面（§4.5）。Active な <see cref="DocumentSession"/> を描画する。
+/// 先頭表示位置・モードはセッションが保持するため、タブ切替はセッション差し替え＋再描画のみで状態が続く。
 /// </summary>
 public sealed class TextView : Control
 {
-    public static readonly DirectProperty<TextView, LineDocument?> DocumentProperty =
-        AvaloniaProperty.RegisterDirect<TextView, LineDocument?>(
-            nameof(Document), o => o.Document, (o, v) => o.Document = v);
-
-    private LineDocument? _document;
-    public LineDocument? Document
+    private DocumentSession? _session;
+    public DocumentSession? Session
     {
-        get => _document;
+        get => _session;
         set
         {
-            if (SetAndRaise(DocumentProperty, ref _document, value))
-            {
-                Mode = NavigationMode.Page;
-                _topByteOffset = _document?.BomLength ?? 0;
-                _topLine = 0;
-                InvalidateVisual();
-                NotifyChanged();
-            }
+            _session = value;
+            InvalidateVisual();
+            NotifyChanged();
         }
     }
 
-    public NavigationMode Mode { get; private set; } = NavigationMode.Page;
     public bool ShowLineNumbers { get; set; } = true;
 
-    public long TopLine => _topLine;
-    public long TopByteOffset => _topByteOffset;
-    public double Percent => _document is { Length: > 0 } d ? (double)_topByteOffset / d.Length : 0;
-    public long? TotalLines => _document?.TotalLines;
+    public ViewMode Mode => _session?.Mode ?? ViewMode.Page;
+    public long TopLine => _session?.TopLine ?? 0;
+    public long TopByteOffset => _session?.TopByteOffset ?? 0;
+    public double Percent => _session is { Document.Length: > 0 } s ? (double)s.TopByteOffset / s.Document.Length : 0;
+    public long? TotalLines => _session?.Document.TotalLines;
 
-    /// <summary>先頭表示位置・モード・索引状態が変わったら発火（ステータス/スクロールバー更新用）。</summary>
+    /// <summary>先頭表示位置・モード・セッションが変わったら発火（ステータス/スクロールバー更新用）。</summary>
     public event EventHandler? StateChanged;
-
-    private long _topLine;        // 行モード: 先頭表示行の index
-    private long _topByteOffset;  // ページモード: 先頭表示行のバイトオフセット
 
     private readonly Typeface _typeface = new(new FontFamily("Cascadia Mono,Menlo,Consolas,Courier New,monospace"));
     private const double FontSize = 14;
@@ -63,6 +48,8 @@ public sealed class TextView : Control
     private ScrollBar? _scroll;
     private bool _updatingScroll;
 
+    public IBrush? Background { get; set; }
+
     public TextView()
     {
         Focusable = true;
@@ -71,13 +58,17 @@ public sealed class TextView : Control
         SizeChanged += (_, _) => { InvalidateVisual(); NotifyChanged(); };
     }
 
-    // Control は既定で背景を塗らないので明示的に持つ
-    public IBrush? Background { get; set; }
-
     public void AttachScrollBar(ScrollBar scrollBar)
     {
         _scroll = scrollBar;
         _scroll.Scroll += OnScroll;
+        NotifyChanged();
+    }
+
+    /// <summary>索引完了などで外部からセッション状態が変わったときの再描画。</summary>
+    public void Refresh()
+    {
+        InvalidateVisual();
         NotifyChanged();
     }
 
@@ -97,36 +88,24 @@ public sealed class TextView : Control
         }
     }
 
-    // ── モード切替 ────────────────────────────────────────────
-
-    /// <summary>索引完了 → 行モードへ昇格。現在のバイトオフセットを最寄り行番号に変換して位置継続（§3.1-3）。</summary>
-    public void PromoteToLineMode()
-    {
-        if (_document?.Index is null) return;
-        _topLine = _document.OffsetToLineIndex(_topByteOffset);
-        Mode = NavigationMode.Line;
-        InvalidateVisual();
-        NotifyChanged();
-    }
+    private LineDocument? Doc => _session?.Document;
 
     // ── ジャンプ ──────────────────────────────────────────────
 
     public void JumpToLine(long line)
     {
-        if (_document?.Index is null) return;
-        long total = _document.Index.TotalLines;
-        _topLine = Math.Clamp(line, 0, Math.Max(0, total - 1));
-        InvalidateVisual();
-        NotifyChanged();
+        if (_session?.Index is null) return;
+        long total = _session.Index.TotalLines;
+        _session.TopLine = Math.Clamp(line, 0, Math.Max(0, total - 1));
+        Refresh();
     }
 
     public void JumpToPercent(double pct)
     {
-        if (_document is null) return;
-        long off = (long)(_document.Length * Math.Clamp(pct, 0, 1));
-        _topByteOffset = _document.AlignToLineStart(off);
-        InvalidateVisual();
-        NotifyChanged();
+        if (_session is null) return;
+        long off = (long)(_session.Document.Length * Math.Clamp(pct, 0, 1));
+        _session.TopByteOffset = _session.Document.AlignToLineStart(off);
+        Refresh();
     }
 
     // ── 入力 ──────────────────────────────────────────────────
@@ -162,71 +141,68 @@ public sealed class TextView : Control
 
     private void ScrollByLines(int delta)
     {
-        if (_document is null || delta == 0) return;
+        if (_session is null || Doc is null || delta == 0) return;
+        var doc = Doc;
 
-        if (Mode == NavigationMode.Line)
+        if (_session.Mode == ViewMode.Line)
         {
-            long total = _document.Index?.TotalLines ?? 0;
-            long max = Math.Max(0, total - 1);
-            _topLine = Math.Clamp(_topLine + delta, 0, max);
+            long total = _session.Index?.TotalLines ?? 0;
+            _session.TopLine = Math.Clamp(_session.TopLine + delta, 0, Math.Max(0, total - 1));
         }
         else
         {
-            long off = _topByteOffset;
+            long off = _session.TopByteOffset;
             if (delta > 0)
-                for (int i = 0; i < delta && off < _document.Length; i++)
+                for (int i = 0; i < delta && off < doc.Length; i++)
                 {
-                    long next = _document.NextLineStart(off);
-                    if (next >= _document.Length) break;
+                    long next = doc.NextLineStart(off);
+                    if (next >= doc.Length) break;
                     off = next;
                 }
             else
-                for (int i = 0; i < -delta && off > _document.BomLength; i++)
-                    off = _document.PreviousLineStart(off);
-            _topByteOffset = off;
+                for (int i = 0; i < -delta && off > doc.BomLength; i++)
+                    off = doc.PreviousLineStart(off);
+            _session.TopByteOffset = off;
         }
-        InvalidateVisual();
-        NotifyChanged();
+        Refresh();
     }
 
     private void ScrollToHome()
     {
-        if (_document is null) return;
-        if (Mode == NavigationMode.Line) _topLine = 0;
-        else _topByteOffset = _document.BomLength;
-        InvalidateVisual();
-        NotifyChanged();
+        if (_session is null || Doc is null) return;
+        if (_session.Mode == ViewMode.Line) _session.TopLine = 0;
+        else _session.TopByteOffset = Doc.BomLength;
+        Refresh();
     }
 
     private void ScrollToEnd()
     {
-        if (_document is null) return;
+        if (_session is null || Doc is null) return;
         int rows = VisibleRows;
-        if (Mode == NavigationMode.Line)
+        if (_session.Mode == ViewMode.Line)
         {
-            long total = _document.Index?.TotalLines ?? 0;
-            _topLine = Math.Max(0, total - rows);
+            long total = _session.Index?.TotalLines ?? 0;
+            _session.TopLine = Math.Max(0, total - rows);
         }
         else
         {
-            long off = _document.AlignToLineStart(_document.Length);
-            for (int i = 0; i < rows; i++) off = _document.PreviousLineStart(off);
-            _topByteOffset = off;
+            long off = Doc.AlignToLineStart(Doc.Length);
+            for (int i = 0; i < rows; i++) off = Doc.PreviousLineStart(off);
+            _session.TopByteOffset = off;
         }
-        InvalidateVisual();
-        NotifyChanged();
+        Refresh();
     }
 
     // ── スクロールバー連携 ────────────────────────────────────
 
     private void OnScroll(object? sender, ScrollEventArgs e)
     {
-        if (_updatingScroll || _document is null || _scroll is null) return;
+        if (_updatingScroll || _session is null || Doc is null || _scroll is null) return;
 
-        if (Mode == NavigationMode.Line)
-            _topLine = (long)_scroll.Value;
+        if (_session.Mode == ViewMode.Line)
+            _session.TopLine = (long)_scroll.Value;
         else
-            _topByteOffset = _document.AlignToLineStart((long)_scroll.Value);
+            _session.TopByteOffset = Doc.AlignToLineStart((long)_scroll.Value);
 
         InvalidateVisual();
         NotifyChanged();
@@ -245,31 +221,30 @@ public sealed class TextView : Control
         try
         {
             int rows = VisibleRows;
-            if (_document is null)
+            if (_session is null || Doc is null)
             {
-                _scroll.Maximum = 0; _scroll.Value = 0; _scroll.ViewportSize = 1;
+                _scroll.Minimum = 0; _scroll.Maximum = 0; _scroll.Value = 0; _scroll.ViewportSize = 1;
                 return;
             }
-            if (Mode == NavigationMode.Line)
+            if (_session.Mode == ViewMode.Line)
             {
-                long total = _document.Index?.TotalLines ?? 0;
+                long total = _session.Index?.TotalLines ?? 0;
                 _scroll.Minimum = 0;
                 _scroll.Maximum = Math.Max(0, total);
                 _scroll.ViewportSize = rows;
                 _scroll.LargeChange = Math.Max(1, rows - 1);
                 _scroll.SmallChange = 1;
-                _scroll.Value = Math.Clamp(_topLine, 0, _scroll.Maximum);
+                _scroll.Value = Math.Clamp(_session.TopLine, 0, _scroll.Maximum);
             }
             else
             {
-                // ページモードはバイト基準の概算スクロール（less の巨大ファイル閲覧と同じ挙動）
                 double bytesPerScreen = 80.0 * rows; // 1 行 ≒ 80 バイトと仮定した概算
                 _scroll.Minimum = 0;
-                _scroll.Maximum = Math.Max(0, _document.Length);
-                _scroll.ViewportSize = Math.Clamp(bytesPerScreen, 1, Math.Max(1, _document.Length));
+                _scroll.Maximum = Math.Max(0, Doc.Length);
+                _scroll.ViewportSize = Math.Clamp(bytesPerScreen, 1, Math.Max(1, Doc.Length));
                 _scroll.LargeChange = bytesPerScreen;
                 _scroll.SmallChange = Math.Max(1, bytesPerScreen / rows);
-                _scroll.Value = Math.Clamp(_topByteOffset, 0, _scroll.Maximum);
+                _scroll.Value = Math.Clamp(_session.TopByteOffset, 0, _scroll.Maximum);
             }
         }
         finally { _updatingScroll = false; }
@@ -282,15 +257,15 @@ public sealed class TextView : Control
         if (Background is not null)
             ctx.FillRectangle(Background, new Rect(Bounds.Size));
 
-        var doc = _document;
-        if (doc is null) return;
+        var doc = Doc;
+        if (_session is null || doc is null) return;
 
         double lh = LineHeight;
         int rows = VisibleRows + 1;
 
         IReadOnlyList<string> lines;
         long firstLineNumber;
-        bool lineMode = Mode == NavigationMode.Line && doc.Index is not null;
+        bool lineMode = _session.Mode == ViewMode.Line && doc.Index is not null;
 
         if (lineMode)
         {
@@ -298,20 +273,19 @@ public sealed class TextView : Control
             var list = new List<string>(rows);
             for (int r = 0; r < rows; r++)
             {
-                long idx = _topLine + r;
+                long idx = _session.TopLine + r;
                 if (idx >= total) break;
                 list.Add(doc.GetLine(idx));
             }
             lines = list;
-            firstLineNumber = _topLine;
+            firstLineNumber = _session.TopLine;
         }
         else
         {
-            lines = doc.GetPage(_topByteOffset, rows);
+            lines = doc.GetPage(_session.TopByteOffset, rows);
             firstLineNumber = -1;
         }
 
-        // 行番号ガター幅
         double gutter = 0;
         var numberBrush = new SolidColorBrush(Color.FromRgb(0x40, 0x40, 0x40));
         var textBrush = Brushes.Black;
@@ -338,6 +312,8 @@ public sealed class TextView : Control
             y += lh;
         }
     }
+
+    protected override Size MeasureOverride(Size availableSize) => availableSize;
 
     private FormattedText MakeText(string s, IBrush? brush = null) => new(
         s, CultureInfo.CurrentCulture, FlowDirection.LeftToRight,

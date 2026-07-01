@@ -6,12 +6,34 @@
              xmlns:ctrl="using:UwView.Controls"
              mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="560"
              x:Class="UwView.Views.MainView"
-             x:DataType="vm:MainViewModel">
+             x:DataType="vm:MainViewModel"
+             DragDrop.AllowDrop="True">
     <Design.DataContext>
         <vm:MainViewModel />
     </Design.DataContext>
 
     <DockPanel LastChildFill="True">
+
+        <!-- タブストリップ（§4.7） -->
+        <Border DockPanel.Dock="Top" Background="#E4E4E4" BorderBrush="#CCCCCC"
+                BorderThickness="0,0,0,1" IsVisible="{Binding HasTabs}">
+            <TabStrip ItemsSource="{Binding Tabs}"
+                      SelectedItem="{Binding ActiveTab, Mode=TwoWay}">
+                <TabStrip.ItemTemplate>
+                    <DataTemplate x:DataType="vm:DocumentTabViewModel">
+                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding DisplayName}" Foreground="Black" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding IndexProgress, StringFormat='{}{0:P0}'}"
+                                       Foreground="Black" VerticalAlignment="Center"
+                                       IsVisible="{Binding IsIndexing}" />
+                            <Button Content="×" Padding="4,0" MinWidth="0" Background="Transparent"
+                                    Foreground="Black"
+                                    Command="{Binding CloseCommand}" />
+                        </StackPanel>
+                    </DataTemplate>
+                </TabStrip.ItemTemplate>
+            </TabStrip>
+        </Border>
 
         <!-- ツールバー -->
         <Border DockPanel.Dock="Top" Background="#EEEEEE" BorderBrush="#CCCCCC"

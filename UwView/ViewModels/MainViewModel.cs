@@ -1,5 +1,7 @@
+using System;
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 
 namespace UwView.ViewModels;
 
@@ -12,13 +14,17 @@ public sealed record EncodingOption(EncodingChoice Choice, string Label)
 
 public partial class MainViewModel : ViewModelBase
 {
-    [ObservableProperty] private string _filePath = "（ファイル未選択）";
+    // タブ集合＋Active（§4.7）
+    public ObservableCollection<DocumentTabViewModel> Tabs { get; } = [];
+
+    [ObservableProperty] private DocumentTabViewModel? _activeTab;
+
+    // ステータス（Active タブを反映）
     [ObservableProperty] private string _positionInfo = "";
     [ObservableProperty] private string _encodingInfo = "";
     [ObservableProperty] private string _modeInfo = "";
-
-    [ObservableProperty] private double _indexProgress;
     [ObservableProperty] private bool _isIndexing;
+    [ObservableProperty] private double _indexProgress;
 
     [ObservableProperty] private string _jumpText = "";
 
@@ -35,8 +41,21 @@ public partial class MainViewModel : ViewModelBase
 
     [ObservableProperty] private EncodingOption _selectedEncoding = null!;
 
+    public bool HasTabs => Tabs.Count > 0;
+    public string FilePath => ActiveTab?.FilePath ?? "（ファイル未選択）";
+
+    /// <summary>タブの × ボタンから発火。実際の破棄は View 側で行う。</summary>
+    public event EventHandler<DocumentTabViewModel>? CloseTabRequested;
+    public void RequestClose(DocumentTabViewModel tab) => CloseTabRequested?.Invoke(this, tab);
+
     public MainViewModel()
     {
         _selectedEncoding = EncodingOptions[0];
+        Tabs.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasTabs));
+    }
+
+    partial void OnActiveTabChanged(DocumentTabViewModel? value)
+    {
+        OnPropertyChanged(nameof(FilePath));
     }
 }
