@@ -1,0 +1,62 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:UwView.ViewModels"
+             xmlns:ctrl="using:UwView.Controls"
+             mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="560"
+             x:Class="UwView.Views.MainView"
+             x:DataType="vm:MainViewModel">
+    <Design.DataContext>
+        <vm:MainViewModel />
+    </Design.DataContext>
+
+    <DockPanel LastChildFill="True">
+
+        <!-- ツールバー -->
+        <Border DockPanel.Dock="Top" Background="#EEEEEE" BorderBrush="#CCCCCC"
+                BorderThickness="0,0,0,1" Padding="6">
+            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                <Button x:Name="OpenButton" Content="開く…" />
+                <TextBlock Text="文字コード:" VerticalAlignment="Center" Foreground="Black" />
+                <ComboBox x:Name="EncodingCombo" MinWidth="130"
+                          ItemsSource="{Binding EncodingOptions}"
+                          SelectedItem="{Binding SelectedEncoding, Mode=TwoWay}" />
+                <CheckBox x:Name="LineNumberCheck" Content="行番号" IsChecked="True" Foreground="Black" />
+                <Rectangle Width="1" Fill="#CCCCCC" Margin="4,0" />
+                <TextBlock Text="ジャンプ:" VerticalAlignment="Center" Foreground="Black" />
+                <TextBox x:Name="JumpBox" Width="110" PlaceholderText="行 / %"
+                         Text="{Binding JumpText, Mode=TwoWay}" />
+                <Button x:Name="JumpButton" Content="移動" />
+            </StackPanel>
+        </Border>
+
+        <!-- ステータスバー -->
+        <Border DockPanel.Dock="Bottom" Background="#EEEEEE" BorderBrush="#CCCCCC"
+                BorderThickness="0,1,0,0" Padding="6,3">
+            <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Orientation="Horizontal" Spacing="14">
+                    <TextBlock Text="{Binding FilePath}" Foreground="Black" />
+                    <TextBlock Text="{Binding ModeInfo}" Foreground="Black" />
+                    <TextBlock Text="{Binding PositionInfo}" Foreground="Black" />
+                    <TextBlock Text="{Binding EncodingInfo}" Foreground="Black" />
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8"
+                            IsVisible="{Binding IsIndexing}">
+                    <TextBlock Text="索引中" VerticalAlignment="Center" Foreground="Black" />
+                    <ProgressBar Width="140" Minimum="0" Maximum="1"
+                                 Value="{Binding IndexProgress}" />
+                    <Button x:Name="CancelButton" Content="キャンセル" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- 本文 + 縦スクロールバー -->
+        <Grid ColumnDefinitions="*,Auto">
+            <ctrl:TextView x:Name="TextView" Grid.Column="0" />
+            <ScrollBar x:Name="VScroll" Grid.Column="1" Orientation="Vertical"
+                       AllowAutoHide="False" Width="16" />
+        </Grid>
+
+    </DockPanel>
+</UserControl>
