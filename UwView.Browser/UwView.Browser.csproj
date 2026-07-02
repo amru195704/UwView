@@ -11,6 +11,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- WASM にはシステムフォントが無いため日本語フォントを同梱（Noto Sans JP / OFL） -->
+    <AvaloniaResource Include="Assets\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\UwView\UwView.csproj" />
   </ItemGroup>
 </Project>

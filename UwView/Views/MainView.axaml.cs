@@ -9,6 +9,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
+using Avalonia.Threading;
 using UwView.Core;
 using UwView.ViewModels;
 
@@ -19,6 +20,7 @@ public partial class MainView : UserControl
     private MainViewModel? _vm;
     private DocumentSession? _statusSession;
     private bool _suppressEncodingApply;
+    private bool _suppressToggleApply;
 
     public MainView()
     {
@@ -36,6 +38,43 @@ public partial class MainView : UserControl
             TextView.InvalidateVisual();
         };
         EncodingCombo.SelectionChanged += OnEncodingChanged;
+
+        // 検索（§11-①②⑥）
+        SearchButton.Click += (_, _) => StartSearch();
+        SearchBox.KeyDown += (_, e) => { if (e.Key == Key.Enter) { StartSearch(); e.Handled = true; } };
+        ClearSearchButton.Click += (_, _) => ClearSearch();
+        NextHitButton.Click += (_, _) => GoToHit(next: true);
+        PrevHitButton.Click += (_, _) => GoToHit(next: false);
+        Minimap.JumpRequested += (_, pct) => { TextView.JumpToPercent(pct); TextView.Focus(); };
+        TextView.StateChanged += (_, _) => Minimap.ViewOffset = TextView.CurrentOffset;
+
+        // フィルタ表示（§11-⑤）
+        FilterToggle.IsCheckedChanged += (_, _) =>
+        {
+            if (_suppressToggleApply || _vm?.ActiveTab is not { } t) return;
+            t.Session.FilterActive = FilterToggle.IsChecked == true;
+            TextView.Refresh();
+            UpdateStatus();
+        };
+
+        // ブックマーク（§11-④）
+        BookmarkToggleButton.Click += (_, _) =>
+        {
+            if (_vm?.ActiveTab is not { } t) return;
+            t.Session.ToggleBookmark(TextView.CurrentOffset);
+            TextView.Refresh();
+            Minimap.InvalidateVisual();
+        };
+        NextBookmarkButton.Click += (_, _) => GoToBookmark(next: true);
+        PrevBookmarkButton.Click += (_, _) => GoToBookmark(next: false);
+
+        // リアルタイム Tail（§11-③）
+        TailToggle.IsCheckedChanged += (_, _) =>
+        {
+            if (_suppressToggleApply || _vm?.ActiveTab is not { } t) return;
+            if (TailToggle.IsChecked == true) { t.Session.StartTail(); TextView.GoToEnd(); }
+            else t.Session.StopTail();
+        };
 
         DataContextChanged += OnDataContextChanged;
         AddHandler(DragDrop.DragOverEvent, OnDragOver);
@@ -68,26 +107,127 @@ public partial class MainView : UserControl
     private void SwitchActive(DocumentTabViewModel? tab)
     {
         if (_statusSession is not null)
+        {
             _statusSession.IndexProgressChanged -= OnActiveIndexProgress;
+            _statusSession.SearchUpdated -= OnSearchUpdated;
+            _statusSession.TailGrew -= OnTailGrew;
+            if (_statusSession.Source is INotifyDataArrived oldNotify)
+                oldNotify.DataArrived -= OnDataArrived;
+        }
 
         TextView.Session = tab?.Session;
+        Minimap.Session = tab?.Session;
         _statusSession = tab?.Session;
 
         if (_statusSession is not null)
+        {
             _statusSession.IndexProgressChanged += OnActiveIndexProgress;
+            _statusSession.SearchUpdated += OnSearchUpdated;
+            _statusSession.TailGrew += OnTailGrew;
+            // Blob 等の async I/O 実装: 裏でチャンクが届いたら再描画（WASM 用）
+            if (_statusSession.Source is INotifyDataArrived notify)
+                notify.DataArrived += OnDataArrived;
+        }
 
-        // ツールバーの文字コード選択を Active タブのものへ復元
+        // ツールバーの文字コード選択・検索条件・トグル状態を Active タブのものへ復元
         _suppressEncodingApply = true;
         _vm!.SelectedEncoding = _vm.EncodingOptions.First(
             o => o.Choice == (tab?.SelectedEncoding ?? EncodingChoice.Auto));
         _suppressEncodingApply = false;
 
+        _suppressToggleApply = true;
+        FilterToggle.IsChecked = tab?.Session.FilterActive ?? false;
+        TailToggle.IsChecked = tab?.Session.IsTailing ?? false;
+        TailToggle.IsEnabled = tab?.Session.SupportsTail ?? false;
+        _suppressToggleApply = false;
+
+        var search = tab?.Session.ActiveSearch;
+        _vm.SearchText = search?.Pattern ?? "";
+        _vm.SearchIsRegex = search?.UseRegex ?? false;
+        _vm.SearchIgnoreCase = search?.IgnoreCase ?? false;
+
         UpdateEncodingInfo();
+        UpdateSearchInfo();
         UpdateStatus();
+        Minimap.ViewOffset = TextView.CurrentOffset;
         if (tab is not null) TextView.Focus();
     }
 
+    // ── 検索（§11-①②⑥）────────────────────────────────────
+
+    private void StartSearch()
+    {
+        if (_vm?.ActiveTab is not { } tab) return;
+        var text = (_vm.SearchText ?? "").Trim();
+        if (text.Length == 0) { ClearSearch(); return; }
+
+        _ = tab.Session.StartSearchAsync(new SearchOptions(text, _vm.SearchIsRegex, _vm.SearchIgnoreCase));
+        TextView.Refresh(); // ハイライト regex は即時有効
+    }
+
+    private void ClearSearch()
+    {
+        if (_vm?.ActiveTab is not { } tab) return;
+        tab.Session.ClearSearch();
+        _vm.SearchText = "";
+        TextView.Refresh();
+        Minimap.InvalidateVisual();
+    }
+
+    private void GoToHit(bool next)
+    {
+        if (_vm?.ActiveTab is not { } tab) return;
+        long from = TextView.CurrentOffset;
+        long? hit = next ? tab.Session.NextHit(from) : tab.Session.PrevHit(from);
+        if (hit is { } off)
+        {
+            TextView.JumpToOffset(off);
+            TextView.Focus();
+        }
+    }
+
+    private void GoToBookmark(bool next)
+    {
+        if (_vm?.ActiveTab is not { } tab) return;
+        long from = TextView.CurrentOffset;
+        long? mark = next ? tab.Session.NextBookmark(from) : tab.Session.PrevBookmark(from);
+        if (mark is { } off)
+        {
+            TextView.JumpToOffset(off);
+            TextView.Focus();
+        }
+    }
+
+    private void OnTailGrew(object? sender, EventArgs e)
+    {
+        // 追記検知: 末尾追従して再描画（索引も増分拡張済み）
+        TextView.GoToEnd();
+        Minimap.InvalidateVisual();
+        UpdateStatus();
+    }
+
+    private void OnSearchUpdated(object? sender, EventArgs e)
+    {
+        UpdateSearchInfo();
+        Minimap.InvalidateVisual();
+    }
+
+    private void UpdateSearchInfo()
+    {
+        if (_vm is null) return;
+        var s = _vm.ActiveTab?.Session;
+        if (s is null || s.ActiveSearch is null) { _vm.SearchInfo = ""; return; }
+
+        string count = $"{s.SearchHits.Count:N0} 件";
+        _vm.SearchInfo = s.IsSearching
+            ? $"検索中 {s.SearchProgress:P0} ・ {count}"
+            : count + (s.SearchTruncated ? "（上限で打切り）" : "");
+    }
+
     private void OnActiveIndexProgress(object? sender, EventArgs e) => UpdateStatus();
+
+    private void OnDataArrived(object? sender, EventArgs e)
+        => Dispatcher.UIThread.Post(() => { TextView.Refresh(); });
 
     // ── ファイルを開く（複数選択・D&D で一括追加）──────────────
 
@@ -96,24 +236,16 @@ public partial class MainView : UserControl
         var top = TopLevel.GetTopLevel(this);
         if (top is null) return;
 
-        var files = await top.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
-        {
-            Title = "テキストファイルを開く",
-            AllowMultiple = true
-        });
-        await OpenPathsAsync(files.Select(f => f.TryGetLocalPath()).OfType<string>());
+        var sessions = await App.DocumentOpener.PickFilesAsync(top);
+        AddSessions(sessions);
     }
 
-    private async Task OpenPathsAsync(IEnumerable<string> paths)
+    private void AddSessions(IEnumerable<DocumentSession> sessions)
     {
         if (_vm is null) return;
         DocumentTabViewModel? last = null;
-        foreach (var path in paths)
+        foreach (var session in sessions)
         {
-            DocumentSession session;
-            try { session = DocumentSession.Open(path); }
-            catch { continue; } // 開けないファイルはスキップ
-
             var tab = new DocumentTabViewModel(session, t => _vm!.RequestClose(t));
             session.IndexCompleted += (_, _) => OnIndexCompleted(tab);
             _vm.Tabs.Add(tab);
@@ -166,11 +298,16 @@ public partial class MainView : UserControl
             : DragDropEffects.None;
     }
 
-    private async void OnDrop(object? sender, DragEventArgs e)
+    private void OnDrop(object? sender, DragEventArgs e)
     {
         var files = e.DataTransfer.TryGetFiles();
         if (files is null) return;
-        await OpenPathsAsync(files.Select(f => f.TryGetLocalPath()).OfType<string>());
+        var sessions = files.Select(f => f.TryGetLocalPath())
+                            .OfType<string>()
+                            .Select(App.DocumentOpener.OpenLocalPath)
+                            .OfType<DocumentSession>()
+                            .ToList();
+        AddSessions(sessions);
     }
 
     // ── 文字コード手動切替（索引再構築なし §4.6）──────────────
@@ -245,7 +382,12 @@ public partial class MainView : UserControl
         _vm.IsIndexing = s.IsIndexing;
         _vm.IndexProgress = s.IndexProgress;
 
-        if (TextView.Mode == ViewMode.Line && TextView.TotalLines is { } total)
+        if (s.FilterActive && s.SearchHits.Count > 0)
+        {
+            _vm.ModeInfo = "フィルタ表示";
+            _vm.PositionInfo = $"ヒット {s.SearchHits.Count:N0} 件中 {s.FilterTopHitIndex + 1:N0} 件目";
+        }
+        else if (TextView.Mode == ViewMode.Line && TextView.TotalLines is { } total)
         {
             _vm.ModeInfo = "行モード";
             _vm.PositionInfo = $"総行数 {total:N0} ・ 先頭 {TextView.TopLine + 1:N0} 行目";

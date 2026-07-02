@@ -30,6 +30,9 @@ public sealed class TextView : Control
 
     public bool ShowLineNumbers { get; set; } = true;
 
+    /// <summary>フィルタ表示（§11-⑤）: 検索ヒット行だけを表示中か。</summary>
+    private bool FilterOn => _session is { FilterActive: true } s && s.SearchHits.Count > 0;
+
     public ViewMode Mode => _session?.Mode ?? ViewMode.Page;
     public long TopLine => _session?.TopLine ?? 0;
     public long TopByteOffset => _session?.TopByteOffset ?? 0;
@@ -100,12 +103,48 @@ public sealed class TextView : Control
         Refresh();
     }
 
+    /// <summary>バイトオフセット基準のジャンプ。行モードなら最寄り行へ変換（検索ヒット・ミニマップ用）。</summary>
+    public void JumpToOffset(long byteOffset)
+    {
+        if (_session is null) return;
+        if (FilterOn)
+        {
+            _session.FilterTopHitIndex = _session.HitIndexOfOffset(byteOffset);
+            Refresh();
+            return;
+        }
+        long aligned = _session.Document.AlignToLineStart(byteOffset);
+        if (_session.Mode == ViewMode.Line && _session.Index is not null)
+            _session.TopLine = _session.Document.OffsetToLineIndex(aligned);
+        else
+            _session.TopByteOffset = aligned;
+        Refresh();
+    }
+
+    /// <summary>末尾へ（Tail 追従用）。</summary>
+    public void GoToEnd() => ScrollToEnd();
+
     public void JumpToPercent(double pct)
     {
         if (_session is null) return;
-        long off = (long)(_session.Document.Length * Math.Clamp(pct, 0, 1));
-        _session.TopByteOffset = _session.Document.AlignToLineStart(off);
-        Refresh();
+        JumpToOffset((long)(_session.Document.Length * Math.Clamp(pct, 0, 1)));
+    }
+
+    /// <summary>現在の先頭表示位置のバイトオフセット（検索・ブックマークの次へ/前への基準）。</summary>
+    public long CurrentOffset
+    {
+        get
+        {
+            if (_session is null) return 0;
+            if (FilterOn)
+            {
+                int idx = Math.Clamp(_session.FilterTopHitIndex, 0, _session.SearchHits.Count - 1);
+                return _session.SearchHits[idx];
+            }
+            if (_session.Mode == ViewMode.Line && _session.Index is not null)
+                return _session.Document.LineStartOffset(_session.TopLine);
+            return _session.TopByteOffset;
+        }
     }
 
     // ── 入力 ──────────────────────────────────────────────────
@@ -144,6 +183,14 @@ public sealed class TextView : Control
         if (_session is null || Doc is null || delta == 0) return;
         var doc = Doc;
 
+        if (FilterOn)
+        {
+            _session.FilterTopHitIndex = (int)Math.Clamp(
+                (long)_session.FilterTopHitIndex + delta, 0, _session.SearchHits.Count - 1);
+            Refresh();
+            return;
+        }
+
         if (_session.Mode == ViewMode.Line)
         {
             long total = _session.Index?.TotalLines ?? 0;
@@ -170,6 +217,7 @@ public sealed class TextView : Control
     private void ScrollToHome()
     {
         if (_session is null || Doc is null) return;
+        if (FilterOn) { _session.FilterTopHitIndex = 0; Refresh(); return; }
         if (_session.Mode == ViewMode.Line) _session.TopLine = 0;
         else _session.TopByteOffset = Doc.BomLength;
         Refresh();
@@ -179,6 +227,12 @@ public sealed class TextView : Control
     {
         if (_session is null || Doc is null) return;
         int rows = VisibleRows;
+        if (FilterOn)
+        {
+            _session.FilterTopHitIndex = Math.Max(0, _session.SearchHits.Count - rows);
+            Refresh();
+            return;
+        }
         if (_session.Mode == ViewMode.Line)
         {
             long total = _session.Index?.TotalLines ?? 0;
@@ -199,7 +253,9 @@ public sealed class TextView : Control
     {
         if (_updatingScroll || _session is null || Doc is null || _scroll is null) return;
 
-        if (_session.Mode == ViewMode.Line)
+        if (FilterOn)
+            _session.FilterTopHitIndex = (int)Math.Clamp((long)_scroll.Value, 0, _session.SearchHits.Count - 1);
+        else if (_session.Mode == ViewMode.Line)
             _session.TopLine = (long)_scroll.Value;
         else
             _session.TopByteOffset = Doc.AlignToLineStart((long)_scroll.Value);
@@ -226,7 +282,16 @@ public sealed class TextView : Control
                 _scroll.Minimum = 0; _scroll.Maximum = 0; _scroll.Value = 0; _scroll.ViewportSize = 1;
                 return;
             }
-            if (_session.Mode == ViewMode.Line)
+            if (FilterOn)
+            {
+                _scroll.Minimum = 0;
+                _scroll.Maximum = Math.Max(0, _session.SearchHits.Count);
+                _scroll.ViewportSize = rows;
+                _scroll.LargeChange = Math.Max(1, rows - 1);
+                _scroll.SmallChange = 1;
+                _scroll.Value = Math.Clamp(_session.FilterTopHitIndex, 0, _scroll.Maximum);
+            }
+            else if (_session.Mode == ViewMode.Line)
             {
                 long total = _session.Index?.TotalLines ?? 0;
                 _scroll.Minimum = 0;
@@ -263,52 +328,89 @@ public sealed class TextView : Control
         double lh = LineHeight;
         int rows = VisibleRows + 1;
 
-        IReadOnlyList<string> lines;
-        long firstLineNumber;
+        // 可視行を収集: (行頭オフセット, テキスト, 表示行番号[1始まり・不明は-1])
+        var visible = new List<(long Offset, string Text, long LineNo)>(rows);
         bool lineMode = _session.Mode == ViewMode.Line && doc.Index is not null;
+        bool showNumbers;
 
-        if (lineMode)
+        if (FilterOn)
+        {
+            var hits = _session.SearchHits;
+            int top = Math.Clamp(_session.FilterTopHitIndex, 0, hits.Count - 1);
+            _session.FilterTopHitIndex = top;
+            bool indexed = doc.Index is not null;
+            for (int r = 0; r < rows && top + r < hits.Count; r++)
+            {
+                long off = hits[top + r];
+                long no = indexed ? doc.OffsetToLineIndex(off) + 1 : -1;
+                visible.Add((off, doc.GetLineAtOffset(off), no));
+            }
+            showNumbers = ShowLineNumbers && indexed;
+        }
+        else if (lineMode)
         {
             long total = doc.Index!.TotalLines;
-            var list = new List<string>(rows);
             for (int r = 0; r < rows; r++)
             {
                 long idx = _session.TopLine + r;
                 if (idx >= total) break;
-                list.Add(doc.GetLine(idx));
+                visible.Add((doc.LineStartOffset(idx), doc.GetLine(idx), idx + 1));
             }
-            lines = list;
-            firstLineNumber = _session.TopLine;
+            showNumbers = ShowLineNumbers;
         }
         else
         {
-            lines = doc.GetPage(_session.TopByteOffset, rows);
-            firstLineNumber = -1;
+            foreach (var (off, text) in doc.GetPageWithOffsets(_session.TopByteOffset, rows))
+                visible.Add((off, text, -1));
+            showNumbers = false;
         }
 
+        // 行番号ガター
         double gutter = 0;
         var numberBrush = new SolidColorBrush(Color.FromRgb(0x40, 0x40, 0x40));
         var textBrush = Brushes.Black;
-        if (lineMode && ShowLineNumbers)
+        if (showNumbers && visible.Count > 0)
         {
-            long last = firstLineNumber + lines.Count;
-            int digits = Math.Max(6, (last + 1).ToString(CultureInfo.InvariantCulture).Length);
+            long maxNo = 0;
+            foreach (var v in visible) maxNo = Math.Max(maxNo, v.LineNo);
+            int digits = Math.Max(6, maxNo.ToString(CultureInfo.InvariantCulture).Length);
             gutter = digits * _digitWidth + Padding * 2;
             ctx.FillRectangle(new SolidColorBrush(Color.FromRgb(0xF2, 0xF2, 0xF2)),
                 new Rect(0, 0, gutter, Bounds.Height));
         }
 
+        // 検索ハイライト（§11-②）: 可視行だけ再マッチして背景色を塗る
+        var hlRegex = _session.SearchHighlightRegex;
+        var hlBrush = new SolidColorBrush(Color.FromRgb(0xFF, 0xE0, 0x66)); // 黄
+        var bookmarkBrush = new SolidColorBrush(Color.FromRgb(0x1A, 0x6F, 0xE8)); // 青（§11-④）
+        bool hasBookmarks = _session.Bookmarks.Count > 0;
+
         double x = gutter + Padding;
         double y = Padding;
-        for (int r = 0; r < lines.Count; r++)
+        foreach (var (offset, text, lineNo) in visible)
         {
-            if (lineMode && ShowLineNumbers)
+            // ブックマークマーカー（左端の青バー）
+            if (hasBookmarks && _session.HasBookmark(offset))
+                ctx.FillRectangle(bookmarkBrush, new Rect(0, y, 4, lh));
+
+            if (showNumbers && lineNo > 0)
             {
-                var num = MakeText((firstLineNumber + r + 1).ToString(CultureInfo.InvariantCulture), numberBrush);
+                var num = MakeText(lineNo.ToString(CultureInfo.InvariantCulture), numberBrush);
                 ctx.DrawText(num, new Point(gutter - Padding - num.Width, y));
             }
-            var ft = MakeText(lines[r], textBrush);
-            ctx.DrawText(ft, new Point(x, y));
+
+            if (hlRegex is not null && text.Length > 0)
+            {
+                foreach (System.Text.RegularExpressions.Match m in hlRegex.Matches(text))
+                {
+                    if (m.Length == 0) continue;
+                    double xStart = m.Index == 0 ? 0 : MakeText(text[..m.Index]).WidthIncludingTrailingWhitespace;
+                    double w = MakeText(text.Substring(m.Index, m.Length)).WidthIncludingTrailingWhitespace;
+                    ctx.FillRectangle(hlBrush, new Rect(x + xStart, y, w, lh));
+                }
+            }
+
+            ctx.DrawText(MakeText(text, textBrush), new Point(x, y));
             y += lh;
         }
     }

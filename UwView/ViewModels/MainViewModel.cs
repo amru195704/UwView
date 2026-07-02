@@ -28,6 +28,12 @@ public partial class MainViewModel : ViewModelBase
 
     [ObservableProperty] private string _jumpText = "";
 
+    // 検索（§11-①②）
+    [ObservableProperty] private string _searchText = "";
+    [ObservableProperty] private bool _searchIsRegex;
+    [ObservableProperty] private bool _searchIgnoreCase;
+    [ObservableProperty] private string _searchInfo = "";
+
     public ObservableCollection<EncodingOption> EncodingOptions { get; } =
     [
         new(EncodingChoice.Auto, "自動判定"),

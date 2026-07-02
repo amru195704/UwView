@@ -4,6 +4,7 @@ using Avalonia.Data.Core;
 using Avalonia.Data.Core.Plugins;
 using System.Linq;
 using Avalonia.Markup.Xaml;
+using UwView.Services;
 using UwView.ViewModels;
 using UwView.Views;
 
@@ -11,6 +12,9 @@ namespace UwView;
 
 public partial class App : Application
 {
+    /// <summary>head ごとのファイルオープン実装。Browser head は起動前に差し替える。</summary>
+    public static IDocumentOpener DocumentOpener { get; set; } = new DesktopDocumentOpener();
+
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);

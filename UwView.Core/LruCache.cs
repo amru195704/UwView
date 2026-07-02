@@ -1,7 +1,7 @@
 namespace UwView.Core;
 
 /// <summary>直近アクセス項目を保持する単純な LRU キャッシュ（UI スレッド前提・非スレッドセーフ）。</summary>
-internal sealed class LruCache<TKey, TValue> where TKey : notnull
+public sealed class LruCache<TKey, TValue> where TKey : notnull
 {
     private readonly int _capacity;
     private readonly Dictionary<TKey, LinkedListNode<(TKey Key, TValue Value)>> _map;

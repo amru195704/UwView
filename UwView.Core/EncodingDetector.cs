@@ -31,12 +31,24 @@ public static class EncodingDetector
 
     public static DetectedEncoding Detect(IByteSource src, int sampleBytes = 256 * 1024)
     {
-        EnsureCodePagesRegistered();
-
         int len = (int)Math.Min(sampleBytes, src.Length);
         byte[] buf = new byte[Math.Max(1, len)];
         int read = len == 0 ? 0 : src.Read(0, buf.AsSpan(0, len));
-        ReadOnlySpan<byte> s = buf.AsSpan(0, read);
+        return DetectFromBuffer(buf.AsSpan(0, read));
+    }
+
+    /// <summary>非同期版（WASM の Blob など async I/O 実装用）。判定ロジックは同一。</summary>
+    public static async ValueTask<DetectedEncoding> DetectAsync(IByteSource src, int sampleBytes = 256 * 1024, CancellationToken ct = default)
+    {
+        int len = (int)Math.Min(sampleBytes, src.Length);
+        byte[] buf = new byte[Math.Max(1, len)];
+        int read = len == 0 ? 0 : await src.ReadAsync(0, buf.AsMemory(0, len), ct);
+        return DetectFromBuffer(buf.AsSpan(0, read));
+    }
+
+    private static DetectedEncoding DetectFromBuffer(ReadOnlySpan<byte> s)
+    {
+        EnsureCodePagesRegistered();
 
         // 1. BOM 判定
         if (s.Length >= 4 && s[0] == 0xFF && s[1] == 0xFE && s[2] == 0x00 && s[3] == 0x00)
@@ -156,7 +168,22 @@ public static class EncodingDetector
         if (len == 0) return NewlineStyle.Lf;
         byte[] buf = new byte[len];
         int read = src.Read(0, buf.AsSpan(0, len));
+        return DetectNewlineFromBuffer(buf.AsSpan(0, read));
+    }
 
+    /// <summary>非同期版（WASM 用）。</summary>
+    public static async ValueTask<NewlineStyle> DetectNewlineAsync(IByteSource src, int sampleBytes = 64 * 1024, CancellationToken ct = default)
+    {
+        int len = (int)Math.Min(sampleBytes, src.Length);
+        if (len == 0) return NewlineStyle.Lf;
+        byte[] buf = new byte[len];
+        int read = await src.ReadAsync(0, buf.AsMemory(0, len), ct);
+        return DetectNewlineFromBuffer(buf.AsSpan(0, read));
+    }
+
+    private static NewlineStyle DetectNewlineFromBuffer(ReadOnlySpan<byte> buf)
+    {
+        int read = buf.Length;
         bool sawCr = false, sawLf = false, sawCrLf = false;
         for (int i = 0; i < read; i++)
         {

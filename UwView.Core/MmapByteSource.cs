@@ -6,56 +6,65 @@ namespace UwView.Core;
 /// <summary>
 /// Desktop 用 mmap 実装（★優先）。ファイル全体を読み取り専用ビューにマップし、
 /// AcquirePointer の unsafe ポインタで高速コピーする。
-/// 読み取り専用のためマップ中はファイルをロックする（ビューアなので許容）。
+/// FileShare.ReadWrite で開くため、他プロセスが書き込み中のログでも開ける（Tail §11-③）。
+/// <see cref="TryExpand"/> でファイル成長分を再マップする（旧ビューは write ロック下で解放）。
 /// 既知リスク: 外部からファイルが切り詰められるとアクセス時に落ちうる（Unix では SIGBUS）。
 /// </summary>
 public sealed unsafe class MmapByteSource : IByteSource
 {
-    private readonly MemoryMappedFile? _mmf;
-    private readonly MemoryMappedViewAccessor? _view;
-    private readonly SafeMemoryMappedViewHandle? _handle;
+    private readonly string _path;
+    private readonly ReaderWriterLockSlim _lock = new();
+
+    private MemoryMappedFile? _mmf;
+    private MemoryMappedViewAccessor? _view;
+    private SafeMemoryMappedViewHandle? _handle;
     private byte* _ptr;
+    private long _length;
     private bool _disposed;
 
-    public long Length { get; }
+    public long Length => Volatile.Read(ref _length);
 
     public MmapByteSource(string path)
     {
-        Length = new FileInfo(path).Length;
+        _path = path;
+        long len = new FileInfo(path).Length;
+        if (len > 0)
+            Map(len);
+        _length = len;
+    }
 
-        if (Length == 0)
-            return; // 空ファイルは mmap 不可（ビューも張れない）
+    /// <summary>len バイトぶんの新しいマップを張り、旧マップを解放する（呼び出し側でロック管理）。</summary>
+    private void Map(long len)
+    {
+        // 書き込み中のプロセスと共存できるよう FileShare.ReadWrite で開く
+        var fs = new FileStream(_path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+        MemoryMappedFile mmf;
+        try
+        {
+            // mapName は必ず null（Unix 非対応のため）。leaveOpen:false で FileStream も mmf が破棄
+            mmf = MemoryMappedFile.CreateFromFile(
+                fs, null, len, MemoryMappedFileAccess.Read, HandleInheritability.None, leaveOpen: false);
+        }
+        catch
+        {
+            fs.Dispose();
+            throw;
+        }
 
-        // mapName は必ず null（Unix 非対応のため）。
-        _mmf = MemoryMappedFile.CreateFromFile(
-            path, FileMode.Open, null, 0, MemoryMappedFileAccess.Read);
-
-        _view = _mmf.CreateViewAccessor(0, Length, MemoryMappedFileAccess.Read);
-        _handle = _view.SafeMemoryMappedViewHandle;
+        var view = mmf.CreateViewAccessor(0, len, MemoryMappedFileAccess.Read);
+        var handle = view.SafeMemoryMappedViewHandle;
         byte* p = null;
-        _handle.AcquirePointer(ref p);
-        _ptr = p + _view.PointerOffset;
+        handle.AcquirePointer(ref p);
+
+        Unmap();
+        _mmf = mmf;
+        _view = view;
+        _handle = handle;
+        _ptr = p + view.PointerOffset;
     }
 
-    public int Read(long offset, Span<byte> buffer)
+    private void Unmap()
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
-        if (offset < 0)
-            throw new ArgumentOutOfRangeException(nameof(offset));
-        if (offset >= Length || buffer.Length == 0)
-            return 0;
-
-        int count = (int)Math.Min(Length - offset, buffer.Length);
-        new ReadOnlySpan<byte>(_ptr + offset, count).CopyTo(buffer);
-        return count;
-    }
-
-    public ValueTask DisposeAsync()
-    {
-        if (_disposed)
-            return ValueTask.CompletedTask;
-        _disposed = true;
-
         if (_handle is not null && _ptr is not null)
         {
             _handle.ReleasePointer();
@@ -63,6 +72,67 @@ public sealed unsafe class MmapByteSource : IByteSource
         }
         _view?.Dispose();
         _mmf?.Dispose();
+        _view = null;
+        _mmf = null;
+        _handle = null;
+    }
+
+    /// <summary>
+    /// ファイルが伸びていれば再マップして true を返す（Tail 用・ポーリングから呼ぶ）。
+    /// 縮んだ場合は何もしない（切り詰めは非対応）。
+    /// </summary>
+    public bool TryExpand()
+    {
+        if (_disposed) return false;
+        long newLen;
+        try { newLen = new FileInfo(_path).Length; }
+        catch { return false; }
+        if (newLen <= Length) return false;
+
+        _lock.EnterWriteLock();
+        try
+        {
+            if (_disposed) return false;
+            Map(newLen);
+            Volatile.Write(ref _length, newLen);
+            return true;
+        }
+        finally { _lock.ExitWriteLock(); }
+    }
+
+    public int Read(long offset, Span<byte> buffer)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        if (offset < 0)
+            throw new ArgumentOutOfRangeException(nameof(offset));
+
+        _lock.EnterReadLock();
+        try
+        {
+            long len = _length;
+            if (offset >= len || buffer.Length == 0 || _ptr is null)
+                return 0;
+
+            int count = (int)Math.Min(len - offset, buffer.Length);
+            new ReadOnlySpan<byte>(_ptr + offset, count).CopyTo(buffer);
+            return count;
+        }
+        finally { _lock.ExitReadLock(); }
+    }
+
+    public ValueTask DisposeAsync()
+    {
+        if (_disposed)
+            return ValueTask.CompletedTask;
+
+        _lock.EnterWriteLock();
+        try
+        {
+            _disposed = true;
+            Unmap();
+        }
+        finally { _lock.ExitWriteLock(); }
+        _lock.Dispose();
         return ValueTask.CompletedTask;
     }
 }

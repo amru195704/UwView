@@ -50,6 +50,33 @@
                 <TextBox x:Name="JumpBox" Width="110" PlaceholderText="行 / %"
                          Text="{Binding JumpText, Mode=TwoWay}" />
                 <Button x:Name="JumpButton" Content="移動" />
+                <Rectangle Width="1" Fill="#CCCCCC" Margin="4,0" />
+                <Button x:Name="BookmarkToggleButton" Content="☆" ToolTip.Tip="先頭行のブックマークをトグル" />
+                <Button x:Name="PrevBookmarkButton" Content="◀☆" ToolTip.Tip="前のブックマークへ" />
+                <Button x:Name="NextBookmarkButton" Content="☆▶" ToolTip.Tip="次のブックマークへ" />
+                <Rectangle Width="1" Fill="#CCCCCC" Margin="4,0" />
+                <ToggleButton x:Name="TailToggle" Content="Tail" ToolTip.Tip="末尾追従（追記を検知して自動スクロール）" />
+            </StackPanel>
+        </Border>
+
+        <!-- 検索バー（§11-①②⑥） -->
+        <Border DockPanel.Dock="Top" Background="#F5F5F5" BorderBrush="#CCCCCC"
+                BorderThickness="0,0,0,1" Padding="6,4">
+            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                <TextBlock Text="検索:" VerticalAlignment="Center" Foreground="Black" />
+                <TextBox x:Name="SearchBox" Width="220" PlaceholderText="文字列 / 正規表現"
+                         Text="{Binding SearchText, Mode=TwoWay}" />
+                <Button x:Name="SearchButton" Content="検索" />
+                <Button x:Name="ClearSearchButton" Content="×" />
+                <CheckBox x:Name="RegexCheck" Content="正規表現" Foreground="Black"
+                          IsChecked="{Binding SearchIsRegex, Mode=TwoWay}" />
+                <CheckBox x:Name="CaseCheck" Content="大小無視" Foreground="Black"
+                          IsChecked="{Binding SearchIgnoreCase, Mode=TwoWay}" />
+                <Button x:Name="PrevHitButton" Content="◀ 前へ" />
+                <Button x:Name="NextHitButton" Content="次へ ▶" />
+                <ToggleButton x:Name="FilterToggle" Content="フィルタ表示"
+                              ToolTip.Tip="ヒット行だけを表示（§11-⑤）" />
+                <TextBlock Text="{Binding SearchInfo}" VerticalAlignment="Center" Foreground="Black" />
             </StackPanel>
         </Border>
 
@@ -73,10 +100,11 @@
             </Grid>
         </Border>
 
-        <!-- 本文 + 縦スクロールバー -->
-        <Grid ColumnDefinitions="*,Auto">
+        <!-- 本文 + ミニマップ + 縦スクロールバー -->
+        <Grid ColumnDefinitions="*,Auto,Auto">
             <ctrl:TextView x:Name="TextView" Grid.Column="0" />
-            <ScrollBar x:Name="VScroll" Grid.Column="1" Orientation="Vertical"
+            <ctrl:MinimapView x:Name="Minimap" Grid.Column="1" />
+            <ScrollBar x:Name="VScroll" Grid.Column="2" Orientation="Vertical"
                        AllowAutoHide="False" Width="16" />
         </Grid>
 

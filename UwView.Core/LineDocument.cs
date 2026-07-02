@@ -72,7 +72,7 @@ public sealed class LineDocument : IAsyncDisposable
     {
         var index = Index ?? throw new InvalidOperationException("索引未構築です。");
         int k = (int)(lineIndex / _blockLines);
-        long start = index.Checkpoints[k];
+        long start = index.GetCheckpoint(k);
         int target = (int)(lineIndex % _blockLines);
         return ScanForwardNewlines(start, target);
     }
@@ -83,16 +83,16 @@ public sealed class LineDocument : IAsyncDisposable
         var index = Index ?? throw new InvalidOperationException("索引未構築です。");
         long off = Math.Clamp(byteOffset, BomLength, Length);
 
-        var cps = index.Checkpoints;
-        int lo = 0, hi = cps.Count - 1, k = 0;
+        int lo = 0, hi = index.CheckpointCount - 1, k = 0;
         while (lo <= hi)
         {
             int mid = (lo + hi) >> 1;
-            if (cps[mid] <= off) { k = mid; lo = mid + 1; }
+            if (index.GetCheckpoint(mid) <= off) { k = mid; lo = mid + 1; }
             else hi = mid - 1;
         }
 
-        long lineIndex = (long)k * _blockLines + CountNewlines(cps[k], off);
+        long cp = index.GetCheckpoint(k);
+        long lineIndex = (long)k * _blockLines + CountNewlines(cp, off);
         return Math.Min(lineIndex, Math.Max(0, index.TotalLines - 1));
     }
 
@@ -110,6 +110,34 @@ public sealed class LineDocument : IAsyncDisposable
         }
         return list;
     }
+
+    /// <summary>GetPage の行頭オフセット付き版（ブックマーク描画などオフセットが要る描画用）。</summary>
+    public IReadOnlyList<(long Offset, string Text)> GetPageWithOffsets(long byteOffset, int rows)
+    {
+        var list = new List<(long, string)>(rows);
+        long pos = AlignToLineStart(byteOffset);
+        for (int r = 0; r < rows && pos < Length; r++)
+        {
+            long start = pos;
+            list.Add((start, ReadLineAt(pos, out long nextStart)));
+            pos = nextStart;
+        }
+        return list;
+    }
+
+    /// <summary>行頭オフセット指定で 1 行取得（索引不要・フィルタ表示 §11-⑤ 用）。</summary>
+    public string GetLineAtOffset(long lineStart)
+    {
+        long key = -lineStart - 1; // 行番号キー（非負）と衝突しない負キーで LRU を共用
+        if (_cache.TryGet(key, out var cached))
+            return cached;
+        string text = ReadLineAt(lineStart, out _);
+        _cache.Set(key, text);
+        return text;
+    }
+
+    /// <summary>Tail（§11-③）: ソースが伸びた後に呼ぶ。末尾行の内容が変わりうるため LRU を破棄。</summary>
+    public void OnSourceExtended() => _cache.Clear();
 
     /// <summary>指定オフセットを行頭に揃える。行の途中なら次の '\n' の直後まで飛ばす。</summary>
     public long AlignToLineStart(long byteOffset)
