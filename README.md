@@ -158,6 +158,21 @@ dotnet run --project UwView.Browser
 
 デスクトップ版と同じUI・同じコアが動きます。I/O は `blob.slice` によるランダム読み（ファイル全体はメモリに載せない）。
 
+## 配布物（`dist/`）
+
+`dist/` には各OS・アーキテクチャ向けにビルド済みの配布アーカイブを置いています。ソースはビルド生成物のため通常は `.gitignore` で除外していますが、**このアーカイブ本体（`.zip` / `.tar.gz`）はインストール環境として追跡対象**にしています。
+
+| ファイル | 対象 |
+| --- | --- |
+| `UwView-macos-arm64.zip` | macOS（Apple Silicon） |
+| `UwView-macos-x64.zip` | macOS（Intel） |
+| `UwView-win-arm64.zip` | Windows（ARM64） |
+| `UwView-win-x64.zip` | Windows（x64） |
+| `UwView-linux-arm64.tar.gz` | Linux（ARM64） |
+| `UwView-linux-x64.tar.gz` | Linux（x64） |
+
+展開後、macOS 版は `UwView.app` をそのまま起動、Windows / Linux 版は同梱の実行ファイル（`UwView.Desktop` / `UwView.Desktop.exe`）を実行してください。macOS 版アプリバンドルの生成手順は `UwView.Desktop/macos/build-app.sh` を参照してください（Windows / Linux 版は `dotnet publish -r <RID> --self-contained` で発行）。
+
 ## 既知の制限
 
 - 改行スタイルは LF / CRLF を対象。CR単独（旧Mac）は現状フル対応していません。
