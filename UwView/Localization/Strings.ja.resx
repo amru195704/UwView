@@ -86,7 +86,7 @@
   <data name="ModeFilter" xml:space="preserve"><value>フィルタ表示</value></data>
 
   <data name="PositionLine" xml:space="preserve"><value>総行数 {0} ・ 先頭 {1} 行目</value></data>
-  <data name="PositionPage" xml:space="preserve"><value>{0} / {1} byte</value></data>
+  <data name="PositionPage" xml:space="preserve"><value>{0}% / {1} KB</value></data>
   <data name="PositionFilter" xml:space="preserve"><value>ヒット {0} 件中 {1} 件目</value></data>
 
   <data name="EncodingInfoAuto" xml:space="preserve"><value>文字コード: {0} （自動: {1}）</value></data>

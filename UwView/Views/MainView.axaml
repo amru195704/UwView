@@ -89,21 +89,25 @@
         <!-- ステータスバー -->
         <Border DockPanel.Dock="Bottom" Background="#EEEEEE" BorderBrush="#CCCCCC"
                 BorderThickness="0,1,0,0" Padding="6,3">
-            <Grid ColumnDefinitions="*,Auto">
-                <StackPanel Orientation="Horizontal" Spacing="14">
-                    <TextBlock Text="{Binding FilePath}" Foreground="Black" />
-                    <TextBlock Text="{Binding ModeInfo}" Foreground="Black" />
-                    <TextBlock Text="{Binding PositionInfo}" Foreground="Black" />
-                    <TextBlock Text="{Binding EncodingInfo}" Foreground="Black" />
-                </StackPanel>
-                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8"
+            <DockPanel LastChildFill="True">
+                <!-- 索引パネルを右に先に確保（左情報が食い込まない） -->
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8"
+                            Margin="12,0,0,0" VerticalAlignment="Center"
                             IsVisible="{Binding IsIndexing}">
                     <TextBlock Text="{loc:Localize Indexing}" VerticalAlignment="Center" Foreground="Black" />
                     <ProgressBar Width="140" Minimum="0" Maximum="1"
                                  Value="{Binding IndexProgress}" />
                     <Button x:Name="CancelButton" Content="{loc:Localize Cancel}" />
                 </StackPanel>
-            </Grid>
+                <!-- 左情報は残り幅にクリップ（あふれても右へ重ならない） -->
+                <StackPanel Orientation="Horizontal" Spacing="14" ClipToBounds="True"
+                            VerticalAlignment="Center">
+                    <TextBlock Text="{Binding FilePath}" Foreground="Black" />
+                    <TextBlock Text="{Binding ModeInfo}" Foreground="Black" />
+                    <TextBlock Text="{Binding PositionInfo}" Foreground="Black" />
+                    <TextBlock Text="{Binding EncodingInfo}" Foreground="Black" />
+                </StackPanel>
+            </DockPanel>
         </Border>
 
         <!-- 本文 + ミニマップ + 縦スクロールバー -->

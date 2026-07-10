@@ -405,7 +405,7 @@ public partial class MainView : UserControl
         {
             _vm.ModeInfo = L["ModePage"];
             _vm.PositionInfo = L.Format("PositionPage",
-                (TextView.Percent * 100).ToString("0.0", L.Culture), N(TextView.TopByteOffset));
+                (TextView.Percent * 100).ToString("0.0", L.Culture), N(TextView.TopByteOffset / 1024));
         }
     }
 

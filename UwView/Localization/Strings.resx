@@ -86,7 +86,7 @@
   <data name="ModeFilter" xml:space="preserve"><value>Filtered</value></data>
 
   <data name="PositionLine" xml:space="preserve"><value>Total {0} lines · top line {1}</value></data>
-  <data name="PositionPage" xml:space="preserve"><value>{0} / {1} bytes</value></data>
+  <data name="PositionPage" xml:space="preserve"><value>{0}% / {1} KB</value></data>
   <data name="PositionFilter" xml:space="preserve"><value>hit {1} of {0}</value></data>
 
   <data name="EncodingInfoAuto" xml:space="preserve"><value>Encoding: {0} (auto: {1})</value></data>
