@@ -460,3 +460,6 @@ $RECYCLE.BIN/
 dist/*
 !dist/*.zip
 !dist/*.tar.gz
+
+# 内部向けドキュメント（企画・販売戦略・価格・ライセンス方針など）は非公開
+0-claude/
