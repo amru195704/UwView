@@ -11,6 +11,7 @@ using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using UwView.Core;
+using UwView.Localization;
 using UwView.ViewModels;
 
 namespace UwView.Views;
@@ -47,6 +48,9 @@ public partial class MainView : UserControl
         PrevHitButton.Click += (_, _) => GoToHit(next: false);
         Minimap.JumpRequested += (_, pct) => { TextView.JumpToPercent(pct); TextView.Focus(); };
         TextView.StateChanged += (_, _) => Minimap.ViewOffset = TextView.CurrentOffset;
+
+        // UI 言語切替（§販売戦略 §4）
+        LanguageCombo.SelectionChanged += OnLanguageChanged;
 
         // フィルタ表示（§11-⑤）
         FilterToggle.IsCheckedChanged += (_, _) =>
@@ -218,10 +222,11 @@ public partial class MainView : UserControl
         var s = _vm.ActiveTab?.Session;
         if (s is null || s.ActiveSearch is null) { _vm.SearchInfo = ""; return; }
 
-        string count = $"{s.SearchHits.Count:N0} 件";
-        _vm.SearchInfo = s.IsSearching
-            ? $"検索中 {s.SearchProgress:P0} ・ {count}"
-            : count + (s.SearchTruncated ? "（上限で打切り）" : "");
+        string count = L.Format("SearchHits", N(s.SearchHits.Count));
+        if (s.IsSearching)
+            _vm.SearchInfo = L.Format("SearchProgress", s.SearchProgress.ToString("P0", L.Culture), N(s.SearchHits.Count));
+        else
+            _vm.SearchInfo = count + (s.SearchTruncated ? L["SearchTruncated"] : "");
     }
 
     private void OnActiveIndexProgress(object? sender, EventArgs e) => UpdateStatus();
@@ -360,12 +365,16 @@ public partial class MainView : UserControl
 
     // ── ステータス更新 ────────────────────────────────────────
 
+    private static Localizer L => Localizer.Instance;
+    private static string N(long n) => n.ToString("N0", L.Culture);
+
     private void UpdateEncodingInfo()
     {
         if (_vm?.ActiveTab is not { } tab) { if (_vm is not null) _vm.EncodingInfo = ""; return; }
-        var choice = tab.SelectedEncoding;
-        _vm.EncodingInfo = $"文字コード: {tab.Session.Document.Encoding.WebName} " +
-                           (choice == EncodingChoice.Auto ? $"（自動: {tab.Session.DetectedEncoding.DisplayName}）" : "（手動）");
+        var name = tab.Session.Document.Encoding.WebName;
+        _vm.EncodingInfo = tab.SelectedEncoding == EncodingChoice.Auto
+            ? L.Format("EncodingInfoAuto", name, tab.Session.DetectedEncoding.DisplayName)
+            : L.Format("EncodingInfoManual", name);
     }
 
     private void UpdateStatus()
@@ -384,18 +393,42 @@ public partial class MainView : UserControl
 
         if (s.FilterActive && s.SearchHits.Count > 0)
         {
-            _vm.ModeInfo = "フィルタ表示";
-            _vm.PositionInfo = $"ヒット {s.SearchHits.Count:N0} 件中 {s.FilterTopHitIndex + 1:N0} 件目";
+            _vm.ModeInfo = L["ModeFilter"];
+            _vm.PositionInfo = L.Format("PositionFilter", N(s.SearchHits.Count), N(s.FilterTopHitIndex + 1));
         }
         else if (TextView.Mode == ViewMode.Line && TextView.TotalLines is { } total)
         {
-            _vm.ModeInfo = "行モード";
-            _vm.PositionInfo = $"総行数 {total:N0} ・ 先頭 {TextView.TopLine + 1:N0} 行目";
+            _vm.ModeInfo = L["ModeLine"];
+            _vm.PositionInfo = L.Format("PositionLine", N(total), N(TextView.TopLine + 1));
         }
         else
         {
-            _vm.ModeInfo = "ページモード";
-            _vm.PositionInfo = $"{TextView.Percent * 100:0.0}% / {TextView.TopByteOffset:N0} byte";
+            _vm.ModeInfo = L["ModePage"];
+            _vm.PositionInfo = L.Format("PositionPage",
+                (TextView.Percent * 100).ToString("0.0", L.Culture), N(TextView.TopByteOffset));
         }
+    }
+
+    // ── UI 言語切替（§販売戦略 §4）────────────────────────────
+
+    private void OnLanguageChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (_vm?.SelectedLanguage is not { } lang) return;
+        L.SetLanguage(lang.Code);
+        App.Settings.Language = lang.Code;
+        App.Settings.Save();
+
+        // 文字コード「自動」ラベルを言語に追従（他は universal 名なので不変）
+        _suppressEncodingApply = true;
+        bool autoSelected = _vm.SelectedEncoding?.Choice == EncodingChoice.Auto;
+        _vm.EncodingOptions[0] = new EncodingOption(EncodingChoice.Auto, L["EncodingAuto"]);
+        if (autoSelected) _vm.SelectedEncoding = _vm.EncodingOptions[0];
+        _suppressEncodingApply = false;
+
+        // 動的文字列（コード生成分）を今の言語で作り直す
+        _vm.RaiseFilePathChanged();
+        UpdateEncodingInfo();
+        UpdateSearchInfo();
+        UpdateStatus();
     }
 }

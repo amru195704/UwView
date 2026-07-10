@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Platform.Storage;
 using UwView.Core;
+using UwView.Localization;
 
 namespace UwView.Services;
 
@@ -27,7 +28,7 @@ public sealed class DesktopDocumentOpener : IDocumentOpener
     {
         var files = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
-            Title = "テキストファイルを開く",
+            Title = Localizer.Instance["OpenDialogTitle"],
             AllowMultiple = true
         });
 

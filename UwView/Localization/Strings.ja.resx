@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+
+  <data name="Open" xml:space="preserve"><value>開く…</value></data>
+  <data name="EncodingLabel" xml:space="preserve"><value>文字コード:</value></data>
+  <data name="LineNumbers" xml:space="preserve"><value>行番号</value></data>
+  <data name="JumpLabel" xml:space="preserve"><value>ジャンプ:</value></data>
+  <data name="JumpPlaceholder" xml:space="preserve"><value>行 / %</value></data>
+  <data name="Go" xml:space="preserve"><value>移動</value></data>
+  <data name="LanguageLabel" xml:space="preserve"><value>言語:</value></data>
+
+  <data name="BookmarkToggleTip" xml:space="preserve"><value>先頭行のブックマークをトグル</value></data>
+  <data name="PrevBookmarkTip" xml:space="preserve"><value>前のブックマークへ</value></data>
+  <data name="NextBookmarkTip" xml:space="preserve"><value>次のブックマークへ</value></data>
+  <data name="TailTip" xml:space="preserve"><value>末尾追従（追記を検知して自動スクロール）</value></data>
+
+  <data name="SearchLabel" xml:space="preserve"><value>検索:</value></data>
+  <data name="SearchPlaceholder" xml:space="preserve"><value>文字列 / 正規表現</value></data>
+  <data name="SearchButton" xml:space="preserve"><value>検索</value></data>
+  <data name="Regex" xml:space="preserve"><value>正規表現</value></data>
+  <data name="IgnoreCase" xml:space="preserve"><value>大小無視</value></data>
+  <data name="PrevHit" xml:space="preserve"><value>◀ 前へ</value></data>
+  <data name="NextHit" xml:space="preserve"><value>次へ ▶</value></data>
+  <data name="FilterView" xml:space="preserve"><value>フィルタ表示</value></data>
+  <data name="FilterTip" xml:space="preserve"><value>ヒット行だけを表示</value></data>
+
+  <data name="Indexing" xml:space="preserve"><value>索引中</value></data>
+  <data name="Cancel" xml:space="preserve"><value>キャンセル</value></data>
+
+  <data name="OpenDialogTitle" xml:space="preserve"><value>テキストファイルを開く</value></data>
+  <data name="NoFile" xml:space="preserve"><value>（ファイル未選択）</value></data>
+  <data name="EncodingAuto" xml:space="preserve"><value>自動判定</value></data>
+
+  <data name="ModePage" xml:space="preserve"><value>ページモード</value></data>
+  <data name="ModeLine" xml:space="preserve"><value>行モード</value></data>
+  <data name="ModeFilter" xml:space="preserve"><value>フィルタ表示</value></data>
+
+  <data name="PositionLine" xml:space="preserve"><value>総行数 {0} ・ 先頭 {1} 行目</value></data>
+  <data name="PositionPage" xml:space="preserve"><value>{0} / {1} byte</value></data>
+  <data name="PositionFilter" xml:space="preserve"><value>ヒット {0} 件中 {1} 件目</value></data>
+
+  <data name="EncodingInfoAuto" xml:space="preserve"><value>文字コード: {0} （自動: {1}）</value></data>
+  <data name="EncodingInfoManual" xml:space="preserve"><value>文字コード: {0} （手動）</value></data>
+
+  <data name="SearchProgress" xml:space="preserve"><value>検索中 {0} ・ {1} 件</value></data>
+  <data name="SearchHits" xml:space="preserve"><value>{0} 件</value></data>
+  <data name="SearchTruncated" xml:space="preserve"><value>（上限で打切り）</value></data>
+</root>

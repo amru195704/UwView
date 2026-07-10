@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+
+  <data name="Open" xml:space="preserve"><value>Open…</value></data>
+  <data name="EncodingLabel" xml:space="preserve"><value>Encoding:</value></data>
+  <data name="LineNumbers" xml:space="preserve"><value>Line #</value></data>
+  <data name="JumpLabel" xml:space="preserve"><value>Jump:</value></data>
+  <data name="JumpPlaceholder" xml:space="preserve"><value>line / %</value></data>
+  <data name="Go" xml:space="preserve"><value>Go</value></data>
+  <data name="LanguageLabel" xml:space="preserve"><value>Language:</value></data>
+
+  <data name="BookmarkToggleTip" xml:space="preserve"><value>Toggle bookmark on the top line</value></data>
+  <data name="PrevBookmarkTip" xml:space="preserve"><value>Go to previous bookmark</value></data>
+  <data name="NextBookmarkTip" xml:space="preserve"><value>Go to next bookmark</value></data>
+  <data name="TailTip" xml:space="preserve"><value>Follow tail (auto-scroll when the file grows)</value></data>
+
+  <data name="SearchLabel" xml:space="preserve"><value>Search:</value></data>
+  <data name="SearchPlaceholder" xml:space="preserve"><value>text / regular expression</value></data>
+  <data name="SearchButton" xml:space="preserve"><value>Find</value></data>
+  <data name="Regex" xml:space="preserve"><value>Regex</value></data>
+  <data name="IgnoreCase" xml:space="preserve"><value>Ignore case</value></data>
+  <data name="PrevHit" xml:space="preserve"><value>◀ Prev</value></data>
+  <data name="NextHit" xml:space="preserve"><value>Next ▶</value></data>
+  <data name="FilterView" xml:space="preserve"><value>Filter</value></data>
+  <data name="FilterTip" xml:space="preserve"><value>Show only matching lines</value></data>
+
+  <data name="Indexing" xml:space="preserve"><value>Indexing</value></data>
+  <data name="Cancel" xml:space="preserve"><value>Cancel</value></data>
+
+  <data name="OpenDialogTitle" xml:space="preserve"><value>Open text file</value></data>
+  <data name="NoFile" xml:space="preserve"><value>(no file)</value></data>
+  <data name="EncodingAuto" xml:space="preserve"><value>Auto-detect</value></data>
+
+  <data name="ModePage" xml:space="preserve"><value>Page mode</value></data>
+  <data name="ModeLine" xml:space="preserve"><value>Line mode</value></data>
+  <data name="ModeFilter" xml:space="preserve"><value>Filtered</value></data>
+
+  <data name="PositionLine" xml:space="preserve"><value>Total {0} lines · top line {1}</value></data>
+  <data name="PositionPage" xml:space="preserve"><value>{0} / {1} bytes</value></data>
+  <data name="PositionFilter" xml:space="preserve"><value>hit {1} of {0}</value></data>
+
+  <data name="EncodingInfoAuto" xml:space="preserve"><value>Encoding: {0} (auto: {1})</value></data>
+  <data name="EncodingInfoManual" xml:space="preserve"><value>Encoding: {0} (manual)</value></data>
+
+  <data name="SearchProgress" xml:space="preserve"><value>Searching {0} · {1} hits</value></data>
+  <data name="SearchHits" xml:space="preserve"><value>{0} hits</value></data>
+  <data name="SearchTruncated" xml:space="preserve"><value> (truncated at limit)</value></data>
+</root>

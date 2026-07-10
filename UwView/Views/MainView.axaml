@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:UwView.ViewModels"
              xmlns:ctrl="using:UwView.Controls"
+             xmlns:loc="using:UwView.Localization"
              mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="560"
              x:Class="UwView.Views.MainView"
              x:DataType="vm:MainViewModel"
@@ -39,23 +40,28 @@
         <Border DockPanel.Dock="Top" Background="#EEEEEE" BorderBrush="#CCCCCC"
                 BorderThickness="0,0,0,1" Padding="6">
             <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                <Button x:Name="OpenButton" Content="開く…" />
-                <TextBlock Text="文字コード:" VerticalAlignment="Center" Foreground="Black" />
+                <Button x:Name="OpenButton" Content="{loc:Localize Open}" />
+                <TextBlock Text="{loc:Localize EncodingLabel}" VerticalAlignment="Center" Foreground="Black" />
                 <ComboBox x:Name="EncodingCombo" MinWidth="130"
                           ItemsSource="{Binding EncodingOptions}"
                           SelectedItem="{Binding SelectedEncoding, Mode=TwoWay}" />
-                <CheckBox x:Name="LineNumberCheck" Content="行番号" IsChecked="True" Foreground="Black" />
+                <CheckBox x:Name="LineNumberCheck" Content="{loc:Localize LineNumbers}" IsChecked="True" Foreground="Black" />
                 <Rectangle Width="1" Fill="#CCCCCC" Margin="4,0" />
-                <TextBlock Text="ジャンプ:" VerticalAlignment="Center" Foreground="Black" />
-                <TextBox x:Name="JumpBox" Width="110" PlaceholderText="行 / %"
+                <TextBlock Text="{loc:Localize JumpLabel}" VerticalAlignment="Center" Foreground="Black" />
+                <TextBox x:Name="JumpBox" Width="110" PlaceholderText="{loc:Localize JumpPlaceholder}"
                          Text="{Binding JumpText, Mode=TwoWay}" />
-                <Button x:Name="JumpButton" Content="移動" />
+                <Button x:Name="JumpButton" Content="{loc:Localize Go}" />
                 <Rectangle Width="1" Fill="#CCCCCC" Margin="4,0" />
-                <Button x:Name="BookmarkToggleButton" Content="☆" ToolTip.Tip="先頭行のブックマークをトグル" />
-                <Button x:Name="PrevBookmarkButton" Content="◀☆" ToolTip.Tip="前のブックマークへ" />
-                <Button x:Name="NextBookmarkButton" Content="☆▶" ToolTip.Tip="次のブックマークへ" />
+                <Button x:Name="BookmarkToggleButton" Content="☆" ToolTip.Tip="{loc:Localize BookmarkToggleTip}" />
+                <Button x:Name="PrevBookmarkButton" Content="◀☆" ToolTip.Tip="{loc:Localize PrevBookmarkTip}" />
+                <Button x:Name="NextBookmarkButton" Content="☆▶" ToolTip.Tip="{loc:Localize NextBookmarkTip}" />
                 <Rectangle Width="1" Fill="#CCCCCC" Margin="4,0" />
-                <ToggleButton x:Name="TailToggle" Content="Tail" ToolTip.Tip="末尾追従（追記を検知して自動スクロール）" />
+                <ToggleButton x:Name="TailToggle" Content="Tail" ToolTip.Tip="{loc:Localize TailTip}" />
+                <Rectangle Width="1" Fill="#CCCCCC" Margin="4,0" />
+                <TextBlock Text="{loc:Localize LanguageLabel}" VerticalAlignment="Center" Foreground="Black" />
+                <ComboBox x:Name="LanguageCombo" MinWidth="90"
+                          ItemsSource="{Binding Languages}"
+                          SelectedItem="{Binding SelectedLanguage, Mode=TwoWay}" />
             </StackPanel>
         </Border>
 
@@ -63,19 +69,19 @@
         <Border DockPanel.Dock="Top" Background="#F5F5F5" BorderBrush="#CCCCCC"
                 BorderThickness="0,0,0,1" Padding="6,4">
             <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                <TextBlock Text="検索:" VerticalAlignment="Center" Foreground="Black" />
-                <TextBox x:Name="SearchBox" Width="220" PlaceholderText="文字列 / 正規表現"
+                <TextBlock Text="{loc:Localize SearchLabel}" VerticalAlignment="Center" Foreground="Black" />
+                <TextBox x:Name="SearchBox" Width="220" PlaceholderText="{loc:Localize SearchPlaceholder}"
                          Text="{Binding SearchText, Mode=TwoWay}" />
-                <Button x:Name="SearchButton" Content="検索" />
+                <Button x:Name="SearchButton" Content="{loc:Localize SearchButton}" />
                 <Button x:Name="ClearSearchButton" Content="×" />
-                <CheckBox x:Name="RegexCheck" Content="正規表現" Foreground="Black"
+                <CheckBox x:Name="RegexCheck" Content="{loc:Localize Regex}" Foreground="Black"
                           IsChecked="{Binding SearchIsRegex, Mode=TwoWay}" />
-                <CheckBox x:Name="CaseCheck" Content="大小無視" Foreground="Black"
+                <CheckBox x:Name="CaseCheck" Content="{loc:Localize IgnoreCase}" Foreground="Black"
                           IsChecked="{Binding SearchIgnoreCase, Mode=TwoWay}" />
-                <Button x:Name="PrevHitButton" Content="◀ 前へ" />
-                <Button x:Name="NextHitButton" Content="次へ ▶" />
-                <ToggleButton x:Name="FilterToggle" Content="フィルタ表示"
-                              ToolTip.Tip="ヒット行だけを表示（§11-⑤）" />
+                <Button x:Name="PrevHitButton" Content="{loc:Localize PrevHit}" />
+                <Button x:Name="NextHitButton" Content="{loc:Localize NextHit}" />
+                <ToggleButton x:Name="FilterToggle" Content="{loc:Localize FilterView}"
+                              ToolTip.Tip="{loc:Localize FilterTip}" />
                 <TextBlock Text="{Binding SearchInfo}" VerticalAlignment="Center" Foreground="Black" />
             </StackPanel>
         </Border>
@@ -92,10 +98,10 @@
                 </StackPanel>
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8"
                             IsVisible="{Binding IsIndexing}">
-                    <TextBlock Text="索引中" VerticalAlignment="Center" Foreground="Black" />
+                    <TextBlock Text="{loc:Localize Indexing}" VerticalAlignment="Center" Foreground="Black" />
                     <ProgressBar Width="140" Minimum="0" Maximum="1"
                                  Value="{Binding IndexProgress}" />
-                    <Button x:Name="CancelButton" Content="キャンセル" />
+                    <Button x:Name="CancelButton" Content="{loc:Localize Cancel}" />
                 </StackPanel>
             </Grid>
         </Border>
