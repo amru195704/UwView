@@ -4,6 +4,8 @@
 
 **A memory-thrifty, high-speed viewer for gigantic text files — hundreds of millions of lines and beyond.**
 
+![UwView — a 51 GB / 892-million-line OSM Japan file in line mode](press-kit/screenshots/line-mode.png)
+
 UwView is a rebuild (in [Avalonia UI](https://avaloniaui.net/)) of a large-text viewer originally published on the Japanese "Vector" archive. Ordinary editors choke around a million lines; UwView never loads the whole file into memory and **renders only the lines currently on screen**, so it opens huge line-count files — the kind produced by RDB or XML dumps — instantly. The largest file tested so far is **892 million lines / ~51 GB** (the full OpenStreetMap extract of Japan, as XML). If anyone finds the real limit, please let me know.
 
 It is a **viewer**, not an editor (read-only).

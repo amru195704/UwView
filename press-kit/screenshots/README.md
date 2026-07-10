@@ -1,11 +1,10 @@
 # Screenshots
 
-ここに UwView のスクリーンショット（PNG）を置いてください。PRESSKIT.md が参照する推奨ファイル名:
+UwView のスクリーンショット（実データ OSM 日本 51GB・8.9億行を開いた画面）。
 
-- `main.png` — 巨大ファイルを開いた本体（行モード・行番号表示）
-- `search.png` — 検索ヒットのハイライト＋右側ミニマップ
-- `tabs.png` — 複数タブ・索引進捗インジケータ
-- `tail.png` — リアルタイム Tail（末尾追従）
-- `language.png` — 言語切替（English / 日本語）
+- `line-mode.png` — 行モード・総行数 892,239,125・行番号表示（English UI・ヒーロー）
+- `page-mode-indexing.png` — 開いた直後のページモード＋裏で索引構築（進捗バー）
+- `page-mode-ja.png` — ページモード・日本語UI（% / KB 表示）
+- `open-dialog.png` — 51.25 GB の japan-latest.osm を選択
 
-撮影の目安: 1200×750 前後、実データ（例: `3-test/data/uwview_200m.txt`）を開いた状態。
+キャプションは `../PRESSKIT.md` の §6 を参照。

@@ -63,17 +63,16 @@ Synthetic 200 M lines / 5.1 GB: index build 9.7 s, random GetLine avg 0.005 ms, 
 
 ## 6. Screenshots / スクリーンショット
 
-`press-kit/screenshots/` に配置予定。推奨カット（撮影後に差し込み）:
+`press-kit/screenshots/`（実データ OSM 日本 51GB・8.9億行を開いた画面）:
 
-| ファイル | 内容 |
+| ファイル | 内容 / Caption |
 |---------|------|
-| `main.png` | 巨大ファイルを開いた本体（行モード・行番号） |
-| `search.png` | 検索ヒットのハイライト＋右のミニマップ |
-| `tabs.png` | 複数タブ・索引進捗 |
-| `tail.png` | リアルタイム Tail |
-| `language.png` | 言語切替（EN/JA） |
+| `line-mode.png` | ★ヒーロー: 索引完了＝行モード。総行数 892,239,125・行番号表示（English UI）/ Line mode after indexing: 892 M lines |
+| `page-mode-indexing.png` | 開いた直後＝ページモードで即表示、裏で索引構築（進捗バー）/ Instant page-mode view while indexing in the background |
+| `page-mode-ja.png` | ページモード・日本語UI（% / KB 表示）/ Page mode, Japanese UI |
+| `open-dialog.png` | ファイル選択（51.25 GB の japan-latest.osm）/ Opening a 51.25 GB file |
 
-*(screenshots pending — placeholders in `screenshots/`)*
+> 日英どちらのUIも実行時に切替可能（ヒーロー=English / `page-mode-ja.png`=日本語）。
 
 ## 7. Icon / アイコン
 
