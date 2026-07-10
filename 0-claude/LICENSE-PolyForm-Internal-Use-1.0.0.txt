@@ -1,7 +1,5 @@
 UwView License
 
-Copyright (c) 2026 丸山祐治 (amru195704 / Y4U)
-
 Summary (this summary is NOT a substitute for the full license text below):
 - Free for INTERNAL USE by individuals and companies (internal business operations).
 - You may NOT distribute the software: redistribution, bundling into a product or
@@ -9,8 +7,9 @@ Summary (this summary is NOT a substitute for the full license text below):
   permitted under this license.
 - Those uses require a separate COMMERCIAL (redistribution/OEM) license from the author.
 
-Software: UwView — https://github.com/amru195704/UwView
-Commercial / redistribution licensing: https://github.com/amru195704/UwView/issues
+Licensor: 丸山祐治 (GitHub: amru195704 / Y4U)
+Software:  UwView — https://github.com/amru195704/UwView
+Commercial / redistribution licensing: <問い合わせ先を記入（例: GitHub Issues もしくはメール）>
 SPDX-License-Identifier: PolyForm-Internal-Use-1.0.0
 
 ==============================================================================
