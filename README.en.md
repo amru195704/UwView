@@ -10,6 +10,29 @@ UwView is a rebuild (in [Avalonia UI](https://avaloniaui.net/)) of a large-text 
 
 It is a **viewer**, not an editor (read-only).
 
+## 📣 Announcement: "UwView Pro" — even faster — in development
+
+We're building **UwView Pro**, which pushes large-file performance further. On top of parallel index construction, a **compressed sidecar cache** (`.uwvz` + `.uwvidx`) delivers instant re-open from the second time on, plus dramatically faster full-text search.
+
+Measured against the well-known large-log viewer **[klogg](https://klogg.filimonov.dev/)** (same file, same patterns):
+
+> Conditions: OpenStreetMap Japan `japan-latest.osm`, 47.73 GB / 892,239,125 lines, external USB drive (measured physical bandwidth 0.41 GB/s), 32 GB RAM, 10-core Mac, Match case ON. Hit counts matched exactly across klogg, UwView Pro, and direct raw-file search for every row (cross-verified that the searches are semantically identical).
+
+| Metric | klogg (24.11.0) | UwView (public) | **UwView Pro (in dev)** | Pro ÷ klogg |
+|---|---|---|---|---|
+| First open | index build ~110 s (**only the top is visible** until done — can't scroll to middle/end) | index build 128–186 s (**whole file navigable immediately**) | 140 s to build index + compressed cache (**whole file navigable immediately**) | — |
+| Re-open (2nd time on) | re-indexes every time, ~110 s (no persistent cache) | rebuilds every time, 128–186 s | **0.02–0.07 s** | **1,500×+** |
+| Search literal `"Tokyo"` | 120–135 s | 156.2 s | **14.3 s** | **~9×** |
+| Search case-insensitive `"Tokyo"` | ~120 s | (not measured) | **14.0 s** | **~8.6×** |
+| Search regex `"Tok[yi]o"` | ~130 s | (not measured) | **29.8 s** | **~4.4×** |
+| Search regex `"name:en.*Tokyo"` | ~130 s | (not measured) | **29.2 s** | **~4.4×** |
+| Disk footprint (archive mode) | 48 GB (original required) | 48 GB (original required) | **5.3 GB** (original can be deleted; checksum-protected) | **1/9** |
+
+- **klogg shows only the top of the file while it indexes** (you can't jump to the middle or end). UwView displays by byte position, so you can move anywhere the moment it opens.
+- With the compressed sidecar you can delete the original and keep just **~1/9 the size** (e.g. 48 GB → 5.3 GB), and still open it directly (checksum-protected).
+
+> UwView Pro is being prepared as a commercial (paid) edition. Stay tuned.
+
 ## Highlights
 
 - 🚀 **Instant display of gigantic files** — hundreds of millions of lines with a tiny memory footprint. The file body is never resident; the index is ~6 MB at 200 M lines.
