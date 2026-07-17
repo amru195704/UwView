@@ -80,8 +80,8 @@
                           IsChecked="{Binding SearchIgnoreCase, Mode=TwoWay}" />
                 <Button x:Name="PrevHitButton" Content="{loc:Localize PrevHit}" />
                 <Button x:Name="NextHitButton" Content="{loc:Localize NextHit}" />
-                <ToggleButton x:Name="FilterToggle" Content="{loc:Localize FilterView}"
-                              ToolTip.Tip="{loc:Localize FilterTip}" />
+                <Button x:Name="FilterResultsButton" Content="{loc:Localize FilterResultsOpen}"
+                        ToolTip.Tip="{loc:Localize FilterResultsOpenTip}" />
                 <TextBlock Text="{Binding SearchInfo}" VerticalAlignment="Center" Foreground="Black" />
             </StackPanel>
         </Border>

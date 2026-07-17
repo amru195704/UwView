@@ -12,24 +12,24 @@ It is a **viewer**, not an editor (read-only).
 
 ## 📣 Announcement: "UwView Pro" — even faster — in development
 
-We're building **UwView Pro**, which pushes large-file performance further. On top of parallel index construction, a **compressed sidecar cache** (`.uwvz` + `.uwvidx`) delivers instant re-open from the second time on, plus dramatically faster full-text search.
+We're building **UwView Pro**, which pushes large-file performance further. On top of parallel index construction, a **compressed sidecar cache** (a single `.uwvz` file with the line index built in, checksum-protected) delivers instant re-open from the second time on, plus dramatically faster full-text search.
 
-Measured against the well-known large-log viewer **[klogg](https://klogg.filimonov.dev/)** (same file, same patterns):
+Measured against the well-known large-log viewer **[klogg](https://klogg.filimonov.dev/)** (same file, same patterns, across **three storage types**):
 
-> Conditions: OpenStreetMap Japan `japan-latest.osm`, 47.73 GB / 892,239,125 lines, external USB drive (measured physical bandwidth 0.41 GB/s), 32 GB RAM, 10-core Mac, Match case ON. Hit counts matched exactly across klogg, UwView Pro, and direct raw-file search for every row (cross-verified that the searches are semantically identical).
+> Conditions: OpenStreetMap Japan `japan-latest.osm`, 47.73 GB / 892,239,125 lines. MacBook Air / Apple M4 (10 cores) / 32 GB RAM. Measured storage bandwidth (dd): USB HDD 0.10 GB/s ・ USB SSD 0.41 GB/s ・ internal SSD 3.29 GB/s. klogg 24.11.0. Hit counts matched exactly across klogg, UwView Pro, and direct raw-file search for every row (cross-verified that the searches are semantically identical).
 
-| Metric | klogg (24.11.0) | UwView (public) | **UwView Pro (in dev)** | Pro ÷ klogg |
-|---|---|---|---|---|
-| First open | index build ~110 s (**only the top is visible** until done — can't scroll to middle/end) | index build 128–186 s (**whole file navigable immediately**) | 140 s to build index + compressed cache (**whole file navigable immediately**) | — |
-| Re-open (2nd time on) | re-indexes every time, ~110 s (no persistent cache) | rebuilds every time, 128–186 s | **0.02–0.07 s** | **1,500×+** |
-| Search literal `"Tokyo"` | 120–135 s | 156.2 s | **14.3 s** | **~9×** |
-| Search case-insensitive `"Tokyo"` | ~120 s | (not measured) | **14.0 s** | **~8.6×** |
-| Search regex `"Tok[yi]o"` | ~130 s | (not measured) | **29.8 s** | **~4.4×** |
-| Search regex `"name:en.*Tokyo"` | ~130 s | (not measured) | **29.2 s** | **~4.4×** |
-| Disk footprint (archive mode) | 48 GB (original required) | 48 GB (original required) | **5.3 GB** (original can be deleted; checksum-protected) | **1/9** |
+| Metric | klogg (24.11.0) | **UwView Pro (in dev)** | Pro ÷ klogg |
+|---|---|---|---|
+| First open | HDD ~9 min ・ USB SSD ~110 s ・ internal SSD ~15 s (**every time**; only the top is visible until done) | HDD 10.6 min ・ USB SSD 138.5 s ・ internal SSD 23.3 s (**once only**; whole file navigable immediately; includes building the compressed cache) | slightly slower once (see payoff below) |
+| **Re-open (2nd time on)** | same as first open (re-indexes every time) | **0.01–0.07 s** | **~1,250–50,000×** |
+| Search literal `"Tokyo"` | ~585 s ・ 120–135 s ・ 15–20 s | **74.8 s ・ 14.3 s ・ 5.1 s** | **~7.8× ・ ~9× ・ 3–4×** |
+| Search regex `"Tok[yi]o"` | ≈ literal (I/O-bound, pattern-independent) | USB SSD **29.8 s** ・ internal SSD **11.0 s** | ~4.4× ・ ~1.5× |
+| Disk footprint (archive mode) | 48 GB (original required) | **5.3 GB** (original can be deleted; checksum-protected) | **1/9** |
 
 - **klogg shows only the top of the file while it indexes** (you can't jump to the middle or end). UwView displays by byte position, so you can move anywhere the moment it opens.
-- With the compressed sidecar you can delete the original and keep just **~1/9 the size** (e.g. 48 GB → 5.3 GB), and still open it directly (checksum-protected).
+- **The slower your disk, the bigger the win** (Pro reads 1/9 the bytes): on an HDD, a search drops from ~10 minutes to 75 seconds.
+- At everyday working sizes (3 GB / 100 M lines) both tools search within seconds; Pro's value there is **operational** — no re-indexing on every re-open (klogg: 47 s / 8 s / 2 s vs. Pro: a few ms), and archives at 1/9–1/13 the size that open directly.
+- The first open is slightly slower than klogg because it also builds the compressed cache — that one-time cost buys millisecond re-opens, seconds-level searches, and 1/9 storage thereafter.
 
 > UwView Pro is being prepared as a commercial (paid) edition. Stay tuned.
 
@@ -40,7 +40,7 @@ Measured against the well-known large-log viewer **[klogg](https://klogg.filimon
 - 🈁 **Automatic encoding detection** — BOM + UTF-8 / Shift-JIS / EUC-JP / UTF-16, with manual override (no re-indexing).
 - 🗂 **Multi-file tabs** — switch files as tabs (state preserved, per-tab background indexing). Add via drag & drop or multi-select.
 - 🔎 **Search & regular expressions** — background scan independent of the index. Literal search uses SIMD byte-scanning (3.4 s over 200 M lines); regex decodes per line (12.7 s). Hits are byte-offset based, so they stay valid in page mode and after an encoding switch. Match highlighting + a minimap of hit distribution (click to jump).
-- 🧵 **Line filter view** — show only matching lines (original file untouched, virtual view), with the original line numbers.
+- 🧵 **Search-results popup** — matching lines listed in a separate window (original file untouched, virtual view, original line numbers). Double-click / Enter jumps to the line in the main view; results can be **saved to a file** (with or without line numbers). The Pro edition adds **±N lines of context** and per-tab windows.
 - ⭐ **Bookmarks** — toggle any line, jump prev/next. Kept by byte offset, so they survive encoding switches. Shown in the minimap.
 - 📡 **Real-time tail** — detects appends, re-maps mmap, extends the index incrementally, and auto-scrolls to the end. Opens logs that are still being written (FileShare.ReadWrite).
 - 🌐 **Bilingual UI** — Japanese / English, switchable at runtime (persisted).

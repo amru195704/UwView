@@ -95,4 +95,18 @@
   <data name="SearchProgress" xml:space="preserve"><value>Searching {0} · {1} hits</value></data>
   <data name="SearchHits" xml:space="preserve"><value>{0} hits</value></data>
   <data name="SearchTruncated" xml:space="preserve"><value> (truncated at limit)</value></data>
+  <data name="FilterResultsOpen" xml:space="preserve"><value>Results</value></data>
+  <data name="FilterResultsOpenTip" xml:space="preserve"><value>Open search results in a separate window (jump / save)</value></data>
+  <data name="FilterResultsTitle" xml:space="preserve"><value>Filter results</value></data>
+  <data name="ContextLabel" xml:space="preserve"><value>Context ±</value></data>
+  <data name="ContextLinesSuffix" xml:space="preserve"><value>lines</value></data>
+  <data name="IncludeLineNumbers" xml:space="preserve"><value>Line numbers</value></data>
+  <data name="SaveEllipsis" xml:space="preserve"><value>Save…</value></data>
+  <data name="AlwaysOnTop" xml:space="preserve"><value>Always on top</value></data>
+  <data name="SaveFilterTitle" xml:space="preserve"><value>Save filter results</value></data>
+
+  <data name="MenuCopy" xml:space="preserve"><value>Copy</value></data>
+  <data name="MenuSaveAs" xml:space="preserve"><value>Save to file…</value></data>
+  <data name="SaveSelectionTitle" xml:space="preserve"><value>Save selection</value></data>
+  <data name="SelectionLines" xml:space="preserve"><value>{0} lines selected (Ctrl/Cmd+C to copy)</value></data>
 </root>

@@ -1,0 +1,70 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="using:UwView.ViewModels"
+        xmlns:ctrl="using:UwView.Controls"
+        xmlns:loc="using:UwView.Localization"
+        mc:Ignorable="d" d:DesignWidth="760" d:DesignHeight="520"
+        x:Class="UwView.Views.FilterResultsWindow"
+        x:DataType="vm:FilterResultsViewModel"
+        Title="{loc:Localize FilterResultsTitle}"
+        Width="820" Height="540" MinWidth="520" MinHeight="260">
+
+    <DockPanel LastChildFill="True">
+
+        <!-- ツールバー: 件数 / 前後±N（Pro のみ表示）/ 保存 / 常に手前 -->
+        <Border DockPanel.Dock="Top" Background="#EEEEEE" BorderBrush="#CCCCCC"
+                BorderThickness="0,0,0,1" Padding="6">
+            <StackPanel x:Name="ToolbarPanel" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                <TextBlock Text="{Binding HitInfo}" VerticalAlignment="Center" Foreground="Black" />
+                <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center"
+                            IsVisible="{Binding AllowContext}">
+                    <TextBlock Text="{loc:Localize ContextLabel}" VerticalAlignment="Center" Foreground="Black" />
+                    <NumericUpDown Value="{Binding ContextN, Mode=TwoWay}" Minimum="0" Maximum="{Binding MaxContext}"
+                                   Increment="1" FormatString="0" Width="120" />
+                    <TextBlock Text="{loc:Localize ContextLinesSuffix}" VerticalAlignment="Center" Foreground="Black" />
+                </StackPanel>
+                <Rectangle Width="1" Fill="#CCCCCC" Margin="2,0" />
+                <CheckBox Content="{loc:Localize IncludeLineNumbers}" Foreground="Black"
+                          IsChecked="{Binding IncludeLineNumbersOnSave, Mode=TwoWay}" />
+                <Button x:Name="SaveButton" Content="{loc:Localize SaveEllipsis}" />
+                <ProgressBar Width="130" Minimum="0" Maximum="1"
+                             Value="{Binding SaveProgress}" IsVisible="{Binding IsSaving}" />
+                <Button x:Name="CancelSaveButton" Content="{loc:Localize Cancel}"
+                        IsVisible="{Binding IsSaving}" />
+                <Rectangle Width="1" Fill="#CCCCCC" Margin="2,0" />
+                <ToggleButton x:Name="TopmostToggle" Content="{loc:Localize AlwaysOnTop}" />
+            </StackPanel>
+        </Border>
+
+        <!-- 結果リスト（UI仮想化。ダブルクリック/Enter でメインへジャンプ。
+             複数行選択 → 右クリックで copy/save。ListArea は Pro の矩形選択オーバーレイ挿入先 -->
+        <Grid x:Name="ListArea">
+        <ListBox x:Name="RowList" ItemsSource="{Binding Rows}"
+                 SelectionMode="Multiple" Background="White"
+                 FontFamily="Menlo,Osaka-Mono,Consolas,monospace" FontSize="12">
+            <ListBox.Styles>
+                <Style Selector="ListBoxItem">
+                    <Setter Property="Padding" Value="6,1" />
+                    <Setter Property="MinHeight" Value="0" />
+                </Style>
+            </ListBox.Styles>
+            <ListBox.ItemTemplate>
+                <DataTemplate x:DataType="vm:FilterRow">
+                    <StackPanel Orientation="Horizontal" Spacing="10" Opacity="{Binding RowOpacity}">
+                        <TextBlock Text="{Binding HitNumberText}" Width="66"
+                                   TextAlignment="Right" Foreground="#1A6FE8" />
+                        <TextBlock Text="{Binding LineNumberText}" Width="90"
+                                   TextAlignment="Right" Foreground="#777777" />
+                        <ctrl:HighlightTextBlock Text="{Binding Text}"
+                                                 HighlightRegex="{Binding HighlightRegex}"
+                                                 Foreground="Black" TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+        </Grid>
+
+    </DockPanel>
+</Window>

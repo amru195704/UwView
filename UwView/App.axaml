@@ -2,12 +2,19 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="using:UwView"
              x:Class="UwView.App"
+             Name="UwView"
              RequestedThemeVariant="Default">
              <!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
 
+    <NativeMenu.Menu>
+        <NativeMenu>
+            <NativeMenuItem Header="About UwView" Click="OnAboutClick" />
+        </NativeMenu>
+    </NativeMenu.Menu>
+
     <Application.DataTemplates>
         <local:ViewLocator/>
-    </Application.DataTemplates>    
+    </Application.DataTemplates>
 
     <Application.Styles>
         <FluentTheme />

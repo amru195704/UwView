@@ -52,14 +52,9 @@ public partial class MainView : UserControl
         // UI 言語切替（§販売戦略 §4）
         LanguageCombo.SelectionChanged += OnLanguageChanged;
 
-        // フィルタ表示（§11-⑤）
-        FilterToggle.IsCheckedChanged += (_, _) =>
-        {
-            if (_suppressToggleApply || _vm?.ActiveTab is not { } t) return;
-            t.Session.FilterActive = FilterToggle.IsChecked == true;
-            TextView.Refresh();
-            UpdateStatus();
-        };
+        // フィルタ結果ポップアップ（§11-⑤改め 機能修正指示書_検索フィルタPopup.md。
+        // inline フィルタ表示は廃止し、別ウィンドウ（ジャンプ／保存）に一本化）
+        FilterResultsButton.Click += (_, _) => OpenFilterResults();
 
         // ブックマーク（§11-④）
         BookmarkToggleButton.Click += (_, _) =>
@@ -140,10 +135,12 @@ public partial class MainView : UserControl
         _suppressEncodingApply = false;
 
         _suppressToggleApply = true;
-        FilterToggle.IsChecked = tab?.Session.FilterActive ?? false;
         TailToggle.IsChecked = tab?.Session.IsTailing ?? false;
         TailToggle.IsEnabled = tab?.Session.SupportsTail ?? false;
         _suppressToggleApply = false;
+
+        // フィルタ結果ポップアップはアクティブタブに連動（公開版は1ウィンドウ）
+        _filterResultsVm?.SetSession(tab?.Session);
 
         var search = tab?.Session.ActiveSearch;
         _vm.SearchText = search?.Pattern ?? "";
@@ -165,6 +162,7 @@ public partial class MainView : UserControl
         var text = (_vm.SearchText ?? "").Trim();
         if (text.Length == 0) { ClearSearch(); return; }
 
+        _autoPopupPending = true; // 完了時に結果一覧を自動表示
         _ = tab.Session.StartSearchAsync(new SearchOptions(text, _vm.SearchIsRegex, _vm.SearchIgnoreCase));
         TextView.Refresh(); // ハイライト regex は即時有効
     }
@@ -172,10 +170,43 @@ public partial class MainView : UserControl
     private void ClearSearch()
     {
         if (_vm?.ActiveTab is not { } tab) return;
+        _autoPopupPending = false;
         tab.Session.ClearSearch();
         _vm.SearchText = "";
         TextView.Refresh();
         Minimap.InvalidateVisual();
+    }
+
+    // ── フィルタ結果ポップアップ（公開版: 1ウィンドウ・アクティブタブ連動）────
+
+    private FilterResultsWindow? _filterResultsWindow;
+    private FilterResultsViewModel? _filterResultsVm;
+    private bool _autoPopupPending;
+
+    private void OpenFilterResults()
+    {
+        if (_filterResultsWindow is not null)
+        {
+            _filterResultsVm!.SetSession(_vm?.ActiveTab?.Session);
+            _filterResultsWindow.Activate();
+            return;
+        }
+
+        _filterResultsVm = new FilterResultsViewModel(
+            onJump: off => { TextView.JumpToOffsetCentered(off); TextView.Focus(); },
+            maxContext: 1); // UVF は前後±1 まで（±N は Pro 限定）
+        _filterResultsVm.SetSession(_vm?.ActiveTab?.Session);
+        _filterResultsWindow = new FilterResultsWindow(_filterResultsVm);
+        _filterResultsWindow.Closed += (_, _) =>
+        {
+            _filterResultsWindow = null;
+            _filterResultsVm = null; // Dispose はウィンドウ側で実施済み
+        };
+
+        if (TopLevel.GetTopLevel(this) is Window owner)
+            _filterResultsWindow.Show(owner);
+        else
+            _filterResultsWindow.Show();
     }
 
     private void GoToHit(bool next)
@@ -214,6 +245,14 @@ public partial class MainView : UserControl
     {
         UpdateSearchInfo();
         Minimap.InvalidateVisual();
+
+        // 検索完了 → ヒットありなら結果一覧を自動ポップアップ
+        if (_autoPopupPending && _vm?.ActiveTab?.Session is { IsSearching: false } s
+            && s.ActiveSearch is not null)
+        {
+            _autoPopupPending = false;
+            if (s.SearchHits.Count > 0) OpenFilterResults();
+        }
     }
 
     private void UpdateSearchInfo()
@@ -391,12 +430,7 @@ public partial class MainView : UserControl
         _vm.IsIndexing = s.IsIndexing;
         _vm.IndexProgress = s.IndexProgress;
 
-        if (s.FilterActive && s.SearchHits.Count > 0)
-        {
-            _vm.ModeInfo = L["ModeFilter"];
-            _vm.PositionInfo = L.Format("PositionFilter", N(s.SearchHits.Count), N(s.FilterTopHitIndex + 1));
-        }
-        else if (TextView.Mode == ViewMode.Line && TextView.TotalLines is { } total)
+        if (TextView.Mode == ViewMode.Line && TextView.TotalLines is { } total)
         {
             _vm.ModeInfo = L["ModeLine"];
             _vm.PositionInfo = L.Format("PositionLine", N(total), N(TextView.TopLine + 1));
@@ -407,6 +441,10 @@ public partial class MainView : UserControl
             _vm.PositionInfo = L.Format("PositionPage",
                 (TextView.Percent * 100).ToString("0.0", L.Culture), N(TextView.TopByteOffset / 1024));
         }
+
+        // 行選択の状態（選択行数・保存進捗）をステータスへ追記
+        if (TextView.SelectionInfo is { } selInfo)
+            _vm.PositionInfo += "　" + selInfo;
     }
 
     // ── UI 言語切替（§販売戦略 §4）────────────────────────────

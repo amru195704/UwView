@@ -95,4 +95,18 @@
   <data name="SearchProgress" xml:space="preserve"><value>検索中 {0} ・ {1} 件</value></data>
   <data name="SearchHits" xml:space="preserve"><value>{0} 件</value></data>
   <data name="SearchTruncated" xml:space="preserve"><value>（上限で打切り）</value></data>
+  <data name="FilterResultsOpen" xml:space="preserve"><value>結果一覧</value></data>
+  <data name="FilterResultsOpenTip" xml:space="preserve"><value>検索結果を別ウィンドウで一覧表示（ジャンプ／保存）</value></data>
+  <data name="FilterResultsTitle" xml:space="preserve"><value>フィルタ結果</value></data>
+  <data name="ContextLabel" xml:space="preserve"><value>前後 ±</value></data>
+  <data name="ContextLinesSuffix" xml:space="preserve"><value>行</value></data>
+  <data name="IncludeLineNumbers" xml:space="preserve"><value>行番号を含める</value></data>
+  <data name="SaveEllipsis" xml:space="preserve"><value>保存…</value></data>
+  <data name="AlwaysOnTop" xml:space="preserve"><value>常に手前</value></data>
+  <data name="SaveFilterTitle" xml:space="preserve"><value>フィルタ結果を保存</value></data>
+
+  <data name="MenuCopy" xml:space="preserve"><value>コピー</value></data>
+  <data name="MenuSaveAs" xml:space="preserve"><value>ファイルに保存…</value></data>
+  <data name="SaveSelectionTitle" xml:space="preserve"><value>選択範囲を保存</value></data>
+  <data name="SelectionLines" xml:space="preserve"><value>選択 {0} 行（Ctrl/Cmd+C でコピー）</value></data>
 </root>
