@@ -35,16 +35,22 @@ Measured against the well-known large-log viewer **[klogg](https://klogg.filimon
 
 ## Highlights
 
+*Current stable version: **v1.1.1**.*
+
 - 🚀 **Instant display of gigantic files** — hundreds of millions of lines with a tiny memory footprint. The file body is never resident; the index is ~6 MB at 200 M lines.
 - 📖 **Progressive open** — shows content the instant you open it (page mode) → builds the index in the background → promotes to line mode when done.
 - 🈁 **Automatic encoding detection** — BOM + UTF-8 / Shift-JIS / EUC-JP / UTF-16, with manual override (no re-indexing).
 - 🗂 **Multi-file tabs** — switch files as tabs (state preserved, per-tab background indexing). Add via drag & drop or multi-select.
 - 🔎 **Search & regular expressions** — background scan independent of the index. Literal search uses SIMD byte-scanning (3.4 s over 200 M lines); regex decodes per line (12.7 s). Hits are byte-offset based, so they stay valid in page mode and after an encoding switch. Match highlighting + a minimap of hit distribution (click to jump).
-- 🧵 **Search-results popup** — matching lines listed in a separate window (original file untouched, virtual view, original line numbers). Double-click / Enter jumps to the line in the main view; results can be **saved to a file** (with or without line numbers). The Pro edition adds **±N lines of context** and per-tab windows.
+- 🧵 **Search-results popup** — auto-shown when a search finishes with hits. Matching lines are listed in a separate window (original file untouched, virtual view, original line numbers). Double-click / Enter jumps to the line in the main view; **±1 line of context**; results can be **saved to a file** (with or without line numbers). The Pro edition offers ±1000 lines of context and per-tab windows.
+- 🎨 **Multi-keyword color highlighter** (v1.1+) — colorize multiple registered patterns continuously, independent of search (equivalent to klogg's Highlighter). Supports regex, case-insensitive, whole-line / match-only, and coloring only the regex capture. A **color-blind-friendly 32-color palette**, named sets, and export/import via `.uwvhl`. **7 bundled presets** (generic log levels / syslog・Linux / Web access (HTTP) / JSON log / GNSS NMEA / GeoJSON / KML). The yellow search highlight always stays on top, and coloring re-evaluates only the visible lines so it stays fast on huge files. Each tab keeps its own highlighter.
+- 🖱 **Right-click colorize of the selected word (quick color label)** (v1.1.1+) — select a word and right-click to colorize it instantly (the same menu also has Copy, Clear, and Manage dialog…). Double-clicking cycles through three stages (shortest word → sensible token → clear) to pick the range. Colorized rules also appear in the manage dialog and can be recolored, saved as a set, and exported to `.uwvhl`.
+- 🕘 **Search history & predefined filters** (v1.1+) — the search box autocompletes from input history (up to 50). Save frequent searches with “★” and run them from a dropdown. Next/previous and go-to-line center the target line and highlight the whole line.
 - ⭐ **Bookmarks** — toggle any line, jump prev/next. Kept by byte offset, so they survive encoding switches. Shown in the minimap.
 - 📡 **Real-time tail** — detects appends, re-maps mmap, extends the index incrementally, and auto-scrolls to the end. Opens logs that are still being written (FileShare.ReadWrite).
 - 🌐 **Bilingual UI** — Japanese / English, switchable at runtime (persisted).
 - 🖥 **Identical rendering on every OS** — Avalonia's own Skia rendering makes Windows / macOS / Linux look the same. A browser (WASM) build ships a bundled Japanese font.
+- 💾 **Session restore, recent files & favorites** (v1.1.1+) — on a normal launch, a confirmation dialog offers to restore the previous files (n), reopening the previous tabs near their last scroll position. Recent files (up to 15) and favorites (★ toggle) are available from the start screen shown when no file is open. When launched with a specific file (double-click / drag & drop / CLI argument), it opens just that file without asking.
 
 ## Requirements
 
