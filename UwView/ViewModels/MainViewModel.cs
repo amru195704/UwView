@@ -20,6 +20,13 @@ public sealed record LanguageOption(string Code, string Label)
     public override string ToString() => Label;
 }
 
+/// <summary>スタート画面の1項目（最近使ったファイル・お気に入り）。</summary>
+public sealed record StartItem(string Path)
+{
+    public string DisplayName => System.IO.Path.GetFileName(Path);
+    public override string ToString() => DisplayName;
+}
+
 public partial class MainViewModel : ViewModelBase
 {
     // タブ集合＋Active（§4.7）
@@ -69,7 +76,24 @@ public partial class MainViewModel : ViewModelBase
 
     [ObservableProperty] private LanguageOption _selectedLanguage = null!;
 
+    // V1.1.1: スタート画面（最近使ったファイル・お気に入り）＋一時通知
+    public ObservableCollection<StartItem> StartRecent { get; } = [];
+    public ObservableCollection<StartItem> StartFavorites { get; } = [];
+    [ObservableProperty] private string _notice = "";
+
+    /// <summary>AppSettings の Recent/Favorites をスタート画面用コレクションへ反映。</summary>
+    public void RefreshStartLists()
+    {
+        StartRecent.Clear();
+        foreach (var e in Services.AppSettingsRef.Current.RecentFiles)
+            StartRecent.Add(new StartItem(e.Path));
+        StartFavorites.Clear();
+        foreach (var p in Services.AppSettingsRef.Current.Favorites)
+            StartFavorites.Add(new StartItem(p));
+    }
+
     public bool HasTabs => Tabs.Count > 0;
+    public bool IsEmpty => Tabs.Count == 0;
     public string FilePath => ActiveTab?.FilePath ?? Localizer.Instance["NoFile"];
 
     /// <summary>タブの × ボタンから発火。実際の破棄は View 側で行う。</summary>
@@ -81,7 +105,11 @@ public partial class MainViewModel : ViewModelBase
         _selectedEncoding = EncodingOptions[0];
         var cur = Localizer.Instance.Culture.TwoLetterISOLanguageName;
         _selectedLanguage = Languages.FirstOrDefault(l => l.Code == cur) ?? Languages[1];
-        Tabs.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasTabs));
+        Tabs.CollectionChanged += (_, _) =>
+        {
+            OnPropertyChanged(nameof(HasTabs));
+            OnPropertyChanged(nameof(IsEmpty));
+        };
     }
 
     partial void OnActiveTabChanged(DocumentTabViewModel? value)

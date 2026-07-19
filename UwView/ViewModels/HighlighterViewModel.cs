@@ -112,17 +112,21 @@ public sealed partial class HighlighterViewModel : ObservableObject
     }
 
     private static string DefaultSetName => Localizer.Instance["HlDefaultSetName"];
-    private static string NoneLabel() => Localizer.Instance["HlPresetNone"];
+    /// <summary>「なし」を表す予約セット名（空のハイライタ。全「なし」タブで共有）。</summary>
+    private static string NoneSetName => Localizer.Instance["HlNoneSetName"];
 
-    /// <summary>ドロップダウンを「保存済みセット → なし → 同梱プリセット」で作り直し、現行セットを選択表示。</summary>
+    /// <summary>ドロップダウンを「保存済みセット →（なし）→ 同梱プリセット」で作り直し、現行の名前で選択表示。</summary>
     private void RebuildPresetList()
     {
         bool prev = _suppress; _suppress = true;
         Presets.Clear();
-        foreach (var s in _config.Sets) Presets.Add(s);           // 保存済みセット（選ぶと読込）
-        Presets.Add(new HlSet("none", NoneLabel(), new List<HlRule>())); // クリア
-        foreach (var p in HighlightPresets.All()) Presets.Add(p); // 同梱プリセット（選ぶと追加）
-        SelectedPreset = _config.Sets.Find(s => s.Id == _set.Id); // 現在のセットを選択表示
+        var userNames = new HashSet<string>(_config.Sets.Select(s => s.Name));
+        foreach (var s in _config.Sets) Presets.Add(s);                    // 保存済みセット（選ぶと切替）
+        if (!userNames.Contains(NoneSetName))
+            Presets.Add(new HlSet("none", NoneSetName, new List<HlRule>())); // 空の「（なし）」（未作成のときだけ）
+        foreach (var p in HighlightPresets.All())
+            if (!userNames.Contains(p.Name)) Presets.Add(p);              // 同名の保存済みが無い同梱プリセットのみ
+        SelectedPreset = Presets.FirstOrDefault(x => x.Name == SetName);  // 名前で選択表示（「なし」も名前で一致）
         _suppress = prev;
     }
 
@@ -166,53 +170,30 @@ public sealed partial class HighlighterViewModel : ObservableObject
     public void AppendRule(HlRule rule) => Rules.Add(new HlRuleRow(rule, OnRuleChanged));
 
     /// <summary>
-    /// ドロップダウン選択の適用。
-    /// - 「なし」= 全クリア／- 保存済みセット = 読込（規則を置換・アクティブ切替）／- 同梱プリセット = 規則を先頭へ追加。
+    /// ドロップダウン選択の適用。保存済みセット・同梱プリセット・「（なし）」とも
+    /// 「その名前のハイライタへ切替」＝規則を置換し名前を持ち替える（＝別名なら別ハイライタ）。
+    /// 確定は「保存」「設定」まで行わない（プレビューのみ）。
     /// </summary>
-    public void ApplyPreset(HlSet item)
+    public void ApplyPreset(HlSet item) => LoadNamed(item.Name, item.Rules);
+
+    /// <summary>名前＋規則を作業コピーへ読み込む（config には確定時まで触れない）。</summary>
+    private void LoadNamed(string name, IEnumerable<HlRule> rules)
     {
-        if (item.Id == "none")
-        {
-            _suppress = true; Rules.Clear(); _suppress = false;
-            OnRuleChanged();
-            return;
-        }
-
-        // 保存済みセット（config 内の実体）を選んだら丸ごと読込＆アクティブ切替
-        if (_config.Sets.Contains(item))
-        {
-            LoadSet(item);
-            return;
-        }
-
-        // 同梱プリセット: 規則を現行セットの先頭へ積む
-        _suppress = true;
-        int i = 0;
-        foreach (var r in item.Rules)
-            Rules.Insert(i++, new HlRuleRow(r.Clone(), OnRuleChanged));
-        _suppress = false;
-        OnRuleChanged();
-    }
-
-    /// <summary>保存済みセットのスナップショットを作業コピーとして読み込み、アクティブに切り替える。</summary>
-    public void LoadSet(HlSet set)
-    {
-        _set = WorkingCopy(set);           // スナップショットのコピーを編集対象にする
-        _config.ActiveSetId = set.Id;
         _suppress = true;
         Rules.Clear();
-        foreach (var r in _set.Rules) Rules.Add(new HlRuleRow(r, OnRuleChanged));
-        SetName = string.IsNullOrWhiteSpace(set.Name) ? DefaultSetName : set.Name;
-        SelectedPreset = set;
+        var cloned = new List<HlRule>();
+        foreach (var r in rules) { var c = r.Clone(); cloned.Add(c); Rules.Add(new HlRuleRow(c, OnRuleChanged)); }
+        _set = new HlSet(Guid.NewGuid().ToString("N"), name, cloned);
+        SetName = name;
+        SelectedPreset = Presets.FirstOrDefault(x => x.Id != "none" && x.Name == name);
         _suppress = false;
         OnRuleChanged();
-        ActiveSetChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    /// <summary>現在選択中の保存済みセットを再読込（＝保存済み内容に戻す＝「再現」）。</summary>
+    /// <summary>現在選択中のセット/プリセットを再読込（編集を破棄して元へ戻す＝「再現」）。</summary>
     public void ReloadSelected()
     {
-        if (SelectedPreset is { } sp && _config.Sets.Contains(sp)) LoadSet(sp);
+        if (SelectedPreset is { } sp && sp.Id != "none") LoadNamed(sp.Name, sp.Rules);
     }
 
     /// <summary>保存候補の名前一覧（既存セット名＋「デフォルト」）。名前プロンプトのドロップダウン用。</summary>
@@ -252,6 +233,33 @@ public sealed partial class HighlighterViewModel : ObservableObject
         Changed?.Invoke(this, EventArgs.Empty);
         ActiveSetChanged?.Invoke(this, EventArgs.Empty);
     }
+
+    /// <summary>
+    /// 「設定」: 現在の編集内容を"現在の名前"のセットへ確定（名前は尋ねない）。
+    /// 同名のセットがあれば上書き、無ければ新規作成（＝同一名称なら同一色設定・別名なら別ハイライタ）。
+    /// </summary>
+    public void CommitToActive()
+    {
+        Sync();
+        var name = string.IsNullOrWhiteSpace(SetName) ? DefaultSetName : SetName;
+        var rules = _set.Rules.ConvertAll(r => r.Clone());
+        var target = _config.Sets.Find(s => s.Name == name);
+        if (target is null)
+        {
+            target = new HlSet(Guid.NewGuid().ToString("N"), name, rules);
+            _config.Sets.Add(target);
+        }
+        else
+        {
+            target.Rules = rules;
+        }
+        _config.ActiveSetId = target.Id;
+        _set = WorkingCopy(target);
+    }
+
+    /// <summary>保存名プロンプトの既定＝現在のドロップダウン選択名（無ければセット名）。</summary>
+    public string CurrentName =>
+        SelectedPreset is { } sp && sp.Id != "none" && !string.IsNullOrWhiteSpace(sp.Name) ? sp.Name : SetName;
 
     public void RemoveRule(HlRuleRow row) => Rules.Remove(row);
 

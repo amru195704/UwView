@@ -60,6 +60,10 @@ public partial class MainView : UserControl
         HighlighterButton.Click += (_, _) => OpenHighlighter();
         ApplyHighlighter(); // 起動時から保存済みセットを適用
 
+        // V1.1.1: 選択語のクイック着色（右クリック色パレット）
+        TextView.ColorLabelRequested += OnColorLabelRequested;
+        TextView.OpenHighlighterRequested += () => OpenHighlighter();
+
         // Ver1.1-A: 検索履歴・定義済みフィルタ
         SaveFilterButton.Click += (_, _) => SaveCurrentAsFilter();
         PredefinedCombo.SelectionChanged += (_, _) =>
@@ -90,9 +94,28 @@ public partial class MainView : UserControl
             else t.Session.StopTail();
         };
 
+        // V1.1.1: お気に入りトグル・スタート画面
+        FavoriteToggle.IsCheckedChanged += (_, _) =>
+        {
+            if (_suppressFavApply) return;
+            ToggleFavorite();
+        };
+        StartOpenButton.Click += OnOpenClick;
+        StartRecentList.DoubleTapped += (_, _) => OpenStartSelection(StartRecentList);
+        StartFavoritesList.DoubleTapped += (_, _) => OpenStartSelection(StartFavoritesList);
+
         DataContextChanged += OnDataContextChanged;
         AddHandler(DragDrop.DragOverEvent, OnDragOver);
         AddHandler(DragDrop.DropEvent, OnDrop);
+
+        Loaded += (_, _) => RunStartup(App.LaunchFileArgs ?? System.Array.Empty<string>());
+    }
+
+    private bool _suppressFavApply;
+
+    private void OpenStartSelection(ListBox list)
+    {
+        if (list.SelectedItem is StartItem item) OpenFromList(item.Path);
     }
 
     private void OnDataContextChanged(object? sender, EventArgs e)
@@ -108,6 +131,9 @@ public partial class MainView : UserControl
             _vm.PropertyChanged += OnVmPropertyChanged;
             _vm.CloseTabRequested += OnCloseTabRequested;
             LoadFilterState(); // Ver1.1-A: 検索履歴・定義済みフィルタを反映
+            UwView.App.Settings.PruneMissing(); // V1.1.1: 欠損 Recent/Favorites を間引く
+            _vm.RefreshStartLists();
+            UpdateFavoriteButton();
         }
     }
 
@@ -166,6 +192,8 @@ public partial class MainView : UserControl
         UpdateEncodingInfo();
         UpdateSearchInfo();
         UpdateStatus();
+        UpdateFavoriteButton(); // V1.1.1
+        ApplyHighlighter();     // V1.1.1: タブ別ハイライタを適用
         Minimap.ViewOffset = TextView.CurrentOffset;
         if (tab is not null) TextView.Focus();
     }
@@ -246,17 +274,20 @@ public partial class MainView : UserControl
 
     private HighlighterWindow? _highlighterWindow;
 
-    /// <summary>アクティブなハイライタセット（無ければ作成）。</summary>
+    /// <summary>アクティブタブのハイライタセット（タブ別。無ければ既定を割当・作成）。</summary>
     private HlSet ActiveHlSet()
     {
         var cfg = UwView.App.Settings.Highlighters;
-        var set = cfg.Sets.Find(s => s.Id == cfg.ActiveSetId) ?? cfg.Sets.FirstOrDefault();
+        var tab = _vm?.ActiveTab;
+        string? id = tab?.HighlighterSetId ?? cfg.ActiveSetId;
+        var set = cfg.Sets.Find(s => s.Id == id) ?? cfg.Sets.FirstOrDefault();
         if (set is null)
         {
             set = new HlSet(Guid.NewGuid().ToString("N"), L["HlDefaultSetName"], new List<HlRule>());
             cfg.Sets.Add(set);
             cfg.ActiveSetId = set.Id;
         }
+        if (tab is not null && tab.HighlighterSetId is null) tab.HighlighterSetId = set.Id; // 既定を割当
         return set;
     }
 
@@ -266,19 +297,59 @@ public partial class MainView : UserControl
         TextView.Refresh();
     }
 
+    /// <summary>V1.1.1: 選択語を literal・大小区別の規則として着色（hex=null で解除）。1語=1規則。</summary>
+    private void OnColorLabelRequested(string word, string? hex)
+    {
+        if (string.IsNullOrEmpty(word)) return;
+        var set = ActiveHlSet();
+        var rule = set.Rules.Find(r => !r.IsRegex && !r.IgnoreCase && r.Pattern == word);
+        if (hex is null)
+        {
+            if (rule is not null) set.Rules.Remove(rule);
+            SetTransientStatus(L.Format("ColorCleared", word));
+        }
+        else if (rule is not null)
+        {
+            rule.Background = hex; // 既存語の色を更新
+            SetTransientStatus(L.Format("Colored", word));
+        }
+        else
+        {
+            set.Rules.Insert(0, new HlRule(word, isRegex: false, ignoreCase: false, background: hex));
+            SetTransientStatus(L.Format("Colored", word));
+        }
+        TextView.ClearWordSelection();
+        TextView.Highlighter = CompiledHighlighter.Build(set);
+        TextView.Refresh();
+        UwView.App.Settings.Save();
+    }
+
     private void OpenHighlighter()
     {
         if (_highlighterWindow is not null) { _highlighterWindow.Activate(); return; }
-        ActiveHlSet(); // 既定セットが無ければ生成
-        var vm = new HighlighterViewModel(UwView.App.Settings.Highlighters);
-        vm.Changed += (_, _) =>
+        var cfg = UwView.App.Settings.Highlighters;
+        var tab = _vm?.ActiveTab;
+        var set = ActiveHlSet();           // このタブのセット（既定割当込み）
+        cfg.ActiveSetId = set.Id;          // ダイアログはこのセットを編集対象にする
+        string origActiveId = cfg.ActiveSetId ?? "";
+        var vm = new HighlighterViewModel(cfg);
+        // 編集中はプレビューのみ（保存は「保存」「設定」まで行わない）
+        vm.Changed += (_, _) => { TextView.Highlighter = vm.Compile(); TextView.Refresh(); };
+        _highlighterWindow = new HighlighterWindow(vm)
         {
-            TextView.Highlighter = vm.Compile();
-            TextView.Refresh();
-            UwView.App.Settings.Save();
+            Applied = () =>                              // 保存/設定: このタブのセットを更新・永続化
+            {
+                if (tab is not null) tab.HighlighterSetId = cfg.ActiveSetId;
+                UwView.App.Settings.Save();
+            },
+            Cancelled = () =>                            // キャンセル/×: 破棄・編集前へ戻す
+            {
+                cfg.ActiveSetId = origActiveId;
+                TextView.Highlighter = CompiledHighlighter.Build(ActiveHlSet());
+                TextView.Refresh();
+            },
         };
-        _highlighterWindow = new HighlighterWindow(vm) { SaveRequested = () => UwView.App.Settings.Save() };
-        _highlighterWindow.Closed += (_, _) => { _highlighterWindow = null; UwView.App.Settings.Save(); };
+        _highlighterWindow.Closed += (_, _) => _highlighterWindow = null;
         if (TopLevel.GetTopLevel(this) is Window owner) _highlighterWindow.Show(owner);
         else _highlighterWindow.Show();
     }
@@ -396,9 +467,9 @@ public partial class MainView : UserControl
         AddSessions(sessions);
     }
 
-    private void AddSessions(IEnumerable<DocumentSession> sessions)
+    private DocumentTabViewModel? AddSessions(IEnumerable<DocumentSession> sessions)
     {
-        if (_vm is null) return;
+        if (_vm is null) return null;
         DocumentTabViewModel? last = null;
         foreach (var session in sessions)
         {
@@ -406,11 +477,135 @@ public partial class MainView : UserControl
             session.IndexCompleted += (_, _) => OnIndexCompleted(tab);
             _vm.Tabs.Add(tab);
             last = tab;
+            RecordRecent(session.FilePath); // V1.1.1: 最近使ったファイル
 
             _ = session.BuildIndexAsync(); // 各タブ独立に背景索引
         }
         if (last is not null)
             _vm.ActiveTab = last;
+        SaveSession();
+        return last;
+    }
+
+    // ── V1.1.1: セッション復元・最近使ったファイル・お気に入り ─────────
+
+    private void RecordRecent(string path)
+    {
+        if (string.IsNullOrEmpty(path)) return;
+        UwView.App.Settings.PushRecentFile(path, DateTime.UtcNow.Ticks);
+        UwView.App.Settings.Save();
+        _vm?.RefreshStartLists();
+    }
+
+    /// <summary>現在のタブ群を LastSession として保存（前回スクロール位置も記録）。</summary>
+    private void SaveSession()
+    {
+        if (_vm is null) return;
+        var s = new Services.SessionState { ActiveIndex = Math.Max(0, _vm.Tabs.IndexOf(_vm.ActiveTab!)) };
+        foreach (var tab in _vm.Tabs)
+        {
+            if (string.IsNullOrEmpty(tab.FilePath)) continue; // Browser Blob 等は復元不可
+            s.Docs.Add(new Services.OpenDoc { Path = tab.FilePath, LastTopLine = tab.Session.TopLine });
+        }
+        UwView.App.Settings.LastSession = s.Docs.Count > 0 ? s : null;
+        UwView.App.Settings.Save();
+    }
+
+    /// <summary>パス1件を開いてタブに追加（Recent/Favorites/復元用）。開けなければ null。</summary>
+    private DocumentTabViewModel? OpenPath(string path)
+    {
+        if (UwView.App.DocumentOpener.OpenLocalPath(path) is not { } session) return null;
+        return AddSessions(new[] { session });
+    }
+
+    /// <summary>スタート画面/一覧からのオープン要求。欠損は通知して間引く。</summary>
+    private void OpenFromList(string path)
+    {
+        if (!System.IO.File.Exists(path))
+        {
+            UwView.App.Settings.PruneMissing();
+            UwView.App.Settings.Save();
+            _vm?.RefreshStartLists();
+            SetTransientStatus(L.Format("FileMissing", System.IO.Path.GetFileName(path)));
+            return;
+        }
+        OpenPath(path);
+    }
+
+    /// <summary>アクティブタブのお気に入りを切替。</summary>
+    private void ToggleFavorite()
+    {
+        if (_vm?.ActiveTab?.FilePath is not { Length: > 0 } path) return;
+        UwView.App.Settings.ToggleFavorite(path);
+        UwView.App.Settings.Save();
+        _vm.RefreshStartLists();
+        UpdateFavoriteButton();
+    }
+
+    private void UpdateFavoriteButton()
+    {
+        bool fav = _vm?.ActiveTab?.FilePath is { Length: > 0 } p && UwView.App.Settings.IsFavorite(p);
+        _suppressFavApply = true;
+        FavoriteToggle.IsChecked = fav;
+        _suppressFavApply = false;
+        FavoriteToggle.IsEnabled = _vm?.ActiveTab?.FilePath is { Length: > 0 };
+    }
+
+    private DispatcherTimer? _noticeTimer;
+
+    /// <summary>ステータスバーへ一時通知（数秒で消える）。</summary>
+    private void SetTransientStatus(string text)
+    {
+        if (_vm is null) return;
+        _vm.Notice = text;
+        _noticeTimer ??= new DispatcherTimer { Interval = TimeSpan.FromSeconds(4) };
+        _noticeTimer.Stop();
+        _noticeTimer.Tick -= OnNoticeTick;
+        _noticeTimer.Tick += OnNoticeTick;
+        _noticeTimer.Start();
+    }
+
+    private void OnNoticeTick(object? sender, EventArgs e)
+    {
+        _noticeTimer?.Stop();
+        if (_vm is not null) _vm.Notice = "";
+    }
+
+    /// <summary>起動シーケンス: ファイル指定があればそれのみ、無ければ前回セッションの復元を確認。</summary>
+    public async void RunStartup(string[] fileArgs)
+    {
+        var existing = fileArgs.Where(System.IO.File.Exists).ToList();
+        if (existing.Count > 0)
+        {
+            foreach (var p in existing) OpenPath(p); // 指定ファイルのみ・確認なし・復元しない（§2-3）
+            return;
+        }
+
+        var last = UwView.App.Settings.LastSession;
+        if (!UwView.App.Settings.RestoreSession || last is null || last.Docs.Count == 0) return;
+
+        if (TopLevel.GetTopLevel(this) is not Window owner) return;
+        bool restore = await ConfirmDialog.AskAsync(owner,
+            L["RestoreTitle"], L.Format("RestorePrompt", N(last.Docs.Count)),
+            L["RestoreYes"], L["RestoreNo"]);
+        if (!restore) return; // キャンセル: LastSession は保持し次回また尋ねる
+
+        int missing = 0;
+        DocumentTabViewModel? active = null;
+        for (int i = 0; i < last.Docs.Count; i++)
+        {
+            var d = last.Docs[i];
+            if (!System.IO.File.Exists(d.Path)) { missing++; continue; }
+            var tab = OpenPath(d.Path);
+            if (tab is not null)
+            {
+                tab.Session.TopLine = d.LastTopLine; // 軽いスクロール位置復元
+                if (i == last.ActiveIndex) active = tab;
+            }
+        }
+        if (active is not null) _vm!.ActiveTab = active;
+        if (missing > 0)
+            SetTransientStatus(L.Format("RestoreMissing", N(last.Docs.Count), N(missing)));
     }
 
     private void OnIndexCompleted(DocumentTabViewModel tab)
@@ -440,8 +635,10 @@ public partial class MainView : UserControl
             {
                 TextView.Session = null;
                 UpdateStatus();
+                UpdateFavoriteButton();
             }
         }
+        SaveSession(); // V1.1.1: タブ構成の変化を記録
         await tab.DisposeAsync();
     }
 

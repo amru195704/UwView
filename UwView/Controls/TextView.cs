@@ -28,6 +28,7 @@ public class TextView : Control
         {
             _session = value;
             _emphasizedOffset = null; // 強調行は別ドキュメントへ持ち越さない
+            _wordSel = null; _wordStage = 0; // 語選択も持ち越さない
             ClearLineSelection();     // 行選択も持ち越さない
             OnSessionChanged();       // 派生クラス（Pro等）の状態リセット用フック
             InvalidateVisual();
@@ -110,6 +111,139 @@ public class TextView : Control
 
     /// <summary>色分けハイライタ（アクティブセットのコンパイル済み規則。§5）。null で無効。</summary>
     public CompiledHighlighter? Highlighter { get; set; }
+
+    // ── V1.1.1: 選択語のクイック着色（右クリック色パレット）────────────
+
+    /// <summary>色クリック（着色/解除）。第2引数が色 "#RRGGBB"、null で解除。</summary>
+    public event Action<string, string?>? ColorLabelRequested;
+    /// <summary>「管理ダイアログ…」要求。</summary>
+    public event Action? OpenHighlighterRequested;
+
+    private (long Line, int Start, int End)? _wordSel; // 着色対象語（ダブルクリック/キャレット語）
+
+    /// <summary>派生クラス（Pro 矩形モード等）が語ターゲティングを無効化するフック。</summary>
+    protected virtual bool AllowTextTargeting => true;
+
+    /// <summary>語の着色対象を取れる状態か（行モード＋索引済み・フィルタ表示中は不可）。</summary>
+    private bool TextTargetable =>
+        AllowTextTargeting && !FilterOn && _session is { Mode: ViewMode.Line, Index: not null };
+
+    /// <summary>語選択（着色ハイライト）を消す。</summary>
+    public void ClearWordSelection() { if (_wordSel is not null) { _wordSel = null; _wordStage = 0; InvalidateVisual(); } }
+
+    private int _wordStage;  // 0=なし / 1=最短語 / 2=トークン
+
+    /// <summary>点 → (行, 行内文字インデックス)。行モードでなければ null。</summary>
+    private (long Line, string Text, int Col)? ColAtPoint(Point p)
+    {
+        if (Doc is not { } doc || _session is not { Mode: ViewMode.Line, Index: not null }) return null;
+        long line = LineFromPoint(p);
+        string text;
+        try { text = doc.GetLine(line); } catch { return null; }
+        int target = Math.Max(0, (int)Math.Round((p.X - (_lastGutter + Padding)) / Math.Max(1, _digitWidth)));
+        return (line, text, TextCells.CharIndexAtCell(text, target));
+    }
+
+    /// <summary>点の位置の語（連続する非空白トークン。右クリックのキャレット語に使用）。</summary>
+    private (long Line, int Start, int End)? WordAtPoint(Point p)
+    {
+        if (ColAtPoint(p) is not { } c || TextCells.WordAt(c.Text, c.Col) is not { } w) return null;
+        return (c.Line, w.Start, w.End);
+    }
+
+    /// <summary>
+    /// ダブルクリックの3段階選択: 1回目=最短語 → 2回目=トークン → 3回目=解除。
+    /// 段階判定は「クリックが現在の選択範囲内か」で行う（範囲外なら新しい語で最短からやり直す）。
+    /// </summary>
+    private void CycleWordSelection(Point p)
+    {
+        if (ColAtPoint(p) is not { } c)
+        {
+            _wordSel = null; _wordStage = 0;
+            InvalidateVisual(); NotifyChanged();
+            return;
+        }
+
+        bool insideCurrent = _wordStage > 0 && _wordSel is { } cur
+            && cur.Line == c.Line && c.Col >= cur.Start && c.Col < cur.End;
+
+        if (insideCurrent)
+        {
+            if (_wordStage == 1)
+            {
+                // 選択範囲内をもう一度 → 区切りの良いトークンまで拡張
+                _wordSel = TextCells.WordAt(c.Text, c.Col) is { } w ? (c.Line, w.Start, w.End) : _wordSel;
+                _wordStage = 2;
+            }
+            else { _wordSel = null; _wordStage = 0; } // 3回目（範囲内）＝解除
+        }
+        else if (TextCells.WordAtNarrow(c.Text, c.Col) is { } nr)
+        {
+            _wordSel = (c.Line, nr.Start, nr.End); _wordStage = 1; // 新しい語＝最短から
+        }
+        else { _wordSel = null; _wordStage = 0; } // 空白上＝解除
+
+        InvalidateVisual();
+        NotifyChanged();
+    }
+
+    private string WordText((long Line, int Start, int End) w)
+    {
+        try { return Doc!.GetLine(w.Line).Substring(w.Start, w.End - w.Start); }
+        catch { return ""; }
+    }
+
+    private void ShowColorPalette((long Line, int Start, int End) w)
+    {
+        string word = WordText(w);
+        if (word.Length == 0) return;
+        _wordSel = w;
+        InvalidateVisual();
+
+        var l = Localization.Localizer.Instance;
+        var root = new StackPanel { Spacing = 8, MinWidth = 240 };
+
+        var swatches = new WrapPanel { };
+        int n = Math.Min(10, HighlightDefaults.Palette.Length);
+        for (int i = 0; i < n; i++)
+        {
+            string hex = HighlightDefaults.Palette[i];
+            var b = new Button
+            {
+                Width = 26, Height = 22, Margin = new Thickness(2),
+                Background = new SolidColorBrush(ColorFromArgb(CompiledHighlighter.ParseColor(hex))),
+                Content = "",
+            };
+            b.Click += (_, _) => { ColorLabelRequested?.Invoke(word, hex); CloseFlyout(); };
+            swatches.Children.Add(b);
+        }
+        root.Children.Add(new TextBlock { Text = word, FontWeight = FontWeight.Bold, Foreground = Brushes.Black });
+
+        // コピー（先頭。着色メニューか copy か迷わないよう明示）
+        var copy = new Button { Content = l["MenuCopy"], HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch };
+        copy.Click += (_, _) => { _ = CopyWordAsync(word); CloseFlyout(); };
+        root.Children.Add(copy);
+
+        root.Children.Add(swatches);
+
+        var clear = new Button { Content = l["ColorClear"], HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch };
+        clear.Click += (_, _) => { ColorLabelRequested?.Invoke(word, null); CloseFlyout(); };
+        var manage = new Button { Content = l["ColorManage"], HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch };
+        manage.Click += (_, _) => { OpenHighlighterRequested?.Invoke(); CloseFlyout(); };
+        root.Children.Add(clear);
+        root.Children.Add(manage);
+
+        _paletteFlyout = new Flyout { Content = root };
+        _paletteFlyout.ShowAt(this, showAtPointer: true);
+    }
+
+    private Flyout? _paletteFlyout;
+    private void CloseFlyout() { _paletteFlyout?.Hide(); _paletteFlyout = null; }
+
+    private async Task CopyWordAsync(string word)
+    {
+        if (TopLevel.GetTopLevel(this)?.Clipboard is { } cb) await cb.SetTextAsync(word);
+    }
 
     /// <summary>フィルタ表示（§11-⑤）: 検索ヒット行だけを表示中か。</summary>
     private bool FilterOn => _session is { FilterActive: true } s && s.SearchHits.Count > 0;
@@ -276,18 +410,30 @@ public class TextView : Control
         Focus();
 
         var pt = e.GetCurrentPoint(this);
-        if (pt.Properties.IsLeftButtonPressed && LineSelectable)
+        if (pt.Properties.IsLeftButtonPressed && e.ClickCount == 2 && TextTargetable)
         {
+            // ダブルクリック＝語を段階選択（1回目=最短語 / 2回目=トークン / 3回目=解除）
+            CycleWordSelection(e.GetPosition(this));
+            e.Handled = true;
+        }
+        else if (pt.Properties.IsLeftButtonPressed && LineSelectable)
+        {
+            // 語選択はここで消さない（ダブルクリックは cc=1 の押下が先行するため、
+            // ここで消すと2回目以降が毎回リセットされ拡張できなくなる）。
+            // クリアは実際に行ドラッグが始まった時点（OnPointerMoved）で行う。
             _selPressPoint = e.GetPosition(this);
             _selPressLine = LineFromPoint(_selPressPoint);
             _selPressPending = true;
             _selDragging = false;
             e.Pointer.Capture(this);
         }
-        else if (pt.Properties.IsRightButtonPressed && HasLineSelection)
+        else if (pt.Properties.IsRightButtonPressed)
         {
-            ShowSelectionMenu();
-            e.Handled = true;
+            // 右クリック: 語（ダブルクリック済み or キャレット位置）があれば色パレット、
+            // 無く行選択があれば copy/save メニュー
+            var target = _wordSel ?? (TextTargetable ? WordAtPoint(e.GetPosition(this)) : null);
+            if (target is { } w) { ShowColorPalette(w); e.Handled = true; }
+            else if (HasLineSelection) { ShowSelectionMenu(); e.Handled = true; }
         }
         base.OnPointerPressed(e);
     }
@@ -307,6 +453,7 @@ public class TextView : Control
                 }
                 _selDragging = true;
                 _selAnchor = _selExtent = _selPressLine;
+                if (_wordSel is not null) { _wordSel = null; _wordStage = 0; } // 行ドラッグ開始で語選択を解除
             }
 
             _selExtent = LineFromPoint(p);
@@ -690,6 +837,7 @@ public class TextView : Control
         bool hasBookmarks = _session.Bookmarks.Count > 0;
         bool hasSel = HasLineSelection && lineMode && !FilterOn;
         long selTop = SelTop, selBottom = SelBottom;
+        var wordBrush = new SolidColorBrush(Color.FromRgb(0xB4, 0xD5, 0xEE)); // 語選択（行選択と同色）
 
         double x = gutter + Padding;
         double y = Padding;
@@ -698,6 +846,14 @@ public class TextView : Control
             // 行選択の反転表示（行番号 lineNo は 1 始まり）
             if (hasSel && lineNo > 0 && lineNo - 1 >= selTop && lineNo - 1 <= selBottom)
                 ctx.FillRectangle(selBrush, new Rect(gutter, y, Math.Max(0, Bounds.Width - gutter), lh));
+
+            // 語選択の反転表示（クイック着色対象）
+            if (_wordSel is { } ws && lineMode && lineNo - 1 == ws.Line && text.Length >= ws.End)
+            {
+                double wx = gutter + Padding + TextCells.CellOffset(text, ws.Start) * _digitWidth;
+                double ww = (TextCells.CellOffset(text, ws.End) - TextCells.CellOffset(text, ws.Start)) * _digitWidth;
+                ctx.FillRectangle(wordBrush, new Rect(wx, y, Math.Max(2, ww), lh));
+            }
 
             // ジャンプ先の強調行: 行全体を水色に（マッチ部の黄はこの上に塗られる）
             if (_emphasizedOffset == offset)

@@ -57,6 +57,8 @@
                 <Button x:Name="NextBookmarkButton" Content="☆▶" ToolTip.Tip="{loc:Localize NextBookmarkTip}" />
                 <Rectangle Width="1" Fill="#CCCCCC" Margin="4,0" />
                 <ToggleButton x:Name="TailToggle" Content="Tail" ToolTip.Tip="{loc:Localize TailTip}" />
+                <ToggleButton x:Name="FavoriteToggle" Content="{loc:Localize Favorite}"
+                              ToolTip.Tip="{loc:Localize FavoriteTip}" />
                 <Rectangle Width="1" Fill="#CCCCCC" Margin="4,0" />
                 <Button x:Name="HighlighterButton" Content="{loc:Localize Highlighter}"
                         ToolTip.Tip="{loc:Localize HighlighterTip}" />
@@ -122,17 +124,69 @@
                     <TextBlock Text="{Binding ModeInfo}" Foreground="Black" />
                     <TextBlock Text="{Binding PositionInfo}" Foreground="Black" />
                     <TextBlock Text="{Binding EncodingInfo}" Foreground="Black" />
+                    <TextBlock Text="{Binding Notice}" Foreground="#1A6FE8" FontWeight="SemiBold" />
                 </StackPanel>
             </DockPanel>
         </Border>
 
-        <!-- 本文 + ミニマップ + 縦スクロールバー -->
-        <Grid ColumnDefinitions="*,Auto,Auto">
-            <ctrl:TextView x:Name="TextView" Grid.Column="0" />
-            <ctrl:MinimapView x:Name="Minimap" Grid.Column="1" />
-            <ScrollBar x:Name="VScroll" Grid.Column="2" Orientation="Vertical"
-                       AllowAutoHide="False" Width="16" />
-        </Grid>
+        <!-- 本文 + ミニマップ + 縦スクロールバー（＋ 未オープン時のスタート画面） -->
+        <Panel>
+            <Grid ColumnDefinitions="*,Auto,Auto">
+                <ctrl:TextView x:Name="TextView" Grid.Column="0" />
+                <ctrl:MinimapView x:Name="Minimap" Grid.Column="1" />
+                <ScrollBar x:Name="VScroll" Grid.Column="2" Orientation="Vertical"
+                           AllowAutoHide="False" Width="16" />
+            </Grid>
+
+            <!-- スタート画面（ファイル未オープン時。最近使ったファイル・お気に入り） -->
+            <Border Background="#FAFAFA" IsVisible="{Binding IsEmpty}">
+                <Grid RowDefinitions="Auto,*" MaxWidth="720" Margin="24" VerticalAlignment="Center">
+                    <StackPanel Grid.Row="0" Spacing="12" Margin="0,0,0,24">
+                        <TextBlock Text="UwView" FontSize="30" FontWeight="Bold" Foreground="Black" />
+                        <Button x:Name="StartOpenButton" Content="{loc:Localize StartOpen}"
+                                HorizontalAlignment="Left" Padding="16,8" />
+                    </StackPanel>
+                    <Grid Grid.Row="1" ColumnDefinitions="*,24,*">
+                        <DockPanel Grid.Column="0" LastChildFill="True">
+                            <TextBlock DockPanel.Dock="Top" Text="{loc:Localize StartRecentTitle}"
+                                       FontWeight="Bold" Foreground="Black" Margin="0,0,0,6" />
+                            <TextBlock DockPanel.Dock="Top" Text="{loc:Localize StartHint}"
+                                       Foreground="#777777" FontSize="12" Margin="0,0,0,6" />
+                            <ListBox x:Name="StartRecentList" ItemsSource="{Binding StartRecent}"
+                                     Background="White" MinHeight="200">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Spacing="0" Margin="2">
+                                            <TextBlock Text="{Binding DisplayName}" Foreground="Black" />
+                                            <TextBlock Text="{Binding Path}" Foreground="#888888" FontSize="11"
+                                                       TextTrimming="CharacterEllipsis" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </DockPanel>
+                        <DockPanel Grid.Column="2" LastChildFill="True">
+                            <TextBlock DockPanel.Dock="Top" Text="{loc:Localize StartFavoritesTitle}"
+                                       FontWeight="Bold" Foreground="Black" Margin="0,0,0,6" />
+                            <TextBlock DockPanel.Dock="Top" Text="{loc:Localize StartHint}"
+                                       Foreground="#777777" FontSize="12" Margin="0,0,0,6" />
+                            <ListBox x:Name="StartFavoritesList" ItemsSource="{Binding StartFavorites}"
+                                     Background="White" MinHeight="200">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Spacing="0" Margin="2">
+                                            <TextBlock Text="{Binding DisplayName}" Foreground="Black" />
+                                            <TextBlock Text="{Binding Path}" Foreground="#888888" FontSize="11"
+                                                       TextTrimming="CharacterEllipsis" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </DockPanel>
+                    </Grid>
+                </Grid>
+            </Border>
+        </Panel>
 
     </DockPanel>
 </UserControl>

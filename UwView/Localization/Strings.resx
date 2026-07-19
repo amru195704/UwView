@@ -113,8 +113,13 @@
   <data name="HlPreset" xml:space="preserve"><value>Preset</value></data>
   <data name="HlPresetPlaceholder" xml:space="preserve"><value>Pick to add</value></data>
   <data name="HlPresetNone" xml:space="preserve"><value>None (clear all)</value></data>
+  <data name="HlNoneSetName" xml:space="preserve"><value>(none)</value></data>
   <data name="HlSetName" xml:space="preserve"><value>Set</value></data>
   <data name="HlDefaultSetName" xml:space="preserve"><value>Default</value></data>
+  <data name="HlApply" xml:space="preserve"><value>Apply</value></data>
+  <data name="HlSaveTip" xml:space="preserve"><value>Save under a name and close</value></data>
+  <data name="HlApplyTip" xml:space="preserve"><value>Apply these colors and close (without saving)</value></data>
+  <data name="HlCancelTip" xml:space="preserve"><value>Discard edits and revert to the previous settings</value></data>
   <data name="HlSaveTitle" xml:space="preserve"><value>Save preset</value></data>
   <data name="HlSavePrompt" xml:space="preserve"><value>Preset name (pick or type)</value></data>
   <data name="HlColor" xml:space="preserve"><value>Color</value></data>
@@ -141,6 +146,23 @@
   <data name="HlExport" xml:space="preserve"><value>Export…</value></data>
   <data name="HlImport" xml:space="preserve"><value>Import…</value></data>
   <data name="HlManyColorsNote" xml:space="preserve"><value>Rules apply top-first (bottom-to-top, last wins). Using many colors at once is hard to tell apart — assign one color per value (aim for 8–12 colors).</value></data>
+  <data name="ColorClear" xml:space="preserve"><value>Clear</value></data>
+  <data name="ColorManage" xml:space="preserve"><value>Manage…</value></data>
+  <data name="Colored" xml:space="preserve"><value>Colored "{0}"</value></data>
+  <data name="ColorCleared" xml:space="preserve"><value>Cleared color of "{0}"</value></data>
+  <data name="Favorite" xml:space="preserve"><value>★</value></data>
+  <data name="FavoriteTip" xml:space="preserve"><value>Add / remove this file from favorites</value></data>
+  <data name="StartRecentTitle" xml:space="preserve"><value>Recent files</value></data>
+  <data name="StartFavoritesTitle" xml:space="preserve"><value>Favorites</value></data>
+  <data name="StartOpen" xml:space="preserve"><value>Open file…</value></data>
+  <data name="StartEmpty" xml:space="preserve"><value>(none)</value></data>
+  <data name="StartHint" xml:space="preserve"><value>Double-click to open</value></data>
+  <data name="RestoreTitle" xml:space="preserve"><value>Restore previous session</value></data>
+  <data name="RestorePrompt" xml:space="preserve"><value>Restore the previous files ({0})?</value></data>
+  <data name="RestoreYes" xml:space="preserve"><value>Restore</value></data>
+  <data name="RestoreNo" xml:space="preserve"><value>Don't restore</value></data>
+  <data name="RestoreMissing" xml:space="preserve"><value>{1} of {0} files were not found</value></data>
+  <data name="FileMissing" xml:space="preserve"><value>File not found: {0}</value></data>
   <data name="MenuCopy" xml:space="preserve"><value>Copy</value></data>
   <data name="MenuSaveAs" xml:space="preserve"><value>Save to file…</value></data>
   <data name="SaveSelectionTitle" xml:space="preserve"><value>Save selection</value></data>

@@ -19,7 +19,7 @@ public static class HighlightPresets
 
     public static List<HlSet> All() => new()
     {
-        GeneralLog(), Syslog(), WebAccess(), JsonLog(), Nmea(),
+        GeneralLog(), Syslog(), WebAccess(), JsonLog(), GeoJson(), Kml(), Nmea(),
     };
 
     private static HlRule R(string pattern, string bg, bool regex = false, bool ignoreCase = true, bool whole = false)
@@ -65,6 +65,36 @@ public static class HighlightPresets
         R("\"level\"\\s*:\\s*\"info\"", Green, regex: true),
         R("\"(traceId|requestId|trace_id|request_id)\"", Cyan, regex: true),
         R(@"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}", Blue, regex: true), // ISO 時刻
+    }, readOnly: true);
+
+    /// <summary>GeoJSON（作者ドメイン）。ジオメトリ種別・主要キーで色分け。JSON なので大小区別。</summary>
+    public static HlSet GeoJson() => new("preset-geojson", "GeoJSON", new List<HlRule>
+    {
+        // ジオメトリ種別（"type": "..."）
+        R("\"(Point|MultiPoint)\"", Green, regex: true, ignoreCase: false),
+        R("\"(LineString|MultiLineString)\"", Blue, regex: true, ignoreCase: false),
+        R("\"(Polygon|MultiPolygon)\"", Purple, regex: true, ignoreCase: false),
+        R("\"(Feature|FeatureCollection|GeometryCollection)\"", Orange, regex: true, ignoreCase: false),
+        // 主要キー
+        R("\"coordinates\"", Cyan, regex: true, ignoreCase: false),
+        R("\"(geometry|properties|features)\"", Blue, regex: true, ignoreCase: false),
+        R("\"(bbox|crs|type)\"", Gray, regex: true, ignoreCase: false),
+    }, readOnly: true);
+
+    /// <summary>KML（作者ドメイン）。XML タグ種別で色分け。タグは大小区別。</summary>
+    public static HlSet Kml() => new("preset-kml", "KML", new List<HlRule>
+    {
+        // ジオメトリ（開始/終了タグ）
+        R(@"</?Point\b", Green, regex: true, ignoreCase: false),
+        R(@"</?(LineString|LinearRing)\b", Blue, regex: true, ignoreCase: false),
+        R(@"</?(Polygon|MultiGeometry)\b", Purple, regex: true, ignoreCase: false),
+        // コンテナ／地物
+        R(@"</?(Placemark|Folder|Document|kml|NetworkLink)\b", Orange, regex: true, ignoreCase: false),
+        // 座標・主要要素
+        R(@"</?coordinates\b", Cyan, regex: true, ignoreCase: false),
+        R(@"</?(name|description|ExtendedData)\b", Blue, regex: true, ignoreCase: false),
+        // スタイル
+        R(@"</?(Style|StyleMap|IconStyle|LineStyle|PolyStyle|LabelStyle)\b", Gray, regex: true, ignoreCase: false),
     }, readOnly: true);
 
     /// <summary>GNSS NMEA（作者ドメイン・差別化の目玉）。センテンス種別で色分け。</summary>

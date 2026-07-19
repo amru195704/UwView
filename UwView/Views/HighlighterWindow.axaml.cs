@@ -22,9 +22,12 @@ namespace UwView.Views;
 public partial class HighlighterWindow : Window
 {
     private readonly HighlighterViewModel _vm;
+    private bool _committed;
 
-    /// <summary>「保存」ボタンで設定を永続化するためのコールバック（呼び出し側で App.Settings.Save）。</summary>
-    public Action? SaveRequested { get; set; }
+    /// <summary>「保存」「設定」で確定したとき（呼び出し側で App.Settings.Save して適用）。</summary>
+    public Action? Applied { get; set; }
+    /// <summary>「キャンセル」または閉じるで破棄したとき（呼び出し側で編集前へ戻す）。</summary>
+    public Action? Cancelled { get; set; }
 
     public HighlighterWindow(HighlighterViewModel vm)
     {
@@ -35,13 +38,24 @@ public partial class HighlighterWindow : Window
         AddButton.Click += (_, _) => _vm.AddRule();
         ExportButton.Click += OnExportClick;
         ImportButton.Click += OnImportClick;
-        SaveButton.Click += OnSaveClick;
-        CloseButton.Click += (_, _) => Close();
+        SaveButton.Click += OnSaveClick;                       // 保存: 名前を指定して保存＆閉じる
+        ApplyButton.Click += (_, _) => { _vm.CommitToActive(); Commit(); }; // 設定: 現アクティブへ確定＆閉じる
+        CancelButton.Click += (_, _) => Close();               // キャンセル: 破棄（Closed で Cancelled）
         ReloadButton.Click += (_, _) => _vm.ReloadSelected(); // 選択中の保存済みセットを再現
         // プリセット選択は VM の SelectedPreset バインドで適用（選択エリアに名前が残る）
 
         // 行内ボタン（▲▼✕）は Classes で識別して一括処理
         RuleList.AddHandler(Button.ClickEvent, OnRowButtonClick);
+
+        // 閉じる（×/キャンセル）で未確定なら破棄扱い
+        Closed += (_, _) => { if (!_committed) Cancelled?.Invoke(); };
+    }
+
+    private void Commit()
+    {
+        _committed = true;
+        Applied?.Invoke();
+        Close();
     }
 
     // XAMLプレビュー用
@@ -79,14 +93,14 @@ public partial class HighlighterWindow : Window
         return string.Create(CultureInfo.InvariantCulture, $"#{r:X2}{g:X2}{b:X2}");
     }
 
-    /// <summary>「保存」= 名前を尋ねて（候補にデフォルトあり）そのセットとして保存。</summary>
+    /// <summary>「保存」= 名前を尋ねて（既定＝現在のプリセット名）そのセットとして保存＆閉じる。</summary>
     private async void OnSaveClick(object? sender, RoutedEventArgs e)
     {
-        var prompt = new NamePromptWindow(_vm.SaveNameCandidates(), _vm.SetName);
+        var prompt = new NamePromptWindow(_vm.SaveNameCandidates(), _vm.CurrentName);
         var name = await prompt.ShowDialog<string?>(this);
         if (string.IsNullOrWhiteSpace(name)) return;
         _vm.SaveAs(name);
-        SaveRequested?.Invoke(); // 永続化（App.Settings.Save）
+        Commit(); // 永続化＆閉じる
     }
 
     private async void OnExportClick(object? sender, RoutedEventArgs e)

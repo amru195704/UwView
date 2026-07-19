@@ -19,6 +19,9 @@ public partial class App : Application
 
     public static AppSettings Settings { get; private set; } = new();
 
+    /// <summary>ファイル指定起動の引数（ダブルクリック/D&D/CLI）。V1.1.1: あればそれのみ開き復元しない。</summary>
+    public static string[]? LaunchFileArgs { get; private set; }
+
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
@@ -36,14 +39,17 @@ public partial class App : Application
     {
         // 言語を VM 生成より先に適用（EncodingOptions 等の初期ラベルを正しい言語に）
         Settings = AppSettings.Load();
+        UwView.Services.AppSettingsRef.Current = Settings; // 共有VMからの参照先
         Localizer.Instance.SetLanguage(ResolveLanguage(Settings));
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
+            LaunchFileArgs = desktop.Args; // ファイル指定起動の判定用
             desktop.MainWindow = new MainWindow
             {
                 DataContext = new MainViewModel()
             };
+            desktop.ShutdownRequested += (_, _) => Settings.Save(); // 終了時に確定保存
             SetupAppMenu();
         }
         else if (ApplicationLifetime is IActivityApplicationLifetime singleViewFactoryApplicationLifetime)

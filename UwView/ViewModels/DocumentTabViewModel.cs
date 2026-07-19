@@ -21,6 +21,9 @@ public partial class DocumentTabViewModel : ObservableObject, IAsyncDisposable
     /// <summary>このタブで選択中の文字コード（タブ切替時にツールバーへ復元）。</summary>
     public EncodingChoice SelectedEncoding { get; set; } = EncodingChoice.Auto;
 
+    /// <summary>このタブに適用する色分けハイライタのセットID（V1.1.1: タブ別ハイライタ。null=既定）。</summary>
+    public string? HighlighterSetId { get; set; }
+
     public IRelayCommand CloseCommand { get; }
 
     public DocumentTabViewModel(DocumentSession session, Action<DocumentTabViewModel> onClose)

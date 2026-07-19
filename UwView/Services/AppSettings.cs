@@ -33,10 +33,25 @@ public sealed class PerFileState
     public string? ActiveSetId { get; set; }     // 色分けハイライタのアクティブセット
 }
 
-/// <summary>セッション復元（実装指示書_その他4機能 §D）。</summary>
+/// <summary>最近使ったファイルの1件（V1.1.1 §2-2）。</summary>
+public sealed class RecentEntry
+{
+    public string Path { get; set; } = "";
+    public long LastOpenedUtcTicks { get; set; }
+}
+
+/// <summary>復元対象の開いていたドキュメント1件（V1.1.1 §2-2。軽いスクロール位置復元）。</summary>
+public sealed class OpenDoc
+{
+    public string Path { get; set; } = "";
+    /// <summary>前回の表示先頭行（行モード時。ページモードは 0）。</summary>
+    public long LastTopLine { get; set; }
+}
+
+/// <summary>セッション復元（実装指示書_その他4機能 §D / V1.1.1 §2）。</summary>
 public sealed class SessionState
 {
-    public List<string> OpenFiles { get; set; } = new();
+    public List<OpenDoc> Docs { get; set; } = new();
     public int ActiveIndex { get; set; }
 }
 
@@ -46,7 +61,7 @@ public sealed class AppSettings
     // 上限（実装指示書の推奨値）
     public const int SearchHistoryLimit = 50;
     public const int PerFileStateLimit = 500;
-    public const int RecentFilesLimit = 10;
+    public const int RecentFilesLimit = 15; // V1.1.1 §3-5
 
     /// <summary>UI 言語（"ja" / "en"）。null なら OS の UI カルチャに従う。</summary>
     public string? Language { get; set; }
@@ -64,10 +79,10 @@ public sealed class AppSettings
     // ── Ver1.1: C ファイルごとの状態復元 ──
     public List<PerFileState> PerFileStates { get; set; } = new();
 
-    // ── Ver1.1: D セッション・最近・お気に入り ──
-    public SessionState? Session { get; set; }
+    // ── Ver1.1 / V1.1.1: D セッション・最近・お気に入り ──
+    public SessionState? LastSession { get; set; }
     public bool RestoreSession { get; set; } = true;
-    public List<string> RecentFiles { get; set; } = new();
+    public List<RecentEntry> RecentFiles { get; set; } = new();
     public List<string> Favorites { get; set; } = new();
 
     [JsonIgnore]
@@ -100,7 +115,11 @@ public sealed class AppSettings
         {
             var path = FilePath;
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-            File.WriteAllText(path, JsonSerializer.Serialize(this, SettingsJsonContext.Default.AppSettings));
+            // 破損に備え原子的書き込み（temp→rename・V1.1.1 §2-2）
+            var json = JsonSerializer.Serialize(this, SettingsJsonContext.Default.AppSettings);
+            var tmp = path + ".tmp";
+            File.WriteAllText(tmp, json);
+            File.Move(tmp, path, overwrite: true);
         }
         catch { /* 保存不可（WASM 等）は無視 */ }
     }
@@ -116,14 +135,38 @@ public sealed class AppSettings
             SearchHistory.RemoveRange(SearchHistoryLimit, SearchHistory.Count - SearchHistoryLimit);
     }
 
-    public void PushRecentFile(string path)
+    /// <summary>最近使ったファイルへ追加（新しい順・重複排除・上限15・V1.1.1 §2-3）。</summary>
+    public void PushRecentFile(string path, long nowUtcTicks)
     {
         if (string.IsNullOrEmpty(path)) return;
-        RecentFiles.RemoveAll(p => p == path);
-        RecentFiles.Insert(0, path);
+        RecentFiles.RemoveAll(e => PathEq(e.Path, path));
+        RecentFiles.Insert(0, new RecentEntry { Path = path, LastOpenedUtcTicks = nowUtcTicks });
         if (RecentFiles.Count > RecentFilesLimit)
             RecentFiles.RemoveRange(RecentFilesLimit, RecentFiles.Count - RecentFilesLimit);
     }
+
+    /// <summary>存在しなくなった Recent/Favorites を間引く（読込時・クリック時）。</summary>
+    public void PruneMissing()
+    {
+        RecentFiles.RemoveAll(e => !File.Exists(e.Path));
+        Favorites.RemoveAll(p => !File.Exists(p));
+    }
+
+    public bool IsFavorite(string path) => Favorites.Exists(p => PathEq(p, path));
+
+    /// <summary>お気に入りを追加/解除（追加順保持・重複排除）。追加したら true。</summary>
+    public bool ToggleFavorite(string path)
+    {
+        if (string.IsNullOrEmpty(path)) return false;
+        int i = Favorites.FindIndex(p => PathEq(p, path));
+        if (i >= 0) { Favorites.RemoveAt(i); return false; }
+        Favorites.Add(path);
+        return true;
+    }
+
+    private static bool PathEq(string a, string b) =>
+        string.Equals(a, b, System.OperatingSystem.IsWindows()
+            ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
 
     /// <summary>per-file 状態を upsert（LRU: 先頭が最新、上限超で末尾を捨てる）。</summary>
     public void UpsertPerFileState(PerFileState state)

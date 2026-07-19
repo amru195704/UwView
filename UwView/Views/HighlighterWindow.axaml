@@ -40,8 +40,12 @@
         <Border DockPanel.Dock="Bottom" Background="#EEEEEE" BorderBrush="#CCCCCC"
                 BorderThickness="0,1,0,0" Padding="6">
             <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
-                <Button x:Name="SaveButton" Content="{loc:Localize Save}" />
-                <Button x:Name="CloseButton" Content="{loc:Localize Close}" />
+                <Button x:Name="SaveButton" Content="{loc:Localize Save}"
+                        ToolTip.Tip="{loc:Localize HlSaveTip}" />
+                <Button x:Name="ApplyButton" Content="{loc:Localize HlApply}"
+                        ToolTip.Tip="{loc:Localize HlApplyTip}" />
+                <Button x:Name="CancelButton" Content="{loc:Localize Cancel}"
+                        ToolTip.Tip="{loc:Localize HlCancelTip}" />
             </StackPanel>
         </Border>
 

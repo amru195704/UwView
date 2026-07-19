@@ -113,8 +113,13 @@
   <data name="HlPreset" xml:space="preserve"><value>プリセット</value></data>
   <data name="HlPresetPlaceholder" xml:space="preserve"><value>選んで追加</value></data>
   <data name="HlPresetNone" xml:space="preserve"><value>なし（全てクリア）</value></data>
+  <data name="HlNoneSetName" xml:space="preserve"><value>（なし）</value></data>
   <data name="HlSetName" xml:space="preserve"><value>セット名</value></data>
   <data name="HlDefaultSetName" xml:space="preserve"><value>デフォルト</value></data>
+  <data name="HlApply" xml:space="preserve"><value>設定</value></data>
+  <data name="HlSaveTip" xml:space="preserve"><value>名前を指定して保存し、閉じる</value></data>
+  <data name="HlApplyTip" xml:space="preserve"><value>この色設定を適用して閉じる（保存はしない）</value></data>
+  <data name="HlCancelTip" xml:space="preserve"><value>編集を破棄して以前の設定に戻す</value></data>
   <data name="HlSaveTitle" xml:space="preserve"><value>プリセットを保存</value></data>
   <data name="HlSavePrompt" xml:space="preserve"><value>プリセット名（選択または入力）</value></data>
   <data name="HlColor" xml:space="preserve"><value>色</value></data>
@@ -141,6 +146,23 @@
   <data name="HlExport" xml:space="preserve"><value>エクスポート…</value></data>
   <data name="HlImport" xml:space="preserve"><value>インポート…</value></data>
   <data name="HlManyColorsNote" xml:space="preserve"><value>規則は上から順に優先（下→上で後勝ち）。色を同時に多用すると見分けにくくなります。値ごとに色を割り当てる使い方が目安です（推奨8〜12色）。</value></data>
+  <data name="ColorClear" xml:space="preserve"><value>解除</value></data>
+  <data name="ColorManage" xml:space="preserve"><value>管理ダイアログ…</value></data>
+  <data name="Colored" xml:space="preserve"><value>「{0}」を着色</value></data>
+  <data name="ColorCleared" xml:space="preserve"><value>「{0}」の着色を解除</value></data>
+  <data name="Favorite" xml:space="preserve"><value>★</value></data>
+  <data name="FavoriteTip" xml:space="preserve"><value>このファイルをお気に入りに追加／解除</value></data>
+  <data name="StartRecentTitle" xml:space="preserve"><value>最近使ったファイル</value></data>
+  <data name="StartFavoritesTitle" xml:space="preserve"><value>お気に入り</value></data>
+  <data name="StartOpen" xml:space="preserve"><value>ファイルを開く…</value></data>
+  <data name="StartEmpty" xml:space="preserve"><value>（なし）</value></data>
+  <data name="StartHint" xml:space="preserve"><value>ダブルクリックで開きます</value></data>
+  <data name="RestoreTitle" xml:space="preserve"><value>前回のセッションを復元</value></data>
+  <data name="RestorePrompt" xml:space="preserve"><value>前回のファイル（{0} 件）を復元しますか？</value></data>
+  <data name="RestoreYes" xml:space="preserve"><value>復元する</value></data>
+  <data name="RestoreNo" xml:space="preserve"><value>復元しない</value></data>
+  <data name="RestoreMissing" xml:space="preserve"><value>{0} 件中 {1} 件が見つかりませんでした</value></data>
+  <data name="FileMissing" xml:space="preserve"><value>ファイルが見つかりません: {0}</value></data>
   <data name="MenuCopy" xml:space="preserve"><value>コピー</value></data>
   <data name="MenuSaveAs" xml:space="preserve"><value>ファイルに保存…</value></data>
   <data name="SaveSelectionTitle" xml:space="preserve"><value>選択範囲を保存</value></data>
