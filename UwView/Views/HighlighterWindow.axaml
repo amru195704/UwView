@@ -1,0 +1,136 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="using:UwView.ViewModels"
+        xmlns:loc="using:UwView.Localization"
+        xmlns:conv="using:UwView.Converters"
+        mc:Ignorable="d" d:DesignWidth="880" d:DesignHeight="520"
+        x:Class="UwView.Views.HighlighterWindow"
+        x:DataType="vm:HighlighterViewModel"
+        Title="{loc:Localize HighlighterTitle}"
+        Width="1000" Height="560" MinWidth="820" MinHeight="320">
+
+    <Window.Resources>
+        <conv:HexToBrushConverter x:Key="HexToBrush" />
+    </Window.Resources>
+
+    <DockPanel LastChildFill="True">
+
+        <!-- ツールバー -->
+        <Border DockPanel.Dock="Top" Background="#EEEEEE" BorderBrush="#CCCCCC"
+                BorderThickness="0,0,0,1" Padding="6">
+            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                <Button x:Name="AddButton" Content="{loc:Localize HlAddRule}" />
+                <Rectangle Width="1" Fill="#CCCCCC" Margin="2,0" />
+                <TextBlock Text="{loc:Localize HlPreset}" VerticalAlignment="Center" Foreground="Black" />
+                <ComboBox x:Name="PresetCombo" MinWidth="180"
+                          PlaceholderText="{loc:Localize HlPresetPlaceholder}"
+                          ItemsSource="{Binding Presets}"
+                          SelectedItem="{Binding SelectedPreset, Mode=TwoWay}" />
+                <Button x:Name="ReloadButton" Content="{loc:Localize HlReload}"
+                        ToolTip.Tip="{loc:Localize HlReloadTip}" />
+                <Rectangle Width="1" Fill="#CCCCCC" Margin="2,0" />
+                <Button x:Name="ExportButton" Content="{loc:Localize HlExport}" />
+                <Button x:Name="ImportButton" Content="{loc:Localize HlImport}" />
+            </StackPanel>
+        </Border>
+
+        <!-- 保存 / 閉じる -->
+        <Border DockPanel.Dock="Bottom" Background="#EEEEEE" BorderBrush="#CCCCCC"
+                BorderThickness="0,1,0,0" Padding="6">
+            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                <Button x:Name="SaveButton" Content="{loc:Localize Save}" />
+                <Button x:Name="CloseButton" Content="{loc:Localize Close}" />
+            </StackPanel>
+        </Border>
+
+        <!-- 注意書き（同時多用は見分けにくい・§2） -->
+        <Border DockPanel.Dock="Bottom" Background="#FFF6D6" BorderBrush="#E8CE7A"
+                BorderThickness="0,1,0,0" Padding="8,5">
+            <TextBlock Text="{loc:Localize HlManyColorsNote}" Foreground="Black" TextWrapping="Wrap" />
+        </Border>
+
+        <!-- 列見出し -->
+        <Border DockPanel.Dock="Top" Background="#F6F6F6" BorderBrush="#DDDDDD"
+                BorderThickness="0,0,0,1" Padding="6,3">
+            <!-- 末尾 20px は縦スクロールバー避けのスペーサー（右端の▲▼が隠れないように） -->
+            <Grid ColumnDefinitions="48,26,30,56,*,46,40,52,90,56,90,56,20">
+                <TextBlock Grid.Column="0" Text="↕" Foreground="Black" HorizontalAlignment="Center" />
+                <TextBlock Grid.Column="1" Text="✓" Foreground="Black" />
+                <TextBlock Grid.Column="2" Text="" />
+                <TextBlock Grid.Column="3" Text="{loc:Localize HlColor}" Foreground="Black" />
+                <TextBlock Grid.Column="4" Text="{loc:Localize HlPattern}" Foreground="Black" />
+                <TextBlock Grid.Column="5" Text="{loc:Localize HlRegex}" Foreground="Black" />
+                <TextBlock Grid.Column="6" Text="Aa" Foreground="Black" />
+                <TextBlock Grid.Column="7" Text="{loc:Localize HlWholeLine}" Foreground="Black" />
+                <TextBlock Grid.Column="8" Text="{loc:Localize HlForeground}" Foreground="Black" />
+                <TextBlock Grid.Column="9" Text="" />
+                <TextBlock Grid.Column="10" Text="{loc:Localize HlBackground}" Foreground="Black" />
+                <TextBlock Grid.Column="11" Text="" />
+            </Grid>
+        </Border>
+
+        <!-- 規則リスト（先頭が最優先＝下→上で後勝ち） -->
+        <ListBox x:Name="RuleList" ItemsSource="{Binding Rules}" Background="White"
+                 ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+            <ListBox.Styles>
+                <Style Selector="ListBoxItem">
+                    <Setter Property="Padding" Value="4,2" />
+                    <Setter Property="MinHeight" Value="0" />
+                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                </Style>
+            </ListBox.Styles>
+            <ListBox.ItemTemplate>
+                <DataTemplate x:DataType="vm:HlRuleRow">
+                    <Grid ColumnDefinitions="48,26,30,56,*,46,40,52,90,56,90,56,20" VerticalAlignment="Center">
+                        <!-- 行の並べ替え（先頭。▲＝上へ / ▼＝下へ） -->
+                        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="2" Margin="0,0,8,0">
+                            <Button Content="▲" Padding="4,0" MinWidth="0" Tag="{Binding}" Classes="moveUp"
+                                    ToolTip.Tip="{loc:Localize HlMoveUpTip}" />
+                            <Button Content="▼" Padding="4,0" MinWidth="0" Tag="{Binding}" Classes="moveDown"
+                                    ToolTip.Tip="{loc:Localize HlMoveDownTip}" />
+                        </StackPanel>
+                        <CheckBox Grid.Column="1" IsChecked="{Binding Enabled, Mode=TwoWay}" Margin="4,0,0,0" />
+                        <!-- 削除（チェックの後） -->
+                        <Button Grid.Column="2" Content="✕" Padding="6,0" MinWidth="0"
+                                Tag="{Binding}" Classes="delRule" />
+                        <!-- 色プレビュー（背景=背景色 / 文字「AaBb」=文字色。文字色未指定は黒） -->
+                        <Border Grid.Column="3" Height="20" CornerRadius="2" Margin="0,0,6,0"
+                                BorderBrush="#BBBBBB" BorderThickness="1"
+                                Background="{Binding Background, Converter={StaticResource HexToBrush}}">
+                            <TextBlock Text="AaBb" FontSize="11" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       Foreground="{Binding Foreground, Converter={StaticResource HexToBrush}, ConverterParameter=fg}" />
+                        </Border>
+                        <!-- パターン（白背景） -->
+                        <TextBox Grid.Column="4" Text="{Binding Pattern, Mode=TwoWay}" Margin="0,0,6,0" />
+                        <CheckBox Grid.Column="5" IsChecked="{Binding IsRegex, Mode=TwoWay}" HorizontalAlignment="Center" />
+                        <CheckBox Grid.Column="6" IsChecked="{Binding IgnoreCase, Mode=TwoWay}" HorizontalAlignment="Center" />
+                        <CheckBox Grid.Column="7" IsChecked="{Binding WholeLine, Mode=TwoWay}" HorizontalAlignment="Center" />
+                        <!-- 文字色コード -->
+                        <TextBox Grid.Column="8" Text="{Binding Foreground, Mode=TwoWay}"
+                                 Classes="fgColor" Watermark="#000000" Margin="0,0,4,0" />
+                        <!-- 文字色 明るく/暗く（▲＝明るく / ▼＝暗く。各値 ±#10） -->
+                        <StackPanel Grid.Column="9" Orientation="Horizontal" Spacing="2" Margin="0,0,2,0">
+                            <Button Content="▲" Padding="4,0" MinWidth="0" Tag="{Binding}" Classes="fgUp"
+                                    ToolTip.Tip="{loc:Localize HlBrighterTip}" />
+                            <Button Content="▼" Padding="4,0" MinWidth="0" Tag="{Binding}" Classes="fgDown"
+                                    ToolTip.Tip="{loc:Localize HlDarkenTip}" />
+                        </StackPanel>
+                        <!-- 背景色コード -->
+                        <TextBox Grid.Column="10" Text="{Binding Background, Mode=TwoWay}"
+                                 Classes="bgColor" Watermark="#RRGGBB" Margin="0,0,4,0" />
+                        <!-- 背景色 明るく/暗く -->
+                        <StackPanel Grid.Column="11" Orientation="Horizontal" Spacing="2">
+                            <Button Content="▲" Padding="4,0" MinWidth="0" Tag="{Binding}" Classes="bgUp"
+                                    ToolTip.Tip="{loc:Localize HlBrighterTip}" />
+                            <Button Content="▼" Padding="4,0" MinWidth="0" Tag="{Binding}" Classes="bgDown"
+                                    ToolTip.Tip="{loc:Localize HlDarkenTip}" />
+                        </StackPanel>
+                    </Grid>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+
+    </DockPanel>
+</Window>

@@ -35,6 +35,7 @@
                         IsVisible="{Binding IsSaving}" />
                 <Rectangle Width="1" Fill="#CCCCCC" Margin="2,0" />
                 <ToggleButton x:Name="TopmostToggle" Content="{loc:Localize AlwaysOnTop}" />
+                <Button x:Name="CloseButton" Content="{loc:Localize Close}" />
             </StackPanel>
         </Border>
 

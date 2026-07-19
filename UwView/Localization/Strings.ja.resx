@@ -105,6 +105,42 @@
   <data name="AlwaysOnTop" xml:space="preserve"><value>常に手前</value></data>
   <data name="SaveFilterTitle" xml:space="preserve"><value>フィルタ結果を保存</value></data>
 
+  <data name="PredefinedFilters" xml:space="preserve"><value>定義済み</value></data>
+  <data name="SavePredefinedTip" xml:space="preserve"><value>現在の検索を定義済みフィルタに保存</value></data>
+  <data name="Highlighter" xml:space="preserve"><value>ハイライタ</value></data>
+  <data name="HighlighterTip" xml:space="preserve"><value>色分けハイライタを管理（検索と独立に複数パターンを常時着色）</value></data>
+  <data name="HighlighterTitle" xml:space="preserve"><value>色分けハイライタ</value></data>
+  <data name="HlPreset" xml:space="preserve"><value>プリセット</value></data>
+  <data name="HlPresetPlaceholder" xml:space="preserve"><value>選んで追加</value></data>
+  <data name="HlPresetNone" xml:space="preserve"><value>なし（全てクリア）</value></data>
+  <data name="HlSetName" xml:space="preserve"><value>セット名</value></data>
+  <data name="HlDefaultSetName" xml:space="preserve"><value>デフォルト</value></data>
+  <data name="HlSaveTitle" xml:space="preserve"><value>プリセットを保存</value></data>
+  <data name="HlSavePrompt" xml:space="preserve"><value>プリセット名（選択または入力）</value></data>
+  <data name="HlColor" xml:space="preserve"><value>色</value></data>
+  <data name="HlShade" xml:space="preserve"><value>濃淡</value></data>
+  <data name="HlMoveUpTip" xml:space="preserve"><value>この規則を上へ（優先度を上げる）</value></data>
+  <data name="HlMoveDownTip" xml:space="preserve"><value>この規則を下へ（優先度を下げる）</value></data>
+  <data name="HlLighterTip" xml:space="preserve"><value>色を淡くする</value></data>
+  <data name="HlDarkerTip" xml:space="preserve"><value>色を濃くする</value></data>
+  <data name="HlBrighterTip" xml:space="preserve"><value>明るく（各値 +#10）</value></data>
+  <data name="HlDarkenTip" xml:space="preserve"><value>暗く（各値 −#10）</value></data>
+  <data name="HlDelete" xml:space="preserve"><value>削除</value></data>
+  <data name="HlDarker" xml:space="preserve"><value>濃く</value></data>
+  <data name="HlLighter" xml:space="preserve"><value>薄く</value></data>
+  <data name="HlReload" xml:space="preserve"><value>読込</value></data>
+  <data name="HlReloadTip" xml:space="preserve"><value>選択中の保存済みセットを読み込み直す（編集を破棄して再現）</value></data>
+  <data name="Save" xml:space="preserve"><value>保存</value></data>
+  <data name="Close" xml:space="preserve"><value>閉じる</value></data>
+  <data name="HlAddRule" xml:space="preserve"><value>規則を追加</value></data>
+  <data name="HlPattern" xml:space="preserve"><value>パターン</value></data>
+  <data name="HlRegex" xml:space="preserve"><value>正規表現</value></data>
+  <data name="HlWholeLine" xml:space="preserve"><value>行全体</value></data>
+  <data name="HlForeground" xml:space="preserve"><value>文字色</value></data>
+  <data name="HlBackground" xml:space="preserve"><value>背景色</value></data>
+  <data name="HlExport" xml:space="preserve"><value>エクスポート…</value></data>
+  <data name="HlImport" xml:space="preserve"><value>インポート…</value></data>
+  <data name="HlManyColorsNote" xml:space="preserve"><value>規則は上から順に優先（下→上で後勝ち）。色を同時に多用すると見分けにくくなります。値ごとに色を割り当てる使い方が目安です（推奨8〜12色）。</value></data>
   <data name="MenuCopy" xml:space="preserve"><value>コピー</value></data>
   <data name="MenuSaveAs" xml:space="preserve"><value>ファイルに保存…</value></data>
   <data name="SaveSelectionTitle" xml:space="preserve"><value>選択範囲を保存</value></data>

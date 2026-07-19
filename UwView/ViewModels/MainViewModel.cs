@@ -42,6 +42,11 @@ public partial class MainViewModel : ViewModelBase
     [ObservableProperty] private bool _searchIgnoreCase;
     [ObservableProperty] private string _searchInfo = "";
 
+    // Ver1.1-A: 検索履歴（オートコンプリート）・定義済みフィルタ
+    public ObservableCollection<string> SearchHistory { get; } = [];
+    public ObservableCollection<Services.PredefinedFilter> PredefinedFilters { get; } = [];
+    [ObservableProperty] private Services.PredefinedFilter? _selectedPredefinedFilter;
+
     public ObservableCollection<EncodingOption> EncodingOptions { get; } =
     [
         new(EncodingChoice.Auto, Localizer.Instance["EncodingAuto"]),

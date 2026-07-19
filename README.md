@@ -224,7 +224,7 @@ dotnet run --project UwView.Browser
 | `UwView-linux-arm64.tar.gz` | Linux（ARM64） |
 | `UwView-linux-x64.tar.gz` | Linux（x64） |
 
-展開後、macOS 版は `UwView.app` をそのまま起動、Windows / Linux 版は同梱の実行ファイル（`UwView.Desktop` / `UwView.Desktop.exe`）を実行してください。macOS 版アプリバンドルの生成手順は `UwView.Desktop/macos/build-app.sh` を参照してください（Windows / Linux 版は `dotnet publish -r <RID> --self-contained` で発行）。
+展開後、macOS 版は `UwView.app` をそのまま起動、Windows / Linux 版は同梱の実行ファイル（`UwView.exe` / `UwView`）を実行してください。macOS 版アプリバンドルの生成手順は `UwView.Desktop/macos/build-app.sh` を参照してください（Windows / Linux 版は `dotnet publish -r <RID> --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true` で発行し、`UwView.Desktop`→`UwView` にリネーム）。
 
 ## 既知の制限
 

@@ -13,7 +13,7 @@ APP="$PROJ_DIR/bin/$RID/UwView.app"
 EXE="UwView.Desktop"                          # apphost 名（AssemblyName 既定）
 
 echo "==> publish ($RID, self-contained)"
-dotnet publish "$PROJ" -c Release -r "$RID" --self-contained -p:UseAppHost=true
+dotnet publish "$PROJ" -c Release -r "$RID" --self-contained -p:UseAppHost=true -p:NuGetAudit=false
 
 echo "==> assemble $APP"
 rm -rf "$APP"

@@ -33,6 +33,7 @@ public partial class FilterResultsWindow : Window
         SaveButton.Click += OnSaveClick;
         CancelSaveButton.Click += (_, _) => _vm.CancelSave();
         TopmostToggle.IsCheckedChanged += (_, _) => Topmost = TopmostToggle.IsChecked == true;
+        CloseButton.Click += (_, _) => Close();
 
         RowList.DoubleTapped += (_, _) => JumpToSelected();
         RowList.KeyDown += (_, e) =>

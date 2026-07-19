@@ -56,6 +56,21 @@ public partial class MainView : UserControl
         // inline フィルタ表示は廃止し、別ウィンドウ（ジャンプ／保存）に一本化）
         FilterResultsButton.Click += (_, _) => OpenFilterResults();
 
+        // 色分けハイライタ（実装指示書_Ver1.1_色分けハイライタ）
+        HighlighterButton.Click += (_, _) => OpenHighlighter();
+        ApplyHighlighter(); // 起動時から保存済みセットを適用
+
+        // Ver1.1-A: 検索履歴・定義済みフィルタ
+        SaveFilterButton.Click += (_, _) => SaveCurrentAsFilter();
+        PredefinedCombo.SelectionChanged += (_, _) =>
+        {
+            if (PredefinedCombo.SelectedItem is Services.PredefinedFilter f)
+            {
+                ApplyPredefinedFilter(f);
+                PredefinedCombo.SelectedItem = null; // 再選択できるようリセット
+            }
+        };
+
         // ブックマーク（§11-④）
         BookmarkToggleButton.Click += (_, _) =>
         {
@@ -92,6 +107,7 @@ public partial class MainView : UserControl
         {
             _vm.PropertyChanged += OnVmPropertyChanged;
             _vm.CloseTabRequested += OnCloseTabRequested;
+            LoadFilterState(); // Ver1.1-A: 検索履歴・定義済みフィルタを反映
         }
     }
 
@@ -163,18 +179,108 @@ public partial class MainView : UserControl
         if (text.Length == 0) { ClearSearch(); return; }
 
         _autoPopupPending = true; // 完了時に結果一覧を自動表示
+        _currentHitOffset = -1;   // 前へ/次への基準をリセット
+        PushSearchHistory(text); // Ver1.1-A: 検索履歴に追加
         _ = tab.Session.StartSearchAsync(new SearchOptions(text, _vm.SearchIsRegex, _vm.SearchIgnoreCase));
         TextView.Refresh(); // ハイライト regex は即時有効
+    }
+
+    // ── Ver1.1-A: 検索履歴・定義済みフィルタ ──────────────────────
+
+    private void PushSearchHistory(string pattern)
+    {
+        if (_vm is null) return;
+        UwView.App.Settings.PushSearchHistory(pattern);
+        UwView.App.Settings.Save();
+        _vm.SearchHistory.Clear();
+        foreach (var p in UwView.App.Settings.SearchHistory) _vm.SearchHistory.Add(p);
+    }
+
+    private void LoadFilterState()
+    {
+        if (_vm is null) return;
+        _vm.SearchHistory.Clear();
+        foreach (var p in UwView.App.Settings.SearchHistory) _vm.SearchHistory.Add(p);
+        _vm.PredefinedFilters.Clear();
+        foreach (var f in UwView.App.Settings.PredefinedFilters) _vm.PredefinedFilters.Add(f);
+    }
+
+    private void ApplyPredefinedFilter(Services.PredefinedFilter? f)
+    {
+        if (f is null || _vm is null) return;
+        _vm.SearchText = f.Pattern;
+        _vm.SearchIsRegex = f.IsRegex;
+        _vm.SearchIgnoreCase = f.IgnoreCase;
+        StartSearch();
+    }
+
+    private void SaveCurrentAsFilter()
+    {
+        if (_vm is null) return;
+        var pattern = (_vm.SearchText ?? "").Trim();
+        if (pattern.Length == 0) return;
+        var filter = new Services.PredefinedFilter
+        {
+            Name = pattern, Pattern = pattern,
+            IsRegex = _vm.SearchIsRegex, IgnoreCase = _vm.SearchIgnoreCase,
+        };
+        // 同名は置き換え
+        UwView.App.Settings.PredefinedFilters.RemoveAll(x => x.Name == filter.Name);
+        UwView.App.Settings.PredefinedFilters.Add(filter);
+        UwView.App.Settings.Save();
+        LoadFilterState();
     }
 
     private void ClearSearch()
     {
         if (_vm?.ActiveTab is not { } tab) return;
         _autoPopupPending = false;
+        _currentHitOffset = -1;
         tab.Session.ClearSearch();
         _vm.SearchText = "";
         TextView.Refresh();
         Minimap.InvalidateVisual();
+    }
+
+    // ── 色分けハイライタ（実装指示書_Ver1.1_色分けハイライタ）──────────
+
+    private HighlighterWindow? _highlighterWindow;
+
+    /// <summary>アクティブなハイライタセット（無ければ作成）。</summary>
+    private HlSet ActiveHlSet()
+    {
+        var cfg = UwView.App.Settings.Highlighters;
+        var set = cfg.Sets.Find(s => s.Id == cfg.ActiveSetId) ?? cfg.Sets.FirstOrDefault();
+        if (set is null)
+        {
+            set = new HlSet(Guid.NewGuid().ToString("N"), L["HlDefaultSetName"], new List<HlRule>());
+            cfg.Sets.Add(set);
+            cfg.ActiveSetId = set.Id;
+        }
+        return set;
+    }
+
+    private void ApplyHighlighter()
+    {
+        TextView.Highlighter = CompiledHighlighter.Build(ActiveHlSet());
+        TextView.Refresh();
+    }
+
+    private void OpenHighlighter()
+    {
+        if (_highlighterWindow is not null) { _highlighterWindow.Activate(); return; }
+        ActiveHlSet(); // 既定セットが無ければ生成
+        var vm = new HighlighterViewModel(UwView.App.Settings.Highlighters);
+        vm.Changed += (_, _) =>
+        {
+            TextView.Highlighter = vm.Compile();
+            TextView.Refresh();
+            UwView.App.Settings.Save();
+        };
+        _highlighterWindow = new HighlighterWindow(vm) { SaveRequested = () => UwView.App.Settings.Save() };
+        _highlighterWindow.Closed += (_, _) => { _highlighterWindow = null; UwView.App.Settings.Save(); };
+        if (TopLevel.GetTopLevel(this) is Window owner) _highlighterWindow.Show(owner);
+        else _highlighterWindow.Show();
     }
 
     // ── フィルタ結果ポップアップ（公開版: 1ウィンドウ・アクティブタブ連動）────
@@ -193,7 +299,7 @@ public partial class MainView : UserControl
         }
 
         _filterResultsVm = new FilterResultsViewModel(
-            onJump: off => { TextView.JumpToOffsetCentered(off); TextView.Focus(); },
+            onJump: off => { _currentHitOffset = off; TextView.JumpToOffsetCentered(off); TextView.Focus(); },
             maxContext: 1); // UVF は前後±1 まで（±N は Pro 限定）
         _filterResultsVm.SetSession(_vm?.ActiveTab?.Session);
         _filterResultsWindow = new FilterResultsWindow(_filterResultsVm);
@@ -209,14 +315,20 @@ public partial class MainView : UserControl
             _filterResultsWindow.Show();
     }
 
+    /// <summary>直近にジャンプした検索ヒットの行頭オフセット（次へ/前への基準）。-1=未設定。</summary>
+    private long _currentHitOffset = -1;
+
     private void GoToHit(bool next)
     {
         if (_vm?.ActiveTab is not { } tab) return;
-        long from = TextView.CurrentOffset;
+        // 中央寄せジャンプ後は画面上端が半画面ぶんズレるため、CurrentOffset ではなく
+        // 直近ヒット位置を基準にする（そうしないと前へ/次へが同じ行付近で往復・停滞する）
+        long from = _currentHitOffset >= 0 ? _currentHitOffset : TextView.CurrentOffset;
         long? hit = next ? tab.Session.NextHit(from) : tab.Session.PrevHit(from);
         if (hit is { } off)
         {
-            TextView.JumpToOffset(off);
+            _currentHitOffset = off;
+            TextView.JumpToOffsetCentered(off); // 画面中央寄せ＋該当行全体を強調
             TextView.Focus();
         }
     }
@@ -393,7 +505,7 @@ public partial class MainView : UserControl
         else if (TextView.Mode == ViewMode.Line &&
                  long.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out var line))
         {
-            TextView.JumpToLine(line - 1); // 1 始まり入力 → 0 始まり index
+            TextView.JumpToLineCentered(line - 1); // 中央寄せ＋その行を強調（検索移動と同じ）
         }
         else if (long.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out var off))
         {

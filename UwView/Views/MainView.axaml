@@ -58,6 +58,9 @@
                 <Rectangle Width="1" Fill="#CCCCCC" Margin="4,0" />
                 <ToggleButton x:Name="TailToggle" Content="Tail" ToolTip.Tip="{loc:Localize TailTip}" />
                 <Rectangle Width="1" Fill="#CCCCCC" Margin="4,0" />
+                <Button x:Name="HighlighterButton" Content="{loc:Localize Highlighter}"
+                        ToolTip.Tip="{loc:Localize HighlighterTip}" />
+                <Rectangle Width="1" Fill="#CCCCCC" Margin="4,0" />
                 <TextBlock Text="{loc:Localize LanguageLabel}" VerticalAlignment="Center" Foreground="Black" />
                 <ComboBox x:Name="LanguageCombo" MinWidth="90"
                           ItemsSource="{Binding Languages}"
@@ -70,10 +73,23 @@
                 BorderThickness="0,0,0,1" Padding="6,4">
             <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                 <TextBlock Text="{loc:Localize SearchLabel}" VerticalAlignment="Center" Foreground="Black" />
-                <TextBox x:Name="SearchBox" Width="220" PlaceholderText="{loc:Localize SearchPlaceholder}"
-                         Text="{Binding SearchText, Mode=TwoWay}" />
+                <AutoCompleteBox x:Name="SearchBox" Width="220" Watermark="{loc:Localize SearchPlaceholder}"
+                                 FilterMode="Contains" MinimumPrefixLength="0"
+                                 ItemsSource="{Binding SearchHistory}"
+                                 Text="{Binding SearchText, Mode=TwoWay}" />
                 <Button x:Name="SearchButton" Content="{loc:Localize SearchButton}" />
                 <Button x:Name="ClearSearchButton" Content="×" />
+                <ComboBox x:Name="PredefinedCombo" MinWidth="120"
+                          PlaceholderText="{loc:Localize PredefinedFilters}"
+                          ItemsSource="{Binding PredefinedFilters}"
+                          SelectedItem="{Binding SelectedPredefinedFilter, Mode=TwoWay}">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Name}" Foreground="Black" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+                <Button x:Name="SaveFilterButton" Content="★" ToolTip.Tip="{loc:Localize SavePredefinedTip}" />
                 <CheckBox x:Name="RegexCheck" Content="{loc:Localize Regex}" Foreground="Black"
                           IsChecked="{Binding SearchIsRegex, Mode=TwoWay}" />
                 <CheckBox x:Name="CaseCheck" Content="{loc:Localize IgnoreCase}" Foreground="Black"

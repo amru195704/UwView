@@ -105,6 +105,42 @@
   <data name="AlwaysOnTop" xml:space="preserve"><value>Always on top</value></data>
   <data name="SaveFilterTitle" xml:space="preserve"><value>Save filter results</value></data>
 
+  <data name="PredefinedFilters" xml:space="preserve"><value>Filters</value></data>
+  <data name="SavePredefinedTip" xml:space="preserve"><value>Save current search as a predefined filter</value></data>
+  <data name="Highlighter" xml:space="preserve"><value>Highlighter</value></data>
+  <data name="HighlighterTip" xml:space="preserve"><value>Manage color highlighters (always-on multi-pattern coloring, independent of search)</value></data>
+  <data name="HighlighterTitle" xml:space="preserve"><value>Color highlighters</value></data>
+  <data name="HlPreset" xml:space="preserve"><value>Preset</value></data>
+  <data name="HlPresetPlaceholder" xml:space="preserve"><value>Pick to add</value></data>
+  <data name="HlPresetNone" xml:space="preserve"><value>None (clear all)</value></data>
+  <data name="HlSetName" xml:space="preserve"><value>Set</value></data>
+  <data name="HlDefaultSetName" xml:space="preserve"><value>Default</value></data>
+  <data name="HlSaveTitle" xml:space="preserve"><value>Save preset</value></data>
+  <data name="HlSavePrompt" xml:space="preserve"><value>Preset name (pick or type)</value></data>
+  <data name="HlColor" xml:space="preserve"><value>Color</value></data>
+  <data name="HlShade" xml:space="preserve"><value>Shade</value></data>
+  <data name="HlMoveUpTip" xml:space="preserve"><value>Move rule up (raise priority)</value></data>
+  <data name="HlMoveDownTip" xml:space="preserve"><value>Move rule down (lower priority)</value></data>
+  <data name="HlLighterTip" xml:space="preserve"><value>Make color lighter</value></data>
+  <data name="HlDarkerTip" xml:space="preserve"><value>Make color darker</value></data>
+  <data name="HlBrighterTip" xml:space="preserve"><value>Brighter (+#10 per channel)</value></data>
+  <data name="HlDarkenTip" xml:space="preserve"><value>Darker (−#10 per channel)</value></data>
+  <data name="HlDelete" xml:space="preserve"><value>Delete</value></data>
+  <data name="HlDarker" xml:space="preserve"><value>Darker</value></data>
+  <data name="HlLighter" xml:space="preserve"><value>Lighter</value></data>
+  <data name="HlReload" xml:space="preserve"><value>Load</value></data>
+  <data name="HlReloadTip" xml:space="preserve"><value>Reload the selected saved set (discard edits, restore it)</value></data>
+  <data name="Save" xml:space="preserve"><value>Save</value></data>
+  <data name="Close" xml:space="preserve"><value>Close</value></data>
+  <data name="HlAddRule" xml:space="preserve"><value>Add rule</value></data>
+  <data name="HlPattern" xml:space="preserve"><value>Pattern</value></data>
+  <data name="HlRegex" xml:space="preserve"><value>Regex</value></data>
+  <data name="HlWholeLine" xml:space="preserve"><value>Whole line</value></data>
+  <data name="HlForeground" xml:space="preserve"><value>Text</value></data>
+  <data name="HlBackground" xml:space="preserve"><value>Background</value></data>
+  <data name="HlExport" xml:space="preserve"><value>Export…</value></data>
+  <data name="HlImport" xml:space="preserve"><value>Import…</value></data>
+  <data name="HlManyColorsNote" xml:space="preserve"><value>Rules apply top-first (bottom-to-top, last wins). Using many colors at once is hard to tell apart — assign one color per value (aim for 8–12 colors).</value></data>
   <data name="MenuCopy" xml:space="preserve"><value>Copy</value></data>
   <data name="MenuSaveAs" xml:space="preserve"><value>Save to file…</value></data>
   <data name="SaveSelectionTitle" xml:space="preserve"><value>Save selection</value></data>

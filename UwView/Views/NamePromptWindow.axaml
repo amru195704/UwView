@@ -1,0 +1,16 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="using:UwView.Localization"
+        x:Class="UwView.Views.NamePromptWindow"
+        Title="{loc:Localize HlSaveTitle}"
+        Width="380" SizeToContent="Height" CanResize="False"
+        WindowStartupLocation="CenterOwner">
+    <StackPanel Margin="18" Spacing="12">
+        <TextBlock Text="{loc:Localize HlSavePrompt}" Foreground="Black" />
+        <AutoCompleteBox x:Name="NameBox" FilterMode="Contains" MinimumPrefixLength="0" />
+        <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+            <Button x:Name="OkButton" Content="{loc:Localize Save}" IsDefault="True" />
+            <Button x:Name="CancelButton" Content="{loc:Localize Cancel}" IsCancel="True" />
+        </StackPanel>
+    </StackPanel>
+</Window>

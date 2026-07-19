@@ -108,6 +108,9 @@ public class TextView : Control
 
     public bool ShowLineNumbers { get; set; } = true;
 
+    /// <summary>色分けハイライタ（アクティブセットのコンパイル済み規則。§5）。null で無効。</summary>
+    public CompiledHighlighter? Highlighter { get; set; }
+
     /// <summary>フィルタ表示（§11-⑤）: 検索ヒット行だけを表示中か。</summary>
     private bool FilterOn => _session is { FilterActive: true } s && s.SearchHits.Count > 0;
 
@@ -180,6 +183,18 @@ public class TextView : Control
         _session.TopLine = Math.Clamp(line, 0, Math.Max(0, total - 1));
         Refresh();
     }
+
+    /// <summary>行番号ジャンプ（画面中央寄せ＋その行を強調）。行モードのみ。</summary>
+    public void JumpToLineCentered(long line)
+    {
+        if (_session?.Index is null) { JumpToLine(line); return; }
+        long total = _session.Index.TotalLines;
+        line = Math.Clamp(line, 0, Math.Max(0, total - 1));
+        JumpToOffsetCentered(_session.Document.LineStartOffset(line));
+    }
+
+    /// <summary>直近に強調ジャンプした行の行頭オフセット（次へ/前への基準に使う）。</summary>
+    public long? EmphasizedOffset => _emphasizedOffset;
 
     /// <summary>バイトオフセット基準のジャンプ。行モードなら最寄り行へ変換（検索ヒット・ミニマップ用）。</summary>
     public void JumpToOffset(long byteOffset)
@@ -698,6 +713,21 @@ public class TextView : Control
                 ctx.DrawText(num, new Point(gutter - Padding - num.Width, y));
             }
 
+            // 色分けハイライタ（§5）: 可視行を再評価。背景は検索の黄より先（下）に塗る。
+            IReadOnlyList<HlSpan> hlSpans = Highlighter is { IsEmpty: false } compiled && text.Length > 0
+                ? compiled.Highlight(text)
+                : System.Array.Empty<HlSpan>();
+            bool hlHasFg = false;
+            foreach (var sp in hlSpans)
+            {
+                if (sp.Fg != 0) hlHasFg = true;
+                if (sp.Bg == 0) continue;
+                double sx = sp.Start == 0 ? 0 : MakeText(text[..sp.Start]).WidthIncludingTrailingWhitespace;
+                double sw = MakeText(text.Substring(sp.Start, sp.Length)).WidthIncludingTrailingWhitespace;
+                ctx.FillRectangle(new SolidColorBrush(ColorFromArgb(sp.Bg)), new Rect(x + sx, y, sw, lh));
+            }
+
+            // 検索ハイライトの黄（§5: 検索マッチが最優先。色分け背景の上に塗る）
             if (hlRegex is not null && text.Length > 0)
             {
                 foreach (System.Text.RegularExpressions.Match m in hlRegex.Matches(text))
@@ -709,10 +739,50 @@ public class TextView : Control
                 }
             }
 
-            ctx.DrawText(MakeText(text, textBrush), new Point(x, y));
+            // 本文: 色分けの前景色があれば色付きラン描画（検索マッチ部は既定色に戻し必ず視認可）
+            if (hlHasFg)
+                DrawColoredText(ctx, text, hlSpans, hlRegex, x, y, textBrush);
+            else
+                ctx.DrawText(MakeText(text, textBrush), new Point(x, y));
             y += lh;
         }
 
+    }
+
+    private static Color ColorFromArgb(uint c)
+        => Color.FromArgb((byte)(c >> 24), (byte)(c >> 16), (byte)(c >> 8), (byte)c);
+
+    /// <summary>前景色付きの本文描画。検索マッチ範囲は既定色へ戻す（検索最優先・§5）。</summary>
+    private void DrawColoredText(DrawingContext ctx, string text, IReadOnlyList<HlSpan> spans,
+        System.Text.RegularExpressions.Regex? searchRegex, double x, double y, IBrush defaultBrush)
+    {
+        int n = text.Length;
+        var fg = new uint[n];
+        foreach (var sp in spans)
+            if (sp.Fg != 0)
+                for (int i = sp.Start, e = Math.Min(n, sp.Start + sp.Length); i < e; i++) fg[i] = sp.Fg;
+
+        if (searchRegex is not null)
+        {
+            foreach (System.Text.RegularExpressions.Match m in searchRegex.Matches(text))
+            {
+                if (m.Length == 0) continue;
+                for (int i = m.Index, e = Math.Min(n, m.Index + m.Length); i < e; i++) fg[i] = 0;
+            }
+        }
+
+        double cx = x;
+        int p = 0;
+        while (p < n)
+        {
+            uint c = fg[p];
+            int q = p + 1;
+            while (q < n && fg[q] == c) q++;
+            var seg = MakeText(text[p..q], c == 0 ? defaultBrush : new SolidColorBrush(ColorFromArgb(c)));
+            ctx.DrawText(seg, new Point(cx, y));
+            cx += seg.WidthIncludingTrailingWhitespace;
+            p = q;
+        }
     }
 
     protected override Size MeasureOverride(Size availableSize) => availableSize;
