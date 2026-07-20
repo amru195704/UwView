@@ -167,4 +167,32 @@
   <data name="MenuSaveAs" xml:space="preserve"><value>Save to file…</value></data>
   <data name="SaveSelectionTitle" xml:space="preserve"><value>Save selection</value></data>
   <data name="SelectionLines" xml:space="preserve"><value>{0} lines selected (Ctrl/Cmd+C to copy)</value></data>
+  <data name="LicTitle" xml:space="preserve"><value>License</value></data>
+  <data name="LicStatusLabel" xml:space="preserve"><value>Status:</value></data>
+  <data name="LicKeyLabel" xml:space="preserve"><value>License key</value></data>
+  <data name="LicActivate" xml:space="preserve"><value>Activate</value></data>
+  <data name="LicRevalidate" xml:space="preserve"><value>Re-check</value></data>
+  <data name="LicDeactivate" xml:space="preserve"><value>Deactivate</value></data>
+  <data name="LicBuyPrompt" xml:space="preserve"><value>Don't have a UwView Pro license? You can purchase one here.</value></data>
+  <data name="LicBuy" xml:space="preserve"><value>Buy…</value></data>
+  <data name="LicNotConfigured" xml:space="preserve"><value>(Note) organization_id is not set, so activation will not work. Set the real value before release.</value></data>
+  <data name="LicEmptyKey" xml:space="preserve"><value>Please enter a key</value></data>
+  <data name="LicWorking" xml:space="preserve"><value>Working…</value></data>
+  <data name="LicActivated" xml:space="preserve"><value>Activated. Pro features are enabled.</value></data>
+  <data name="LicFailed" xml:space="preserve"><value>Activation failed</value></data>
+  <data name="LicRevalidated" xml:space="preserve"><value>Re-checked</value></data>
+  <data name="LicOffline" xml:space="preserve"><value>Offline or validation failed (valid within grace)</value></data>
+  <data name="LicDeactivated" xml:space="preserve"><value>License deactivated</value></data>
+  <data name="LicButton" xml:space="preserve"><value>License</value></data>
+  <data name="LicButtonTip" xml:space="preserve"><value>Manage your UwView Pro license</value></data>
+  <data name="ProLocked" xml:space="preserve"><value>Pro features require a license</value></data>
+  <data name="SettingsTitle" xml:space="preserve"><value>Settings</value></data>
+  <data name="SettingsOpen" xml:space="preserve"><value>Settings…</value></data>
+  <data name="LicSectionTitle" xml:space="preserve"><value>License</value></data>
+  <data name="AboutMenu" xml:space="preserve"><value>About</value></data>
+  <data name="FileMenu" xml:space="preserve"><value>File</value></data>
+  <data name="HelpMenu" xml:space="preserve"><value>Help</value></data>
+  <data name="CloseTabMenu" xml:space="preserve"><value>Close</value></data>
+  <data name="CloseAll" xml:space="preserve"><value>Close All</value></data>
+  <data name="HelpHowTo" xml:space="preserve"><value>How to use</value></data>
 </root>

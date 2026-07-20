@@ -75,9 +75,20 @@ public partial class App : Application
             about.Header = ja ? "UwView について" : "About UwView";
     }
 
+    // ── File / Help メニューの動作（File 操作は現在のメイン画面へ委譲）────
+    public static System.Action? RequestOpenFile;
+    public static System.Action? RequestCloseTab;
+    public static System.Action? RequestCloseAll;
+
+    internal static void OpenExternal(string url)
+    {
+        if (Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime { MainWindow: { } w })
+            _ = w.Launcher.LaunchUriAsync(new System.Uri(url));
+    }
+
     private void OnAboutClick(object? sender, System.EventArgs e) => ShowAbout();
 
-    private static void ShowAbout()
+    internal static void ShowAbout()
     {
         bool ja = Localizer.Instance.Culture.TwoLetterISOLanguageName == "ja";
         string ver = typeof(App).Assembly.GetName().Version?.ToString(3) ?? "1.0";

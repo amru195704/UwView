@@ -167,4 +167,32 @@
   <data name="MenuSaveAs" xml:space="preserve"><value>ファイルに保存…</value></data>
   <data name="SaveSelectionTitle" xml:space="preserve"><value>選択範囲を保存</value></data>
   <data name="SelectionLines" xml:space="preserve"><value>選択 {0} 行（Ctrl/Cmd+C でコピー）</value></data>
+  <data name="LicTitle" xml:space="preserve"><value>ライセンス</value></data>
+  <data name="LicStatusLabel" xml:space="preserve"><value>状態:</value></data>
+  <data name="LicKeyLabel" xml:space="preserve"><value>ライセンスキー</value></data>
+  <data name="LicActivate" xml:space="preserve"><value>アクティベート</value></data>
+  <data name="LicRevalidate" xml:space="preserve"><value>再検証</value></data>
+  <data name="LicDeactivate" xml:space="preserve"><value>解除</value></data>
+  <data name="LicBuyPrompt" xml:space="preserve"><value>UwView Pro のライセンスをお持ちでない場合は、こちらから購入できます。</value></data>
+  <data name="LicBuy" xml:space="preserve"><value>購入する…</value></data>
+  <data name="LicNotConfigured" xml:space="preserve"><value>（注意）organization_id が未設定のため、認証は動作しません。発売前に実値を設定してください。</value></data>
+  <data name="LicEmptyKey" xml:space="preserve"><value>キーを入力してください</value></data>
+  <data name="LicWorking" xml:space="preserve"><value>通信中…</value></data>
+  <data name="LicActivated" xml:space="preserve"><value>アクティベートしました。Pro 機能が有効です。</value></data>
+  <data name="LicFailed" xml:space="preserve"><value>アクティベートに失敗しました</value></data>
+  <data name="LicRevalidated" xml:space="preserve"><value>再検証しました</value></data>
+  <data name="LicOffline" xml:space="preserve"><value>オフラインまたは検証に失敗しました（猶予内は有効）</value></data>
+  <data name="LicDeactivated" xml:space="preserve"><value>ライセンスを解除しました</value></data>
+  <data name="LicButton" xml:space="preserve"><value>ライセンス</value></data>
+  <data name="LicButtonTip" xml:space="preserve"><value>UwView Pro のライセンスを管理</value></data>
+  <data name="ProLocked" xml:space="preserve"><value>Pro 機能はライセンスが必要です</value></data>
+  <data name="SettingsTitle" xml:space="preserve"><value>設定</value></data>
+  <data name="SettingsOpen" xml:space="preserve"><value>設定…</value></data>
+  <data name="LicSectionTitle" xml:space="preserve"><value>ライセンス</value></data>
+  <data name="AboutMenu" xml:space="preserve"><value>バージョン情報</value></data>
+  <data name="FileMenu" xml:space="preserve"><value>ファイル</value></data>
+  <data name="HelpMenu" xml:space="preserve"><value>ヘルプ</value></data>
+  <data name="CloseTabMenu" xml:space="preserve"><value>閉じる</value></data>
+  <data name="CloseAll" xml:space="preserve"><value>すべて閉じる</value></data>
+  <data name="HelpHowTo" xml:space="preserve"><value>使い方</value></data>
 </root>

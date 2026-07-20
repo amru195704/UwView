@@ -4,11 +4,56 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:views="using:UwView.Views"
+        xmlns:loc="using:UwView.Localization"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="UwView.Views.MainWindow"
         Icon="/Assets/avalonia-logo.ico"
         Title="UwView"
         Width="1200" Height="720"
         MinWidth="1080" MinHeight="400">
+    <!-- メニューバーの独立カテゴリ（File / Help）は Window 側に置く。
+         macOS では Application 直下はアプリ名メニューの中身になるため。 -->
+    <NativeMenu.Menu>
+        <NativeMenu>
+            <NativeMenuItem Header="{loc:Localize FileMenu}">
+                <NativeMenuItem.Menu>
+                    <NativeMenu>
+                        <NativeMenuItem Header="{loc:Localize Open}" Click="OnMenuOpen" />
+                        <NativeMenuItem Header="{loc:Localize CloseTabMenu}" Click="OnMenuClose" />
+                        <NativeMenuItem Header="{loc:Localize CloseAll}" Click="OnMenuCloseAll" />
+                    </NativeMenu>
+                </NativeMenuItem.Menu>
+            </NativeMenuItem>
+            <NativeMenuItem Header="{loc:Localize HelpMenu}">
+                <NativeMenuItem.Menu>
+                    <NativeMenu>
+                        <NativeMenuItem Header="{loc:Localize HelpHowTo}" Click="OnMenuHowTo" />
+                        <NativeMenuItemSeparator />
+                        <NativeMenuItem Header="GitHub: UwView" Click="OnMenuGitHubUwView" />
+                        <NativeMenuItem Header="GitHub: amru195704" Click="OnMenuGitHubProfile" />
+                    </NativeMenu>
+                </NativeMenuItem.Menu>
+            </NativeMenuItem>
+        </NativeMenu>
+    </NativeMenu.Menu>
+    <!-- Windows/Linux 用のウィンドウ内メニュー。macOS では非表示（システムメニューバーを使う）。
+         About も Windows から使えるよう Help に含める。 -->
+    <DockPanel>
+        <Menu x:Name="WinMenu" DockPanel.Dock="Top">
+            <MenuItem Header="{loc:Localize FileMenu}">
+                <MenuItem Header="{loc:Localize Open}" Click="OnWinOpen" />
+                <MenuItem Header="{loc:Localize CloseTabMenu}" Click="OnWinClose" />
+                <MenuItem Header="{loc:Localize CloseAll}" Click="OnWinCloseAll" />
+            </MenuItem>
+            <MenuItem Header="{loc:Localize HelpMenu}">
+                <MenuItem Header="{loc:Localize HelpHowTo}" Click="OnWinHowTo" />
+                <Separator />
+                <MenuItem Header="GitHub: UwView" Click="OnWinGitHubUwView" />
+                <MenuItem Header="GitHub: amru195704" Click="OnWinGitHubProfile" />
+                <Separator />
+                <MenuItem Header="{loc:Localize AboutMenu}" Click="OnWinAbout" />
+            </MenuItem>
+        </Menu>
         <views:MainView />
+    </DockPanel>
 </Window>

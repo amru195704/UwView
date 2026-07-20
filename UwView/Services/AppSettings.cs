@@ -55,7 +55,22 @@ public sealed class SessionState
     public int ActiveIndex { get; set; }
 }
 
-/// <summary>ユーザー設定（言語・Ver1.1 機能）を JSON で永続化。保存不可な環境は握りつぶす。</summary>
+/// <summary>UVP ライセンス永続データ（Polar・実装指示書 §1-4）。UVF では未使用。</summary>
+public sealed class LicenseData
+{
+    public string? Key { get; set; }
+    public string? ActivationId { get; set; }
+    /// <summary>最後の検証結果（"granted" / "revoked" / "disabled" / null）。</summary>
+    public string? LastStatus { get; set; }
+    /// <summary>最後にオンライン検証が成功した時刻（UTC ticks。0=未検証）。</summary>
+    public long LastValidatedUtcTicks { get; set; }
+    /// <summary>ライセンスの失効時刻（UTC ticks。0=無期限=買い切り）。</summary>
+    public long ExpiresUtcTicks { get; set; }
+    /// <summary>初回起動時刻（UTC ticks。トライアル起算。0=未設定）。</summary>
+    public long FirstRunUtcTicks { get; set; }
+}
+
+/// <summary>ユーザー設定（言語・Ver1.1 機能・UVPライセンス）を JSON で永続化。保存不可な環境は握りつぶす。</summary>
 public sealed class AppSettings
 {
     // 上限（実装指示書の推奨値）
@@ -65,6 +80,9 @@ public sealed class AppSettings
 
     /// <summary>UI 言語（"ja" / "en"）。null なら OS の UI カルチャに従う。</summary>
     public string? Language { get; set; }
+
+    // ── UVP: Polar ライセンス認証（実装指示書_UVP_Polarライセンス認証）。UVF では未使用 ──
+    public LicenseData License { get; set; } = new();
 
     // ── Ver1.1: 色分けハイライタ ──
     public HighlighterConfig Highlighters { get; set; } = new();

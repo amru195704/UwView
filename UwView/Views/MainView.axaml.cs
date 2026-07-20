@@ -32,6 +32,15 @@ public partial class MainView : UserControl
 
         OpenButton.Click += OnOpenClick;
         JumpButton.Click += OnJumpClick;
+
+        // File メニュー（メニューバー）→ このメイン画面の操作へ委譲
+        App.RequestOpenFile = () => OnOpenClick(this, new RoutedEventArgs());
+        App.RequestCloseTab = () => { if (_vm?.ActiveTab is { } t) _vm.RequestClose(t); };
+        App.RequestCloseAll = () =>
+        {
+            if (_vm is null) return;
+            foreach (var t in _vm.Tabs.ToList()) _vm.RequestClose(t);
+        };
         CancelButton.Click += (_, _) => _vm?.ActiveTab?.Session.CancelIndex();
         LineNumberCheck.IsCheckedChanged += (_, _) =>
         {
