@@ -28,6 +28,8 @@
                 <NativeMenuItem.Menu>
                     <NativeMenu>
                         <NativeMenuItem Header="{loc:Localize HelpHowTo}" Click="OnMenuHowTo" />
+                        <NativeMenuItem Header="{loc:Localize HelpNews}" Click="OnMenuNews" />
+                        <NativeMenuItem Header="{loc:Localize HelpSupport}" Click="OnMenuSupport" />
                         <NativeMenuItemSeparator />
                         <NativeMenuItem Header="GitHub: UwView" Click="OnMenuGitHubUwView" />
                         <NativeMenuItem Header="GitHub: amru195704" Click="OnMenuGitHubProfile" />
@@ -47,6 +49,8 @@
             </MenuItem>
             <MenuItem Header="{loc:Localize HelpMenu}">
                 <MenuItem Header="{loc:Localize HelpHowTo}" Click="OnWinHowTo" />
+                <MenuItem Header="{loc:Localize HelpNews}" Click="OnWinNews" />
+                <MenuItem Header="{loc:Localize HelpSupport}" Click="OnWinSupport" />
                 <Separator />
                 <MenuItem Header="GitHub: UwView" Click="OnWinGitHubUwView" />
                 <MenuItem Header="GitHub: amru195704" Click="OnWinGitHubProfile" />

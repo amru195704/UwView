@@ -2,7 +2,7 @@
 
 *日本語 ｜ [English](README.en.md)*
 
-🌐 **[ブラウザで試す（WASMデモ）](https://amru195704.github.io/UwView/)** ・ 📰 [プレスキット](press-kit/PRESSKIT.md)
+🌐 **[公式サイト](https://uvp.y42u.net/)**（[概要](https://uvp.y42u.net/about/)・[ヘルプ](https://uvp.y42u.net/help/)・[お問い合わせ](https://uvp.y42u.net/support/)）・ **[ブラウザで試す（WASMデモ）](https://amru195704.github.io/UwView/)** ・ 📰 [プレスキット](press-kit/PRESSKIT.md)
 
 **4.9億行クラスの巨大テキストファイルを、省メモリ・高速に閲覧できるテキストビューア。（現在テストした最大行数：実際の行数限界はテストできない）**
 一応理論上は**約920京行**まで：人類未到なので数十年後にわかるか？
@@ -101,7 +101,7 @@ I/O 抽象層（IByteSource）                      … Desktop: mmap ／ Browse
 
 ### 実データ検証（OSM 日本・51GB・8.9億行）
 
-「2億行」を大きく超える**実データ**での検証。OpenStreetMap 日本全体を osmium で XML 化した `japan-latest.osm`（UTF-8）を使用（UwView の概要は [GitHub公開記事](https://y42u.net/tec001/2026/07/09/uwview-github-release/) 参照）。
+「2億行」を大きく超える**実データ**での検証。OpenStreetMap 日本全体を osmium で XML 化した `japan-latest.osm`（UTF-8）を使用（UwView の概要は [公開記事](https://uvp.y42u.net/blog/uwview-github-release/) 参照）。
 
 | 項目 | 実測値 |
 |------|--------|

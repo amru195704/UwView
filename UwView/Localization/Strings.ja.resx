@@ -194,5 +194,7 @@
   <data name="HelpMenu" xml:space="preserve"><value>ヘルプ</value></data>
   <data name="CloseTabMenu" xml:space="preserve"><value>閉じる</value></data>
   <data name="CloseAll" xml:space="preserve"><value>すべて閉じる</value></data>
+  <data name="HelpNews" xml:space="preserve"><value>最新情報</value></data>
+  <data name="HelpSupport" xml:space="preserve"><value>お問い合わせ</value></data>
   <data name="HelpHowTo" xml:space="preserve"><value>使い方</value></data>
 </root>

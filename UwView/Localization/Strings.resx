@@ -194,5 +194,7 @@
   <data name="HelpMenu" xml:space="preserve"><value>Help</value></data>
   <data name="CloseTabMenu" xml:space="preserve"><value>Close</value></data>
   <data name="CloseAll" xml:space="preserve"><value>Close All</value></data>
+  <data name="HelpNews" xml:space="preserve"><value>Latest news</value></data>
+  <data name="HelpSupport" xml:space="preserve"><value>Support / Contact</value></data>
   <data name="HelpHowTo" xml:space="preserve"><value>How to use</value></data>
 </root>

@@ -115,7 +115,10 @@ public partial class App : Application
                     },
                     new Avalonia.Controls.TextBlock
                     { Text = "© 2026 amru195704 (Y4U)", Margin = new Thickness(0, 10, 0, 0) },
-                    MakeLink("https://github.com/amru195704"),
+                    MakeLink(ja ? "公式サイト（最新情報）" : "Official site / News", UwView.Core.SiteLinks.Official),
+                    MakeLink(ja ? "概要（UwViewとは）" : "About UwView", UwView.Core.SiteLinks.About),
+                    MakeLink(ja ? "お問い合わせ" : "Support / Contact", UwView.Core.SiteLinks.Support),
+                    MakeLink("GitHub", UwView.Core.SiteLinks.GitHubRepo),
                 },
             },
         };
@@ -123,6 +126,14 @@ public partial class App : Application
             win.ShowDialog(owner);
         else
             win.Show();
+    }
+
+    /// <summary>ラベル付きリンク（表示文字は label、開く先は url）。</summary>
+    private static Avalonia.Controls.TextBlock MakeLink(string label, string url)
+    {
+        var link = MakeLink(url);
+        link.Text = label;
+        return link;
     }
 
     /// <summary>クリックで既定ブラウザを開くリンク風 TextBlock。</summary>
