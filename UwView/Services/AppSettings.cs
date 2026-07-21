@@ -103,16 +103,34 @@ public sealed class AppSettings
     public List<RecentEntry> RecentFiles { get; set; } = new();
     public List<string> Favorites { get; set; } = new();
 
+    /// <summary>
+    /// 設定フォルダ名（%AppData%/&lt;この名前&gt;/settings.json）。
+    /// 既定は "UwView"（UVF）。UVP は起動時に "UwViewPro" へ変更し、UVF と設定・ライセンスを分離する。
+    /// </summary>
+    public static string AppDataFolder = "UwView";
+
+    private static string DirFor(string folder) =>
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), folder);
+
     [JsonIgnore]
-    public static string FilePath
+    public static string FilePath => Path.Combine(DirFor(AppDataFolder), "settings.json");
+
+    /// <summary>
+    /// 独自フォルダへ切替えた直後、現行ファイルが無ければ旧共有ファイルから一度だけ移行コピーする。
+    /// （UVP を UwView 共有ファイルから UwViewPro 専用ファイルへ移す際にライセンス等を引き継ぐ）
+    /// </summary>
+    public static void SeedFromLegacyIfMissing(string legacyFolder)
     {
-        get
+        try
         {
-            var dir = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "UwView");
-            return Path.Combine(dir, "settings.json");
+            var current = FilePath;
+            if (File.Exists(current)) return;
+            var legacy = Path.Combine(DirFor(legacyFolder), "settings.json");
+            if (!File.Exists(legacy)) return;
+            Directory.CreateDirectory(Path.GetDirectoryName(current)!);
+            File.Copy(legacy, current);
         }
+        catch { /* 移行できなくても新規既定で続行 */ }
     }
 
     public static AppSettings Load()
