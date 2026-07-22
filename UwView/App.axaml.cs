@@ -92,6 +92,7 @@ public partial class App : Application
     {
         bool ja = Localizer.Instance.Culture.TwoLetterISOLanguageName == "ja";
         string ver = typeof(App).Assembly.GetName().Version?.ToString(3) ?? "1.0";
+        string build = BuildNo(typeof(App).Assembly);
         var win = new Avalonia.Controls.Window
         {
             Title = ja ? "UwView について" : "About UwView",
@@ -106,7 +107,8 @@ public partial class App : Application
                 {
                     new Avalonia.Controls.TextBlock
                     { Text = "UwView", FontSize = 26, FontWeight = Avalonia.Media.FontWeight.Bold },
-                    new Avalonia.Controls.TextBlock { Text = $"Version {ver}" },
+                    new Avalonia.Controls.TextBlock
+                    { Text = string.IsNullOrEmpty(build) ? $"Version {ver}" : $"Version {ver}  (build {build})" },
                     new Avalonia.Controls.TextBlock
                     {
                         Text = ja ? "巨大テキストファイルを一瞬で開く軽量ビューア"
@@ -126,6 +128,15 @@ public partial class App : Application
             win.ShowDialog(owner);
         else
             win.Show();
+    }
+
+    /// <summary>ビルド番号（コンパイル日時 yy.MM.dd.HH）を AssemblyMetadata から取得。</summary>
+    private static string BuildNo(System.Reflection.Assembly asm)
+    {
+        foreach (var a in asm.GetCustomAttributes(typeof(System.Reflection.AssemblyMetadataAttribute), false))
+            if (a is System.Reflection.AssemblyMetadataAttribute m && m.Key == "BuildNumber")
+                return m.Value ?? "";
+        return "";
     }
 
     /// <summary>ラベル付きリンク（表示文字は label、開く先は url）。</summary>

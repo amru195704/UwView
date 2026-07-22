@@ -5,7 +5,13 @@
     <LangVersion>latest</LangVersion>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
     <Version>1.1.1</Version>
+    <!-- ビルド番号＝コンパイル日時（ローカル時刻）を yy.MM.dd.HH に。例: 26.07.21.21 -->
+    <BuildNumber>$([System.DateTime]::Now.ToString("yy.MM.dd.HH"))</BuildNumber>
   </PropertyGroup>
+
+  <ItemGroup>
+    <AssemblyMetadata Include="BuildNumber" Value="$(BuildNumber)" />
+  </ItemGroup>
   
   <ItemGroup>
     <AvaloniaResource Include="Assets\**" />

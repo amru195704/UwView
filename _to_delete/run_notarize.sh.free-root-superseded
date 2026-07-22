@@ -1,0 +1,182 @@
+#!/usr/bin/env bash
+# run_notarize.sh（リポジトリルート）— macOS 配布パッケージ作成
+#   署名 → zip → 公証 → staple → DMG を、指定アーキごとに実行する。
+#   引数なしのときは mac 版の x64 と arm64 の両方を作成する。
+#
+# 各アーキで:
+#   0) build-app.sh でビルド（--no-build で省略可）
+#   1) コード署名（hardened runtime＋timestamp＋entitlements、内側→外側）
+#   2) ditto で zip 化（公証提出用。zip コマンドは構造を壊すので必ず ditto）
+#   3) 公証（notarytool submit --wait）
+#   4) staple（.app に公証チケット貼付）＋ Gatekeeper 確認
+#   5) 配布用 DMG 作成 →（推奨）DMG も署名・公証・staple
+#      併せて staple 済み .app の zip も dist-macos/ に出力
+#
+# 出力: dist-macos/UwView-macos-arm64.zip / ...-x64.zip / UwView-<版>-macos-<arch>.dmg
+#
+# 前提（初回のみ）:
+#   - Developer ID Application 証明書がキーチェーンにあること
+#       security find-identity -v -p codesigning
+#       → 9737970DAE0495030DFF12A5BB6B442C62B044F0
+#         "Developer ID Application: YUUJI MARUYAMA (8V5P2K92Y6)"
+#   - notarytool キーチェーンプロファイル（認証情報はキーチェーンに保存・スクリプトには書かない）
+#       xcrun notarytool store-credentials "uwview-notary" \
+#         --apple-id "<AppleID>" --team-id 8V5P2K92Y6 --password "<App固有パスワード>"
+#
+# 使い方:
+#   ./run_notarize.sh                       # x64 と arm64 の両方を作成（既定）
+#   ./run_notarize.sh --rid osx-arm64       # arm64 のみ
+#   ./run_notarize.sh --rid osx-x64         # x64 のみ
+#   ./run_notarize.sh --no-build            # 既存の .app を使う（ビルドしない）
+#   ./run_notarize.sh --app /path/App.app   # 特定の .app を1つだけ処理
+#   ./run_notarize.sh --skip-dmg-notarize   # DMG の公証を省略（中の .app は公証済み）
+#   環境変数で上書き可: SIGN_IDENTITY / NOTARY_PROFILE / TEAM_ID / PRODUCT
+
+set -euo pipefail
+
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"   # リポジトリルート
+DESKTOP_DIR="$HERE/UwView.Desktop"
+MACOS_DIR="$DESKTOP_DIR/macos"
+ENT="$MACOS_DIR/UwView.entitlements"
+BUILD_APP="$MACOS_DIR/build-app.sh"
+OUT="$HERE/dist-macos"
+PB=/usr/libexec/PlistBuddy
+
+# ---- 設定（環境変数で上書き可）----
+SIGN_IDENTITY="${SIGN_IDENTITY:-9737970DAE0495030DFF12A5BB6B442C62B044F0}"  # Developer ID Application: YUUJI MARUYAMA (8V5P2K92Y6)
+TEAM_ID="${TEAM_ID:-8V5P2K92Y6}"
+NOTARY_PROFILE="${NOTARY_PROFILE:-uwview-notary}"
+DMG_NOTARIZE=1
+DO_BUILD=1
+APP_OVERRIDE=""
+RIDS=()
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --rid)                RIDS+=("$2"); shift 2;;
+    --app)                APP_OVERRIDE="$2"; DO_BUILD=0; shift 2;;
+    --no-build)           DO_BUILD=0; shift;;
+    --build)              DO_BUILD=1; shift;;
+    --skip-dmg-notarize)  DMG_NOTARIZE=0; shift;;
+    --profile)            NOTARY_PROFILE="$2"; shift 2;;
+    --identity)           SIGN_IDENTITY="$2"; shift 2;;
+    -h|--help)            grep '^#' "$0" | sed 's/^# \{0,1\}//'; exit 0;;
+    *) echo "不明な引数: $1" >&2; exit 1;;
+  esac
+done
+
+[[ "$(uname)" == "Darwin" ]] || { echo "エラー: macOS で実行してください。" >&2; exit 1; }
+command -v xcrun >/dev/null || { echo "エラー: Xcode Command Line Tools が必要です。" >&2; exit 1; }
+[[ -f "$ENT" ]] || { echo "エラー: entitlements が見つかりません: $ENT" >&2; exit 1; }
+security find-identity -v -p codesigning | grep -q "$SIGN_IDENTITY" || {
+  echo "エラー: 署名ID $SIGN_IDENTITY がキーチェーンにありません（security find-identity -v -p codesigning で確認）。" >&2
+  exit 1
+}
+
+mkdir -p "$OUT"
+CODESIGN=(codesign --force --timestamp --options runtime)
+
+# ============================================================
+# 1つの .app を 署名→zip→公証→staple→DMG する
+#   $1 = RID（ビルドパス・命名フォールバック用） / $2 = .app パス
+# ============================================================
+process_one() {
+  local RID="$1" APP="$2"
+  [[ -d "$APP" ]] || { echo "エラー: .app が見つかりません: $APP" >&2; return 1; }
+
+  local INFO="$APP/Contents/Info.plist"
+  local EXE PRODUCT VERSION MAINBIN ARCH SLUG
+  EXE="$("$PB" -c 'Print :CFBundleExecutable' "$INFO")"
+  PRODUCT="${PRODUCT:-$("$PB" -c 'Print :CFBundleName' "$INFO")}"
+  VERSION="$("$PB" -c 'Print :CFBundleShortVersionString' "$INFO" 2>/dev/null || echo 0.0.0)"
+  MAINBIN="$APP/Contents/MacOS/$EXE"
+  # アーキはバイナリ実体から判定（命名の正確さのため）。取れなければ RID から。
+  case "$(lipo -archs "$MAINBIN" 2>/dev/null || true)" in
+    *arm64*)  ARCH=arm64;;
+    *x86_64*) ARCH=x64;;
+    *)        ARCH="${RID#osx-}";;
+  esac
+  SLUG="${PRODUCT// /}"
+
+  echo ""
+  echo "########## $PRODUCT $VERSION ($ARCH) ##########"
+  echo "==> 対象: $APP"
+
+  # -- 1) コード署名（内側→外側）--
+  echo "==> 1/5 コード署名"
+  while IFS= read -r -d '' f; do
+    [[ "$f" == "$MAINBIN" ]] && continue
+    if file "$f" | grep -q 'Mach-O'; then
+      "${CODESIGN[@]}" -s "$SIGN_IDENTITY" "$f"
+    fi
+  done < <(find "$APP/Contents" -type f -print0)
+  "${CODESIGN[@]}" --entitlements "$ENT" -s "$SIGN_IDENTITY" "$MAINBIN"
+  "${CODESIGN[@]}" --entitlements "$ENT" -s "$SIGN_IDENTITY" "$APP"
+  codesign --verify --deep --strict --verbose=2 "$APP"
+
+  local WORK; WORK="$(mktemp -d)"
+
+  # -- 2) zip 化（公証提出用）--
+  echo "==> 2/5 zip 化（ditto）"
+  local ZIP_SUBMIT="$WORK/${SLUG}-${ARCH}-submit.zip"
+  ditto -c -k --keepParent "$APP" "$ZIP_SUBMIT"
+
+  # -- 3) 公証 --
+  echo "==> 3/5 公証（notarytool submit --wait）"
+  xcrun notarytool submit "$ZIP_SUBMIT" --keychain-profile "$NOTARY_PROFILE" --wait
+
+  # -- 4) staple --
+  echo "==> 4/5 staple（.app）"
+  xcrun stapler staple "$APP"
+  xcrun stapler validate "$APP"
+  spctl --assess --type execute --verbose=4 "$APP" || true
+
+  local ZIP_DIST="$OUT/${SLUG}-macos-${ARCH}.zip"
+  ditto -c -k --keepParent "$APP" "$ZIP_DIST"
+
+  # -- 5) DMG 作成（＋署名・公証・staple）--
+  echo "==> 5/5 DMG 作成"
+  local STAGE="$WORK/dmg"
+  mkdir -p "$STAGE"
+  cp -R "$APP" "$STAGE/"
+  ln -s /Applications "$STAGE/Applications"
+  local DMG="$OUT/${SLUG}-${VERSION}-macos-${ARCH}.dmg"
+  rm -f "$DMG"
+  hdiutil create -volname "$PRODUCT $VERSION" -srcfolder "$STAGE" -fs HFS+ -format UDZO -ov "$DMG"
+  codesign --force --timestamp -s "$SIGN_IDENTITY" "$DMG"
+  if [[ $DMG_NOTARIZE -eq 1 ]]; then
+    echo "    DMG 公証 → staple"
+    xcrun notarytool submit "$DMG" --keychain-profile "$NOTARY_PROFILE" --wait
+    xcrun stapler staple "$DMG"
+    xcrun stapler validate "$DMG"
+    spctl --assess --type open --context context:primary-signature --verbose=4 "$DMG" || true
+  else
+    echo "    （--skip-dmg-notarize：DMG の公証は省略。中の .app は公証・staple 済み）"
+  fi
+
+  rm -rf "$WORK"
+  echo "==> 完了($ARCH): $DMG"
+  echo "              $ZIP_DIST"
+}
+
+# ============================================================
+# 実行
+# ============================================================
+if [[ -n "$APP_OVERRIDE" ]]; then
+  # 特定の .app を1つだけ処理（ビルドしない）
+  process_one "osx-arm64" "$APP_OVERRIDE"
+else
+  # RID 未指定 → x64 と arm64 の両方（既定）
+  [[ ${#RIDS[@]} -gt 0 ]] || RIDS=(osx-arm64 osx-x64)
+  for RID in "${RIDS[@]}"; do
+    if [[ $DO_BUILD -eq 1 ]]; then
+      echo "==> 0) build-app.sh ($RID)"
+      "$BUILD_APP" "$RID"
+    fi
+    process_one "$RID" "$DESKTOP_DIR/bin/$RID/UwView.app"
+  done
+fi
+
+echo ""
+echo "==> すべて完了。出力先: $OUT"
+ls -1 "$OUT" 2>/dev/null || true

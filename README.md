@@ -16,15 +16,17 @@
 
 エディタではなく **ビューア**（閲覧専用）です。
 
-## 📣 お知らせ：さらに高速な「UwView Pro」開発中
+## 📣 お知らせ：UwView Pro を発売しました（macOS版先行）
 
-大容量ファイルをさらに高速化した **UwView Pro** を開発しています。索引の並列構築に加え、**圧縮サイドカーキャッシュ**（`.uwvz` 単一ファイル・行索引内蔵・チェックサム保護）により「2回目以降の瞬間オープン」と「全文検索の大幅高速化」を実現します。
+**購入・詳細 → [UwView Pro 製品ページ](https://uvp.y42u.net/pro/)**（買い切り **$129** ／ 月額 **$9**）。まず **macOS 11+（Apple Silicon / Intel）**、Windows / Linux は準備中。
+
+大容量ファイルをさらに高速化した **UwView Pro** を発売しました（macOS版先行）。索引の並列構築に加え、**圧縮サイドカーキャッシュ**（`.uwvz` 単一ファイル・行索引内蔵・チェックサム保護）により「2回目以降の瞬間オープン」と「全文検索の大幅高速化」を実現します。
 
 著名な大容量ログビューア **[klogg](https://klogg.filimonov.dev/)** との実測比較（同一ファイル・同一パターン、**3種類のストレージ**で検証）:
 
 > 条件: OpenStreetMap 日本全域 `japan-latest.osm` 47.73GB・892,239,125 行。MacBook Air / Apple M4（10コア）/ RAM 32GB。ストレージ実測帯域（dd）: USB HDD 0.10GB/s ／ USB SSD 0.41GB/s ／ 内蔵SSD 3.29GB/s。klogg 24.11.0。検索のヒット数は全項目で klogg・UwView Pro・生ファイル直接検索の間で**厳密一致**を確認済み（＝意味的に同じ検索であることを相互検証）。
 
-| 項目 | klogg (24.11.0) | **UwView Pro（開発中）** | Pro ÷ klogg |
+| 項目 | klogg (24.11.0) | **UwView Pro** | Pro ÷ klogg |
 |---|---|---|---|
 | 初回オープン | HDD 約9分 ／ USB SSD 約110秒 ／ 内蔵SSD 約15秒（**毎回**・完了まで先頭しか見えない） | HDD 10.6分 ／ USB SSD 138.5秒 ／ 内蔵SSD 23.3秒（**初回のみ**・全域即表示・圧縮キャッシュ生成込み） | 初回はやや遅い（対価は下記） |
 | **2回目以降のオープン** | 初回と同じ（毎回再索引） | **0.01〜0.07秒** | **約1,250〜50,000倍** |
@@ -37,7 +39,7 @@
 - 実作業サイズ（3GB・1億行）では検索はどちらも数秒以内で互角です。Pro の価値は「開き直すたびの再索引（klogg 47秒/8秒/2秒）が不要（数ms）」「元ファイルを消して 1/9〜1/13 サイズで保管・そのまま閲覧」という**運用の差**になります。
 - 初回オープンが klogg よりやや遅いのは圧縮キャッシュ生成込みのためで、この1回と引き換えに以後のオープン数ms・検索数秒・容量1/9が得られます。
 
-> UwView Pro は商用（有償）版として準備中です。続報をお待ちください。
+> **UwView Pro は発売中です。** 購入・詳細は [公式サイトの製品ページ](https://uvp.y42u.net/pro/) へ（買い切り $129 ／ 月額 $9、macOS 版先行・Windows / Linux は準備中）。初回オープンは無料版・他ツールと同等で、“二度目から一瞬・検索が速い・1/9で保管” が Pro の差です。
 
 ## 特長
 
@@ -233,6 +235,16 @@ dotnet run --project UwView.Browser
 | `UwView-linux-x64.tar.gz` | Linux（x64） |
 
 展開後、macOS 版は `UwView.app` をそのまま起動、Windows / Linux 版は同梱の実行ファイル（`UwView.exe` / `UwView`）を実行してください。macOS 版アプリバンドルの生成手順は `UwView.Desktop/macos/build-app.sh` を参照してください（Windows / Linux 版は `dotnet publish -r <RID> --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true` で発行し、`UwView.Desktop`→`UwView` にリネーム）。
+
+### 署名について（無料版の開き方）
+
+**無料版 UwView はコード署名・公証を行っていません**（無償OSSのため）。初回起動時に OS の警告が出ることがありますが、次の手順で開けます。
+
+- **macOS**: `UwView.app` を右クリック →「開く」→ 確認ダイアログでもう一度「開く」。以後は通常どおり起動できます（「開発元を検証できません」と出た場合の正規手順です）。
+- **Windows**: SmartScreen が出たら「詳細情報」→「実行」。
+- **Linux**: 実行権限を付与（`chmod +x UwView` → `./UwView`）。
+
+> 上位版 **UwView Pro** は Developer ID 署名・Apple 公証済みで、こうした警告なしに起動できます。
 
 ## 既知の制限
 

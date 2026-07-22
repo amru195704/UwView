@@ -1,0 +1,179 @@
+#!/usr/bin/env bash
+# run_notarize.sh — macOS 配布パッケージ作成（署名 → zip → 公証 → staple → DMG）
+#
+# ビルド済みの UwView.app（build-app.sh の出力）を Developer ID で署名し、
+# Apple 公証・staple したうえで、配布用 DMG（署名＋公証＋staple 済み）を作る。
+# App Store 外配布（自社サイト / Polar など）用。
+#
+# 手順:
+#   1) コード署名（build 後・zip 前。hardened runtime＋timestamp＋entitlements、内側→外側）
+#   2) ditto で zip 化（公証提出用。zip コマンドは構造を壊すので必ず ditto）
+#   3) 公証（notarytool submit --wait）
+#   4) staple（.app に公証チケットを貼付）＋ Gatekeeper 確認
+#   5) 配布用 DMG を作成 →（推奨）DMG も署名・公証・staple
+#      併せて staple 済み .app の zip も dist-macos/ に出力（GitHub Releases 等向け）
+#
+# 前提（初回のみ）:
+#   - キーチェーンに Developer ID Application 証明書が入っていること
+#       security find-identity -v -p codesigning
+#       → 9737970DAE0495030DFF12A5BB6B442C62B044F0
+#         "Developer ID Application: YUUJI MARUYAMA (8V5P2K92Y6)"
+#   - notarytool のキーチェーンプロファイルを登録済みであること（認証情報はキーチェーンに保存）
+#       xcrun notarytool store-credentials "uwview-notary" \
+#         --apple-id "<AppleID>" --team-id 8V5P2K92Y6 --password "<App固有パスワード>"
+#     ※App固有パスワードは appleid.apple.com で発行。スクリプトには絶対に書かない。
+#
+# 使い方:
+#   ./run_notarize.sh                       # osx-arm64 の既定 .app を処理
+#   ./run_notarize.sh --rid osx-x64         # Intel 版
+#   ./run_notarize.sh --build               # 先に build-app.sh を実行してから
+#   ./run_notarize.sh --app /path/to/App.app
+#   ./run_notarize.sh --skip-dmg-notarize   # DMG の公証を省略（中の .app は公証済み）
+#   環境変数で上書き可: SIGN_IDENTITY / NOTARY_PROFILE / TEAM_ID / PRODUCT
+
+set -euo pipefail
+
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJ_DIR="$(dirname "$HERE")"          # UwView.Desktop/（macos/ の親）
+ENT="$HERE/UwView.entitlements"
+
+# ---- 設定（環境変数で上書き可）----
+SIGN_IDENTITY="${SIGN_IDENTITY:-9737970DAE0495030DFF12A5BB6B442C62B044F0}"  # Developer ID Application: YUUJI MARUYAMA (8V5P2K92Y6)
+TEAM_ID="${TEAM_ID:-8V5P2K92Y6}"
+NOTARY_PROFILE="${NOTARY_PROFILE:-uwview-notary}"
+RID="osx-arm64"
+APP=""
+DO_BUILD=0
+DMG_NOTARIZE=1
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --rid)                RID="$2"; shift 2;;
+    --app)                APP="$2"; shift 2;;
+    --build)              DO_BUILD=1; shift;;
+    --profile)            NOTARY_PROFILE="$2"; shift 2;;
+    --identity)           SIGN_IDENTITY="$2"; shift 2;;
+    --skip-dmg-notarize)  DMG_NOTARIZE=0; shift;;
+    -h|--help)            grep '^#' "$0" | sed 's/^# \{0,1\}//'; exit 0;;
+    *) echo "不明な引数: $1" >&2; exit 1;;
+  esac
+done
+
+[[ "$(uname)" == "Darwin" ]] || { echo "エラー: macOS で実行してください。" >&2; exit 1; }
+command -v xcrun >/dev/null || { echo "エラー: Xcode Command Line Tools が必要です。" >&2; exit 1; }
+
+# ---- 0) 必要なら build ----
+if [[ $DO_BUILD -eq 1 ]]; then
+  echo "==> 0) build-app.sh ($RID)"
+  "$HERE/build-app.sh" "$RID"
+fi
+
+# .app の場所（未指定なら build-app.sh の出力先）
+[[ -n "$APP" ]] || APP="$PROJ_DIR/bin/$RID/UwView.app"
+[[ -d "$APP" ]] || { echo "エラー: .app が見つかりません: $APP" >&2; exit 1; }
+[[ -f "$ENT" ]] || { echo "エラー: entitlements が見つかりません: $ENT" >&2; exit 1; }
+
+# 署名IDがキーチェーンにあるか確認
+security find-identity -v -p codesigning | grep -q "$SIGN_IDENTITY" || {
+  echo "エラー: 署名ID $SIGN_IDENTITY がキーチェーンにありません。" >&2
+  echo "  security find-identity -v -p codesigning で確認してください。" >&2
+  exit 1
+}
+
+# Info.plist から実行体名・製品名・バージョンを取得（UVF/UVP どちらでも動くように）
+PB=/usr/libexec/PlistBuddy
+INFO="$APP/Contents/Info.plist"
+EXE="$("$PB" -c 'Print :CFBundleExecutable' "$INFO")"
+PRODUCT="${PRODUCT:-$("$PB" -c 'Print :CFBundleName' "$INFO")}"
+VERSION="$("$PB" -c 'Print :CFBundleShortVersionString' "$INFO" 2>/dev/null || echo 0.0.0)"
+ARCH="${RID#osx-}"                     # arm64 / x64
+SLUG="${PRODUCT// /}"                   # ファイル名用（空白除去）
+
+echo "==> 対象 : $APP"
+echo "    実行体=$EXE / 製品=$PRODUCT / 版=$VERSION / arch=$ARCH"
+echo "    署名ID=$SIGN_IDENTITY / notaryプロファイル=$NOTARY_PROFILE"
+
+CODESIGN=(codesign --force --timestamp --options runtime)
+
+# ============================================================
+# 1) コード署名（内側 → 外側）
+# ============================================================
+echo "==> 1/5 コード署名"
+# 1a. ネストされた Mach-O（dylib/so/その他バイナリ）を先に署名。メイン実行体は後で entitlements 付きで署名するため除外。
+while IFS= read -r -d '' f; do
+  [[ "$f" == "$APP/Contents/MacOS/$EXE" ]] && continue
+  if file "$f" | grep -q 'Mach-O'; then
+    "${CODESIGN[@]}" -s "$SIGN_IDENTITY" "$f"
+  fi
+done < <(find "$APP/Contents" -type f -print0)
+
+# 1b. メイン実行体（entitlements 付き）
+"${CODESIGN[@]}" --entitlements "$ENT" -s "$SIGN_IDENTITY" "$APP/Contents/MacOS/$EXE"
+# 1c. .app 本体（entitlements 付き・最後に署名）
+"${CODESIGN[@]}" --entitlements "$ENT" -s "$SIGN_IDENTITY" "$APP"
+codesign --verify --deep --strict --verbose=2 "$APP"
+echo "    署名OK"
+
+# 作業ディレクトリ・出力先
+WORK="$(mktemp -d)"
+trap 'rm -rf "$WORK"' EXIT
+OUT="$PROJ_DIR/dist-macos"
+mkdir -p "$OUT"
+
+# ============================================================
+# 2) zip 化（公証提出用・ditto 必須）
+# ============================================================
+echo "==> 2/5 zip 化（ditto・公証提出用）"
+ZIP_SUBMIT="$WORK/${SLUG}-${ARCH}-submit.zip"
+ditto -c -k --keepParent "$APP" "$ZIP_SUBMIT"
+
+# ============================================================
+# 3) 公証（.app）
+# ============================================================
+echo "==> 3/5 公証（notarytool submit --wait）"
+xcrun notarytool submit "$ZIP_SUBMIT" --keychain-profile "$NOTARY_PROFILE" --wait
+
+# ============================================================
+# 4) staple（.app に公証チケットを貼付）
+# ============================================================
+echo "==> 4/5 staple（.app）"
+xcrun stapler staple "$APP"
+xcrun stapler validate "$APP"
+echo "    Gatekeeper 確認（.app）"
+spctl --assess --type execute --verbose=4 "$APP" || true
+
+# staple 済み .app の配布用 zip も出力（GitHub Releases 等向け・既存 dist 命名に合わせる）
+ZIP_DIST="$OUT/${SLUG}-macos-${ARCH}.zip"
+ditto -c -k --keepParent "$APP" "$ZIP_DIST"
+echo "    zip: $ZIP_DIST"
+
+# ============================================================
+# 5) 配布用 DMG 作成（＋署名・公証・staple）
+# ============================================================
+echo "==> 5/5 配布用 DMG 作成"
+STAGE="$WORK/dmg"
+mkdir -p "$STAGE"
+cp -R "$APP" "$STAGE/"
+ln -s /Applications "$STAGE/Applications"     # ドラッグ&ドロップ導線
+DMG="$OUT/${SLUG}-${VERSION}-macos-${ARCH}.dmg"
+rm -f "$DMG"
+hdiutil create -volname "$PRODUCT $VERSION" -srcfolder "$STAGE" -fs HFS+ -format UDZO -ov "$DMG"
+
+echo "    DMG 署名"
+codesign --force --timestamp -s "$SIGN_IDENTITY" "$DMG"
+
+if [[ $DMG_NOTARIZE -eq 1 ]]; then
+  echo "    DMG 公証 → staple"
+  xcrun notarytool submit "$DMG" --keychain-profile "$NOTARY_PROFILE" --wait
+  xcrun stapler staple "$DMG"
+  xcrun stapler validate "$DMG"
+  spctl --assess --type open --context context:primary-signature --verbose=4 "$DMG" || true
+else
+  echo "    （--skip-dmg-notarize 指定のため DMG の公証は省略。中の .app は公証・staple 済み）"
+fi
+
+echo ""
+echo "==> 完了"
+echo "    DMG : $DMG"
+echo "    ZIP : $ZIP_DIST"
+echo "    （いずれも署名＋公証＋staple 済み・そのまま配布可）"

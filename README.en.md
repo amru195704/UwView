@@ -10,15 +10,17 @@ UwView is a rebuild (in [Avalonia UI](https://avaloniaui.net/)) of a large-text 
 
 It is a **viewer**, not an editor (read-only).
 
-## 📣 Announcement: "UwView Pro" — even faster — in development
+## 📣 Announcement: UwView Pro is now available (macOS first)
 
-We're building **UwView Pro**, which pushes large-file performance further. On top of parallel index construction, a **compressed sidecar cache** (a single `.uwvz` file with the line index built in, checksum-protected) delivers instant re-open from the second time on, plus dramatically faster full-text search.
+**Buy / details → [UwView Pro product page](https://uvp.y42u.net/pro/)** (one-time **$129** / **$9**/month). macOS 11+ (Apple Silicon / Intel) first; Windows / Linux coming soon.
+
+**UwView Pro** is now available (macOS first). It pushes large-file performance further: on top of parallel index construction, a **compressed sidecar cache** (a single `.uwvz` file with the line index built in, checksum-protected) delivers instant re-open from the second time on, plus dramatically faster full-text search.
 
 Measured against the well-known large-log viewer **[klogg](https://klogg.filimonov.dev/)** (same file, same patterns, across **three storage types**):
 
 > Conditions: OpenStreetMap Japan `japan-latest.osm`, 47.73 GB / 892,239,125 lines. MacBook Air / Apple M4 (10 cores) / 32 GB RAM. Measured storage bandwidth (dd): USB HDD 0.10 GB/s ・ USB SSD 0.41 GB/s ・ internal SSD 3.29 GB/s. klogg 24.11.0. Hit counts matched exactly across klogg, UwView Pro, and direct raw-file search for every row (cross-verified that the searches are semantically identical).
 
-| Metric | klogg (24.11.0) | **UwView Pro (in dev)** | Pro ÷ klogg |
+| Metric | klogg (24.11.0) | **UwView Pro** | Pro ÷ klogg |
 |---|---|---|---|
 | First open | HDD ~9 min ・ USB SSD ~110 s ・ internal SSD ~15 s (**every time**; only the top is visible until done) | HDD 10.6 min ・ USB SSD 138.5 s ・ internal SSD 23.3 s (**once only**; whole file navigable immediately; includes building the compressed cache) | slightly slower once (see payoff below) |
 | **Re-open (2nd time on)** | same as first open (re-indexes every time) | **0.01–0.07 s** | **~1,250–50,000×** |
@@ -31,7 +33,7 @@ Measured against the well-known large-log viewer **[klogg](https://klogg.filimon
 - At everyday working sizes (3 GB / 100 M lines) both tools search within seconds; Pro's value there is **operational** — no re-indexing on every re-open (klogg: 47 s / 8 s / 2 s vs. Pro: a few ms), and archives at 1/9–1/13 the size that open directly.
 - The first open is slightly slower than klogg because it also builds the compressed cache — that one-time cost buys millisecond re-opens, seconds-level searches, and 1/9 storage thereafter.
 
-> UwView Pro is being prepared as a commercial (paid) edition. Stay tuned.
+> **UwView Pro is available now.** See the [product page](https://uvp.y42u.net/pro/) to buy or learn more (one-time $129 / $9 per month; macOS first, Windows / Linux coming soon). The first open is the same speed as the free version and other tools — Pro's edge is instant re-open, faster search, and 1/9 archiving.
 
 ## Highlights
 
