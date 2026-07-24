@@ -9,6 +9,7 @@
 
   <PropertyGroup>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>../UwView/Assets/Icon.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>

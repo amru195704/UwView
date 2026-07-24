@@ -45,6 +45,7 @@ pack_mac() { # $1=rid  $2=arch-label
   <key>CFBundleDisplayName</key><string>UwView</string>
   <key>CFBundleIdentifier</key><string>net.y42u.uwview</string>
   <key>CFBundleExecutable</key><string>$EXE</string>
+  <key>CFBundleIconFile</key><string>UwView.icns</string>
   <key>CFBundleShortVersionString</key><string>$VER</string>
   <key>CFBundleVersion</key><string>$VER</string>
   <key>CFBundlePackageType</key><string>APPL</string>
@@ -52,6 +53,7 @@ pack_mac() { # $1=rid  $2=arch-label
   <key>NSHighResolutionCapable</key><true/>
 </dict></plist>
 PLIST
+  cp "UwView.Desktop/macos/UwView.icns" "$app/Contents/Resources/UwView.icns"
   chmod +x "$macos/$EXE"
 
   if [ -n "${MAC_SIGN_ID:-}" ]; then
