@@ -4,6 +4,12 @@
     <OutputType>Exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Nullable>enable</Nullable>
+
+    <!-- WASM: トリミングでローカライズ（リフレクションバインド）とサテライトリソースが
+         壊れるため無効化。グローバリゼーションを有効にして ja サテライトを読み込む。 -->
+    <PublishTrimmed>false</PublishTrimmed>
+    <InvariantGlobalization>false</InvariantGlobalization>
+    <BlazorWebAssemblyLoadAllGlobalizationData>true</BlazorWebAssemblyLoadAllGlobalizationData>
   </PropertyGroup>
 
   <ItemGroup>
