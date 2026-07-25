@@ -333,9 +333,12 @@ public partial class MainView : UserControl
         UwView.App.Settings.Save();
     }
 
+    private bool _highlighterOverlayOpen;
+
     private void OpenHighlighter()
     {
         if (_highlighterWindow is not null) { _highlighterWindow.Activate(); return; }
+        if (_highlighterOverlayOpen) return;             // ブラウザ: 既にオーバーレイ表示中
         var cfg = UwView.App.Settings.Highlighters;
         var tab = _vm?.ActiveTab;
         var set = ActiveHlSet();           // このタブのセット（既定割当込み）
@@ -344,37 +347,51 @@ public partial class MainView : UserControl
         var vm = new HighlighterViewModel(cfg);
         // 編集中はプレビューのみ（保存は「保存」「設定」まで行わない）
         vm.Changed += (_, _) => { TextView.Highlighter = vm.Compile(); TextView.Refresh(); };
-        _highlighterWindow = new HighlighterWindow(vm)
+        Action applied = () =>                            // 保存/設定: このタブのセットを更新・永続化
         {
-            Applied = () =>                              // 保存/設定: このタブのセットを更新・永続化
-            {
-                if (tab is not null) tab.HighlighterSetId = cfg.ActiveSetId;
-                UwView.App.Settings.Save();
-            },
-            Cancelled = () =>                            // キャンセル/×: 破棄・編集前へ戻す
-            {
-                cfg.ActiveSetId = origActiveId;
-                TextView.Highlighter = CompiledHighlighter.Build(ActiveHlSet());
-                TextView.Refresh();
-            },
+            if (tab is not null) tab.HighlighterSetId = cfg.ActiveSetId;
+            UwView.App.Settings.Save();
         };
-        _highlighterWindow.Closed += (_, _) => _highlighterWindow = null;
-        if (TopLevel.GetTopLevel(this) is Window owner) _highlighterWindow.Show(owner);
-        else _highlighterWindow.Show();
+        Action cancelled = () =>                          // キャンセル/×: 破棄・編集前へ戻す
+        {
+            cfg.ActiveSetId = origActiveId;
+            TextView.Highlighter = CompiledHighlighter.Build(ActiveHlSet());
+            TextView.Refresh();
+        };
+
+        if (TopLevel.GetTopLevel(this) is Window owner)   // デスクトップ: 別ウィンドウ
+        {
+            _highlighterWindow = new HighlighterWindow(vm) { Applied = applied, Cancelled = cancelled };
+            _highlighterWindow.Closed += (_, _) => _highlighterWindow = null;
+            _highlighterWindow.Show(owner);
+        }
+        else                                              // ブラウザ(WASM): アプリ内オーバーレイ
+        {
+            var view = new HighlighterView(vm) { Applied = applied, Cancelled = cancelled };
+            _highlighterOverlayOpen = true;
+            var remove = ShowOverlay(view, preferredWidth: 900); // 列が多いので広め
+            view.CloseRequested += () => { remove(); view.NotifyClosed(); _highlighterOverlayOpen = false; };
+        }
     }
 
     // ── フィルタ結果ポップアップ（公開版: 1ウィンドウ・アクティブタブ連動）────
 
     private FilterResultsWindow? _filterResultsWindow;
+    private FilterResultsView? _filterResultsView;       // ブラウザ: オーバーレイ中身
     private FilterResultsViewModel? _filterResultsVm;
     private bool _autoPopupPending;
 
     private void OpenFilterResults()
     {
-        if (_filterResultsWindow is not null)
+        if (_filterResultsWindow is not null)             // デスクトップ: 既に開いていれば前面へ
         {
             _filterResultsVm!.SetSession(_vm?.ActiveTab?.Session);
             _filterResultsWindow.Activate();
+            return;
+        }
+        if (_filterResultsView is not null)               // ブラウザ: 既にオーバーレイ表示中
+        {
+            _filterResultsVm!.SetSession(_vm?.ActiveTab?.Session);
             return;
         }
 
@@ -382,17 +399,81 @@ public partial class MainView : UserControl
             onJump: off => { _currentHitOffset = off; TextView.JumpToOffsetCentered(off); TextView.Focus(); },
             maxContext: 1); // UVF は前後±1 まで（±N は Pro 限定）
         _filterResultsVm.SetSession(_vm?.ActiveTab?.Session);
-        _filterResultsWindow = new FilterResultsWindow(_filterResultsVm);
-        _filterResultsWindow.Closed += (_, _) =>
+
+        if (TopLevel.GetTopLevel(this) is Window owner)   // デスクトップ: 別ウィンドウ
         {
-            _filterResultsWindow = null;
-            _filterResultsVm = null; // Dispose はウィンドウ側で実施済み
+            _filterResultsWindow = new FilterResultsWindow(_filterResultsVm);
+            _filterResultsWindow.Closed += (_, _) =>
+            {
+                _filterResultsWindow = null;
+                _filterResultsVm = null; // Dispose はウィンドウ側で実施済み
+            };
+            _filterResultsWindow.Show(owner);
+        }
+        else                                              // ブラウザ(WASM): アプリ内オーバーレイ
+        {
+            var view = new FilterResultsView(_filterResultsVm);
+            _filterResultsView = view;
+            var remove = ShowOverlay(view, preferredWidth: 680);
+            view.CloseRequested += () =>
+            {
+                remove();
+                view.DisposeView();
+                _filterResultsView = null;
+                _filterResultsVm = null;
+            };
+        }
+    }
+
+    /// <summary>
+    /// ブラウザ(WASM)などウィンドウを開けない環境で、ダイアログの中身を
+    /// アプリ内オーバーレイとして表示する。メインを同時に見られるよう画面右側にドッキングし、
+    /// 左側（メイン表示）は暗転させず操作もそのまま通す。戻り値はオーバーレイを除去するアクション。
+    /// </summary>
+    private Action ShowOverlay(Control content, double preferredWidth = 720)
+    {
+        var layer = Avalonia.Controls.Primitives.OverlayLayer.GetOverlayLayer(this);
+        if (layer is null) return static () => { };
+
+        var frame = new Border
+        {
+            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right,   // 画面右端へドッキング
+            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Stretch,
+            Width = preferredWidth,
+            Margin = new Avalonia.Thickness(0, 6, 6, 6),
+            Background = Avalonia.Media.Brushes.White,
+            BorderBrush = new Avalonia.Media.SolidColorBrush(Avalonia.Media.Color.FromRgb(0x99, 0x99, 0x99)),
+            BorderThickness = new Avalonia.Thickness(1),
+            CornerRadius = new Avalonia.CornerRadius(6),
+            ClipToBounds = true,
+            Child = content,
+            BoxShadow = new Avalonia.Media.BoxShadows(
+                new Avalonia.Media.BoxShadow
+                {
+                    Blur = 14, OffsetX = -3, OffsetY = 0,
+                    Color = Avalonia.Media.Color.FromArgb(0x40, 0, 0, 0),
+                }),
         };
 
-        if (TopLevel.GetTopLevel(this) is Window owner)
-            _filterResultsWindow.Show(owner);
-        else
-            _filterResultsWindow.Show();
+        // OverlayLayer は Canvas 系で子をシュリンクラップして左上に置くため、
+        // ホストをレイヤー全体のサイズに明示的に合わせ、その中で frame を右寄せする。
+        // ホスト背景は null＝空き領域（左側=メイン表示）は当たり判定が無くクリックが素通りする。
+        var host = new Panel();
+        host.Children.Add(frame);
+        void SizeHost()
+        {
+            host.Width = layer.Bounds.Width;
+            host.Height = layer.Bounds.Height;
+        }
+        SizeHost();
+        EventHandler onLayout = (_, _) => SizeHost();
+        layer.LayoutUpdated += onLayout;
+        layer.Children.Add(host);
+        return () =>
+        {
+            layer.LayoutUpdated -= onLayout;
+            layer.Children.Remove(host);
+        };
     }
 
     /// <summary>直近にジャンプした検索ヒットの行頭オフセット（次へ/前への基準）。-1=未設定。</summary>
