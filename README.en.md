@@ -10,11 +10,11 @@ UwView is a rebuild (in [Avalonia UI](https://avaloniaui.net/)) of a large-text 
 
 It is a **viewer**, not an editor (read-only).
 
-## 📣 Announcement: UwView Pro is now available (macOS first)
+## 📣 Announcement: UwView Pro is now available (Windows, macOS & Linux)
 
-**Buy / details → [UwView Pro product page](https://uvp.y42u.net/pro/)** (one-time **$129** / **$9**/month). macOS 11+ (Apple Silicon / Intel) first; Windows / Linux coming soon.
+**Buy / details → [UwView Pro product page](https://uvp.y42u.net/pro/)** (one-time **$129** / **$9**/month). Windows 10/11, macOS 11+ (Apple Silicon / Intel) and Linux (x86_64) — one license, every OS. (Windows build is currently unsigned: SmartScreen → More info → Run anyway.)
 
-**UwView Pro** is now available (macOS first). It pushes large-file performance further: on top of parallel index construction, a **compressed sidecar cache** (a single `.uwvz` file with the line index built in, checksum-protected) delivers instant re-open from the second time on, plus dramatically faster full-text search.
+**UwView Pro** is now available for Windows, macOS and Linux. It pushes large-file performance further: on top of parallel index construction, a **compressed sidecar cache** (a single `.uwvz` file with the line index built in, checksum-protected) delivers instant re-open from the second time on, plus dramatically faster full-text search.
 
 Measured against the well-known large-log viewer **[klogg](https://klogg.filimonov.dev/)** (same file, same patterns, across **three storage types**):
 
@@ -33,7 +33,7 @@ Measured against the well-known large-log viewer **[klogg](https://klogg.filimon
 - At everyday working sizes (3 GB / 100 M lines) both tools search within seconds; Pro's value there is **operational** — no re-indexing on every re-open (klogg: 47 s / 8 s / 2 s vs. Pro: a few ms), and archives at 1/9–1/13 the size that open directly.
 - The first open is slightly slower than klogg because it also builds the compressed cache — that one-time cost buys millisecond re-opens, seconds-level searches, and 1/9 storage thereafter.
 
-> **UwView Pro is available now.** See the [product page](https://uvp.y42u.net/pro/) to buy or learn more (one-time $129 / $9 per month; macOS first, Windows / Linux coming soon). The first open is the same speed as the free version and other tools — Pro's edge is instant re-open, faster search, and 1/9 archiving.
+> **UwView Pro is available now.** See the [product page](https://uvp.y42u.net/pro/) to buy or learn more (one-time $129 / $9 per month; Windows, macOS & Linux — one license, every OS). You can read and search the whole file the moment it opens; the first open's read speed matches the free version and other tools — Pro's edge is the instant 2nd open with line numbers, faster search, and 1/9 archiving.
 
 ## Highlights
 
