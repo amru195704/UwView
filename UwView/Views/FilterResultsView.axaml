@@ -38,32 +38,13 @@
             </WrapPanel>
         </Border>
 
-        <!-- 結果リスト（UI仮想化。ダブルクリック/Enter でメインへジャンプ。
-             複数行選択 → 右クリックで copy/save。ListArea は Pro の矩形選択オーバーレイ挿入先 -->
-        <Grid x:Name="ListArea">
-        <ListBox x:Name="RowList" ItemsSource="{Binding Rows}"
-                 SelectionMode="Multiple" Background="White"
-                 FontFamily="Menlo,Osaka-Mono,Consolas,monospace" FontSize="12">
-            <ListBox.Styles>
-                <Style Selector="ListBoxItem">
-                    <Setter Property="Padding" Value="6,1" />
-                    <Setter Property="MinHeight" Value="0" />
-                </Style>
-            </ListBox.Styles>
-            <ListBox.ItemTemplate>
-                <DataTemplate x:DataType="vm:FilterRow">
-                    <StackPanel Orientation="Horizontal" Spacing="10" Opacity="{Binding RowOpacity}">
-                        <TextBlock Text="{Binding HitNumberText}" Width="66"
-                                   TextAlignment="Right" Foreground="#1A6FE8" />
-                        <TextBlock Text="{Binding LineNumberText}" Width="90"
-                                   TextAlignment="Right" Foreground="#777777" />
-                        <ctrl:HighlightTextBlock Text="{Binding Text}"
-                                                 HighlightRegex="{Binding HighlightRegex}"
-                                                 Foreground="Black" TextTrimming="CharacterEllipsis" />
-                    </StackPanel>
-                </DataTemplate>
-            </ListBox.ItemTemplate>
-        </ListBox>
+        <!-- 結果リスト（自前描画。メインの TextView と同じ方式で可視行だけ描く。
+             ダブルクリック/Enter でメインへジャンプ、左ドラッグで行範囲選択、右クリックで copy/save。
+             ListArea は Pro の矩形選択オーバーレイ挿入先 -->
+        <Grid x:Name="ListArea" ColumnDefinitions="*,Auto">
+            <ctrl:FilterListView x:Name="RowList" Grid.Column="0" />
+            <ScrollBar x:Name="RowScroll" Grid.Column="1" Orientation="Vertical"
+                       AllowAutoHide="False" Width="14" />
         </Grid>
 
     </DockPanel>

@@ -36,9 +36,6 @@ public sealed class FilterRow
     /// <summary>ヒット行のハイライト用（文脈行・separator は null）。</summary>
     public Regex? HighlightRegex { get; init; }
 
-    /// <summary>文脈行・区切り行は淡く表示する（指示書 §2）。</summary>
-    public double RowOpacity => IsHit ? 1.0 : 0.55;
-
     public FilterRow(LineDocument? doc) => _doc = doc;
 
     private long _resolvedLine = -2; // -2 = 未解決
@@ -146,6 +143,12 @@ public sealed partial class FilterResultsViewModel : ObservableObject, IDisposab
     /// <summary>現在表示中の検索位置（1始まりの通し番号。0=未確定）。件数表示 "C/Total" の C。</summary>
     private long _currentOrdinal;
 
+    /// <summary>
+    /// 閉じた時点の先頭表示行。閉じて開き直したときに同じ位置へ戻すためにここに置く
+    /// （VM はポップアップを閉じても破棄せず使い回す）。
+    /// </summary>
+    public int SavedTopRow { get; set; }
+
     /// <summary>前後±N を UI で使えるか（MaxContext > 0）。</summary>
     public bool AllowContext => MaxContext > 0;
 
@@ -164,6 +167,7 @@ public sealed partial class FilterResultsViewModel : ObservableObject, IDisposab
     public void SetSession(DocumentSession? session)
     {
         if (ReferenceEquals(_session, session)) { Rebuild(); return; }
+        InvalidateLineMapping();
         if (_session is not null)
             _session.SearchUpdated -= OnSearchUpdated;
         _session = session;
@@ -178,6 +182,9 @@ public sealed partial class FilterResultsViewModel : ObservableObject, IDisposab
 
     private void OnSearchUpdated(object? sender, EventArgs e)
     {
+        // ヒット列が変わったので行番号の写像は作り直し（検索完了時に Rebuild から再開される）
+        InvalidateLineMapping();
+
         // 検索中はヒットのバッチごとに呼ばれる。数十万件になると再構築の連打で
         //（特に WASM で）固まるため、進行中は 120ms 間隔に間引く。完了時は必ず反映。
         if (_session is { IsSearching: true })
@@ -213,27 +220,88 @@ public sealed partial class FilterResultsViewModel : ObservableObject, IDisposab
         if (n <= 0 || !doc.IsIndexed)
         {
             // ヒット行のみ: ヒット（行頭オフセット列）をそのまま1行=1ヒットで並べる
+            CancelLineMapping();
             Rows = new HitOnlyRowList(doc, s.SearchHits, regex);
+        }
+        else if (_hitLines is { } cached && cached.Length == s.SearchHits.Count)
+        {
+            // 行番号への写像が済んでいる: ブロック結合 → 遅延展開
+            Rows = new BlockRowList(doc, FilterBlocks.Build(cached, n, doc.TotalLines ?? 0), regex,
+                s.SearchHits);
         }
         else
         {
-            // 前後±N: 行番号へ写像 → ブロック結合 → 遅延展開
-            var hits = s.SearchHits;
-            var hitLines = new long[hits.Count];
-            bool incomplete = false;
-            for (int i = 0; i < hits.Count; i++)
-            {
-                hitLines[i] = doc.OffsetToLineIndex(hits[i]);
-                incomplete |= doc.LastReadIncomplete;
-            }
-            // WASM: 行番号の写像にデータ未到着が混じるとブロックがずれる。
-            // 到着後の再構築（DataArrived → Rebuild）で正しくなるので、それまではヒット行のみ表示。
-            Rows = incomplete
-                ? new HitOnlyRowList(doc, hits, regex)
-                : new BlockRowList(doc, FilterBlocks.Build(hitLines, n, doc.TotalLines ?? 0), regex);
+            // 写像がまだ: 先にヒット行のみを出しておき、裏で非同期に写像する。
+            // 同期 Read で写像すると WASM の未取得チャンクで数え落とし、
+            // DataArrived → Rebuild → また未取得… の無限ループになる（タブが固まる）。
+            Rows = new HitOnlyRowList(doc, s.SearchHits, regex);
+            StartLineMapping(s, doc);
         }
 
         UpdateHitInfo();
+    }
+
+    // ── ヒット → 行番号の非同期写像（前後±N 用）──────────────
+
+    /// <summary>写像済みのヒット行番号。ヒット列が変わったら破棄する。</summary>
+    private long[]? _hitLines;
+    private CancellationTokenSource? _mapCts;
+
+    private void CancelLineMapping()
+    {
+        _mapCts?.Cancel();
+        _mapCts = null;
+    }
+
+    /// <summary>ヒット列が変わったら写像結果を捨てる（検索やり直し・タブ切替）。</summary>
+    private void InvalidateLineMapping()
+    {
+        CancelLineMapping();
+        _hitLines = null;
+    }
+
+    private void StartLineMapping(DocumentSession session, LineDocument doc)
+    {
+        if (_mapCts is not null) return;    // 実行中は二重起動しない
+        if (session.IsSearching) return;    // ヒットが増え続けている間は待つ
+
+        var hits = session.SearchHits;
+        int count = hits.Count;
+        if (count == 0) return;
+
+        var cts = new CancellationTokenSource();
+        _mapCts = cts;
+        _ = MapAsync(session, doc, count, cts);
+    }
+
+    private async Task MapAsync(DocumentSession session, LineDocument doc, int count, CancellationTokenSource cts)
+    {
+        try
+        {
+            var lines = new long[count];
+            var hits = session.SearchHits;
+            for (int i = 0; i < count; i++)
+            {
+                cts.Token.ThrowIfCancellationRequested();
+                lines[i] = await doc.OffsetToLineIndexAsync(hits[i], cts.Token);
+            }
+            if (cts.IsCancellationRequested || !ReferenceEquals(_mapCts, cts)) return;
+            if (!ReferenceEquals(_session, session) || session.SearchHits.Count != count) return;
+
+            _hitLines = lines;
+            _mapCts = null;
+            Rebuild();      // 写像が揃ったので ±N のブロック表示へ差し替える
+        }
+        catch (Exception e) when (e is OperationCanceledException or IOException or ObjectDisposedException
+                                   or InvalidOperationException)
+        {
+            // キャンセル・ファイル閉じ・索引破棄は無視（表示はヒット行のみのまま）
+        }
+        finally
+        {
+            if (ReferenceEquals(_mapCts, cts)) _mapCts = null;
+            cts.Dispose();
+        }
     }
 
     /// <summary>件数表示を更新する（現在位置が判っていれば "C/Total"、未確定なら "Total"）。</summary>
@@ -334,6 +402,7 @@ public sealed partial class FilterResultsViewModel : ObservableObject, IDisposab
     public void Dispose()
     {
         _saveCts?.Cancel();
+        CancelLineMapping();
         if (_session is not null)
             _session.SearchUpdated -= OnSearchUpdated;
         _session = null;
@@ -428,11 +497,15 @@ public sealed partial class FilterResultsViewModel : ObservableObject, IDisposab
         private readonly long[] _hitStart; // 各ブロック先頭ヒットの通し番号（0始まり）
         private readonly int _count;
 
-        public BlockRowList(LineDocument doc, List<FilterBlock> blocks, Regex? regex)
+        private readonly IReadOnlyList<long> _hitOffsets; // ヒット通し番号(0始まり) → 行頭オフセット
+
+        public BlockRowList(LineDocument doc, List<FilterBlock> blocks, Regex? regex,
+            IReadOnlyList<long> hitOffsets)
         {
             _doc = doc;
             _blocks = blocks;
             _regex = regex;
+            _hitOffsets = hitOffsets;
             _rowStart = new long[blocks.Count];
             _hitStart = new long[blocks.Count];
             long pos = 0, hitNo = 0;
@@ -465,12 +538,17 @@ public sealed partial class FilterResultsViewModel : ObservableObject, IDisposab
 
             long line = block.StartLine + rel;
             int hitIdx = IndexOfSorted(block.HitLines, line);
+            long hitNo = hitIdx >= 0 ? _hitStart[lo] + hitIdx : -1;
+            // ヒット行は行頭オフセットが判っているので、索引を介さず直読みできる
+            // （WASM でデータ未到着のとき行番号経由だと誤った行を読んでしまう）
+            long offset = hitNo >= 0 && hitNo < _hitOffsets.Count ? _hitOffsets[(int)hitNo] : -1;
             return new FilterRow(_doc)
             {
                 RowIndex = index,
                 IsHit = hitIdx >= 0,
                 LineIndex = line,
-                HitOrdinal = hitIdx >= 0 ? _hitStart[lo] + hitIdx + 1 : -1,
+                Offset = offset,
+                HitOrdinal = hitNo >= 0 ? hitNo + 1 : -1,
                 HighlightRegex = hitIdx >= 0 ? _regex : null,
             };
         }

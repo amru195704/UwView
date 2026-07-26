@@ -140,8 +140,26 @@ public class TextView : Control
         long line = LineFromPoint(p);
         string text;
         try { text = doc.GetLine(line); } catch { return null; }
-        int target = Math.Max(0, (int)Math.Round((p.X - (_lastGutter + Padding)) / Math.Max(1, _digitWidth)));
-        return (line, text, TextCells.CharIndexAtCell(text, target));
+        return (line, text, CharIndexAtX(text, p.X - (_lastGutter + Padding)));
+    }
+
+    /// <summary>
+    /// 本文左端からの x → 行内文字インデックス。実際の描画幅で求める。
+    /// 「1 文字 = 固定幅」で計算するとプロポーショナルフォント（WASM は等幅が無く
+    /// 同梱の Noto Sans JP に落ちる）で選択位置と描画位置がずれる。
+    /// 幅は単調増加なので二分探索（FormattedText の生成は O(log n) 回）。
+    /// </summary>
+    private int CharIndexAtX(string text, double x)
+    {
+        if (x <= 0 || text.Length == 0) return 0;
+        int lo = 0, hi = text.Length;
+        while (lo < hi)
+        {
+            int mid = (lo + hi + 1) >> 1;
+            if (MakeText(text[..mid]).WidthIncludingTrailingWhitespace <= x) lo = mid;
+            else hi = mid - 1;
+        }
+        return lo;
     }
 
     /// <summary>点の位置の語（連続する非空白トークン。右クリックのキャレット語に使用）。</summary>
@@ -894,8 +912,10 @@ public class TextView : Control
             // 語選択の反転表示（クイック着色対象）
             if (_wordSel is { } ws && lineMode && lineNo - 1 == ws.Line && text.Length >= ws.End)
             {
-                double wx = gutter + Padding + TextCells.CellOffset(text, ws.Start) * _digitWidth;
-                double ww = (TextCells.CellOffset(text, ws.End) - TextCells.CellOffset(text, ws.Start)) * _digitWidth;
+                // 位置・幅は実際の描画幅で求める（検索ハイライトと同じ方式。
+                // 固定幅で計算するとプロポーショナルフォントで塗る位置がずれる）
+                double wx = x + (ws.Start == 0 ? 0 : MakeText(text[..ws.Start]).WidthIncludingTrailingWhitespace);
+                double ww = MakeText(text[ws.Start..ws.End]).WidthIncludingTrailingWhitespace;
                 ctx.FillRectangle(wordBrush, new Rect(wx, y, Math.Max(2, ww), lh));
             }
 

@@ -101,6 +101,46 @@ public sealed class LineDocument : IAsyncDisposable
         return Math.Min(lineIndex, Math.Max(0, index.TotalLines - 1));
     }
 
+    /// <summary>
+    /// <see cref="OffsetToLineIndex"/> の非同期版。読み取りを ReadAsync で行うため、
+    /// WASM の未取得チャンクも await で取得でき、改行の数え落ちが起きない。
+    /// 多数のヒットを一括で行番号へ写像する用途（フィルタ結果の前後±N）向け。
+    /// </summary>
+    public async ValueTask<long> OffsetToLineIndexAsync(long byteOffset, CancellationToken ct = default)
+    {
+        var index = Index ?? throw new InvalidOperationException("索引未構築です。");
+        long off = Math.Clamp(byteOffset, BomLength, Length);
+
+        int lo = 0, hi = index.CheckpointCount - 1, k = 0;
+        while (lo <= hi)
+        {
+            int mid = (lo + hi) >> 1;
+            if (index.GetCheckpoint(mid) <= off) { k = mid; lo = mid + 1; }
+            else hi = mid - 1;
+        }
+
+        long cp = index.GetCheckpoint(k);
+        long lineIndex = (long)k * _blockLines + await CountNewlinesAsync(cp, off, ct);
+        return Math.Min(lineIndex, Math.Max(0, index.TotalLines - 1));
+    }
+
+    private async ValueTask<long> CountNewlinesAsync(long from, long to, CancellationToken ct)
+    {
+        long count = 0, pos = from;
+        var buf = new byte[8192];
+        while (pos < to)
+        {
+            ct.ThrowIfCancellationRequested();
+            int want = (int)Math.Min(buf.Length, to - pos);
+            int got = await _src.ReadAsync(pos, buf.AsMemory(0, want), ct);
+            if (got <= 0) break;
+            for (int i = 0; i < got; i++)
+                if (buf[i] == (byte)'\n') count++;
+            pos += got;
+        }
+        return count;
+    }
+
     // ── ページモード ─────────────────────────────────────────
 
     /// <summary>指定バイトオフセットから rows 行ぶんを取得（索引不要）。行境界に揃えて読む（§3.1-1）。</summary>

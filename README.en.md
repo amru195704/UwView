@@ -149,7 +149,13 @@ sudo dotnet workload install wasm-tools   # once (needs admin; relinks Skia nati
 dotnet run --project UwView.Browser        # Chromium-based browsers recommended
 ```
 
-Same UI and same core as desktop. I/O is random reads via `blob.slice` (the whole file is never loaded into memory).
+- This hosts the app at `https://localhost:7169` (`http://localhost:5235`) and opens your default browser automatically (`launchBrowser: true` in `launchSettings.json`). If it doesn't open on its own, open that URL manually in a Chromium-based browser.
+- On first run, the browser may warn about the untrusted ASP.NET Core dev certificate. If so, run `dotnet dev-certs https --trust` once in your terminal, then reload the page.
+- Once the page loads, click **Open…** in the toolbar — the same control as the desktop build. This triggers the browser's native file-picker dialog; choose the text file you want to view there (opening a local path directly, drag & drop, and multi-select are not supported — always go through this dialog).
+- After picking a file, you get the same screen and the same operations as desktop (jump, search, highlighting, etc.). I/O is random reads via `blob.slice` (the whole file is never loaded into memory).
+- Stop the dev server with `Ctrl+C` in the terminal.
+
+Same UI and same core as desktop.
 
 ## Prebuilt binaries (`dist/`)
 

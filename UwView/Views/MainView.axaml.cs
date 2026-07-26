@@ -407,7 +407,8 @@ public partial class MainView : UserControl
             return;
         }
 
-        _filterResultsVm = new FilterResultsViewModel(
+        // VM は閉じても破棄せず使い回す（±N・表示位置・件数を引き継ぐため）
+        _filterResultsVm ??= new FilterResultsViewModel(
             onJump: off =>
             {
                 TextView.JumpToOffsetCentered(off);
@@ -420,11 +421,7 @@ public partial class MainView : UserControl
         if (TopLevel.GetTopLevel(this) is Window owner)   // デスクトップ: 別ウィンドウ
         {
             _filterResultsWindow = new FilterResultsWindow(_filterResultsVm);
-            _filterResultsWindow.Closed += (_, _) =>
-            {
-                _filterResultsWindow = null;
-                _filterResultsVm = null; // Dispose はウィンドウ側で実施済み
-            };
+            _filterResultsWindow.Closed += (_, _) => _filterResultsWindow = null;
             _filterResultsWindow.Show(owner);
         }
         else                                              // ブラウザ(WASM): アプリ内オーバーレイ
@@ -437,7 +434,6 @@ public partial class MainView : UserControl
                 remove();
                 view.DisposeView();
                 _filterResultsView = null;
-                _filterResultsVm = null;
             };
         }
     }

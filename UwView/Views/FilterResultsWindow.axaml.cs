@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using UwView.Controls;
 using UwView.Localization;
 using UwView.ViewModels;
 
@@ -30,6 +31,6 @@ public partial class FilterResultsWindow : Window
     // ── Pro 拡張用フック（PopupRectSelection.Attach から利用）。内側 View へ委譲 ────
     public Avalonia.Controls.Panel ToolbarHost => _view.ToolbarHost;
     public Avalonia.Controls.Panel ListHost => _view.ListHost;
-    public ListBox ResultsList => _view.ResultsList;
+    public FilterListView ResultsList => _view.ResultsList;
     public FilterResultsViewModel ViewModel => _view.ViewModel;
 }

@@ -42,7 +42,7 @@
                         ToolTip.Tip="{loc:Localize HlSaveTip}" />
                 <Button x:Name="ApplyButton" Content="{loc:Localize HlApply}"
                         ToolTip.Tip="{loc:Localize HlApplyTip}" />
-                <Button x:Name="CancelButton" Content="{loc:Localize Cancel}"
+                <Button x:Name="CancelButton" Content="{loc:Localize Close}"
                         ToolTip.Tip="{loc:Localize HlCancelTip}" />
             </StackPanel>
         </Border>
