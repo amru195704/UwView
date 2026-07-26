@@ -6,7 +6,7 @@ namespace UwView.Views;
 
 /// <summary>
 /// フィルタ結果ポップアップ（デスクトップ用の Window ホスト）。
-/// 中身は FilterResultsView。Window 固有機能（Close/Topmost/Title）を View から受けて適用する。
+/// 中身は FilterResultsView。Window 固有機能（Close/Title）を View から受けて適用する。
 /// ブラウザ(WASM)では Window を使えないため、MainView が FilterResultsView を直接オーバーレイ表示する。
 /// </summary>
 public partial class FilterResultsWindow : Window
@@ -18,7 +18,6 @@ public partial class FilterResultsWindow : Window
         InitializeComponent();
         _view = new FilterResultsView(vm);
         _view.CloseRequested += () => Close();
-        _view.TopmostRequested += on => Topmost = on;
         _view.TitleChanged += t => Title = t;
         Title = _view.CurrentTitle.Length > 0 ? _view.CurrentTitle : Localizer.Instance["FilterResultsTitle"];
         Content = _view;

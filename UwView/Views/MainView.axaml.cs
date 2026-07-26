@@ -55,6 +55,13 @@ public partial class MainView : UserControl
         // 検索（§11-①②⑥）
         SearchButton.Click += (_, _) => StartSearch();
         SearchBox.KeyDown += (_, e) => { if (e.Key == Key.Enter) { StartSearch(); e.Handled = true; } };
+        SearchBoxPlain.KeyDown += (_, e) => { if (e.Key == Key.Enter) { StartSearch(); e.Handled = true; } };
+        if (OperatingSystem.IsBrowser())
+        {
+            // WASM: IME 変換中の文字が二重に入る不具合を避けて素の TextBox を使う
+            SearchBox.IsVisible = false;
+            SearchBoxPlain.IsVisible = true;
+        }
         ClearSearchButton.Click += (_, _) => ClearSearch();
         NextHitButton.Click += (_, _) => GoToHit(next: true);
         PrevHitButton.Click += (_, _) => GoToHit(next: false);
@@ -527,6 +534,8 @@ public partial class MainView : UserControl
 
     private void OnSearchUpdated(object? sender, EventArgs e)
     {
+        // 件数表示とミニマップの無効化は軽いので毎バッチ反映する（進捗が止まって見えないように）。
+        // 重いのは結果一覧の再構築で、そちらは FilterResultsViewModel 側で間引いている。
         UpdateSearchInfo();
         Minimap.InvalidateVisual();
 
@@ -571,7 +580,12 @@ public partial class MainView : UserControl
     private void OnActiveIndexProgress(object? sender, EventArgs e) => UpdateStatus();
 
     private void OnDataArrived(object? sender, EventArgs e)
-        => Dispatcher.UIThread.Post(() => { TextView.Refresh(); });
+        => Dispatcher.UIThread.Post(() =>
+        {
+            TextView.Refresh();
+            // WASM: 未取得だった本文が届いたので、結果一覧の行も作り直して表示を埋める
+            _filterResultsVm?.Rebuild();
+        });
 
     // ── ファイルを開く（複数選択・D&D で一括追加）──────────────
 

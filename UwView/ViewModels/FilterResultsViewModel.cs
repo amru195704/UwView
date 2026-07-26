@@ -19,12 +19,16 @@ public sealed class FilterRow
     private string? _text;
     private string? _lineNumberText;
 
+    /// <summary>一覧内での行 index（0始まり）。ListBox の IndexOf を走査なしで答えるために持つ。</summary>
+    public int RowIndex { get; init; } = -1;
     /// <summary>ブロック区切り行か（`⋯` を表示）。</summary>
     public bool IsSeparator { get; init; }
     /// <summary>ヒット行か（false＝文脈行。淡色表示）。</summary>
     public bool IsHit { get; init; }
     /// <summary>行番号（0始まり。行モード時のみ有効、それ以外 -1）。</summary>
     public long LineIndex { get; init; } = -1;
+    /// <summary>LineIndex 未指定でも Offset から行番号を解決するか（行モードのヒット行）。</summary>
+    public bool ResolveLineFromOffset { get; init; }
     /// <summary>検索結果の通し番号（1〜N。ヒット行のみ、それ以外 -1）。</summary>
     public long HitOrdinal { get; init; } = -1;
     /// <summary>行頭バイトオフセット（ジャンプ用）。</summary>
@@ -37,11 +41,44 @@ public sealed class FilterRow
 
     public FilterRow(LineDocument? doc) => _doc = doc;
 
+    private long _resolvedLine = -2; // -2 = 未解決
+
+    /// <summary>
+    /// 実効行番号。LineIndex 未指定のヒット行は Offset から解決する。
+    /// WASM でデータ未到着のときは確定させず -1 を返す（到着後に再解決される）。
+    /// </summary>
+    private long EffectiveLineIndex
+    {
+        get
+        {
+            if (LineIndex >= 0) return LineIndex;
+            if (_resolvedLine != -2) return _resolvedLine;
+            if (!ResolveLineFromOffset || _doc is null || Offset < 0) return -1;
+            try
+            {
+                long v = _doc.OffsetToLineIndex(Offset);
+                if (_doc.LastReadIncomplete) return -1;
+                return _resolvedLine = v;
+            }
+            catch (Exception e) when (e is IOException or ObjectDisposedException or InvalidOperationException)
+            {
+                return -1;
+            }
+        }
+    }
+
     /// <summary>表示用行番号（1始まり）。ページモード（行番号不明）は空。</summary>
-    public string LineNumberText =>
-        _lineNumberText ??= IsSeparator || _doc is null ? ""
-            : LineIndex >= 0 ? (LineIndex + 1).ToString("N0", Localizer.Instance.Culture)
-            : "";
+    public string LineNumberText
+    {
+        get
+        {
+            if (_lineNumberText is not null) return _lineNumberText;
+            if (IsSeparator || _doc is null) return _lineNumberText = "";
+            long line = EffectiveLineIndex;
+            if (line < 0) return ""; // 未解決は焼き付けない
+            return _lineNumberText = (line + 1).ToString("N0", Localizer.Instance.Culture);
+        }
+    }
 
     /// <summary>検索結果の通し番号表示（1〜N。文脈行・区切り行は空）。</summary>
     public string HitNumberText =>
@@ -55,9 +92,15 @@ public sealed class FilterRow
             if (IsSeparator || _doc is null) return _text = "⋯";
             try
             {
-                _text = LineIndex >= 0 ? _doc.GetLine(LineIndex)
-                      : Offset >= 0 ? _doc.GetLineAtOffset(Offset)
-                      : "";
+                // 行頭オフセットが判っているなら索引を介さず直接読む。
+                // 行番号経由は checkpoint からの改行走査が必要で、WASM でデータ未到着だと
+                // 行番号自体がズレて誤った行を読んでしまう。
+                string t = Offset >= 0 ? _doc.GetLineAtOffset(Offset)
+                         : LineIndex >= 0 ? _doc.GetLine(LineIndex)
+                         : "";
+                // WASM: データ未到着なら焼き付けず、到着後の再表示で正しい本文にする
+                if (_doc.LastReadIncomplete) return t;
+                _text = t;
             }
             catch (Exception e) when (e is IOException or ObjectDisposedException)
             {
@@ -130,7 +173,21 @@ public sealed partial class FilterResultsViewModel : ObservableObject, IDisposab
         Rebuild();
     }
 
-    private void OnSearchUpdated(object? sender, EventArgs e) => Rebuild();
+    /// <summary>検索中の再構築を間引くための最終更新時刻（WASM でのフリーズ防止）。</summary>
+    private DateTime _lastRebuild = DateTime.MinValue;
+
+    private void OnSearchUpdated(object? sender, EventArgs e)
+    {
+        // 検索中はヒットのバッチごとに呼ばれる。数十万件になると再構築の連打で
+        //（特に WASM で）固まるため、進行中は 120ms 間隔に間引く。完了時は必ず反映。
+        if (_session is { IsSearching: true })
+        {
+            var now = DateTime.UtcNow;
+            if ((now - _lastRebuild).TotalMilliseconds < 120) return;
+            _lastRebuild = now;
+        }
+        Rebuild();
+    }
 
     partial void OnContextNChanged(int value)
     {
@@ -163,10 +220,17 @@ public sealed partial class FilterResultsViewModel : ObservableObject, IDisposab
             // 前後±N: 行番号へ写像 → ブロック結合 → 遅延展開
             var hits = s.SearchHits;
             var hitLines = new long[hits.Count];
+            bool incomplete = false;
             for (int i = 0; i < hits.Count; i++)
+            {
                 hitLines[i] = doc.OffsetToLineIndex(hits[i]);
-            var blocks = FilterBlocks.Build(hitLines, n, doc.TotalLines ?? 0);
-            Rows = new BlockRowList(doc, blocks, regex);
+                incomplete |= doc.LastReadIncomplete;
+            }
+            // WASM: 行番号の写像にデータ未到着が混じるとブロックがずれる。
+            // 到着後の再構築（DataArrived → Rebuild）で正しくなるので、それまではヒット行のみ表示。
+            Rows = incomplete
+                ? new HitOnlyRowList(doc, hits, regex)
+                : new BlockRowList(doc, FilterBlocks.Build(hitLines, n, doc.TotalLines ?? 0), regex);
         }
 
         UpdateHitInfo();
@@ -277,20 +341,34 @@ public sealed partial class FilterResultsViewModel : ObservableObject, IDisposab
 
     // ── 仮想化用の遅延リスト ─────────────────────────────────
 
-    /// <summary>ヒット行のみ（N=0 / 未索引）: hits[i] をそのまま行にする。</summary>
-    private sealed class HitOnlyRowList(LineDocument doc, IReadOnlyList<long> hits, Regex? regex)
-        : IReadOnlyList<FilterRow>
+    /// <summary>
+    /// 遅延生成する行リストの土台。
+    /// - <see cref="IList"/> を実装するのが重要: Avalonia の ItemsSourceView は IList を
+    ///   そのままラップするが、IReadOnlyList だけだと全件を List&lt;object&gt; へコピーしてしまう
+    ///   （ヒット数が多いとポップアップを開くだけで固まる）。
+    /// - 同じ index には同じ FilterRow を返す: スクロールで再訪するたびに本文読み直しと
+    ///   ハイライト Inlines の再構築が走るのを防ぐ（選択状態の追跡も壊れなくなる）。
+    /// </summary>
+    private abstract class LazyRowList : IReadOnlyList<FilterRow>, IList
     {
-        public int Count => hits.Count;
+        private const int MaxCached = 4096;
+        private readonly Dictionary<int, FilterRow> _materialized = [];
 
-        public FilterRow this[int index] => new(doc)
+        public abstract int Count { get; }
+
+        /// <summary>index 番目の行を実際に組み立てる（キャッシュ未ヒット時のみ呼ばれる。
+        /// 実装側で <see cref="FilterRow.RowIndex"/> に index を入れること）。</summary>
+        protected abstract FilterRow Create(int index);
+
+        public FilterRow this[int index]
         {
-            IsHit = true,
-            Offset = hits[index],
-            LineIndex = doc.IsIndexed ? doc.OffsetToLineIndex(hits[index]) : -1,
-            HitOrdinal = index + 1,
-            HighlightRegex = regex,
-        };
+            get
+            {
+                if (_materialized.TryGetValue(index, out var row)) return row;
+                if (_materialized.Count >= MaxCached) _materialized.Clear();
+                return _materialized[index] = Create(index);
+            }
+        }
 
         public IEnumerator<FilterRow> GetEnumerator()
         {
@@ -298,10 +376,50 @@ public sealed partial class FilterResultsViewModel : ObservableObject, IDisposab
         }
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+        // IList（読み取り専用。ItemsSourceView が IList として扱えるようにするためだけの実装）
+        object? IList.this[int index] { get => this[index]; set => throw new NotSupportedException(); }
+        bool IList.IsFixedSize => true;
+        bool IList.IsReadOnly => true;
+        bool ICollection.IsSynchronized => false;
+        object ICollection.SyncRoot => this;
+        int IList.Add(object? value) => throw new NotSupportedException();
+        void IList.Clear() => throw new NotSupportedException();
+        bool IList.Contains(object? value) => ((IList)this).IndexOf(value) >= 0;
+        void IList.Insert(int index, object? value) => throw new NotSupportedException();
+        void IList.Remove(object? value) => throw new NotSupportedException();
+        void IList.RemoveAt(int index) => throw new NotSupportedException();
+
+        // 行が自分の index を持っているので走査不要（キャッシュを破棄しても壊れない）
+        int IList.IndexOf(object? value)
+            => value is FilterRow row && row.RowIndex >= 0 && row.RowIndex < Count ? row.RowIndex : -1;
+
+        void ICollection.CopyTo(Array array, int index)
+        {
+            for (int i = 0; i < Count; i++) array.SetValue(this[i], index + i);
+        }
+    }
+
+    /// <summary>ヒット行のみ（N=0 / 未索引）: hits[i] をそのまま行にする。</summary>
+    private sealed class HitOnlyRowList(LineDocument doc, IReadOnlyList<long> hits, Regex? regex)
+        : LazyRowList
+    {
+        public override int Count => hits.Count;
+
+        // 行番号は FilterRow 側で遅延解決する（未索引なら空欄、WASM の未到着時は到着後に再解決）
+        protected override FilterRow Create(int index) => new(doc)
+        {
+            RowIndex = index,
+            IsHit = true,
+            Offset = hits[index],
+            ResolveLineFromOffset = doc.IsIndexed,
+            HitOrdinal = index + 1,
+            HighlightRegex = regex,
+        };
     }
 
     /// <summary>±N ブロック展開（ブロック間に区切り行を挟む）。prefix sum で i→(block,行) を解決。</summary>
-    private sealed class BlockRowList : IReadOnlyList<FilterRow>
+    private sealed class BlockRowList : LazyRowList
     {
         private readonly LineDocument _doc;
         private readonly List<FilterBlock> _blocks;
@@ -328,35 +446,33 @@ public sealed partial class FilterResultsViewModel : ObservableObject, IDisposab
             _count = (int)Math.Min(int.MaxValue, Math.Max(0, pos - 1)); // 末尾の区切りは無し
         }
 
-        public int Count => _count;
+        public override int Count => _count;
 
-        public FilterRow this[int index]
+        protected override FilterRow Create(int index)
         {
-            get
+            // index が属するブロックを二分探索
+            int lo = 0, hi = _blocks.Count - 1;
+            while (lo < hi)
             {
-                // index が属するブロックを二分探索
-                int lo = 0, hi = _blocks.Count - 1;
-                while (lo < hi)
-                {
-                    int mid = (lo + hi + 1) >> 1;
-                    if (_rowStart[mid] <= index) lo = mid;
-                    else hi = mid - 1;
-                }
-                var block = _blocks[lo];
-                long rel = index - _rowStart[lo];
-                if (rel >= block.LineCount)
-                    return new FilterRow(_doc) { IsSeparator = true };
-
-                long line = block.StartLine + rel;
-                int hitIdx = IndexOfSorted(block.HitLines, line);
-                return new FilterRow(_doc)
-                {
-                    IsHit = hitIdx >= 0,
-                    LineIndex = line,
-                    HitOrdinal = hitIdx >= 0 ? _hitStart[lo] + hitIdx + 1 : -1,
-                    HighlightRegex = hitIdx >= 0 ? _regex : null,
-                };
+                int mid = (lo + hi + 1) >> 1;
+                if (_rowStart[mid] <= index) lo = mid;
+                else hi = mid - 1;
             }
+            var block = _blocks[lo];
+            long rel = index - _rowStart[lo];
+            if (rel >= block.LineCount)
+                return new FilterRow(_doc) { RowIndex = index, IsSeparator = true };
+
+            long line = block.StartLine + rel;
+            int hitIdx = IndexOfSorted(block.HitLines, line);
+            return new FilterRow(_doc)
+            {
+                RowIndex = index,
+                IsHit = hitIdx >= 0,
+                LineIndex = line,
+                HitOrdinal = hitIdx >= 0 ? _hitStart[lo] + hitIdx + 1 : -1,
+                HighlightRegex = hitIdx >= 0 ? _regex : null,
+            };
         }
 
         private static int IndexOfSorted(IReadOnlyList<long> sorted, long value)
@@ -371,12 +487,5 @@ public sealed partial class FilterResultsViewModel : ObservableObject, IDisposab
             }
             return -1;
         }
-
-        public IEnumerator<FilterRow> GetEnumerator()
-        {
-            for (int i = 0; i < Count; i++) yield return this[i];
-        }
-
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
 }

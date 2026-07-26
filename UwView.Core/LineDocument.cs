@@ -61,9 +61,10 @@ public sealed class LineDocument : IAsyncDisposable
         if (_cache.TryGet(lineIndex, out var cached))
             return cached;
 
+        _dataMissing = false;
         long lineStart = LineStartOffset(lineIndex);
         string text = ReadLineAt(lineStart, out _);
-        _cache.Set(lineIndex, text);
+        if (!_dataMissing) _cache.Set(lineIndex, text); // 未到着の不完全な結果は焼き付けない
         return text;
     }
 
@@ -82,6 +83,10 @@ public sealed class LineDocument : IAsyncDisposable
     {
         var index = Index ?? throw new InvalidOperationException("索引未構築です。");
         long off = Math.Clamp(byteOffset, BomLength, Length);
+
+        // データ未到着だと改行を数え落として行番号がズレる。呼び出し側が
+        // LastReadIncomplete で判定できるようにフラグを初期化しておく（WASM 用）。
+        _dataMissing = false;
 
         int lo = 0, hi = index.CheckpointCount - 1, k = 0;
         while (lo <= hi)
@@ -131,8 +136,9 @@ public sealed class LineDocument : IAsyncDisposable
         long key = -lineStart - 1; // 行番号キー（非負）と衝突しない負キーで LRU を共用
         if (_cache.TryGet(key, out var cached))
             return cached;
+        _dataMissing = false;
         string text = ReadLineAt(lineStart, out _);
-        _cache.Set(key, text);
+        if (!_dataMissing) _cache.Set(key, text); // 未到着の不完全な結果は焼き付けない
         return text;
     }
 
@@ -146,7 +152,7 @@ public sealed class LineDocument : IAsyncDisposable
         if (byteOffset >= Length) return Length;
 
         Span<byte> one = stackalloc byte[1];
-        if (_src.Read(byteOffset - 1, one) == 1 && one[0] == (byte)'\n')
+        if (ReadAt(byteOffset - 1, one) == 1 && one[0] == (byte)'\n')
             return byteOffset; // 既に行頭
 
         return ScanForwardNewlines(byteOffset, 1);
@@ -166,7 +172,7 @@ public sealed class LineDocument : IAsyncDisposable
         {
             int chunk = (int)Math.Min(buf.Length, i - BomLength + 1);
             long from = i - chunk + 1;
-            int got = _src.Read(from, buf[..chunk]);
+            int got = ReadAt(from, buf[..chunk]);
             for (int j = got - 1; j >= 0; j--)
                 if (buf[j] == (byte)'\n')
                     return from + j + 1;
@@ -180,10 +186,16 @@ public sealed class LineDocument : IAsyncDisposable
     /// <summary>start から始まる 1 行を読み・デコードして返す。nextStart に次行の開始オフセットを返す。</summary>
     private string ReadLineAt(long start, out long nextStart)
     {
+        // 呼び出し元（行頭の走査など）で既に未到着が起きていたら、その事実を捨てない
+        bool missingBefore = _dataMissing;
+        _dataMissing = false;
         var (contentEnd, foundNl) = FindLineContentEnd(start, MaxLineScanBytes);
-        bool truncated = !foundNl && contentEnd < Length;
+        bool missingHere = _dataMissing;
+        // データ未到着（WASM の未取得チャンク）は「長大行の省略」ではないので省略記号を付けない
+        bool truncated = !foundNl && contentEnd < Length && !missingHere;
 
         string text = DecodeRange(start, contentEnd, truncated);
+        _dataMissing |= missingBefore || missingHere;
 
         if (foundNl)
             nextStart = contentEnd + 1;
@@ -229,7 +241,7 @@ public sealed class LineDocument : IAsyncDisposable
         while (pos < Length)
         {
             int want = (int)Math.Min(buf.Length, Length - pos);
-            int got = _src.Read(pos, buf[..want]);
+            int got = ReadAt(pos, buf[..want]);
             if (got <= 0) break;
             for (int i = 0; i < got; i++)
             {
@@ -250,7 +262,7 @@ public sealed class LineDocument : IAsyncDisposable
         while (pos < limit)
         {
             int want = (int)Math.Min(buf.Length, limit - pos);
-            int got = _src.Read(pos, buf[..want]);
+            int got = ReadAt(pos, buf[..want]);
             if (got <= 0) break;
             for (int i = 0; i < got; i++)
                 if (buf[i] == (byte)'\n')
@@ -267,7 +279,7 @@ public sealed class LineDocument : IAsyncDisposable
         while (pos < to)
         {
             int want = (int)Math.Min(buf.Length, to - pos);
-            int got = _src.Read(pos, buf[..want]);
+            int got = ReadAt(pos, buf[..want]);
             if (got <= 0) break;
             for (int i = 0; i < got; i++)
                 if (buf[i] == (byte)'\n') count++;
@@ -277,12 +289,36 @@ public sealed class LineDocument : IAsyncDisposable
     }
 
     /// <summary>start から buffer を可能な限り埋め、実際に読めたバイト数を返す。</summary>
+    /// <summary>
+    /// 直近の読み取りで「データ未到着」が起きたか（WASM の Blob 未取得チャンク）。
+    /// EOF と区別するために使う。true の結果は不完全なのでキャッシュしない。
+    /// </summary>
+    private bool _dataMissing;
+
+    /// <summary>
+    /// 直近の GetLine / GetLineAtOffset が「データ未到着」で不完全だったか。
+    /// true の間は呼び出し側もその文字列をキャッシュしてはいけない（WASM 用）。
+    /// </summary>
+    public bool LastReadIncomplete => _dataMissing;
+
+    /// <summary>
+    /// I/O 読み取り。EOF ではないのに 0 バイトしか返らない場合＝データ未到着とみなす
+    /// （Browser の BlobByteSource は未取得チャンクで 0 を返し、裏で取得を開始する）。
+    /// </summary>
+    private int ReadAt(long offset, Span<byte> buffer)
+    {
+        int got = _src.Read(offset, buffer);
+        if (got <= 0 && offset >= 0 && offset < Length && buffer.Length > 0)
+            _dataMissing = true;
+        return got;
+    }
+
     private int FillRange(long start, Span<byte> buffer)
     {
         int total = 0;
         while (total < buffer.Length)
         {
-            int got = _src.Read(start + total, buffer[total..]);
+            int got = ReadAt(start + total, buffer[total..]);
             if (got <= 0) break;
             total += got;
         }

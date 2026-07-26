@@ -18,7 +18,7 @@ namespace UwView.Views;
 /// <summary>
 /// フィルタ結果ポップアップの中身（UserControl）。
 /// デスクトップは FilterResultsWindow がこれをホスト、ブラウザ(WASM)は OverlayLayer がホストする。
-/// Window 固有機能（Close/Topmost/Title）はイベントでホストへ委譲する。
+/// Window 固有機能（Close/Title）はイベントでホストへ委譲する。
 /// </summary>
 public partial class FilterResultsView : UserControl
 {
@@ -27,8 +27,6 @@ public partial class FilterResultsView : UserControl
 
     /// <summary>閉じる要求（ホストが Window.Close / オーバーレイ除去を行う）。</summary>
     public event Action? CloseRequested;
-    /// <summary>「常に手前」トグル（デスクトップの Window.Topmost 用。ブラウザは無視）。</summary>
-    public event Action<bool>? TopmostRequested;
     /// <summary>タイトル変化（デスクトップの Window.Title 用）。</summary>
     public event Action<string>? TitleChanged;
 
@@ -42,7 +40,6 @@ public partial class FilterResultsView : UserControl
 
         SaveButton.Click += OnSaveClick;
         CancelSaveButton.Click += (_, _) => _vm.CancelSave();
-        TopmostToggle.IsCheckedChanged += (_, _) => TopmostRequested?.Invoke(TopmostToggle.IsChecked == true);
         CloseButton.Click += (_, _) => CloseRequested?.Invoke();
 
         RowList.DoubleTapped += (_, _) => JumpToSelected();

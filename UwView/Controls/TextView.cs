@@ -745,7 +745,7 @@ public class TextView : Control
         if (FilterOn)
             _session.FilterTopHitIndex = (int)Math.Clamp((long)_scroll.Value, 0, _session.SearchHits.Count - 1);
         else if (_session.Mode == ViewMode.Line)
-            _session.TopLine = (long)_scroll.Value;
+            _session.TopLine = Math.Clamp((long)_scroll.Value, 0, Math.Max(0, (_session.Index?.TotalLines ?? 1) - 1));
         else
             _session.TopByteOffset = Doc.AlignToLineStart((long)_scroll.Value);
 
@@ -771,10 +771,13 @@ public class TextView : Control
                 _scroll.Minimum = 0; _scroll.Maximum = 0; _scroll.Value = 0; _scroll.ViewportSize = 1;
                 return;
             }
+            // Avalonia の ScrollBar では Maximum が Value の上限そのもの。
+            // 総量をそのまま入れると末尾までドラッグしたときに先頭位置が範囲外になり
+            // 1 行も描画されない（空白画面になる）ため、1 画面ぶん引いた値を上限にする。
             if (FilterOn)
             {
                 _scroll.Minimum = 0;
-                _scroll.Maximum = Math.Max(0, _session.SearchHits.Count);
+                _scroll.Maximum = Math.Max(0, _session.SearchHits.Count - rows);
                 _scroll.ViewportSize = rows;
                 _scroll.LargeChange = Math.Max(1, rows - 1);
                 _scroll.SmallChange = 1;
@@ -784,7 +787,7 @@ public class TextView : Control
             {
                 long total = _session.Index?.TotalLines ?? 0;
                 _scroll.Minimum = 0;
-                _scroll.Maximum = Math.Max(0, total);
+                _scroll.Maximum = Math.Max(0, total - rows);
                 _scroll.ViewportSize = rows;
                 _scroll.LargeChange = Math.Max(1, rows - 1);
                 _scroll.SmallChange = 1;
@@ -794,7 +797,7 @@ public class TextView : Control
             {
                 double bytesPerScreen = 80.0 * rows; // 1 行 ≒ 80 バイトと仮定した概算
                 _scroll.Minimum = 0;
-                _scroll.Maximum = Math.Max(0, Doc.Length);
+                _scroll.Maximum = Math.Max(0, Doc.Length - (long)bytesPerScreen);
                 _scroll.ViewportSize = Math.Clamp(bytesPerScreen, 1, Math.Max(1, Doc.Length));
                 _scroll.LargeChange = bytesPerScreen;
                 _scroll.SmallChange = Math.Max(1, bytesPerScreen / rows);

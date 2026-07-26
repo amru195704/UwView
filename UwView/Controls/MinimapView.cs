@@ -51,13 +51,17 @@ public sealed class MinimapView : Control
         if (session is null || session.Document.Length <= 0 || h <= 2) return;
         double length = session.Document.Length;
 
-        // ヒットをピクセル行に集約してから描く（100万ヒットでも描画は高々 Height 本）
+        // ヒットをピクセル行に集約してから描く（100万ヒットでも描画は高々 Height 本）。
+        // ヒットが極端に多い場合は間引いて走査する: 出力はたかだか Height 本なので
+        // 見た目は変わらず、WASM（単一スレッド）でも描画がフリーズしない。
         var hits = session.SearchHits;
         if (hits.Count > 0)
         {
             int rows = Math.Max(1, (int)h);
             var mark = new bool[rows + 1];
-            for (int i = 0; i < hits.Count; i++)
+            const int MaxSamples = 20000;                       // 1描画あたりの走査上限
+            int step = Math.Max(1, hits.Count / MaxSamples);
+            for (int i = 0; i < hits.Count; i += step)
             {
                 int y = (int)(hits[i] / length * rows);
                 mark[Math.Clamp(y, 0, rows)] = true;

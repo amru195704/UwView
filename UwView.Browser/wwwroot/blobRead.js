@@ -47,11 +47,16 @@ export async function readSliceBegin(id, offset, length) {
     return token;
 }
 
-// readSliceBegin の結果を取り出す（同期・1回限り）。
-export function readSliceTake(token) {
+// readSliceBegin の結果を .NET 側バッファ（MemoryView）へ直接書き込む（同期・1回限り）。
+// 書き込めたバイト数を返す。byte[] を JSType.Array<Number> で返すとバイト単位で
+// double へ変換されて極端に遅いため、MemoryView への一括コピーにしている。
+export function readSliceTake(token, buffer) {
     const d = results.get(token);
     results.delete(token);
-    return d ?? new Uint8Array(0);
+    if (!d) return 0;
+    const n = Math.min(d.length, buffer.length);
+    buffer.set(n === d.length ? d : d.subarray(0, n));
+    return n;
 }
 
 // タブを閉じたら File 参照を解放する。

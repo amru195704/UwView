@@ -20,15 +20,22 @@ internal static partial class BlobInterop
     [return: JSMarshalAs<JSType.Promise<JSType.Number>>]
     internal static partial Task<int> ReadSliceBeginAsync(int id, double offset, int length);
 
+    // JSType.Array<JSType.Number> は 1 バイトずつ double へ変換するため桁違いに遅い。
+    // MemoryView（.NET 側バッファへの直接ビュー）に JS から書き込ませて一括コピーする。
     [JSImport("readSliceTake", "blobRead")]
-    [return: JSMarshalAs<JSType.Array<JSType.Number>>]
-    internal static partial byte[] ReadSliceTake(int token);
+    internal static partial int ReadSliceTake(
+        int token, [JSMarshalAs<JSType.MemoryView>] ArraySegment<byte> buffer);
 
     [JSImport("closeFile", "blobRead")]
     internal static partial void CloseFile(int id);
 
     internal static async Task<byte[]> ReadSliceAsync(int id, double offset, int length)
-        => ReadSliceTake(await ReadSliceBeginAsync(id, offset, length));
+    {
+        int token = await ReadSliceBeginAsync(id, offset, length);
+        var buf = new byte[length];
+        int got = ReadSliceTake(token, buf);
+        return got == buf.Length ? buf : buf[..got];
+    }
 }
 
 /// <summary>
@@ -73,8 +80,11 @@ public sealed class BlobByteSource : IByteSource, INotifyDataArrived
             long chunkIdx = pos / ChunkSize;
             if (!_chunks.TryGet(chunkIdx, out var chunk))
             {
-                // 未取得: 裏で取得を発火し、揃った分だけ返す（描画側は DataArrived で再描画）
+                // 未取得: 裏で取得を発火し、揃った分だけ返す（描画側は DataArrived で再描画）。
+                // 次のチャンクも先読みしておくと、行送り・スクロール時の空白が早く埋まる。
                 _ = FetchChunkAsync(chunkIdx, notify: true);
+                long next = chunkIdx + 1;
+                if (next * ChunkSize < Length) _ = FetchChunkAsync(next, notify: true);
                 break;
             }
             int within = (int)(pos - chunkIdx * ChunkSize);

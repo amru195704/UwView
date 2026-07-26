@@ -10,7 +10,7 @@
         Icon="/Assets/Icon.ico"
         Title="UwView"
         Width="1200" Height="720"
-        MinWidth="1080" MinHeight="400">
+        MinWidth="780" MinHeight="400">
     <!-- メニューバーの独立カテゴリ（File / Help）は Window 側に置く。
          macOS では Application 直下はアプリ名メニューの中身になるため。 -->
     <NativeMenu.Menu>

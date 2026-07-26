@@ -141,6 +141,13 @@
                                          VerticalAlignment="Center"
                                          ItemsSource="{Binding SearchHistory}"
                                          Text="{Binding SearchText, Mode=TwoWay}" />
+                        <!-- ブラウザ(WASM)専用: AutoCompleteBox は IME 変換中の文字が二重に入る
+                             （例: 「東京」→「toukyou東京」）ため、素の TextBox に差し替える。
+                             表示切替はコードビハインドで行う（履歴補完はデスクトップのみ）。 -->
+                        <TextBox x:Name="SearchBoxPlain" Width="220" IsVisible="False"
+                                 PlaceholderText="{loc:Localize SearchPlaceholder}"
+                                 VerticalAlignment="Center"
+                                 Text="{Binding SearchText, Mode=TwoWay}" />
                         <Button x:Name="SearchButton" Classes="icon" ToolTip.Tip="{loc:Localize SearchButton}">
                             <Image RenderOptions.BitmapInterpolationMode="HighQuality" Source="avares://UwView/Assets/Toolbar/search.png" />
                         </Button>
