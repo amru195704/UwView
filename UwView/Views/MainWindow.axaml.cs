@@ -14,6 +14,18 @@ public partial class MainWindow : Window
         WinMenu.IsVisible = !OperatingSystem.IsMacOS();
     }
 
+    /// <summary>
+    /// ウィンドウを閉じる時（× ボタン・Cmd+Q・OS シャットダウン）に、
+    /// 現在のタブ構成と表示位置を保存する。ShutdownRequested だけでは
+    /// × で閉じた場合に発火しないことがあるため、ここでも確実に保存する。
+    /// </summary>
+    protected override void OnClosing(WindowClosingEventArgs e)
+    {
+        App.RequestSaveSession?.Invoke();   // LastSession（位置含む）を更新
+        App.Settings.Save();                // JSON へ確定保存
+        base.OnClosing(e);
+    }
+
     // ── macOS: NativeMenu.Menu(File/Help) のハンドラ（EventArgs）────
     private void OnMenuOpen(object? s, EventArgs e) => App.RequestOpenFile?.Invoke();
     private void OnMenuClose(object? s, EventArgs e) => App.RequestCloseTab?.Invoke();

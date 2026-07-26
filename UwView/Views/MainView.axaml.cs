@@ -31,6 +31,7 @@ public partial class MainView : UserControl
         TextView.StateChanged += (_, _) => UpdateStatus();
 
         OpenButton.Click += OnOpenClick;
+        CloseButton.Click += (_, _) => { if (_vm?.ActiveTab is { } t) _vm.RequestClose(t); };
         JumpButton.Click += OnJumpClick;
 
         // File メニュー（メニューバー）→ このメイン画面の操作へ委譲
@@ -41,6 +42,8 @@ public partial class MainView : UserControl
             if (_vm is null) return;
             foreach (var t in _vm.Tabs.ToList()) _vm.RequestClose(t);
         };
+        // 終了時（× ボタン等）に現在の表示位置まで含めて記録する
+        App.RequestSaveSession = SaveSession;
         CancelButton.Click += (_, _) => _vm?.ActiveTab?.Session.CancelIndex();
         LineNumberCheck.IsCheckedChanged += (_, _) =>
         {
@@ -216,7 +219,8 @@ public partial class MainView : UserControl
         if (text.Length == 0) { ClearSearch(); return; }
 
         _autoPopupPending = true; // 完了時に結果一覧を自動表示
-        _currentHitOffset = -1;   // 前へ/次への基準をリセット
+        _currentHitOrdinal = 0;   // 新しい検索なので「C/Total」の C をリセット
+        TextView.ClearEmphasis(); // 前の検索/ジャンプの強調を消し、次へ/前への基準もリセット
         PushSearchHistory(text); // Ver1.1-A: 検索履歴に追加
         _ = tab.Session.StartSearchAsync(new SearchOptions(text, _vm.SearchIsRegex, _vm.SearchIgnoreCase));
         TextView.Refresh(); // ハイライト regex は即時有効
@@ -272,7 +276,8 @@ public partial class MainView : UserControl
     {
         if (_vm?.ActiveTab is not { } tab) return;
         _autoPopupPending = false;
-        _currentHitOffset = -1;
+        _currentHitOrdinal = 0;
+        TextView.ClearEmphasis();
         tab.Session.ClearSearch();
         _vm.SearchText = "";
         TextView.Refresh();
@@ -396,7 +401,12 @@ public partial class MainView : UserControl
         }
 
         _filterResultsVm = new FilterResultsViewModel(
-            onJump: off => { _currentHitOffset = off; TextView.JumpToOffsetCentered(off); TextView.Focus(); },
+            onJump: off =>
+            {
+                TextView.JumpToOffsetCentered(off);
+                if (_vm?.ActiveTab is { } t) { SetCurrentHitOrdinal(t.Session, off); UpdateSearchInfo(); }
+                TextView.Focus();
+            },
             maxContext: 1); // UVF は前後±1 まで（±N は Pro 限定）
         _filterResultsVm.SetSession(_vm?.ActiveTab?.Session);
 
@@ -476,20 +486,21 @@ public partial class MainView : UserControl
         };
     }
 
-    /// <summary>直近にジャンプした検索ヒットの行頭オフセット（次へ/前への基準）。-1=未設定。</summary>
-    private long _currentHitOffset = -1;
-
     private void GoToHit(bool next)
     {
         if (_vm?.ActiveTab is not { } tab) return;
-        // 中央寄せジャンプ後は画面上端が半画面ぶんズレるため、CurrentOffset ではなく
-        // 直近ヒット位置を基準にする（そうしないと前へ/次へが同じ行付近で往復・停滞する）
-        long from = _currentHitOffset >= 0 ? _currentHitOffset : TextView.CurrentOffset;
+        // 基準は「画面内にある直近ジャンプ先（強調行）」→ 無ければ現在表示位置。
+        // 中央寄せジャンプ後は画面上端が半画面ぶんズレるため強調行を優先するが、
+        // 行番号ジャンプや手動スクロールで移動したら、その位置を起点にする
+        // （例: ヒット1000行へジャンプ→10行へ行ジャンプ→「次へ」は10行目以降を探す）。
+        long from = TextView.EmphasizedOffsetIfVisible ?? TextView.CurrentOffset;
         long? hit = next ? tab.Session.NextHit(from) : tab.Session.PrevHit(from);
         if (hit is { } off)
         {
-            _currentHitOffset = off;
             TextView.JumpToOffsetCentered(off); // 画面中央寄せ＋該当行全体を強調
+            SetCurrentHitOrdinal(tab.Session, off);  // メイン画面の「C/Total」
+            _filterResultsVm?.SetCurrentOffset(off); // 結果一覧の「C/Total」
+            UpdateSearchInfo();
             TextView.Focus();
         }
     }
@@ -528,17 +539,33 @@ public partial class MainView : UserControl
         }
     }
 
+    /// <summary>現在表示中の検索位置（1始まり。0=未ジャンプ）。件数表示 "C/Total" の C。</summary>
+    private long _currentHitOrdinal;
+
+    /// <summary>検索ヒットへ移動したときに C を更新する（メイン画面・結果一覧の双方から）。</summary>
+    private void SetCurrentHitOrdinal(DocumentSession s, long offset)
+    {
+        if (s.SearchHits.Count == 0) { _currentHitOrdinal = 0; return; }
+        _currentHitOrdinal = s.HitIndexOfOffset(offset) + 1;
+    }
+
     private void UpdateSearchInfo()
     {
         if (_vm is null) return;
         var s = _vm.ActiveTab?.Session;
         if (s is null || s.ActiveSearch is null) { _vm.SearchInfo = ""; return; }
 
-        string count = L.Format("SearchHits", N(s.SearchHits.Count));
         if (s.IsSearching)
+        {
             _vm.SearchInfo = L.Format("SearchProgress", s.SearchProgress.ToString("P0", L.Culture), N(s.SearchHits.Count));
-        else
-            _vm.SearchInfo = count + (s.SearchTruncated ? L["SearchTruncated"] : "");
+            return;
+        }
+
+        // ジャンプ済みなら「現在位置/総数」（例: 3/8,739 件）、未ジャンプなら総数のみ
+        string count = _currentHitOrdinal > 0
+            ? L.Format("SearchHitsCurrent", N(_currentHitOrdinal), N(s.SearchHits.Count))
+            : L.Format("SearchHits", N(s.SearchHits.Count));
+        _vm.SearchInfo = count + (s.SearchTruncated ? L["SearchTruncated"] : "");
     }
 
     private void OnActiveIndexProgress(object? sender, EventArgs e) => UpdateStatus();
@@ -595,10 +622,30 @@ public partial class MainView : UserControl
         foreach (var tab in _vm.Tabs)
         {
             if (string.IsNullOrEmpty(tab.FilePath)) continue; // Browser Blob 等は復元不可
-            s.Docs.Add(new Services.OpenDoc { Path = tab.FilePath, LastTopLine = tab.Session.TopLine });
+            s.Docs.Add(new Services.OpenDoc
+            {
+                Path = tab.FilePath,
+                LastTopLine = tab.Session.TopLine,
+                LastTopOffset = TopOffsetOf(tab.Session), // 復元の主キー（索引不要で戻せる）
+            });
         }
         UwView.App.Settings.LastSession = s.Docs.Count > 0 ? s : null;
         UwView.App.Settings.Save();
+    }
+
+    /// <summary>
+    /// セッションの「画面先頭行のバイトオフセット」を得る（復元用）。
+    /// 行モードは索引経由で行→オフセットに変換、ページモードはそのまま。
+    /// </summary>
+    private static long TopOffsetOf(DocumentSession s)
+    {
+        try
+        {
+            if (s.Mode == ViewMode.Line && s.IsIndexed)
+                return s.Document.LineStartOffset(s.TopLine);
+        }
+        catch { /* 索引不整合時はページ位置で代替 */ }
+        return s.TopByteOffset;
     }
 
     /// <summary>パス1件を開いてタブに追加（Recent/Favorites/復元用）。開けなければ null。</summary>
@@ -689,7 +736,7 @@ public partial class MainView : UserControl
             var tab = OpenPath(d.Path);
             if (tab is not null)
             {
-                tab.Session.TopLine = d.LastTopLine; // 軽いスクロール位置復元
+                RestorePosition(tab, d); // 前回位置へ（バイト位置基準＝索引を待たない）
                 if (i == last.ActiveIndex) active = tab;
             }
         }
@@ -698,8 +745,41 @@ public partial class MainView : UserControl
             SetTransientStatus(L.Format("RestoreMissing", N(last.Docs.Count), N(missing)));
     }
 
+    /// <summary>索引完了後に適用する復元行（旧設定＝バイト位置未記録のときのみ使用）。</summary>
+    private readonly Dictionary<DocumentTabViewModel, long> _pendingRestoreLine = new();
+
+    /// <summary>
+    /// 復元位置を適用する。開いた直後はページモード（索引なし）なので、
+    /// バイト位置を入れておけば即座に前回位置付近が表示され、索引完了時の
+    /// 行モード昇格で <c>OffsetToLineIndex</c> により正しい行番号へ引き継がれる。
+    /// </summary>
+    private void RestorePosition(DocumentTabViewModel tab, Services.OpenDoc d)
+    {
+        var s = tab.Session;
+        if (d.LastTopOffset > 0)
+        {
+            var doc = s.Document;
+            long max = Math.Max(0, doc.Length - 1);
+            long top = doc.AlignToLineStart(Math.Min(d.LastTopOffset, max));
+            if (top >= doc.Length && doc.Length > 0)      // ファイルが縮んだ等: 末尾行を表示
+                top = doc.PreviousLineStart(doc.Length);
+            s.TopByteOffset = top;
+            if (s.Mode == ViewMode.Line && s.IsIndexed)   // 既に索引済み（再オープン等）
+                s.TopLine = doc.OffsetToLineIndex(top);
+        }
+        else if (d.LastTopLine > 0)
+        {
+            // 旧設定にはバイト位置が無いので、索引完了後に行番号で適用する
+            _pendingRestoreLine[tab] = d.LastTopLine;
+        }
+    }
+
     private void OnIndexCompleted(DocumentTabViewModel tab)
     {
+        // 旧設定からの復元（行番号）は索引完了後にだけ適用できる
+        if (_pendingRestoreLine.Remove(tab, out long line) && tab.Session.Index is { } idx)
+            tab.Session.TopLine = Math.Clamp(line, 0, Math.Max(0, idx.TotalLines - 1));
+
         if (_vm?.ActiveTab == tab)
         {
             TextView.Refresh(); // ページモード→行モード昇格を反映

@@ -100,6 +100,9 @@ public sealed partial class FilterResultsViewModel : ObservableObject, IDisposab
     [ObservableProperty] private double _saveProgress;
     [ObservableProperty] private string _documentName = "";
 
+    /// <summary>現在表示中の検索位置（1始まりの通し番号。0=未確定）。件数表示 "C/Total" の C。</summary>
+    private long _currentOrdinal;
+
     /// <summary>前後±N を UI で使えるか（MaxContext > 0）。</summary>
     public bool AllowContext => MaxContext > 0;
 
@@ -166,16 +169,52 @@ public sealed partial class FilterResultsViewModel : ObservableObject, IDisposab
             Rows = new BlockRowList(doc, blocks, regex);
         }
 
-        HitInfo = Localizer.Instance.Format("SearchHits",
-            s.SearchHits.Count.ToString("N0", Localizer.Instance.Culture))
+        UpdateHitInfo();
+    }
+
+    /// <summary>件数表示を更新する（現在位置が判っていれば "C/Total"、未確定なら "Total"）。</summary>
+    private void UpdateHitInfo()
+    {
+        var s = _session;
+        if (s is null || s.SearchHits.Count == 0)
+        {
+            HitInfo = s?.ActiveSearch is null ? "" : Localizer.Instance.Format("SearchHits", 0);
+            return;
+        }
+
+        var culture = Localizer.Instance.Culture;
+        string total = s.SearchHits.Count.ToString("N0", culture);
+        HitInfo = (_currentOrdinal > 0
+                ? Localizer.Instance.Format("SearchHitsCurrent", _currentOrdinal.ToString("N0", culture), total)
+                : Localizer.Instance.Format("SearchHits", total))
             + (s.SearchTruncated ? Localizer.Instance["SearchTruncated"] : "");
+    }
+
+    /// <summary>
+    /// 現在表示中の検索位置を設定して件数表示を "C/Total" に更新する。
+    /// 一覧クリックだけでなく、メイン画面の「次へ/前へ」からも呼ばれる。
+    /// </summary>
+    public void SetCurrentOffset(long offset)
+    {
+        var s = _session;
+        if (s is null || s.SearchHits.Count == 0) return;
+        long ordinal = s.HitIndexOfOffset(offset) + 1;   // 0始まり index → 1始まり通し番号
+        if (ordinal == _currentOrdinal) return;
+        _currentOrdinal = ordinal;
+        UpdateHitInfo();
     }
 
     public void Jump(FilterRow? row)
     {
         if (row is null || row.IsSeparator) return;
         long off = row.ResolveJumpOffset();
-        if (off >= 0) _onJump(off);
+        if (off >= 0)
+        {
+            // 一覧の通し番号があればそれを、無ければオフセットから逆引きして C を更新
+            if (row.HitOrdinal > 0) { _currentOrdinal = row.HitOrdinal; UpdateHitInfo(); }
+            else SetCurrentOffset(off);
+            _onJump(off);
+        }
     }
 
     // ── 保存（指示書 §3-②。逐次書き出し・進捗・キャンセル）─────────

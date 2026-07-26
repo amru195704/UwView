@@ -13,6 +13,45 @@
         <vm:MainViewModel />
     </Design.DataContext>
 
+    <UserControl.Styles>
+        <!-- アイコンボタン共通（余白なし・枠なし・アイコン実寸）。
+             Material Icons(Apache-2.0) を Assets/Toolbar に同梱。ラベルはツールチップ。 -->
+        <Style Selector="Button.icon, ToggleButton.icon">
+            <Setter Property="Padding" Value="3" />
+            <Setter Property="MinWidth" Value="0" />
+            <Setter Property="MinHeight" Value="0" />
+            <!-- アイコンだけでは機能が判らないので、素早く・無効時にも説明を出す -->
+            <Setter Property="ToolTip.ShowDelay" Value="250" />
+            <Setter Property="ToolTip.ShowOnDisabled" Value="True" />
+        </Style>
+        <Style Selector="Button.icon">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+        </Style>
+        <Style Selector="Button.icon > Image, ToggleButton.icon > Image">
+            <Setter Property="Width" Value="26" />
+            <Setter Property="Height" Value="26" />
+        </Style>
+
+        <!-- 入力欄＋操作ボタンを1つの部品として囲む（[入力][操作] が1組と判るように） -->
+        <Style Selector="Border.inputGroup">
+            <Setter Property="BorderBrush" Value="#9E9E9E" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="Background" Value="White" />
+            <Setter Property="Padding" Value="2,1" />
+        </Style>
+        <!-- 内側の入力欄は二重枠にならないよう枠と背景を消す -->
+        <Style Selector="Border.inputGroup TextBox">
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+        <Style Selector="Border.inputGroup AutoCompleteBox">
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+    </UserControl.Styles>
+
     <DockPanel LastChildFill="True">
 
         <!-- タブストリップ（§4.7） -->
@@ -40,31 +79,52 @@
         <Border DockPanel.Dock="Top" Background="#EEEEEE" BorderBrush="#CCCCCC"
                 BorderThickness="0,0,0,1" Padding="6">
             <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                <Button x:Name="OpenButton" Content="{loc:Localize Open}" />
-                <TextBlock Text="{loc:Localize EncodingLabel}" VerticalAlignment="Center" Foreground="Black" />
+                <!-- アイコンはすべてフラット統一（Material Icons）。ラベルはツールチップ -->
+                <Button x:Name="OpenButton" Classes="icon" ToolTip.Tip="{loc:Localize Open}">
+                    <Image RenderOptions.BitmapInterpolationMode="HighQuality" Source="avares://UwView/Assets/Toolbar/open.png" />
+                </Button>
+                <Button x:Name="CloseButton" Classes="icon" ToolTip.Tip="{loc:Localize CloseTabMenu}"
+                        IsEnabled="{Binding HasTabs}">
+                    <Image RenderOptions.BitmapInterpolationMode="HighQuality" Source="avares://UwView/Assets/Toolbar/close.png" />
+                </Button>
                 <ComboBox x:Name="EncodingCombo" MinWidth="130"
+                          ToolTip.Tip="{loc:Localize EncodingLabel}"
                           ItemsSource="{Binding EncodingOptions}"
                           SelectedItem="{Binding SelectedEncoding, Mode=TwoWay}" />
                 <CheckBox x:Name="LineNumberCheck" Content="{loc:Localize LineNumbers}" IsChecked="True" Foreground="Black" />
                 <Rectangle Width="1" Fill="#CCCCCC" Margin="4,0" />
-                <TextBlock Text="{loc:Localize JumpLabel}" VerticalAlignment="Center" Foreground="Black" />
-                <TextBox x:Name="JumpBox" Width="110" PlaceholderText="{loc:Localize JumpPlaceholder}"
-                         Text="{Binding JumpText, Mode=TwoWay}" />
-                <Button x:Name="JumpButton" Content="{loc:Localize Go}" />
+                <Border Classes="inputGroup">
+                    <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+                        <TextBox x:Name="JumpBox" Width="110" PlaceholderText="{loc:Localize JumpPlaceholder}"
+                                 VerticalAlignment="Center" Text="{Binding JumpText, Mode=TwoWay}" />
+                        <Button x:Name="JumpButton" Classes="icon" ToolTip.Tip="{loc:Localize JumpLabel}">
+                            <Image RenderOptions.BitmapInterpolationMode="HighQuality" Source="avares://UwView/Assets/Toolbar/go.png" />
+                        </Button>
+                    </StackPanel>
+                </Border>
                 <Rectangle Width="1" Fill="#CCCCCC" Margin="4,0" />
-                <Button x:Name="BookmarkToggleButton" Content="☆" ToolTip.Tip="{loc:Localize BookmarkToggleTip}" />
-                <Button x:Name="PrevBookmarkButton" Content="◀☆" ToolTip.Tip="{loc:Localize PrevBookmarkTip}" />
-                <Button x:Name="NextBookmarkButton" Content="☆▶" ToolTip.Tip="{loc:Localize NextBookmarkTip}" />
+                <Button x:Name="BookmarkToggleButton" Classes="icon" ToolTip.Tip="{loc:Localize BookmarkToggleTip}">
+                    <Image RenderOptions.BitmapInterpolationMode="HighQuality" Source="avares://UwView/Assets/Toolbar/bookmark.png" />
+                </Button>
+                <Button x:Name="PrevBookmarkButton" Classes="icon" ToolTip.Tip="{loc:Localize PrevBookmarkTip}">
+                    <Image RenderOptions.BitmapInterpolationMode="HighQuality" Source="avares://UwView/Assets/Toolbar/prev.png" />
+                </Button>
+                <Button x:Name="NextBookmarkButton" Classes="icon" ToolTip.Tip="{loc:Localize NextBookmarkTip}">
+                    <Image RenderOptions.BitmapInterpolationMode="HighQuality" Source="avares://UwView/Assets/Toolbar/next.png" />
+                </Button>
                 <Rectangle Width="1" Fill="#CCCCCC" Margin="4,0" />
-                <ToggleButton x:Name="TailToggle" Content="Tail" ToolTip.Tip="{loc:Localize TailTip}" />
+                <ToggleButton x:Name="TailToggle" Classes="icon" ToolTip.Tip="{loc:Localize TailTip}">
+                    <Image RenderOptions.BitmapInterpolationMode="HighQuality" Source="avares://UwView/Assets/Toolbar/tail.png" />
+                </ToggleButton>
                 <ToggleButton x:Name="FavoriteToggle" Content="{loc:Localize Favorite}"
                               ToolTip.Tip="{loc:Localize FavoriteTip}" />
                 <Rectangle Width="1" Fill="#CCCCCC" Margin="4,0" />
-                <Button x:Name="HighlighterButton" Content="{loc:Localize Highlighter}"
-                        ToolTip.Tip="{loc:Localize HighlighterTip}" />
+                <Button x:Name="HighlighterButton" Classes="icon" ToolTip.Tip="{loc:Localize HighlighterTip}">
+                    <Image RenderOptions.BitmapInterpolationMode="HighQuality" Source="avares://UwView/Assets/Toolbar/highlighter.png" />
+                </Button>
                 <Rectangle Width="1" Fill="#CCCCCC" Margin="4,0" />
-                <TextBlock Text="{loc:Localize LanguageLabel}" VerticalAlignment="Center" Foreground="Black" />
                 <ComboBox x:Name="LanguageCombo" MinWidth="90"
+                          ToolTip.Tip="{loc:Localize LanguageLabel}"
                           ItemsSource="{Binding Languages}"
                           SelectedItem="{Binding SelectedLanguage, Mode=TwoWay}" />
             </StackPanel>
@@ -74,13 +134,21 @@
         <Border DockPanel.Dock="Top" Background="#F5F5F5" BorderBrush="#CCCCCC"
                 BorderThickness="0,0,0,1" Padding="6,4">
             <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                <TextBlock Text="{loc:Localize SearchLabel}" VerticalAlignment="Center" Foreground="Black" />
-                <AutoCompleteBox x:Name="SearchBox" Width="220" Watermark="{loc:Localize SearchPlaceholder}"
-                                 FilterMode="Contains" MinimumPrefixLength="0"
-                                 ItemsSource="{Binding SearchHistory}"
-                                 Text="{Binding SearchText, Mode=TwoWay}" />
-                <Button x:Name="SearchButton" Content="{loc:Localize SearchButton}" />
-                <Button x:Name="ClearSearchButton" Content="×" />
+                <Border Classes="inputGroup">
+                    <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+                        <AutoCompleteBox x:Name="SearchBox" Width="220" Watermark="{loc:Localize SearchPlaceholder}"
+                                         FilterMode="Contains" MinimumPrefixLength="0"
+                                         VerticalAlignment="Center"
+                                         ItemsSource="{Binding SearchHistory}"
+                                         Text="{Binding SearchText, Mode=TwoWay}" />
+                        <Button x:Name="SearchButton" Classes="icon" ToolTip.Tip="{loc:Localize SearchButton}">
+                            <Image RenderOptions.BitmapInterpolationMode="HighQuality" Source="avares://UwView/Assets/Toolbar/search.png" />
+                        </Button>
+                        <Button x:Name="ClearSearchButton" Classes="icon" ToolTip.Tip="{loc:Localize ClearSearchTip}">
+                            <Image RenderOptions.BitmapInterpolationMode="HighQuality" Source="avares://UwView/Assets/Toolbar/clear.png" />
+                        </Button>
+                    </StackPanel>
+                </Border>
                 <ComboBox x:Name="PredefinedCombo" MinWidth="120"
                           PlaceholderText="{loc:Localize PredefinedFilters}"
                           ItemsSource="{Binding PredefinedFilters}"
@@ -96,10 +164,16 @@
                           IsChecked="{Binding SearchIsRegex, Mode=TwoWay}" />
                 <CheckBox x:Name="CaseCheck" Content="{loc:Localize IgnoreCase}" Foreground="Black"
                           IsChecked="{Binding SearchIgnoreCase, Mode=TwoWay}" />
-                <Button x:Name="PrevHitButton" Content="{loc:Localize PrevHit}" />
-                <Button x:Name="NextHitButton" Content="{loc:Localize NextHit}" />
-                <Button x:Name="FilterResultsButton" Content="{loc:Localize FilterResultsOpen}"
-                        ToolTip.Tip="{loc:Localize FilterResultsOpenTip}" />
+                <Button x:Name="PrevHitButton" Classes="icon" ToolTip.Tip="{loc:Localize PrevHit}">
+                    <Image RenderOptions.BitmapInterpolationMode="HighQuality" Source="avares://UwView/Assets/Toolbar/prev.png" />
+                </Button>
+                <Button x:Name="NextHitButton" Classes="icon" ToolTip.Tip="{loc:Localize NextHit}">
+                    <Image RenderOptions.BitmapInterpolationMode="HighQuality" Source="avares://UwView/Assets/Toolbar/next.png" />
+                </Button>
+                <Button x:Name="FilterResultsButton" Classes="icon"
+                        ToolTip.Tip="{loc:Localize FilterResultsOpenTip}">
+                    <Image RenderOptions.BitmapInterpolationMode="HighQuality" Source="avares://UwView/Assets/Toolbar/results.png" />
+                </Button>
                 <TextBlock Text="{Binding SearchInfo}" VerticalAlignment="Center" Foreground="Black" />
             </StackPanel>
         </Border>

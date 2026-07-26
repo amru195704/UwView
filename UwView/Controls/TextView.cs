@@ -330,6 +330,47 @@ public class TextView : Control
     /// <summary>直近に強調ジャンプした行の行頭オフセット（次へ/前への基準に使う）。</summary>
     public long? EmphasizedOffset => _emphasizedOffset;
 
+    /// <summary>
+    /// 強調行が現在画面内にあればその行頭オフセット、無ければ null。
+    /// 検索の「次へ/前へ」の基準に使う: 直近ジャンプ先（検索ヒット or 行番号ジャンプ）が
+    /// 見えているならそこを起点にし、スクロールで画面外へ出ていたら現在表示位置を起点にする。
+    /// </summary>
+    public long? EmphasizedOffsetIfVisible
+        => _emphasizedOffset is { } off && IsOffsetVisible(off) ? off : null;
+
+    /// <summary>指定オフセットの行が現在画面内に描画されているか。</summary>
+    public bool IsOffsetVisible(long byteOffset)
+    {
+        if (_session is null || FilterOn) return false;
+        var doc = _session.Document;
+        long aligned = doc.AlignToLineStart(byteOffset);
+        int rows = VisibleRows;
+
+        if (_session.Mode == ViewMode.Line && _session.Index is not null)
+        {
+            long line = doc.OffsetToLineIndex(aligned);
+            return line >= _session.TopLine && line < _session.TopLine + rows;
+        }
+
+        // ページモード: 画面先頭から可視行ぶん行頭を辿って一致を探す
+        long pos = _session.TopByteOffset;
+        for (int i = 0; i < rows && pos < doc.Length; i++)
+        {
+            if (pos == aligned) return true;
+            if (pos > aligned) return false;
+            pos = doc.NextLineStart(pos);
+        }
+        return false;
+    }
+
+    /// <summary>強調表示を解除する（新しい検索の開始時など）。</summary>
+    public void ClearEmphasis()
+    {
+        if (_emphasizedOffset is null) return;
+        _emphasizedOffset = null;
+        InvalidateVisual();
+    }
+
     /// <summary>バイトオフセット基準のジャンプ。行モードなら最寄り行へ変換（検索ヒット・ミニマップ用）。</summary>
     public void JumpToOffset(long byteOffset)
     {

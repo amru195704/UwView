@@ -94,6 +94,8 @@
 
   <data name="SearchProgress" xml:space="preserve"><value>検索中 {0} ・ {1} 件</value></data>
   <data name="SearchHits" xml:space="preserve"><value>{0} 件</value></data>
+  <data name="SearchHitsCurrent" xml:space="preserve"><value>{0}/{1} 件</value></data>
+  <data name="ClearSearchTip" xml:space="preserve"><value>検索をクリア</value></data>
   <data name="SearchTruncated" xml:space="preserve"><value>（上限で打切り）</value></data>
   <data name="FilterResultsOpen" xml:space="preserve"><value>結果一覧</value></data>
   <data name="FilterResultsOpenTip" xml:space="preserve"><value>検索結果を別ウィンドウで一覧表示（ジャンプ／保存）</value></data>

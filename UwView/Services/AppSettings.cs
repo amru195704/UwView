@@ -44,8 +44,14 @@ public sealed class RecentEntry
 public sealed class OpenDoc
 {
     public string Path { get; set; } = "";
-    /// <summary>前回の表示先頭行（行モード時。ページモードは 0）。</summary>
+    /// <summary>前回の表示先頭行（行モード時。ページモードは 0）。旧設定からの復元用。</summary>
     public long LastTopLine { get; set; }
+    /// <summary>
+    /// 前回の表示先頭行の<b>バイトオフセット</b>。復元の主キー。
+    /// 起動直後は索引が無く行番号では移動できないため、バイト位置なら
+    /// ページモードのまま即座に前回位置付近へ戻せる（索引完了後に行番号へ自動変換される）。
+    /// </summary>
+    public long LastTopOffset { get; set; }
 }
 
 /// <summary>セッション復元（実装指示書_その他4機能 §D / V1.1.1 §2）。</summary>

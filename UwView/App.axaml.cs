@@ -49,7 +49,13 @@ public partial class App : Application
             {
                 DataContext = new MainViewModel()
             };
-            desktop.ShutdownRequested += (_, _) => Settings.Save(); // 終了時に確定保存
+            // 終了時: 現在の表示位置までを記録してから確定保存
+            //（SaveSession を呼ばないと、タブを開いた時点の位置しか残らず復元がずれる）
+            desktop.ShutdownRequested += (_, _) =>
+            {
+                RequestSaveSession?.Invoke();
+                Settings.Save();
+            };
             SetupAppMenu();
         }
         else if (ApplicationLifetime is IActivityApplicationLifetime singleViewFactoryApplicationLifetime)
@@ -79,6 +85,8 @@ public partial class App : Application
     public static System.Action? RequestOpenFile;
     public static System.Action? RequestCloseTab;
     public static System.Action? RequestCloseAll;
+    /// <summary>終了時に現在のタブ構成・表示位置を LastSession へ記録する（MainView が設定）。</summary>
+    public static System.Action? RequestSaveSession;
 
     internal static void OpenExternal(string url)
     {
