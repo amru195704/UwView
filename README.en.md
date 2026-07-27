@@ -37,7 +37,7 @@ Measured against the well-known large-log viewer **[klogg](https://klogg.filimon
 
 ## Highlights
 
-*Current stable version: **v1.2.0**.*
+*Current stable version: **v1.2.1**.*
 
 - 🚀 **Instant display of gigantic files** — hundreds of millions of lines with a tiny memory footprint. The file body is never resident; the index is ~6 MB at 200 M lines.
 - 📖 **Progressive open** — shows content the instant you open it (page mode) → builds the index in the background → promotes to line mode when done.

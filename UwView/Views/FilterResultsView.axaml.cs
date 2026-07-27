@@ -129,8 +129,14 @@ public partial class FilterResultsView : UserControl
     /// <summary>選択行を表示順で返す。</summary>
     private List<FilterRow> SelectedRowsInOrder() => RowList.SelectedRowsInOrder();
 
-    /// <summary>選択行の copy/save は常に元ファイルの行番号を先頭に付ける。</summary>
-    private static string FormatRow(FilterRow row) =>
+    /// <summary>
+    /// 選択行の copy/save の1行分。ツールバーの「行番号を含める」に従う
+    /// （一覧全体の保存・矩形選択の copy/save と同じ扱いに統一）。
+    /// </summary>
+    private string FormatRow(FilterRow row) =>
+        _vm.IncludeLineNumbersOnSave ? FormatRowWithLineNumber(row) : (row.IsSeparator ? "⋯" : row.Text);
+
+    private static string FormatRowWithLineNumber(FilterRow row) =>
         row.IsSeparator ? "⋯"
         : (row.LineNumberText.Length > 0 ? row.LineNumberText + "\t" : "") + row.Text;
 
