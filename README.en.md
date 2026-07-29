@@ -2,11 +2,11 @@
 
 *[日本語](README.md) ｜ English*
 
-**A memory-thrifty, high-speed viewer for gigantic text files — hundreds of millions of lines and beyond.**
+**A memory-thrifty, high-speed viewer for gigantic text files — billions of lines and beyond (largest tested: 4.5 billion lines / 258.68 GB).**
 
 ![UwView — a 51 GB / 892-million-line OSM Japan file in line mode](press-kit/screenshots/line-mode.png)
 
-UwView is a rebuild (in [Avalonia UI](https://avaloniaui.net/)) of a large-text viewer originally published on the Japanese "Vector" archive. Ordinary editors choke around a million lines; UwView never loads the whole file into memory and **renders only the lines currently on screen**, so it opens huge line-count files — the kind produced by RDB or XML dumps — instantly. The largest file tested so far is **892 million lines / ~51 GB** (the full OpenStreetMap extract of Japan, as XML). If anyone finds the real limit, please let me know.
+UwView is a rebuild (in [Avalonia UI](https://avaloniaui.net/)) of a large-text viewer originally published on the Japanese "Vector" archive. Ordinary editors choke around a million lines; UwView never loads the whole file into memory and **renders only the lines currently on screen**, so it opens huge line-count files — the kind produced by RDB or XML dumps — instantly. The largest file tested so far is **4,509,830,821 lines / 258.68 GB** (the whole United States OpenStreetMap extract, expanded to XML, measured with UwView Pro — [details](#real-data--openstreetmap-usa-25868-gb--45-billion-lines-uwview-pro)). Until recently the largest confirmed was 892 million lines / ~51 GB (OSM Japan); that ceiling has now moved about 5× higher. If anyone finds the real limit, please let me know.
 
 It is a **viewer**, not an editor (read-only).
 
@@ -39,7 +39,7 @@ Measured against the well-known large-log viewer **[klogg](https://klogg.filimon
 
 *Current stable version: **v1.2.1**.*
 
-- 🚀 **Instant display of gigantic files** — hundreds of millions of lines with a tiny memory footprint. The file body is never resident; the index is ~6 MB at 200 M lines.
+- 🚀 **Instant display of gigantic files** — billions of lines with a tiny memory footprint (largest measured: 258.68 GB / 4,509,830,821 lines). The file body is never resident; the index is ~6 MB at 200 M lines.
 - 📖 **Progressive open** — shows content the instant you open it (page mode) → builds the index in the background → promotes to line mode when done.
 - 🈁 **Automatic encoding detection** — BOM + UTF-8 / Shift-JIS / EUC-JP / UTF-16, with manual override (no re-indexing).
 - 🗂 **Multi-file tabs** — switch files as tabs (state preserved, per-tab background indexing). Add via drag & drop or multi-select.
@@ -113,11 +113,31 @@ Verification well beyond 200 M lines, using the full OSM Japan extract converted
 | GetLine, 1000 random | avg 1.28 ms / p99 3.0 ms |
 | jump to last (892 Mth) line | 0.006 ms |
 
-- Line numbers use `long` (and 892 M fits within the `int` limit ≈ 2.1 B anyway), so line count is never the bottleneck.
+- Line numbers use `long`. At 892 M they would still have fit in an `int` (≈ 2.1 B), but the 4.5-billion-line test below exceeds that limit and proves the `long` design was necessary.
 - GetLine is slower than on synthetic data (0.005 → 1.28 ms) because of external-SSD random reads, uneven real-XML line lengths, and 51 GB not fitting in cache — still millisecond-class and practical.
 - Resident memory is only the ~26.6 MB index + ~33 MB heap; the file body stays non-resident. In practice storage capacity matters before line count does.
 
 > Note: the reported WorkingSet looks large because it includes mmap file pages, which the OS reclaims on demand — it is not memory the app allocates.
+
+### Real data — OpenStreetMap USA, 258.68 GB / 4.5 billion lines (UwView Pro)
+
+The largest test to date — about **5× the 892 M-line file above** (measured 2026-07-26). The whole-US OpenStreetMap PBF (11 GB) was expanded into a single XML file, `us-260726.osm` (UTF-8), with `osmium cat`, then opened in **UwView Pro**.
+
+| Metric | Result |
+|--------|--------|
+| size | 258,679,440,228 bytes (258.68 GB = 240.9 GiB) |
+| first open (incl. index build) | 5 min 28 s (328 s) ≈ 789 MB/s |
+| second open onward | instant (restored from the `.uwvz` sidecar) |
+| total lines | **4,509,830,821** (4.5 billion) |
+| search "New York" | 34.8 s (100,492 hits) |
+| search "Boston" | ~34 s |
+| `.uwvz` sidecar | 28,608,409,551 bytes (28.61 GB ≈ 11% of the original) |
+
+- **4.5 billion lines holds up.** Both line count and size are roughly 5× the OSM Japan file (892 M lines / 51 GB).
+- **This is where the `long` line-number design pays off.** 4,509,830,821 exceeds the `int` limit of 2,147,483,647, so a viewer that keeps line numbers in an `int` cannot address this file correctly.
+- **Search takes ~34 s regardless of the term or hit count** — it is full-scan-bound, so the time is predictable. (258.68 GB ÷ 34 s ≈ 7.6 GB/s is a derived figure; what is actually read is the 28.61 GB compressed cache, i.e. an effective ~0.84 GB/s.)
+- **The 5 min 28 s first open cannot be shortened** — it is a physical full scan plus compressed-cache generation. The payoff is "instant, with line numbers, from the second open on", which is the UwView Pro feature.
+- GetLine latency, checkpoint count and managed-heap growth were not measured for this file, and are deliberately left out rather than estimated.
 
 Re-run:
 

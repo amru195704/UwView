@@ -8,13 +8,13 @@ Last updated: 2026-07 ・ Maintainer: **y4u (amru195704)**
 
 ## 1. One-liner / 一行キャッチ
 
-- **EN:** Open gigantic text files — hundreds of millions of lines — instantly, with a tiny memory footprint.
-- **JA:** 数億行クラスの巨大テキストを、省メモリで一瞬に開くビューア。
+- **EN:** Open gigantic text files — billions of lines — instantly, with a tiny memory footprint.
+- **JA:** 数十億行クラスの巨大テキストを、省メモリで一瞬に開くビューア。
 
 ## 2. Elevator pitch / 概要
 
-- **EN:** UwView is a cross-platform text **viewer** (not an editor) that opens files ordinary editors choke on. It never loads the whole file into memory and renders only the lines on screen, so it opens instantly and stays light — verified on a **51 GB / 892-million-line** OpenStreetMap XML file. Encoding auto-detection, full-text/regex search with highlight & minimap, multi-file tabs, real-time tail, and a bilingual (EN/JA) UI. Windows / macOS / Linux, plus a browser (WASM) build.
-- **JA:** UwView は、通常のエディタが開けない巨大テキストを閲覧する**ビューア**（編集不可）。ファイル全体をメモリに載せず可視行だけを描くので、開いた瞬間から軽快に動きます。**51GB・8.9億行**のOpenStreetMap XMLで実証済み。文字コード自動判定、全文/正規表現検索（ハイライト＋ミニマップ）、複数タブ、リアルタイムTail、日英2言語UI。Windows / macOS / Linux＋ブラウザ(WASM)版。
+- **EN:** UwView is a cross-platform text **viewer** (not an editor) that opens files ordinary editors choke on. It never loads the whole file into memory and renders only the lines on screen, so it opens instantly and stays light — verified on a **258.68 GB / 4.5-billion-line** OpenStreetMap XML file. Encoding auto-detection, full-text/regex search with highlight & minimap, multi-file tabs, real-time tail, and a bilingual (EN/JA) UI. Windows / macOS / Linux, plus a browser (WASM) build.
+- **JA:** UwView は、通常のエディタが開けない巨大テキストを閲覧する**ビューア**（編集不可）。ファイル全体をメモリに載せず可視行だけを描くので、開いた瞬間から軽快に動きます。**258.68GB・45億行**のOpenStreetMap XMLで実証済み。文字コード自動判定、全文/正規表現検索（ハイライト＋ミニマップ）、複数タブ、リアルタイムTail、日英2言語UI。Windows / macOS / Linux＋ブラウザ(WASM)版。
 
 ## 3. Fact sheet / ファクトシート
 
@@ -47,6 +47,22 @@ OpenStreetMap 日本全域を XML 化した実データでの計測（Apple Sili
 
 > 「行数よりストレージ容量が先に効く」— The file body stays non-resident; in practice storage capacity matters before line count does.
 
+### 最大規模実測 / Largest-scale test — OSM USA 258.68GB・45億行（UwView Pro / 2026-07-26）
+
+OpenStreetMap アメリカ全土 PBF(11GB) を `osmium cat` で単一XMLに展開した `us-260726.osm` を UwView Pro で計測。上記の日本データの約5倍規模。
+
+| Metric / 指標 | Result / 実測値 |
+|------|--------|
+| File size / サイズ | 258,679,440,228 bytes (258.68 GB = 240.9 GiB) |
+| Lines / 行数 | **4,509,830,821**（45億行 / 4.5 billion） |
+| First open incl. index / 初回オープン（索引込み） | 5 min 28 s (328 s) ≈ 789 MB/s |
+| Second open onward / 2回目以降 | instant / 一瞬（`.uwvz` から復元） |
+| Search / 検索 | ~34 s regardless of term — "New York" 34.8 s (100,492 hits) / "Boston" ~34 s |
+| `.uwvz` sidecar / サイドカー | 28,608,409,551 bytes (28.61 GB ≈ 11% of original) |
+
+> 45億行は `int` の上限（2,147,483,647）を超える — 行番号を `long` で持つ設計が必須であることが実証された。/ 4.5 B lines exceed the `int` limit, proving the `long` line-number design was necessary.
+> 初回の5分28秒は物理的な全走査のため短縮できない。価値は「2回目以降は行番号付きで瞬時」。/ The 5 min 28 s first open cannot be shortened; the payoff is instant reopen from the 2nd time on.
+
 Synthetic 200 M lines / 5.1 GB: index build 9.7 s, random GetLine avg 0.005 ms, literal search 3.4 s (1,521 MB/s).
 
 ## 5. Links / リンク
@@ -63,7 +79,7 @@ Synthetic 200 M lines / 5.1 GB: index build 9.7 s, random GetLine avg 0.005 ms, 
 
 ## 6. Screenshots / スクリーンショット
 
-`press-kit/screenshots/`（実データ OSM 日本 51GB・8.9億行を開いた画面）:
+`press-kit/screenshots/`（実データ OSM 日本 51GB・8.9億行を開いた画面。※最大実測の45億行は別ファイルのため、以下の画像には写っていません）:
 
 | ファイル | 内容 / Caption |
 |---------|------|
@@ -80,9 +96,9 @@ Synthetic 200 M lines / 5.1 GB: index build 9.7 s, random GetLine avg 0.005 ms, 
 
 ## 8. Boilerplate / 定型文（そのまま引用可）
 
-> **EN:** UwView is a cross-platform, memory-thrifty viewer for gigantic text files, verified to open a 51 GB / 892-million-line file. Free for personal and internal business use under the PolyForm Internal Use License. Windows / macOS / Linux and a browser build. https://github.com/amru195704/UwView
+> **EN:** UwView is a cross-platform, memory-thrifty viewer for gigantic text files, verified to open a 258.68 GB / 4.5-billion-line file. Free for personal and internal business use under the PolyForm Internal Use License. Windows / macOS / Linux and a browser build. https://github.com/amru195704/UwView
 
-> **JA:** UwView は、51GB・8.9億行のファイルを開けることを実証した、省メモリな巨大テキストビューア。PolyForm Internal Use License のもと個人・社内業務利用は無料。Windows / macOS / Linux とブラウザ版。https://github.com/amru195704/UwView
+> **JA:** UwView は、258.68GB・45億行のファイルを開けることを実証した、省メモリな巨大テキストビューア。PolyForm Internal Use License のもと個人・社内業務利用は無料。Windows / macOS / Linux とブラウザ版。https://github.com/amru195704/UwView
 
 ---
 
