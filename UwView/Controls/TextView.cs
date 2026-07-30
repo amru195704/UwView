@@ -140,7 +140,8 @@ public class TextView : Control
         long line = LineFromPoint(p);
         string text;
         try { text = doc.GetLine(line); } catch { return null; }
-        return (line, text, CharIndexAtX(text, p.X - (_lastGutter + Padding)));
+        // 横スクロール中はその量を足して本文左端からの距離に直す（§3-4）
+        return (line, text, CharIndexAtX(text, p.X - (_lastGutter + Padding) + _hOffset));
     }
 
     /// <summary>
@@ -284,6 +285,14 @@ public class TextView : Control
     private ScrollBar? _scroll;
     private bool _updatingScroll;
 
+    // ── 横スクロール（機能修正指示書_横スクロール §3）───────────────
+    private ScrollBar? _hScroll;
+    private double _hOffset;                 // 本文の横スクロール量（px・0以上）
+    private double _maxLineWidth;            // 可視行から実測した最大行幅（全行走査はしない）
+
+    /// <summary>本文の横スクロール量（px）。行番号ガターは固定で本文だけ動く。</summary>
+    protected double HOffset => _hOffset;
+
     public IBrush? Background { get; set; }
 
     public TextView()
@@ -299,6 +308,71 @@ public class TextView : Control
         _scroll = scrollBar;
         _scroll.Scroll += OnScroll;
         NotifyChanged();
+    }
+
+    /// <summary>横スクロールバーを接続する（縦の AttachScrollBar と対称）。</summary>
+    public void AttachHScrollBar(ScrollBar scrollBar)
+    {
+        _hScroll = scrollBar;
+        _hScroll.Scroll += (_, _) =>
+        {
+            if (_updatingScroll || _hScroll is null) return;
+            SetHOffset(_hScroll.Value);
+        };
+        UpdateHScroll();
+    }
+
+    /// <summary>横オフセットを設定（0〜最大幅でクランプ）。変わったら再描画。</summary>
+    private void SetHOffset(double value)
+    {
+        double max = Math.Max(0, _maxLineWidth - BodyWidth);
+        double v = Math.Clamp(value, 0, max);
+        if (Math.Abs(v - _hOffset) < 0.5) return;
+        _hOffset = v;
+        InvalidateVisual();
+        UpdateHScroll();
+    }
+
+    /// <summary>本文の表示幅（ガターを除く）。</summary>
+    private double BodyWidth => Math.Max(0, Bounds.Width - _lastGutter - Padding);
+
+    /// <summary>横スクロールバーの範囲を可視行の実測から更新する（全行走査はしない）。</summary>
+    private void UpdateHScroll()
+    {
+        if (_hScroll is null) return;
+        double body = BodyWidth;
+        double max = Math.Max(0, _maxLineWidth - body);
+        if (_hOffset > max) _hOffset = max;
+        _updatingScroll = true;
+        _hScroll.Minimum = 0;
+        _hScroll.Maximum = max;
+        _hScroll.ViewportSize = body;
+        _hScroll.Value = _hOffset;
+        _hScroll.IsEnabled = max > 0;
+        _updatingScroll = false;
+    }
+
+    /// <summary>横スクロール状態をリセット（ファイル切替・検索など表示内容が大きく変わるとき）。</summary>
+    public void ResetHScroll()
+    {
+        _hOffset = 0;
+        _maxLineWidth = 0;
+        UpdateHScroll();
+        InvalidateVisual();
+    }
+
+    /// <summary>指定行の文字範囲が横方向で画面外なら、見える位置まで横スクロールする（§3-4）。</summary>
+    public void EnsureColumnVisible(string text, int start, int length)
+    {
+        if (text.Length == 0 || start < 0 || start > text.Length) return;
+        double body = BodyWidth;
+        if (body <= 0) return;
+        double left = start == 0 ? 0 : MakeText(text[..Math.Min(start, text.Length)]).WidthIncludingTrailingWhitespace;
+        int end = Math.Min(text.Length, start + Math.Max(1, length));
+        double right = MakeText(text[..end]).WidthIncludingTrailingWhitespace;
+        _maxLineWidth = Math.Max(_maxLineWidth, right);
+        if (left < _hOffset) SetHOffset(Math.Max(0, left - body * 0.25));
+        else if (right > _hOffset + body) SetHOffset(right - body * 0.75);
     }
 
     /// <summary>索引完了などで外部からセッション状態が変わったときの再描画。</summary>
@@ -653,6 +727,20 @@ public class TextView : Control
 
     protected override void OnPointerWheelChanged(PointerWheelEventArgs e)
     {
+        // 横: トラックパッドの横スワイプ（Delta.X）。Shift+縦ホイールも横に回す。
+        if (e.Delta.X != 0)
+        {
+            SetHOffset(_hOffset - e.Delta.X * CellWidth * 3);
+            e.Handled = true;
+            return;
+        }
+        if (e.KeyModifiers.HasFlag(KeyModifiers.Shift) && e.Delta.Y != 0)
+        {
+            SetHOffset(_hOffset - e.Delta.Y * CellWidth * 3);
+            e.Handled = true;
+            return;
+        }
+
         int lines = (int)Math.Round(e.Delta.Y) * 3;
         if (lines == 0) lines = e.Delta.Y > 0 ? 3 : -3;
         ScrollByLines(-lines);
@@ -668,7 +756,14 @@ public class TextView : Control
             case Key.Up: ScrollByLines(-1); e.Handled = true; break;
             case Key.PageDown: ScrollByLines(rows - 1); e.Handled = true; break;
             case Key.PageUp: ScrollByLines(-(rows - 1)); e.Handled = true; break;
-            case Key.Home: ScrollToHome(); e.Handled = true; break;
+            // 横スクロール（§3-3）: ←→ で1文字ぶん、Home は行頭（横オフセット0）へ。
+            // ファイル先頭/末尾は Cmd/Ctrl+Home / Cmd/Ctrl+End。
+            case Key.Left: SetHOffset(_hOffset - CellWidth); e.Handled = true; break;
+            case Key.Right: SetHOffset(_hOffset + CellWidth); e.Handled = true; break;
+            case Key.Home when e.KeyModifiers.HasFlag(KeyModifiers.Control)
+                            || e.KeyModifiers.HasFlag(KeyModifiers.Meta):
+                ScrollToHome(); e.Handled = true; break;
+            case Key.Home: SetHOffset(0); e.Handled = true; break;
             case Key.End: ScrollToEnd(); e.Handled = true; break;
             case Key.Escape when HasLineSelection:
                 ClearLineSelection();
@@ -901,10 +996,37 @@ public class TextView : Control
         long selTop = SelTop, selBottom = SelBottom;
         var wordBrush = new SolidColorBrush(Color.FromRgb(0xB4, 0xD5, 0xEE)); // 語選択（行選択と同色）
 
-        double x = gutter + Padding;
+        // 横スクロール: 本文だけ _hOffset ぶん左へずらす（ガターは固定）。
+        double x = gutter + Padding - _hOffset;
         double y = Padding;
+
+        // ガター（行番号・ブックマーク）は先に描く。本文はこの後クリップして描画し、
+        // 横スクロールしてもガターに潜り込まないようにする。
+        {
+            double gy = Padding;
+            foreach (var (offset, _, lineNo) in visible)
+            {
+                if (hasBookmarks && _session.HasBookmark(offset))
+                    ctx.FillRectangle(bookmarkBrush, new Rect(0, gy, 4, lh));
+                if (showNumbers && lineNo > 0)
+                {
+                    var num = MakeText(lineNo.ToString(CultureInfo.InvariantCulture), numberBrush);
+                    ctx.DrawText(num, new Point(gutter - Padding - num.Width, gy));
+                }
+                gy += lh;
+            }
+        }
+
+        double widest = 0;
+        using var bodyClip = ctx.PushClip(
+            new Rect(gutter, 0, Math.Max(0, Bounds.Width - gutter), Bounds.Height));
+
         foreach (var (offset, text, lineNo) in visible)
         {
+            // 横スクロールバーの範囲用に可視行の幅を実測（全行走査はしない・§3-2）
+            if (text.Length > 0)
+                widest = Math.Max(widest, MakeText(text).WidthIncludingTrailingWhitespace);
+
             // 行選択の反転表示（行番号 lineNo は 1 始まり）
             if (hasSel && lineNo > 0 && lineNo - 1 >= selTop && lineNo - 1 <= selBottom)
                 ctx.FillRectangle(selBrush, new Rect(gutter, y, Math.Max(0, Bounds.Width - gutter), lh));
@@ -922,16 +1044,6 @@ public class TextView : Control
             // ジャンプ先の強調行: 行全体を水色に（マッチ部の黄はこの上に塗られる）
             if (_emphasizedOffset == offset)
                 ctx.FillRectangle(emphasisBrush, new Rect(gutter, y, Math.Max(0, Bounds.Width - gutter), lh));
-
-            // ブックマークマーカー（左端の青バー）
-            if (hasBookmarks && _session.HasBookmark(offset))
-                ctx.FillRectangle(bookmarkBrush, new Rect(0, y, 4, lh));
-
-            if (showNumbers && lineNo > 0)
-            {
-                var num = MakeText(lineNo.ToString(CultureInfo.InvariantCulture), numberBrush);
-                ctx.DrawText(num, new Point(gutter - Padding - num.Width, y));
-            }
 
             // 色分けハイライタ（§5）: 可視行を再評価。背景は検索の黄より先（下）に塗る。
             IReadOnlyList<HlSpan> hlSpans = Highlighter is { IsEmpty: false } compiled && text.Length > 0
@@ -967,6 +1079,13 @@ public class TextView : Control
             y += lh;
         }
 
+        // 可視行の実測幅で横スクロール範囲を更新。ちらつき防止のため単調増加させ、
+        // 表示内容が大きく変わるとき（ファイル切替・検索）は ResetHScroll でリセットする。
+        if (widest > _maxLineWidth)
+        {
+            _maxLineWidth = widest;
+            Dispatcher.UIThread.Post(UpdateHScroll, DispatcherPriority.Background);
+        }
     }
 
     private static Color ColorFromArgb(uint c)

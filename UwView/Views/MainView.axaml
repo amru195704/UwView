@@ -212,11 +212,14 @@
 
         <!-- 本文 + ミニマップ + 縦スクロールバー（＋ 未オープン時のスタート画面） -->
         <Panel>
-            <Grid ColumnDefinitions="*,Auto,Auto">
-                <ctrl:TextView x:Name="TextView" Grid.Column="0" />
-                <ctrl:MinimapView x:Name="Minimap" Grid.Column="1" />
-                <ScrollBar x:Name="VScroll" Grid.Column="2" Orientation="Vertical"
+            <!-- 2行目に横スクロールバー（本文の幅ぶんだけ。ミニマップ・縦バーの下には置かない） -->
+            <Grid ColumnDefinitions="*,Auto,Auto" RowDefinitions="*,Auto">
+                <ctrl:TextView x:Name="TextView" Grid.Row="0" Grid.Column="0" />
+                <ctrl:MinimapView x:Name="Minimap" Grid.Row="0" Grid.Column="1" />
+                <ScrollBar x:Name="VScroll" Grid.Row="0" Grid.Column="2" Orientation="Vertical"
                            AllowAutoHide="False" Width="16" />
+                <ScrollBar x:Name="HScroll" Grid.Row="1" Grid.Column="0" Orientation="Horizontal"
+                           AllowAutoHide="False" Height="16" />
             </Grid>
 
             <!-- スタート画面（ファイル未オープン時。最近使ったファイル・お気に入り） -->

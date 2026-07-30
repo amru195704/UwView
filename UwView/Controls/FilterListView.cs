@@ -178,6 +178,63 @@ public sealed class FilterListView : Control
         UpdateScrollBar();
     }
 
+    // ── 横スクロール（機能修正指示書_横スクロール §4）。番号列は左固定・本文だけ動く ──
+
+    private ScrollBar? _hScroll;
+    private double _hOffset;
+    private double _maxLineWidth;
+
+    /// <summary>本文の横スクロール量（px）。矩形選択の列計算でも使う。</summary>
+    public double HOffset => _hOffset;
+
+    public void AttachHScrollBar(ScrollBar scrollBar)
+    {
+        _hScroll = scrollBar;
+        _hScroll.Scroll += (_, _) =>
+        {
+            if (_updatingScroll || _hScroll is null) return;
+            SetHOffset(_hScroll.Value);
+        };
+        UpdateHScrollBar();
+    }
+
+    /// <summary>本文の表示幅（番号列を除く）。</summary>
+    private double BodyWidth => Math.Max(0, Bounds.Width - TextStartX);
+
+    private void SetHOffset(double value)
+    {
+        double max = Math.Max(0, _maxLineWidth - BodyWidth);
+        double v = Math.Clamp(value, 0, max);
+        if (Math.Abs(v - _hOffset) < 0.5) return;
+        _hOffset = v;
+        InvalidateVisual();
+        UpdateHScrollBar();
+    }
+
+    private void UpdateHScrollBar()
+    {
+        if (_hScroll is null) return;
+        double body = BodyWidth;
+        double max = Math.Max(0, _maxLineWidth - body);
+        if (_hOffset > max) _hOffset = max;
+        _updatingScroll = true;
+        _hScroll.Minimum = 0;
+        _hScroll.Maximum = max;
+        _hScroll.ViewportSize = body;
+        _hScroll.Value = _hOffset;
+        _hScroll.IsEnabled = max > 0;
+        _updatingScroll = false;
+    }
+
+    /// <summary>横スクロール状態をリセット（結果セットの入れ替え時）。</summary>
+    public void ResetHScroll()
+    {
+        _hOffset = 0;
+        _maxLineWidth = 0;
+        UpdateHScrollBar();
+        InvalidateVisual();
+    }
+
     private void OnScroll(object? sender, ScrollEventArgs e)
     {
         if (_updatingScroll || _scroll is null) return;
@@ -220,6 +277,20 @@ public sealed class FilterListView : Control
 
     protected override void OnPointerWheelChanged(PointerWheelEventArgs e)
     {
+        // 横: トラックパッドの横スワイプ、Shift+縦ホイールも横に回す
+        if (e.Delta.X != 0)
+        {
+            SetHOffset(_hOffset - e.Delta.X * CharWidth * 3);
+            e.Handled = true;
+            return;
+        }
+        if (e.KeyModifiers.HasFlag(KeyModifiers.Shift) && e.Delta.Y != 0)
+        {
+            SetHOffset(_hOffset - e.Delta.Y * CharWidth * 3);
+            e.Handled = true;
+            return;
+        }
+
         TopRow = _topRow - (int)Math.Round(e.Delta.Y * WheelRows);
         e.Handled = true;
         base.OnPointerWheelChanged(e);
@@ -373,7 +444,13 @@ public sealed class FilterListView : Control
             case Key.Down: MoveCursor(1, e); return;
             case Key.PageUp: MoveCursor(-rows, e); return;
             case Key.PageDown: MoveCursor(rows, e); return;
-            case Key.Home: MoveCursorTo(0, e); return;
+            // 横スクロール: ←→ で1文字ぶん、Home は本文左端へ（メインと同じ割当）
+            case Key.Left: SetHOffset(_hOffset - CharWidth); e.Handled = true; return;
+            case Key.Right: SetHOffset(_hOffset + CharWidth); e.Handled = true; return;
+            case Key.Home when e.KeyModifiers.HasFlag(KeyModifiers.Control)
+                            || e.KeyModifiers.HasFlag(KeyModifiers.Meta):
+                MoveCursorTo(0, e); return;
+            case Key.Home: SetHOffset(0); e.Handled = true; return;
             case Key.End: MoveCursorTo(Count - 1, e); return;
         }
         base.OnKeyDown(e);
@@ -457,6 +534,7 @@ public sealed class FilterListView : Control
         double textX = lineRight + ColGap;
         TextStartX = textX;
 
+        // 行背景と番号列（左固定）を先に描く
         double y = 0;
         for (int i = _topRow; i < last; i++, y += lh)
         {
@@ -468,11 +546,7 @@ public sealed class FilterListView : Control
             else if (!row.IsHit && !row.IsSeparator)
                 ctx.FillRectangle(ContextBgBrush, new Rect(0, y, Bounds.Width, lh));
 
-            if (row.IsSeparator)
-            {
-                ctx.DrawText(MakeText("⋯", LineNumberBrush), new Point(textX, y));
-                continue;
-            }
+            if (row.IsSeparator) continue;
 
             string hitText = row.HitNumberText;
             if (hitText.Length > 0)
@@ -487,9 +561,30 @@ public sealed class FilterListView : Control
                 var ft = MakeText(lineText, LineNumberBrush);
                 ctx.DrawText(ft, new Point(lineRight - ft.WidthIncludingTrailingWhitespace, y));
             }
+        }
+
+        // 本文（横スクロール対象）。番号列に潜り込まないようクリップする。
+        double bodyX = textX - _hOffset;
+        double widest = 0;
+        using var bodyClip = ctx.PushClip(
+            new Rect(textX, 0, Math.Max(0, Bounds.Width - textX), Bounds.Height));
+
+        y = 0;
+        for (int i = _topRow; i < last; i++, y += lh)
+        {
+            var row = rows[i];
+
+            if (row.IsSeparator)
+            {
+                ctx.DrawText(MakeText("⋯", LineNumberBrush), new Point(bodyX, y));
+                continue;
+            }
 
             string text = row.Text;
             if (text.Length == 0) continue;
+
+            // 横スクロールバーの範囲用に可視行の幅を実測（全行走査はしない）
+            widest = Math.Max(widest, MakeText(text).WidthIncludingTrailingWhitespace);
 
             // 検索マッチの黄ハイライト（可視行だけ再マッチ）
             if (row.HighlightRegex is { } regex)
@@ -501,13 +596,19 @@ public sealed class FilterListView : Control
                         if (m.Length == 0) break;
                         double mx = m.Index == 0 ? 0 : MakeText(text[..m.Index]).WidthIncludingTrailingWhitespace;
                         double mw = MakeText(text.Substring(m.Index, m.Length)).WidthIncludingTrailingWhitespace;
-                        ctx.FillRectangle(MatchBrush, new Rect(textX + mx, y, mw, lh));
+                        ctx.FillRectangle(MatchBrush, new Rect(bodyX + mx, y, mw, lh));
                     }
                 }
                 catch (RegexMatchTimeoutException) { /* 部分ハイライトのまま */ }
             }
 
-            ctx.DrawText(MakeText(text, TextBrush), new Point(textX, y));
+            ctx.DrawText(MakeText(text, TextBrush), new Point(bodyX, y));
+        }
+
+        if (widest > _maxLineWidth)
+        {
+            _maxLineWidth = widest;
+            Dispatcher.UIThread.Post(UpdateHScrollBar, DispatcherPriority.Background);
         }
     }
 }

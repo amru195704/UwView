@@ -37,7 +37,7 @@ Measured against the well-known large-log viewer **[klogg](https://klogg.filimon
 
 ## Highlights
 
-*Current stable version: **v1.2.1**.*
+*Current stable version: **v1.2.2**.*
 
 - 🚀 **Instant display of gigantic files** — billions of lines with a tiny memory footprint (largest measured: 258.68 GB / 4,509,830,821 lines). The file body is never resident; the index is ~6 MB at 200 M lines.
 - 📖 **Progressive open** — shows content the instant you open it (page mode) → builds the index in the background → promotes to line mode when done.
@@ -48,6 +48,7 @@ Measured against the well-known large-log viewer **[klogg](https://klogg.filimon
 - 🎨 **Multi-keyword color highlighter** (v1.1+) — colorize multiple registered patterns continuously, independent of search (equivalent to klogg's Highlighter). Supports regex, case-insensitive, whole-line / match-only, and coloring only the regex capture. A **color-blind-friendly 32-color palette**, named sets, and export/import via `.uwvhl`. **7 bundled presets** (generic log levels / syslog・Linux / Web access (HTTP) / JSON log / GNSS NMEA / GeoJSON / KML). The yellow search highlight always stays on top, and coloring re-evaluates only the visible lines so it stays fast on huge files. Each tab keeps its own highlighter.
 - 🖱 **Right-click colorize of the selected word (quick color label)** (v1.1.1+) — select a word and right-click to colorize it instantly (the same menu also has Copy, Clear, and Manage dialog…). Double-clicking cycles through three stages (shortest word → sensible token → clear) to pick the range. Colorized rules also appear in the manage dialog and can be recolored, saved as a set, and exported to `.uwvhl`.
 - 🕘 **Search history & predefined filters** (v1.1+) — the search box autocompletes from input history (up to 50). Save frequent searches with “★” and run them from a dropdown. Next/previous and go-to-line center the target line and highlight the whole line.
+- ↔️ **Horizontal scrolling** (v1.2.2+) — read long lines (OSM XML, JSON logs, single-line CSV) all the way to the end. Horizontal scrollbar, trackpad swipe, Shift+wheel and `←`/`→` keys (`Home` returns to the start of the line; `Cmd/Ctrl+Home` goes to the top of the file). **Line numbers stay pinned on the left** while only the text moves. The search-results popup scrolls horizontally too.
 - ⭐ **Bookmarks** — toggle any line, jump prev/next. Kept by byte offset, so they survive encoding switches. Shown in the minimap.
 - 📡 **Real-time tail** — detects appends, re-maps mmap, extends the index incrementally, and auto-scrolls to the end. Opens logs that are still being written (FileShare.ReadWrite).
 - 🌐 **Bilingual UI** — Japanese / English, switchable at runtime (persisted).
@@ -194,6 +195,7 @@ macOS: unzip and launch `UwView.app` (unsigned — first launch: right-click →
 
 ## Known limitations
 
+- **A single line is displayed up to its first 8,192 characters** (the rest is cut off with `…（省略）`). Horizontal scrolling reaches that limit too. This is a **deliberate speed-first trade-off** that keeps the line-fetch and render hot paths simple.
 - Newlines: LF / CRLF supported. Lone CR (classic Mac) is not fully supported yet.
 - UTF-16 is recognized by BOM, but line splitting is byte-`\n` based, so the primary targets are UTF-8 / Shift-JIS / EUC-JP.
 - mmap is a read-only view; if the file is truncated externally while open, access may crash (acceptable for a viewer). Tail supports appends only (not truncation/rotation).

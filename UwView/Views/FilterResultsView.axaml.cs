@@ -45,6 +45,7 @@ public partial class FilterResultsView : UserControl
         CloseButton.Click += (_, _) => CloseRequested?.Invoke();
 
         RowList.AttachScrollBar(RowScroll);
+        RowList.AttachHScrollBar(RowHScroll);
         RowList.Rows = _vm.Rows;
         RowList.RowActivated += row => _vm.Jump(row);
         RowList.CopyRequested += () => _ = CopySelectedAsync();

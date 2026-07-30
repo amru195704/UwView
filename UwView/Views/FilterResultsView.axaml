@@ -41,10 +41,13 @@
         <!-- 結果リスト（自前描画。メインの TextView と同じ方式で可視行だけ描く。
              ダブルクリック/Enter でメインへジャンプ、左ドラッグで行範囲選択、右クリックで copy/save。
              ListArea は Pro の矩形選択オーバーレイ挿入先 -->
-        <Grid x:Name="ListArea" ColumnDefinitions="*,Auto">
-            <ctrl:FilterListView x:Name="RowList" Grid.Column="0" />
-            <ScrollBar x:Name="RowScroll" Grid.Column="1" Orientation="Vertical"
+        <Grid x:Name="ListArea" ColumnDefinitions="*,Auto" RowDefinitions="*,Auto">
+            <ctrl:FilterListView x:Name="RowList" Grid.Row="0" Grid.Column="0" />
+            <ScrollBar x:Name="RowScroll" Grid.Row="0" Grid.Column="1" Orientation="Vertical"
                        AllowAutoHide="False" Width="14" />
+            <!-- 長い行を最後まで読むための横スクロール（番号列は左固定・本文だけ動く） -->
+            <ScrollBar x:Name="RowHScroll" Grid.Row="1" Grid.Column="0" Orientation="Horizontal"
+                       AllowAutoHide="False" Height="14" />
         </Grid>
 
     </DockPanel>

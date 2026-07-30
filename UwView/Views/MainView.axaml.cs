@@ -28,6 +28,7 @@ public partial class MainView : UserControl
         InitializeComponent();
 
         TextView.AttachScrollBar(VScroll);
+        TextView.AttachHScrollBar(HScroll);
         TextView.StateChanged += (_, _) => UpdateStatus();
 
         OpenButton.Click += OnOpenClick;
@@ -176,6 +177,7 @@ public partial class MainView : UserControl
         }
 
         TextView.Session = tab?.Session;
+        TextView.ResetHScroll();   // タブ切替で横スクロール範囲をリセット
         Minimap.Session = tab?.Session;
         _statusSession = tab?.Session;
 
