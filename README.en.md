@@ -16,6 +16,12 @@ It is a **viewer**, not an editor (read-only).
 
 **UwView Pro** is now available for Windows, macOS and Linux. It pushes large-file performance further: on top of parallel index construction, a **compressed sidecar cache** (a single `.uwvz` file with the line index built in, checksum-protected) delivers instant re-open from the second time on, plus dramatically faster full-text search.
 
+**V1.3 adds a two-mode search upgrade** (Pro-only — [announcement](https://uvp.y42u.net/en/blog/uvp-drilldown-search-en/)):
+
+- **Drill-down Search** — refine results with another term, then another (the GUI version of `grep -C N w1 | grep w2 | grep w3`). **Up to 8 stages, ±N context set independently per stage**; stages after the first are instant. Measured: on a 51 GB / 892-million-line file, two refinements took "Tokyo 94,979 hits → Nerima 184 → Saitama 54".
+- **Sequence Search** — find only the flows where "w1 → w2 → w3 appear **in that order**" (the desktop, local-file equivalent of Elastic EQL `sequence` / Splunk `transaction`). Right-click a result and open **History (refinement path)** to jump straight to each line that formed the flow.
+- Where klogg's Boolean search works within a single line (and/or), these search **co-occurrence across nearby lines, and order**.
+
 Measured against the well-known large-log viewer **[klogg](https://klogg.filimonov.dev/)** (same file, same patterns, across **three storage types**):
 
 > Conditions: OpenStreetMap Japan `japan-latest.osm`, 47.73 GB / 892,239,125 lines. MacBook Air / Apple M4 (10 cores) / 32 GB RAM. Measured storage bandwidth (dd): USB HDD 0.10 GB/s ・ USB SSD 0.41 GB/s ・ internal SSD 3.29 GB/s. klogg 24.11.0. Hit counts matched exactly across klogg, UwView Pro, and direct raw-file search for every row (cross-verified that the searches are semantically identical).
