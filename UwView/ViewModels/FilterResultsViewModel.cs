@@ -260,6 +260,20 @@ public sealed partial class FilterResultsViewModel : ObservableObject, IDisposab
         _hitLines = null;
     }
 
+    /// <summary>
+    /// 写像済みの行番号列を外から渡す（Pro 拡張用）。
+    /// 多段階検索はタブ切替のたびにヒット列を差し替えるため、そのたびに
+    /// 10万件を写像し直すと巨大ファイルで固まる。段側にキャッシュした結果を
+    /// ここから注入すれば即ブロック表示になる。件数が合わないものは無視。
+    /// </summary>
+    public void SupplyHitLines(long[] hitLines)
+    {
+        if (_session is not { } s || s.SearchHits.Count != hitLines.Length) return;
+        CancelLineMapping();
+        _hitLines = hitLines;
+        Rebuild();
+    }
+
     private void StartLineMapping(DocumentSession session, LineDocument doc)
     {
         if (_mapCts is not null) return;    // 実行中は二重起動しない
@@ -280,10 +294,28 @@ public sealed partial class FilterResultsViewModel : ObservableObject, IDisposab
         {
             var lines = new long[count];
             var hits = session.SearchHits;
-            for (int i = 0; i < count; i++)
+            if (OperatingSystem.IsBrowser())
             {
-                cts.Token.ThrowIfCancellationRequested();
-                lines[i] = await doc.OffsetToLineIndexAsync(hits[i], cts.Token);
+                // WASM: 同期 Read は未取得チャンクを数え落とすので必ず async 経路
+                for (int i = 0; i < count; i++)
+                {
+                    cts.Token.ThrowIfCancellationRequested();
+                    lines[i] = await doc.OffsetToLineIndexAsync(hits[i], cts.Token);
+                }
+            }
+            else
+            {
+                // デスクトップ: OffsetToLineIndexAsync は同期完了するため、この
+                // ループを UI スレッドで回すと巨大ファイル×10万ヒットで固まる。
+                // 背景スレッドへ逃がす（読み取りは検索と同じくスレッド安全）。
+                await Task.Run(() =>
+                {
+                    for (int i = 0; i < count; i++)
+                    {
+                        cts.Token.ThrowIfCancellationRequested();
+                        lines[i] = doc.OffsetToLineIndex(hits[i]);
+                    }
+                }, cts.Token);
             }
             if (cts.IsCancellationRequested || !ReferenceEquals(_mapCts, cts)) return;
             if (!ReferenceEquals(_session, session) || session.SearchHits.Count != count) return;

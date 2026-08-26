@@ -125,10 +125,10 @@ public partial class App : Application
                     },
                     new Avalonia.Controls.TextBlock
                     { Text = "© 2026 amru195704 (Y4U)", Margin = new Thickness(0, 10, 0, 0) },
-                    MakeLink(ja ? "公式サイト（最新情報）" : "Official site / News", UwView.Core.SiteLinks.Official),
-                    MakeLink(ja ? "概要（UwViewとは）" : "About UwView", UwView.Core.SiteLinks.About),
-                    MakeLink(ja ? "お問い合わせ" : "Support / Contact", UwView.Core.SiteLinks.Support),
-                    MakeLink("GitHub", UwView.Core.SiteLinks.GitHubRepo),
+                    MakeLink(ja ? "公式サイト（最新情報）" : "Official site / News", UwView.Core.SiteLinks.OfficialLink),
+                    MakeLink(ja ? "概要（UwViewとは）" : "About UwView", UwView.Core.SiteLinks.AboutLink),
+                    MakeLink(ja ? "お問い合わせ" : "Support / Contact", UwView.Core.SiteLinks.SupportLink),
+                    MakeLink("GitHub", UwView.Core.SiteLinks.GitHubRepoLink),
                 },
             },
         };

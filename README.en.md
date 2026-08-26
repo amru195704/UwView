@@ -37,7 +37,7 @@ Measured against the well-known large-log viewer **[klogg](https://klogg.filimon
 
 ## Highlights
 
-*Current stable version: **v1.2.2**.*
+*Current stable version: **v1.3.0**.* (v1.3.0 aligns the version number with UwView Pro; free-edition features are unchanged from v1.2.2. The Pro edition adds Drill-down and Sequence Search.)
 
 - 🚀 **Instant display of gigantic files** — billions of lines with a tiny memory footprint (largest measured: 258.68 GB / 4,509,830,821 lines). The file body is never resident; the index is ~6 MB at 200 M lines.
 - 📖 **Progressive open** — shows content the instant you open it (page mode) → builds the index in the background → promotes to line mode when done.

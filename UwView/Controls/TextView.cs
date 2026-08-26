@@ -1086,6 +1086,17 @@ public class TextView : Control
             _maxLineWidth = widest;
             Dispatcher.UIThread.Post(UpdateHScroll, DispatcherPriority.Background);
         }
+        else if (_hOffset > 0 && widest <= _hOffset)
+        {
+            // 長い行を右へスクロールしたまま短い行（例: ファイル末尾）へ移動すると、
+            // 本文だけ画面外へ出て「行番号は見えるのに文字が出ない」状態になる。
+            // _maxLineWidth は単調増加なので UpdateHScroll では引き戻せない。
+            // 可視行がまったく見えないときだけ、見える位置まで戻す。
+            double back = Math.Max(0, widest - BodyWidth * 0.5);
+            _hOffset = back;
+            Dispatcher.UIThread.Post(() => { UpdateHScroll(); InvalidateVisual(); },
+                                     DispatcherPriority.Background);
+        }
     }
 
     private static Color ColorFromArgb(uint c)

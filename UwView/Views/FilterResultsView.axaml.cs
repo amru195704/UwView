@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
@@ -73,7 +74,13 @@ public partial class FilterResultsView : UserControl
         }, DispatcherPriority.Loaded);
     }
 
-    /// <summary>選択行の右クリック → コピー / ファイルに保存。</summary>
+    /// <summary>
+    /// 右クリックメニューへ項目を足すためのフック（Pro 拡張用）。
+    /// 引数は選択先頭行のジャンプ先オフセット。null を返せば何も足さない。
+    /// </summary>
+    public Func<long, IReadOnlyList<MenuItem>?>? ExtraMenuItems { get; set; }
+
+    /// <summary>選択行の右クリック → コピー / ファイルに保存（＋Pro 拡張の項目）。</summary>
     private void ShowSelectionMenu(PointerPressedEventArgs e)
     {
         var menu = new MenuFlyout();
@@ -83,6 +90,14 @@ public partial class FilterResultsView : UserControl
         saveItem.Click += (_, _) => _ = SaveSelectedAsync();
         menu.Items.Add(copyItem);
         menu.Items.Add(saveItem);
+
+        if (ExtraMenuItems is not null
+            && RowList.SelectedRowsInOrder().FirstOrDefault(r => r.IsHit) is { } hit
+            && ExtraMenuItems(hit.ResolveJumpOffset()) is { Count: > 0 } extra)
+        {
+            menu.Items.Add(new Separator());
+            foreach (var item in extra) menu.Items.Add(item);
+        }
         menu.ShowAt(RowList, showAtPointer: true);
     }
 

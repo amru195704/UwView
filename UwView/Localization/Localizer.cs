@@ -19,6 +19,13 @@ public sealed class Localizer : INotifyPropertyChanged
 {
     public static Localizer Instance { get; } = new();
 
+    static Localizer()
+    {
+        // 公式サイトのリンクを表示言語に合わせる（英語UIから日本語ページへ飛ばさないため）。
+        // UwView.Core は Localizer を参照できないので、こちらから判定を渡す。
+        UwView.Core.SiteLinks.IsJapanese = () => Instance._isJa;
+    }
+
     private readonly ResourceManager _en =
         new("UwView.Localization.Strings", typeof(Localizer).Assembly);
     private readonly ResourceManager _ja =

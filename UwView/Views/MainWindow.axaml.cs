@@ -30,20 +30,20 @@ public partial class MainWindow : Window
     private void OnMenuOpen(object? s, EventArgs e) => App.RequestOpenFile?.Invoke();
     private void OnMenuClose(object? s, EventArgs e) => App.RequestCloseTab?.Invoke();
     private void OnMenuCloseAll(object? s, EventArgs e) => App.RequestCloseAll?.Invoke();
-    private void OnMenuHowTo(object? s, EventArgs e) => App.OpenExternal(SiteLinks.Help);
-    private void OnMenuNews(object? s, EventArgs e) => App.OpenExternal(SiteLinks.Official);
-    private void OnMenuSupport(object? s, EventArgs e) => App.OpenExternal(SiteLinks.Support);
-    private void OnMenuGitHubUwView(object? s, EventArgs e) => App.OpenExternal(SiteLinks.GitHubRepo);
-    private void OnMenuGitHubProfile(object? s, EventArgs e) => App.OpenExternal(SiteLinks.GitHubProfile);
+    private void OnMenuHowTo(object? s, EventArgs e) => App.OpenExternal(SiteLinks.HelpLink);
+    private void OnMenuNews(object? s, EventArgs e) => App.OpenExternal(SiteLinks.OfficialLink);
+    private void OnMenuSupport(object? s, EventArgs e) => App.OpenExternal(SiteLinks.SupportLink);
+    private void OnMenuGitHubUwView(object? s, EventArgs e) => App.OpenExternal(SiteLinks.GitHubRepoLink);
+    private void OnMenuGitHubProfile(object? s, EventArgs e) => App.OpenExternal(SiteLinks.GitHubProfileLink);
 
     // ── Windows/Linux: ウィンドウ内 Menu のハンドラ（RoutedEventArgs）────
     private void OnWinOpen(object? s, RoutedEventArgs e) => App.RequestOpenFile?.Invoke();
     private void OnWinClose(object? s, RoutedEventArgs e) => App.RequestCloseTab?.Invoke();
     private void OnWinCloseAll(object? s, RoutedEventArgs e) => App.RequestCloseAll?.Invoke();
-    private void OnWinHowTo(object? s, RoutedEventArgs e) => App.OpenExternal(SiteLinks.Help);
-    private void OnWinNews(object? s, RoutedEventArgs e) => App.OpenExternal(SiteLinks.Official);
-    private void OnWinSupport(object? s, RoutedEventArgs e) => App.OpenExternal(SiteLinks.Support);
-    private void OnWinGitHubUwView(object? s, RoutedEventArgs e) => App.OpenExternal(SiteLinks.GitHubRepo);
-    private void OnWinGitHubProfile(object? s, RoutedEventArgs e) => App.OpenExternal(SiteLinks.GitHubProfile);
+    private void OnWinHowTo(object? s, RoutedEventArgs e) => App.OpenExternal(SiteLinks.HelpLink);
+    private void OnWinNews(object? s, RoutedEventArgs e) => App.OpenExternal(SiteLinks.OfficialLink);
+    private void OnWinSupport(object? s, RoutedEventArgs e) => App.OpenExternal(SiteLinks.SupportLink);
+    private void OnWinGitHubUwView(object? s, RoutedEventArgs e) => App.OpenExternal(SiteLinks.GitHubRepoLink);
+    private void OnWinGitHubProfile(object? s, RoutedEventArgs e) => App.OpenExternal(SiteLinks.GitHubProfileLink);
     private void OnWinAbout(object? s, RoutedEventArgs e) => App.ShowAbout();
 }

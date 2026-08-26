@@ -29,6 +29,9 @@ public partial class FilterResultsWindow : Window
     public FilterResultsWindow() : this(new FilterResultsViewModel(_ => { }, maxContext: 0)) { }
 
     // ── Pro 拡張用フック（PopupRectSelection.Attach から利用）。内側 View へ委譲 ────
+    /// <summary>内側のビュー（Pro 拡張がビュー単位で取り付けるため）。</summary>
+    public FilterResultsView InnerView => _view;
+
     public Avalonia.Controls.Panel ToolbarHost => _view.ToolbarHost;
     public Avalonia.Controls.Panel ListHost => _view.ListHost;
     public FilterListView ResultsList => _view.ResultsList;
