@@ -125,7 +125,12 @@ public sealed class AppSettings
     /// 独自フォルダへ切替えた直後、現行ファイルが無ければ旧共有ファイルから一度だけ移行コピーする。
     /// （UVP を UwView 共有ファイルから UwViewPro 専用ファイルへ移す際にライセンス等を引き継ぐ）
     /// </summary>
-    public static void SeedFromLegacyIfMissing(string legacyFolder)
+    /// <param name="includeLicense">
+    /// false の場合、ライセンス（キー・トライアル起算等）は引き継がず新規のまま起算する。
+    /// 検索履歴・お気に入り・言語等の道具設定はどちらの場合も引き継ぐ。
+    /// UEP を UVP から分離する際、別のライセンスキーで認証するために使う。
+    /// </param>
+    public static void SeedFromLegacyIfMissing(string legacyFolder, bool includeLicense = true)
     {
         try
         {
@@ -134,7 +139,15 @@ public sealed class AppSettings
             var legacy = Path.Combine(DirFor(legacyFolder), "settings.json");
             if (!File.Exists(legacy)) return;
             Directory.CreateDirectory(Path.GetDirectoryName(current)!);
-            File.Copy(legacy, current);
+            if (includeLicense)
+            {
+                File.Copy(legacy, current);
+                return;
+            }
+            var settings = JsonSerializer.Deserialize(File.ReadAllText(legacy), SettingsJsonContext.Default.AppSettings)
+                           ?? new AppSettings();
+            settings.License = new LicenseData();
+            File.WriteAllText(current, JsonSerializer.Serialize(settings, SettingsJsonContext.Default.AppSettings));
         }
         catch { /* 移行できなくても新規既定で続行 */ }
     }

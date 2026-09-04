@@ -270,7 +270,14 @@ public class TextView : Control
     public ViewMode Mode => _session?.Mode ?? ViewMode.Page;
     public long TopLine => _session?.TopLine ?? 0;
     public long TopByteOffset => _session?.TopByteOffset ?? 0;
-    public double Percent => _session is { Document.Length: > 0 } s ? (double)s.TopByteOffset / s.Document.Length : 0;
+    /// <summary>
+    /// 先頭表示位置の割合（0〜1）。ステータス表示とスクロールバーが使う。
+    ///
+    /// 行モードでは先頭位置は <c>TopLine</c> が持ち、<c>TopByteOffset</c> は据え置かれる。
+    /// バイト位置だけを見ると行モードで常に 0 になるので、<see cref="CurrentOffset"/>
+    /// （モードに応じて先頭位置を返す）を基準にする。
+    /// </summary>
+    public double Percent => _session is { Document.Length: > 0 } s ? (double)CurrentOffset / s.Document.Length : 0;
     public long? TotalLines => _session?.Document.TotalLines;
 
     /// <summary>先頭表示位置・モード・セッションが変わったら発火（ステータス/スクロールバー更新用）。</summary>

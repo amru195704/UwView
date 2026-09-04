@@ -4,6 +4,8 @@
 
 🌐 **[公式サイト](https://uvp.y42u.net/)**（[概要](https://uvp.y42u.net/about/)・[ヘルプ](https://uvp.y42u.net/help/)・[お問い合わせ](https://uvp.y42u.net/support/)）・ **[ブラウザで試す（WASMデモ）](https://amru195704.github.io/UwView/)** ・ 📰 [プレスキット](press-kit/PRESSKIT.md)
 
+📥 **ダウンロード: [GitHub Releases](https://github.com/amru195704/UwView/releases/latest)**（Windows / macOS / Linux 各版。同じアーカイブを [`dist/`](dist/) にも同梱）
+
 **45億行クラスの巨大テキストファイルを、省メモリ・高速に閲覧できるテキストビューア。（現在テストした最大行数：実際の行数限界はテストできない）**
 一応理論上は**約920京行**まで：人類未到なので数十年後にわかるか？
 おそらく現状の設定では**5,500億行**ぐらいが限界(設定で増加可能だが。。意味が無い）
@@ -18,7 +20,7 @@
 
 ## 📣 お知らせ：UwView Pro を発売しました（Windows・macOS・Linux 対応）
 
-**購入・詳細 → [UwView Pro 製品ページ](https://uvp.y42u.net/pro/)**（買い切り **$129** ／ 月額 **$9**）。**Windows 10/11・macOS 11+（Apple Silicon / Intel）・Linux（x86_64）に対応（1ライセンスで全OS）**。※Windows版は現在未署名（SmartScreenは〔詳細情報→実行〕）。
+**購入・詳細 → [UwView Pro 製品ページ](https://uvp.y42u.net/pro/)**（買い切り **$129** ／ 月額 **$9**）・ 📥 **[Pro版ダウンロード](https://uvp.y42u.net/download/)**（14日間の無料試用キーあり）。**Windows 10/11・macOS 11+（Apple Silicon / Intel）・Linux（x86_64）に対応（1ライセンスで全OS）**。※Windows版は現在未署名（SmartScreenは〔詳細情報→実行〕）。
 
 大容量ファイルをさらに高速化した **UwView Pro** を発売しました（Windows・macOS・Linux 対応）。索引の並列構築に加え、**圧縮サイドカーキャッシュ**（`.uwvz` 単一ファイル・行索引内蔵・チェックサム保護）により「2回目以降の瞬間オープン」と「全文検索の大幅高速化」を実現します。
 
@@ -219,7 +221,7 @@ iconv -f UTF-8 -t SHIFT_JIS huge.txt > huge_sjis.txt
 
 ## 実装状況
 
-現在の安定版: **v1.3.0**（About 表示。ビルド番号はコンパイル日時 `yy.MM.dd.HH`）。フェーズ0〜4（基盤・巨大ファイル閲覧）に加え、v1.1／v1.1.1 でログ解析向けの機能を追加し、v1.2.0 で UI の全面アイコン化と不具合修正（セッション復元ほか）、v1.2.1 でブラウザ版（WASM）の表示不具合修正と検索結果一覧の高速化、v1.2.2 で横スクロール対応を行いました。v1.3.0 は有料版 [UwView Pro](https://uvp.y42u.net/pro/) との**版数統一**です（無料版の機能は v1.2.2 と同一。Pro 側は多段階検索・シーケンシャル検索を追加）。
+現在の安定版: **v1.4.0**（About 表示。ビルド番号はコンパイル日時 `yy.MM.dd.HH`）。フェーズ0〜4（基盤・巨大ファイル閲覧）に加え、v1.1／v1.1.1 でログ解析向けの機能を追加し、v1.2.0 で UI の全面アイコン化と不具合修正（セッション復元ほか）、v1.2.1 でブラウザ版（WASM）の表示不具合修正と検索結果一覧の高速化、v1.2.2 で横スクロール対応を行いました。v1.3.0・v1.4.0 は有料版 [UwView Pro](https://uvp.y42u.net/pro/) との**版数統一**です（無料版の機能は v1.2.2 と同一。v1.4.0 では行モードで表示位置の割合が常に 0% になる不具合を修正しています）。
 
 - [x] フェーズ0: 足場（Avalonia ソリューション・Desktop 素ビルド）
 - [x] フェーズ1: コアエンジン（`IByteSource` / mmap / 文字コード判定 / スパース索引 / 行・ページ取得）＋ xUnit 検証
@@ -239,6 +241,7 @@ iconv -f UTF-8 -t SHIFT_JIS huge.txt > huge_sjis.txt
 - [x] **v1.2.1**: 検索結果一覧を自前描画に置き換え（仮想化が効いておらずスクロールが重かった問題を解消・左ドラッグでスクロールバー操作可）／スクロールバー末尾で画面が空白になる不具合修正／WASM の本文が表示されない・行番号がずれる不具合修正／WASM の日本語入力でローマ字が残る問題を解消／WASM のデータ受け渡しを高速化／前後±N でのフリーズ修正／語の色設定で対象語がずれる問題を修正／結果一覧を閉じても表示位置・前後±N を引き継ぎ／「行番号を含める」を全出力で統一
 - [x] **v1.2.2**: 横スクロール対応（メイン画面・検索結果一覧の両方。行番号は左固定で本文だけ移動／横スクロールバー・トラックパッド横スワイプ・Shift+ホイール・`←``→`／`Home`=行頭・`Cmd/Ctrl+Home`=ファイル先頭／クリック座標・クイック着色・矩形選択の座標補正込み。範囲は可視行の実測のみで算出し全行走査しない）
 - [x] **v1.3.0**: UwView Pro との版数統一（無料版の機能変更なし。Pro 側は多段階検索（Drill-down・最大8段）・シーケンシャル検索（Sequence）・履歴ジャンプを追加）
+- [x] **v1.4.0**: UwView Pro との版数統一（無料版の機能追加なし。不具合修正1件＝行モードでステータスの表示位置の割合が常に 0% になっていた問題。Pro 側は編集機能を Edit ライセンスとして統合）
 
 ## ブラウザ版（WASM・おまけ）
 
@@ -258,18 +261,23 @@ dotnet run --project UwView.Browser
 
 デスクトップ版と同じUI・同じコアが動きます。
 
-## 配布物（`dist/`）
+## ダウンロード（配布物）
 
-`dist/` には各OS・アーキテクチャ向けにビルド済みの配布アーカイブを置いています。ソースはビルド生成物のため通常は `.gitignore` で除外していますが、**このアーカイブ本体（`.zip` / `.tar.gz`）はインストール環境として追跡対象**にしています。
+ビルド済みアーカイブ（.NET のインストール不要・自己完結型）は次の2か所から入手できます。
+
+1. **[GitHub Releases](https://github.com/amru195704/UwView/releases/latest)**（推奨）— 各リリースにOS別アーカイブと `SHA256SUMS` を添付しています。
+2. **[`dist/`](dist/)** — リポジトリにも同じアーカイブを追跡対象として同梱しています（clone するだけで一式揃います。ビルド生成物ですが例外的に `.gitignore` 対象外）。
 
 | ファイル | 対象 |
 | --- | --- |
-| `UwView-macos-arm64.zip` | macOS（Apple Silicon） |
-| `UwView-macos-x64.zip` | macOS（Intel） |
-| `UwView-win-arm64.zip` | Windows（ARM64） |
-| `UwView-win-x64.zip` | Windows（x64） |
-| `UwView-linux-arm64.tar.gz` | Linux（ARM64） |
-| `UwView-linux-x64.tar.gz` | Linux（x64） |
+| `UwView-<版>-mac-arm64.zip` | macOS（Apple Silicon） |
+| `UwView-<版>-mac-x64.zip` | macOS（Intel） |
+| `UwView-<版>-win-arm64.zip` | Windows（ARM64） |
+| `UwView-<版>-win-x64.zip` | Windows（x64） |
+| `UwView-<版>-linux-aarch64.tar.gz` | Linux（ARM64） |
+| `UwView-<版>-linux-x86_64.tar.gz` | Linux（x86_64） |
+
+> 無料版バイナリの版数について: v1.3.0・v1.4.0 は [UwView Pro](https://uvp.y42u.net/pro/) との版数統一で、**無料版の機能は v1.2.2 と同一**です（v1.4.0 で不具合修正が1件入っています）。そのため配布アーカイブの版表記が README の安定版表記と異なる場合がありますが、内容は最新の無料版です。
 
 展開後、macOS 版は `UwView.app` をそのまま起動、Windows / Linux 版は同梱の実行ファイル（`UwView.exe` / `UwView`）を実行してください。macOS 版アプリバンドルの生成手順は `UwView.Desktop/macos/build-app.sh` を参照してください（Windows / Linux 版は `dotnet publish -r <RID> --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true` で発行し、`UwView.Desktop`→`UwView` にリネーム）。
 

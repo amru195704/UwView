@@ -4,6 +4,8 @@
 
 **A memory-thrifty, high-speed viewer for gigantic text files — billions of lines and beyond (largest tested: 4.5 billion lines / 258.68 GB).**
 
+📥 **Download: [GitHub Releases](https://github.com/amru195704/UwView/releases/latest)** (Windows / macOS / Linux archives; the same files are also tracked under [`dist/`](dist/))
+
 ![UwView — a 51 GB / 892-million-line OSM Japan file in line mode](press-kit/screenshots/line-mode.png)
 
 UwView is a rebuild (in [Avalonia UI](https://avaloniaui.net/)) of a large-text viewer originally published on the Japanese "Vector" archive. Ordinary editors choke around a million lines; UwView never loads the whole file into memory and **renders only the lines currently on screen**, so it opens huge line-count files — the kind produced by RDB or XML dumps — instantly. The largest file tested so far is **4,509,830,821 lines / 258.68 GB** (the whole United States OpenStreetMap extract, expanded to XML, measured with UwView Pro — [details](#real-data--openstreetmap-usa-25868-gb--45-billion-lines-uwview-pro)). Until recently the largest confirmed was 892 million lines / ~51 GB (OSM Japan); that ceiling has now moved about 5× higher. If anyone finds the real limit, please let me know.
@@ -12,7 +14,7 @@ It is a **viewer**, not an editor (read-only).
 
 ## 📣 Announcement: UwView Pro is now available (Windows, macOS & Linux)
 
-**Buy / details → [UwView Pro product page](https://uvp.y42u.net/pro/)** (one-time **$129** / **$9**/month). Windows 10/11, macOS 11+ (Apple Silicon / Intel) and Linux (x86_64) — one license, every OS. (Windows build is currently unsigned: SmartScreen → More info → Run anyway.)
+**Buy / details → [UwView Pro product page](https://uvp.y42u.net/pro/)** (one-time **$129** / **$9**/month) ・ 📥 **[Download Pro](https://uvp.y42u.net/en/download-en/)** (free 14-day trial key available). Windows 10/11, macOS 11+ (Apple Silicon / Intel) and Linux (x86_64) — one license, every OS. (Windows build is currently unsigned: SmartScreen → More info → Run anyway.)
 
 **UwView Pro** is now available for Windows, macOS and Linux. It pushes large-file performance further: on top of parallel index construction, a **compressed sidecar cache** (a single `.uwvz` file with the line index built in, checksum-protected) delivers instant re-open from the second time on, plus dramatically faster full-text search.
 
@@ -43,7 +45,7 @@ Measured against the well-known large-log viewer **[klogg](https://klogg.filimon
 
 ## Highlights
 
-*Current stable version: **v1.3.0**.* (v1.3.0 aligns the version number with UwView Pro; free-edition features are unchanged from v1.2.2. The Pro edition adds Drill-down and Sequence Search.)
+*Current stable version: **v1.4.0**.* (v1.3.0 and v1.4.0 align the version number with UwView Pro; free-edition features are unchanged from v1.2.2. v1.4.0 fixes one defect: in line mode the status bar always showed 0% for the scroll position. The Pro edition now includes editing as an Edit Upgrade licence.)
 
 - 🚀 **Instant display of gigantic files** — billions of lines with a tiny memory footprint (largest measured: 258.68 GB / 4,509,830,821 lines). The file body is never resident; the index is ~6 MB at 200 M lines.
 - 📖 **Progressive open** — shows content the instant you open it (page mode) → builds the index in the background → promotes to line mode when done.
@@ -184,18 +186,23 @@ dotnet run --project UwView.Browser        # Chromium-based browsers recommended
 
 Same UI and same core as desktop.
 
-## Prebuilt binaries (`dist/`)
+## Download (prebuilt binaries)
 
-Self-contained archives (no .NET install required) for each OS / architecture:
+Self-contained archives (no .NET install required) are available from two places:
+
+1. **[GitHub Releases](https://github.com/amru195704/UwView/releases/latest)** (recommended) — each release carries per-OS archives plus `SHA256SUMS`.
+2. **[`dist/`](dist/)** — the same archives are also tracked in the repository, so a plain clone gets everything.
 
 | File | Target |
 | --- | --- |
-| `UwView-macos-arm64.zip` | macOS (Apple Silicon) |
-| `UwView-macos-x64.zip` | macOS (Intel) |
-| `UwView-win-arm64.zip` | Windows (ARM64) |
-| `UwView-win-x64.zip` | Windows (x64) |
-| `UwView-linux-arm64.tar.gz` | Linux (ARM64) |
-| `UwView-linux-x64.tar.gz` | Linux (x64) |
+| `UwView-<version>-mac-arm64.zip` | macOS (Apple Silicon) |
+| `UwView-<version>-mac-x64.zip` | macOS (Intel) |
+| `UwView-<version>-win-arm64.zip` | Windows (ARM64) |
+| `UwView-<version>-win-x64.zip` | Windows (x64) |
+| `UwView-<version>-linux-aarch64.tar.gz` | Linux (ARM64) |
+| `UwView-<version>-linux-x86_64.tar.gz` | Linux (x86_64) |
+
+> About version numbers: v1.3.0 and v1.4.0 unify version numbering with [UwView Pro](https://uvp.y42u.net/pro/); **the free edition is functionally identical to v1.2.2** (v1.4.0 adds one bug fix), so archive names may show an older version than the README's stable-version line — they are still the current free edition.
 
 macOS: unzip and launch `UwView.app` (unsigned — first launch: right-click → Open). Windows / Linux: run the bundled executable.
 
