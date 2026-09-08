@@ -42,6 +42,11 @@ public partial class FilterResultsView : UserControl
         InitializeComponent();
 
         SaveButton.Click += OnSaveClick;
+        // 抽出保存（F4-3）: 開いた時点で前回の指定を入れ直す。
+        // 専用のボタンは置かない——「保存」と押した後の動きが同じで、
+        // チェックを触っていないかぎり見分けがつかないため（オーナー判断 2026-09-08）。
+        // 復元は UVP のみ。UVF はこのオプションを出していないので触らない
+        if (_vm.AllowExtractOptions) UwView.Services.ExtractSaveOptions.ApplyTo(_vm);
         CancelSaveButton.Click += (_, _) => _vm.CancelSave();
         CloseButton.Click += (_, _) => CloseRequested?.Invoke();
 
@@ -53,6 +58,13 @@ public partial class FilterResultsView : UserControl
         RowList.SelectionMenuRequested += ShowSelectionMenu;
 
         _vm.PropertyChanged += OnVmPropertyChanged;
+
+        // 件数表示（「1/60 件」など）はコードで組み立てて焼き付くので、
+        // 言語を切り替えたら作り直す。XAML の {loc:Localize} は自動で追従する
+        void OnLanguage(object? _, System.ComponentModel.PropertyChangedEventArgs __) => _vm.RefreshTexts();
+        Localizer.Instance.PropertyChanged += OnLanguage;
+        _detach += () => Localizer.Instance.PropertyChanged -= OnLanguage;
+
         UpdateTitle();
     }
 
@@ -115,7 +127,12 @@ public partial class FilterResultsView : UserControl
         _disposed = true;
         _vm.SavedTopRow = RowList.TopRow;
         _vm.PropertyChanged -= OnVmPropertyChanged;
+        _detach?.Invoke();
+        _detach = null;
     }
+
+    /// <summary>閉じるときに外す購読（言語切替など）。</summary>
+    private Action? _detach;
 
     // ── Pro 拡張用フック（矩形選択オーバーレイ・追加ボタンの挿入先）────
     public Avalonia.Controls.Panel ToolbarHost => ToolbarPanel;
@@ -206,6 +223,9 @@ public partial class FilterResultsView : UserControl
             DefaultExtension = "txt",
         });
         if (file is null) return;
+
+        if (_vm.AllowExtractOptions)
+            UwView.Services.ExtractSaveOptions.Remember(_vm);   // 次に開いたとき同じ指定で始める
 
         try
         {

@@ -27,14 +27,27 @@
                 </StackPanel>
                 <Rectangle Width="1" Fill="#CCCCCC" Margin="2,0" />
                 <CheckBox Content="{loc:Localize IncludeLineNumbers}" Foreground="Black"
+                          ToolTip.Tip="{loc:Localize TipIncludeLineNumbers}"
                           IsChecked="{Binding IncludeLineNumbersOnSave, Mode=TwoWay}" />
-                <Button x:Name="SaveButton" Content="{loc:Localize SaveEllipsis}" />
+                <!-- 抽出保存のオプション（Pro のみ。±N と同じ AllowContext で出し分ける） -->
+                <CheckBox Content="{loc:Localize IncludeHeaderOnSave}" Foreground="Black"
+                          ToolTip.Tip="{loc:Localize TipIncludeHeader}"
+                          IsChecked="{Binding IncludeHeaderOnSave, Mode=TwoWay}"
+                          IsVisible="{Binding AllowExtractOptions}" />
+                <CheckBox Content="{loc:Localize IncludeContextOnSave}" Foreground="Black"
+                          ToolTip.Tip="{loc:Localize TipIncludeContext}"
+                          IsChecked="{Binding IncludeContextOnSave, Mode=TwoWay}"
+                          IsVisible="{Binding ContextSaveApplies}" />
+                <Button x:Name="SaveButton" Content="{loc:Localize SaveEllipsis}"
+                        ToolTip.Tip="{loc:Localize TipSaveFilter}" />
                 <ProgressBar Width="130" Minimum="0" Maximum="1"
                              Value="{Binding SaveProgress}" IsVisible="{Binding IsSaving}" />
                 <Button x:Name="CancelSaveButton" Content="{loc:Localize Cancel}"
+                        ToolTip.Tip="{loc:Localize TipCancelSave}"
                         IsVisible="{Binding IsSaving}" />
                 <Rectangle Width="1" Fill="#CCCCCC" Margin="2,0" />
-                <Button x:Name="CloseButton" Content="{loc:Localize Close}" />
+                <Button x:Name="CloseButton" Content="{loc:Localize Close}"
+                        ToolTip.Tip="{loc:Localize TipCloseList}" />
             </WrapPanel>
         </Border>
 

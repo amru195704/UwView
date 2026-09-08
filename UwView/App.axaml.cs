@@ -64,10 +64,12 @@ public partial class App : Application
         }
         else if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform)
         {
-            singleViewPlatform.MainView = new MainView
-            {
-                DataContext = new MainViewModel()
-            };
+            var view = new MainView { DataContext = new MainViewModel() };
+            // ブラウザ版は扱える大きさに限りがあるので、先にお断りを出してから使ってもらう。
+            // WASM にはウィンドウが無く ShowDialog が使えないため、画面に重ねる（2026-09-09 指示）
+            singleViewPlatform.MainView = System.OperatingSystem.IsBrowser()
+                ? new BrowserStartupNotice(view)
+                : view;
         }
 
         base.OnFrameworkInitializationCompleted();

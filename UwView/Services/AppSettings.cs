@@ -109,6 +109,20 @@ public sealed class AppSettings
     public List<RecentEntry> RecentFiles { get; set; } = new();
     public List<string> Favorites { get; set; } = new();
 
+    // ── UVP v1.5.0: 抽出保存（F4）。直近の指定を覚えて「抽出保存」で使い回す ──
+    /// <summary>既定は true（保存の行番号は従来から既定で付いていた）。</summary>
+    public bool ExtractIncludeLineNumbers { get; set; } = true;
+    public bool ExtractIncludeHeader { get; set; }
+
+    /// <summary>既定は true（従来の保存は表示中の文脈行もそのまま書いていた）。</summary>
+    public bool ExtractIncludeContext { get; set; } = true;
+
+    /// <summary>
+    /// UVP の未公開機能で使う予約項目（無料版では読み書きしない）。
+    /// 公開していない機能なので、ここでは意味を書かない。
+    /// </summary>
+    public bool CommandModeEnabled { get; set; } = true;
+
     /// <summary>
     /// 設定フォルダ名（%AppData%/&lt;この名前&gt;/settings.json）。
     /// 既定は "UwView"（UVF）。UVP は起動時に "UwViewPro" へ変更し、UVF と設定・ライセンスを分離する。
@@ -188,6 +202,21 @@ public sealed class AppSettings
         SearchHistory.Insert(0, pattern);
         if (SearchHistory.Count > SearchHistoryLimit)
             SearchHistory.RemoveRange(SearchHistoryLimit, SearchHistory.Count - SearchHistoryLimit);
+    }
+
+    /// <summary>
+    /// 頻度集計の式の履歴（UVP v1.5.0）。検索語とは別に持つ——
+    /// 集計式は `k="([^"]+)"` のような正規表現で、検索窓の候補に混ぜると互いに邪魔になる。
+    /// </summary>
+    public List<string> TallyHistory { get; set; } = new();
+
+    public void PushTallyHistory(string pattern)
+    {
+        if (string.IsNullOrEmpty(pattern)) return;
+        TallyHistory.RemoveAll(p => p == pattern);
+        TallyHistory.Insert(0, pattern);
+        if (TallyHistory.Count > SearchHistoryLimit)
+            TallyHistory.RemoveRange(SearchHistoryLimit, TallyHistory.Count - SearchHistoryLimit);
     }
 
     /// <summary>最近使ったファイルへ追加（新しい順・重複排除・上限15・V1.1.1 §2-3）。</summary>

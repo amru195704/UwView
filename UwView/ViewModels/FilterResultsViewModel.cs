@@ -149,6 +149,33 @@ public sealed partial class FilterResultsViewModel : ObservableObject, IDisposab
     /// </summary>
     public int SavedTopRow { get; set; }
 
+    // ── UVP v1.5.0: 抽出保存のオプション（指示書 F4）──
+
+    /// <summary>
+    /// 1行目（ファイルの先頭行）をヘッダーとして出力の先頭に置く。CSV/TSV を
+    /// そのまま表計算へ渡すため。既定は OFF（従来どおり）。
+    /// </summary>
+    [ObservableProperty] private bool _includeHeaderOnSave;
+
+    /// <summary>
+    /// 前後±N の文脈行も書き出す。
+    ///
+    /// <b>既定は ON。</b>従来から保存は画面の表示内容をそのまま書いており、
+    /// ±N を出していれば文脈も保存されていた。OFF はその挙動を変えるための
+    /// 新しい選択肢（ヒット行だけ抜きたいとき）なので、既定は従来のまま。
+    /// </summary>
+    [ObservableProperty] private bool _includeContextOnSave = true;
+
+    /// <summary>
+    /// 抽出保存のオプションを出すか。<b>UVP だけ true</b>。
+    /// ±N の <see cref="AllowContext"/> は UVF でも 1 まで許しているので、
+    /// これを流用すると無料版にも出てしまう（F4 は Pro の機能）。
+    /// </summary>
+    public bool AllowExtractOptions { get; init; }
+
+    /// <summary>文脈のチェックが意味を持つか（±N を出しているときだけ）。</summary>
+    public bool ContextSaveApplies => AllowExtractOptions && AllowContext && ContextN > 0;
+
     /// <summary>前後±N を UI で使えるか（MaxContext > 0）。</summary>
     public bool AllowContext => MaxContext > 0;
 
@@ -199,8 +226,15 @@ public sealed partial class FilterResultsViewModel : ObservableObject, IDisposab
     partial void OnContextNChanged(int value)
     {
         if (value < 0 || value > MaxContext) { ContextN = Math.Clamp(value, 0, MaxContext); return; }
+        OnPropertyChanged(nameof(ContextSaveApplies));
         Rebuild();
     }
+
+    /// <summary>
+    /// 表示言語が変わったときに、コードで組み立てた文言を作り直す。
+    /// 件数表示（「1/60 件」）は焼き付くので、放っておくと英語UIに日本語が残る。
+    /// </summary>
+    public void RefreshTexts() => UpdateHitInfo();
 
     /// <summary>行リストを現在のヒット・±N から作り直す（遅延リストなので軽い）。</summary>
     public void Rebuild()
@@ -397,15 +431,33 @@ public sealed partial class FilterResultsViewModel : ObservableObject, IDisposab
         var rows = Rows;
         _saveCts = new CancellationTokenSource();
         var ct = _saveCts.Token;
+        bool withContext = IncludeContextOnSave;
         IsSaving = true;
         SaveProgress = 0;
         try
         {
             await using var writer = new StreamWriter(output, encoding, bufferSize: 1 << 16, leaveOpen: false);
+
+            // ヘッダー（F4）。ヒットの先頭がその1行目そのものなら二重に書かない
+            if (IncludeHeaderOnSave && HeaderLine() is { } header && !FirstOutputIsLineZero(rows, withContext))
+            {
+                string prefix = IncludeLineNumbersOnSave
+                    ? 1.ToString("N0", Localizer.Instance.Culture) + "\t" : "";
+                await writer.WriteLineAsync(prefix + header);
+            }
+
             for (int i = 0; i < rows.Count; i++)
             {
                 ct.ThrowIfCancellationRequested();
                 var row = rows[i];
+
+                // 文脈を外す＝ヒット行だけ。区切りの ⋯ も要らなくなる
+                if (!withContext && (row.IsSeparator || !row.IsHit))
+                {
+                    if ((i & 1023) == 0) { SaveProgress = (double)i / rows.Count; await Task.Yield(); }
+                    continue;
+                }
+
                 if (row.IsSeparator)
                 {
                     await writer.WriteLineAsync("⋯");
@@ -429,6 +481,34 @@ public sealed partial class FilterResultsViewModel : ObservableObject, IDisposab
         {
             IsSaving = false;
         }
+    }
+
+    /// <summary>ファイルの1行目（読めなければ null）。</summary>
+    private string? HeaderLine()
+    {
+        var doc = _session?.Document;
+        if (doc is null) return null;
+        try
+        {
+            string t = doc.GetLine(0);
+            return doc.LastReadIncomplete ? null : t;
+        }
+        catch (Exception e) when (e is IOException or ObjectDisposedException or InvalidOperationException)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>最初に書き出す行が1行目そのものか（ヘッダーの二重出力を防ぐ）。</summary>
+    private static bool FirstOutputIsLineZero(IReadOnlyList<FilterRow> rows, bool withContext)
+    {
+        foreach (var row in rows)
+        {
+            if (row.IsSeparator) continue;
+            if (!withContext && !row.IsHit) continue;
+            return row.LineNumberText == 1.ToString("N0", Localizer.Instance.Culture);
+        }
+        return false;
     }
 
     public void Dispose()

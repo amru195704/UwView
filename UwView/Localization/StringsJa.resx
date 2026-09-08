@@ -104,6 +104,25 @@
   <data name="ContextLinesSuffix" xml:space="preserve"><value>行</value></data>
   <data name="IncludeLineNumbers" xml:space="preserve"><value>行番号を含める</value></data>
   <data name="SaveEllipsis" xml:space="preserve"><value>保存…</value></data>
+  <data name="TipLineNumbers" xml:space="preserve"><value>本文の左に行番号を出す</value></data>
+  <data name="TipSearchRegex" xml:space="preserve"><value>検索語を正規表現として扱う（外すと高速なバイト検索）</value></data>
+  <data name="TipSearchCase" xml:space="preserve"><value>英字の大文字・小文字を区別せずに検索する</value></data>
+  <data name="TipIncludeLineNumbers" xml:space="preserve"><value>保存する各行の先頭に行番号を付ける</value></data>
+  <data name="TipIncludeHeader" xml:space="preserve"><value>ファイルの1行目を出力の先頭に置く（CSV/TSV 用）</value></data>
+  <data name="TipIncludeContext" xml:space="preserve"><value>ヒット行だけでなく、前後±N の文脈行も保存する</value></data>
+  <data name="TipCloseTabX" xml:space="preserve"><value>このタブを閉じる</value></data>
+  <data name="TipCancelIndex" xml:space="preserve"><value>索引の作成を中止する（ファイルは開いたまま）</value></data>
+  <data name="TipStartOpen" xml:space="preserve"><value>開くファイルを選ぶ</value></data>
+  <data name="TipSaveFilter" xml:space="preserve"><value>一覧をテキストファイルに保存する</value></data>
+  <data name="TipCancelSave" xml:space="preserve"><value>保存を中止する（途中までのファイルは残ります）</value></data>
+  <data name="TipCloseList" xml:space="preserve"><value>この一覧を閉じる（検索結果は残ります）</value></data>
+  <data name="TipLicActivate" xml:space="preserve"><value>上のキーを登録して Pro 機能を使えるようにする</value></data>
+  <data name="TipLicRevalidate" xml:space="preserve"><value>登録済みキーの状態をサーバーに問い合わせ直す</value></data>
+  <data name="TipLicDeactivate" xml:space="preserve"><value>このパソコンからキーを外す（別のパソコンで使えるようになります）</value></data>
+  <data name="TipLicBuy" xml:space="preserve"><value>購入ページをブラウザで開く</value></data>
+  <data name="TipCloseWindow" xml:space="preserve"><value>この画面を閉じる</value></data>
+  <data name="IncludeHeaderOnSave" xml:space="preserve"><value>1行目をヘッダーに</value></data>
+  <data name="IncludeContextOnSave" xml:space="preserve"><value>前後±N行も保存</value></data>
   <data name="AlwaysOnTop" xml:space="preserve"><value>常に手前</value></data>
   <data name="SaveFilterTitle" xml:space="preserve"><value>フィルタ結果を保存</value></data>
 

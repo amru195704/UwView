@@ -104,6 +104,25 @@
   <data name="ContextLinesSuffix" xml:space="preserve"><value>lines</value></data>
   <data name="IncludeLineNumbers" xml:space="preserve"><value>Line numbers</value></data>
   <data name="SaveEllipsis" xml:space="preserve"><value>Save…</value></data>
+  <data name="TipLineNumbers" xml:space="preserve"><value>Show line numbers on the left of the text</value></data>
+  <data name="TipSearchRegex" xml:space="preserve"><value>Treat the search word as a regular expression (off = the fast byte search)</value></data>
+  <data name="TipSearchCase" xml:space="preserve"><value>Ignore upper/lower case while searching</value></data>
+  <data name="TipIncludeLineNumbers" xml:space="preserve"><value>Put the line number in front of each saved line</value></data>
+  <data name="TipIncludeHeader" xml:space="preserve"><value>Put the file's first line at the top of the saved file (for CSV/TSV)</value></data>
+  <data name="TipIncludeContext" xml:space="preserve"><value>Save the ±N context lines too, not just the hits</value></data>
+  <data name="TipCloseTabX" xml:space="preserve"><value>Close this tab</value></data>
+  <data name="TipCancelIndex" xml:space="preserve"><value>Stop building the index (the file stays open)</value></data>
+  <data name="TipStartOpen" xml:space="preserve"><value>Choose a file to open</value></data>
+  <data name="TipSaveFilter" xml:space="preserve"><value>Save the list to a text file</value></data>
+  <data name="TipCancelSave" xml:space="preserve"><value>Stop saving (the partial file is kept)</value></data>
+  <data name="TipCloseList" xml:space="preserve"><value>Close this list (the search results are kept)</value></data>
+  <data name="TipLicActivate" xml:space="preserve"><value>Register the key entered above and unlock the Pro features</value></data>
+  <data name="TipLicRevalidate" xml:space="preserve"><value>Ask the server about the current state of the registered keys</value></data>
+  <data name="TipLicDeactivate" xml:space="preserve"><value>Release this machine from the key so it can be used on another one</value></data>
+  <data name="TipLicBuy" xml:space="preserve"><value>Open the purchase page in your browser</value></data>
+  <data name="TipCloseWindow" xml:space="preserve"><value>Close this window</value></data>
+  <data name="IncludeHeaderOnSave" xml:space="preserve"><value>First line as header</value></data>
+  <data name="IncludeContextOnSave" xml:space="preserve"><value>Context lines</value></data>
   <data name="AlwaysOnTop" xml:space="preserve"><value>Always on top</value></data>
   <data name="SaveFilterTitle" xml:space="preserve"><value>Save filter results</value></data>
 
