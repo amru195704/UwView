@@ -3,8 +3,10 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
+using System.Linq;
 using UwView.Core;
 using UwView.Localization;
+using UwView.ViewModels;
 
 namespace UwView.Views;
 
@@ -26,6 +28,9 @@ public sealed class BrowserStartupNotice : UserControl
     private readonly Control _inner;
     private readonly Border _overlay;
 
+    /// <summary>お断りの中身。言語を切り替えたら作り直す。</summary>
+    private readonly ContentControl _card = new();
+
     /// <summary>OK が押されて、下の画面が使えるようになったとき。</summary>
     public event Action? Accepted;
 
@@ -37,10 +42,11 @@ public sealed class BrowserStartupNotice : UserControl
         _inner = inner;
         _inner.IsEnabled = false;      // 覆っていてもキーボードは通るので、明示的に止める
 
+        _card.Content = BuildCard();
         _overlay = new Border
         {
             Background = new SolidColorBrush(Color.FromArgb(0xE0, 0x20, 0x24, 0x28)),
-            Child = BuildCard(),
+            Child = _card,
         };
 
         Content = new Panel { Children = { _inner, _overlay } };
@@ -61,12 +67,31 @@ public sealed class BrowserStartupNotice : UserControl
         ok.Click += (_, _) => Dismiss();
 
         var card = new StackPanel { Spacing = 14 };
-        card.Children.Add(new TextBlock
+
+        // 見出しと言語の切り替え。ここで切り替えられないと、日本語が読めない人は
+        // 何を言われているのか分からないまま OK を押すことになる
+        card.Children.Add(new Grid
         {
-            Text = T("ブラウザ版 UwView へようこそ", "Welcome to UwView for the browser"),
-            FontSize = 20,
-            FontWeight = FontWeight.Bold,
-            Foreground = Brushes.Black,
+            ColumnDefinitions = new ColumnDefinitions("*,Auto"),
+            Children =
+            {
+                new TextBlock
+                {
+                    Text = T("ブラウザ版 UwView へようこそ", "Welcome to UwView for the browser"),
+                    FontSize = 20,
+                    FontWeight = FontWeight.Bold,
+                    Foreground = Brushes.Black,
+                    VerticalAlignment = VerticalAlignment.Center,
+                },
+                new StackPanel
+                {
+                    Orientation = Orientation.Horizontal,
+                    Spacing = 6,
+                    VerticalAlignment = VerticalAlignment.Center,
+                    [Grid.ColumnProperty] = 1,
+                    Children = { LangButton("日本語", "ja"), LangButton("English", "en") },
+                },
+            },
         });
         card.Children.Add(new TextBlock
         {
@@ -131,6 +156,49 @@ public sealed class BrowserStartupNotice : UserControl
             },
         },
     };
+
+    /// <summary>言語の切り替えボタン。いま選ばれている方は押せないようにして分かるようにする。</summary>
+    private Button LangButton(string label, string code)
+    {
+        bool current = Localizer.Instance.Culture.TwoLetterISOLanguageName == code;
+        var b = new Button
+        {
+            Name = "Lang" + code,
+            Content = label,
+            Padding = new Thickness(10, 4),
+            IsEnabled = !current,
+            FontWeight = current ? FontWeight.Bold : FontWeight.Normal,
+        };
+        ToolTip.SetTip(b, code == "ja" ? "日本語で表示する" : "Show in English");
+        b.Click += (_, _) => SetLanguage(code);
+        return b;
+    }
+
+    /// <summary>
+    /// 表示言語を切り替える。
+    ///
+    /// 本体の言語選択と同じ経路（<see cref="MainViewModel.SelectedLanguage"/>）を通す——
+    /// あちらの処理が設定の保存や文字コードラベルの作り直しまで面倒を見ているので、
+    /// ここで別に書くと片方だけ古いままになる。本体が無い場合（自動テスト等）だけ直接切り替える。
+    /// </summary>
+    private void SetLanguage(string code)
+    {
+        if (_inner.DataContext is MainViewModel vm
+            && vm.Languages.FirstOrDefault(l => l.Code == code) is { } option)
+        {
+            vm.SelectedLanguage = option;
+        }
+
+        if (Localizer.Instance.Culture.TwoLetterISOLanguageName != code)
+        {
+            Localizer.Instance.SetLanguage(code);
+            var settings = Services.AppSettingsRef.Current;
+            settings.Language = code;
+            settings.Save();
+        }
+
+        _card.Content = BuildCard();   // 文言はコードで組んでいるので作り直す
+    }
 
     /// <summary>リンクは押した時点の表示言語で開く（起動後に切り替えられても正しい方へ行く）。</summary>
     private Button LinkButton(string label, Func<string> url, string tip)
