@@ -2,13 +2,49 @@
 
 *[日本語](README.md) ｜ English*
 
-**A memory-thrifty, high-speed viewer for gigantic text files — billions of lines and beyond (largest tested: 4.5 billion lines / 258.68 GB).**
+🌐 **[Official site](https://uvp.y42u.net/en/)** ([About](https://uvp.y42u.net/en/about-en/) · [Help](https://uvp.y42u.net/en/help-en/) · [Contact](https://uvp.y42u.net/en/support-en/)) · **[Try it in your browser (WASM demo)](https://amru195704.github.io/UwView/)** · 📰 [Press kit](press-kit/PRESSKIT.md)
 
 📥 **Download: [GitHub Releases](https://github.com/amru195704/UwView/releases/latest)** (Windows / macOS / Linux archives; the same files are also tracked under [`dist/`](dist/))
 
+**A memory-thrifty, high-speed viewer for text files of 258.68 GB and 4.5 billion lines.**
+
+| Largest tested so far | |
+|---|---|
+| File size | **258,679,440,228 bytes (258.68 GB)** |
+| Total lines | **4,509,830,821 lines (4.5 billion)** |
+| Content | The whole United States OpenStreetMap extract expanded to XML — one single, unsplit file |
+| **UwView (free edition)** | **Open 8 min 52.6 s / search ~7 min 30 s** (measured 2026-09-11) |
+| UwView Pro | First open **5 min 28 s** / search **34.8 s** / instant from the second open on (measured 2026-07-26 — [details](#real-data--openstreetmap-usa-25868-gb--45-billion-lines-uwview-pro)) |
+
+**The line-count ceiling has not come into view yet.** In theory about 9.2 quintillion lines are addressable; nobody is going to get there. With the current settings the practical ceiling is around 550 billion lines (raise it in settings if you like — there is no point), and **in practice your filesystem's size limit arrives first.**
+
+📊 **Measured against other tools → [Benchmarks](https://uvp.y42u.net/en/benchmarks-en/)** (EmEditor, klogg, 010 Editor, UltraEdit, PilotEdit, lnav, Log Viewer, Log Voyager, grep, ripgrep, sed and amber, from 3 GB to 250 GB. **The numbers where UwView loses, and the tools that crashed, are published as measured.**)
+
+## Which one should I use?
+
+**It is decided less by size than by how many times you will open the file and how many times you will search it.**
+
+| File size | What you want | Use |
+|---|---|---|
+| **up to 3 GB / 100 M lines** | view, search | **[Browser version](https://amru195704.github.io/UwView/)** — no install, no sign-up, free |
+| **up to 50 GB / 1 B lines** | view, search | **UwView (free edition)** — [download](https://github.com/amru195704/UwView/releases/latest) |
+| **up to 250 GB / 4.5 B lines** | look **once** | **UwView (free edition)** |
+| **up to 250 GB / 4.5 B lines** | open it **again and again** | **[UwView Pro](https://uvp.y42u.net/en/pro-en/)** |
+| any size | **edit it** | **UwView Pro + Edit Upgrade** |
+
+**Where the free edition is enough is clear-cut.**
+
+- **At 3 GB the browser version is plenty** — index 10.4 s, search 5.8 s. Nothing to install, nothing to register.
+- **Up to 50 GB the free edition holds** (open 1 min 46.8 s / ~88 s per search term). **At 3 GB its search is actually faster than Pro's** (0.485 s vs 1.555 s) — at that size the file fits in memory, so scanning it raw beats consulting an index.
+- **250 GB opens in the free edition too** (open 8 min 52.6 s / ~7 min 30 s per search term). **For a one-off investigation, that is all you need.**
+
+**Pro earns its keep when you keep coming back to the same file.** The free edition holds no index, so **it re-reads the whole file every time you open it and every time you search** (a steady ~480 MB/s to open and ~580 MB/s to search, regardless of size). Pro stores an index and a compressed cache, so **re-opening takes 0.02–0.07 s** and **searching 250 GB takes 32.4 s** (against roughly 7 min 30 s for the free edition). You can also **delete the original, keep about 1/9 of the size, and read that directly.**
+
+> **One-time $129 / $9 per month** (Edit Upgrade +$120 / +$8). A **14-day free trial** includes the editing features → [product page](https://uvp.y42u.net/en/pro-en/)
+
 ![UwView — a 51 GB / 892-million-line OSM Japan file in line mode](press-kit/screenshots/line-mode.png)
 
-UwView is a rebuild (in [Avalonia UI](https://avaloniaui.net/)) of a large-text viewer originally published on the Japanese "Vector" archive. Ordinary editors choke around a million lines; UwView never loads the whole file into memory and **renders only the lines currently on screen**, so it opens huge line-count files — the kind produced by RDB or XML dumps — instantly. The largest file tested so far is **4,509,830,821 lines / 258.68 GB** (the whole United States OpenStreetMap extract, expanded to XML, measured with UwView Pro — [details](#real-data--openstreetmap-usa-25868-gb--45-billion-lines-uwview-pro)). Until recently the largest confirmed was 892 million lines / ~51 GB (OSM Japan); that ceiling has now moved about 5× higher. If anyone finds the real limit, please let me know.
+UwView is a rebuild (in [Avalonia UI](https://avaloniaui.net/)) of a large-text viewer originally published on the Japanese "Vector" archive. Ordinary editors choke around a million lines; UwView never loads the whole file into memory and **renders only the lines currently on screen**, so it opens huge line-count files — the kind produced by RDB or XML dumps — instantly. The largest file tested so far is **4,509,830,821 lines / 258.68 GB** (the whole United States OpenStreetMap extract, expanded to XML). The timings were measured with UwView Pro ([details](#real-data--openstreetmap-usa-25868-gb--45-billion-lines-uwview-pro)), but **the free edition has been confirmed to open and search the same 258.68 GB file** (2026-09-11). Until recently the largest confirmed was 892 million lines / ~51 GB (OSM Japan); that ceiling has now moved about 5× higher. If anyone finds the real limit, please let me know.
 
 It is a **viewer**, not an editor (read-only).
 
@@ -47,7 +83,7 @@ Measured against the well-known large-log viewer **[klogg](https://klogg.filimon
 
 *Current stable version: **v1.4.0**.* (v1.3.0 and v1.4.0 align the version number with UwView Pro; free-edition features are unchanged from v1.2.2. v1.4.0 fixes one defect: in line mode the status bar always showed 0% for the scroll position. The Pro edition now includes editing as an Edit Upgrade licence.)
 
-- 🚀 **Instant display of gigantic files** — billions of lines with a tiny memory footprint (largest measured: 258.68 GB / 4,509,830,821 lines). The file body is never resident; the index is ~6 MB at 200 M lines.
+- 🚀 **Instant display of gigantic files** — billions of lines with a tiny memory footprint (largest measured: 258.68 GB / 4,509,830,821 lines — **reached by the free edition too**). The file body is never resident; the index is ~6 MB at 200 M lines.
 - 📖 **Progressive open** — shows content the instant you open it (page mode) → builds the index in the background → promotes to line mode when done.
 - 🈁 **Automatic encoding detection** — BOM + UTF-8 / Shift-JIS / EUC-JP / UTF-16, with manual override (no re-indexing).
 - 🗂 **Multi-file tabs** — switch files as tabs (state preserved, per-tab background indexing). Add via drag & drop or multi-select.
