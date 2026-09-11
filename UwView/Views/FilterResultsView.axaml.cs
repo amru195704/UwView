@@ -227,10 +227,16 @@ public partial class FilterResultsView : UserControl
         if (_vm.AllowExtractOptions)
             UwView.Services.ExtractSaveOptions.Remember(_vm);   // 次に開いたとき同じ指定で始める
 
+        bool ja = Localizer.Instance.Culture.TwoLetterISOLanguageName == "ja";
+        int rows = _vm.Rows.Count;
+        var watch = System.Diagnostics.Stopwatch.StartNew();
         try
         {
             await using var stream = await file.OpenWriteAsync();
             await _vm.SaveAsync(stream, new UTF8Encoding(false));
+            watch.Stop();
+            UwView.Services.OperationLog.Record(ja ? "抽出保存" : "Save extract", watch.Elapsed,
+                ja ? $"{rows:N0} 行" : $"{rows:N0} lines");
         }
         catch (OperationCanceledException) { /* キャンセル: 途中までのファイルが残る */ }
         catch (IOException) { /* 書き込み失敗は黙って中断（v1） */ }

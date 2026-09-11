@@ -12,6 +12,7 @@ using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using UwView.Core;
 using UwView.Localization;
+using UwView.Services;
 using UwView.ViewModels;
 
 namespace UwView.Views;
@@ -128,7 +129,27 @@ public partial class MainView : UserControl
         AddHandler(DragDrop.DragOverEvent, OnDragOver);
         AddHandler(DragDrop.DropEvent, OnDrop);
 
-        Loaded += (_, _) => RunStartup(App.LaunchFileArgs ?? System.Array.Empty<string>());
+        OperationLog.Changed += UpdateLastOperation;
+        UpdateLastOperation();
+
+        Loaded += (_, _) =>
+        {
+            // OS から「これを開け」と言われたときの受け口を差し込む。
+            // 起動後に Finder から開かれた場合はここが呼ばれる（タブが増える）
+            App.RequestOpenFiles = paths =>
+            {
+                DocumentTabViewModel? last = null;
+                foreach (var p in paths) last = OpenPath(p) ?? last;
+                if (last is not null && _vm is not null) _vm.ActiveTab = last;
+            };
+
+            // 起動の引数と、画面ができる前に届いた分を合わせて開く。
+            // ダブルクリック起動では argv ではなく Apple Event で届くので、両方を見る
+            var args = (App.LaunchFileArgs ?? System.Array.Empty<string>())
+                .Concat(App.TakePendingOpen())
+                .ToArray();
+            RunStartup(args);
+        };
     }
 
     private bool _suppressFavApply;
@@ -221,6 +242,115 @@ public partial class MainView : UserControl
 
     // ── 検索（§11-①②⑥）────────────────────────────────────
 
+    private static bool Ja => L.Culture.TwoLetterISOLanguageName == "ja";
+
+    /// <summary>ステータスバーの「直前: …」を入れ直す。</summary>
+    private void UpdateLastOperation()
+    {
+        LastOpText.Text = OperationLog.Summary(Ja);
+        ToolTip.SetTip(LastOpText, OperationLog.Tip(Ja));
+    }
+
+    // ── 時間のかかる処理の進捗ダイアログ（UVP と同じ出し方）──────────
+    //
+    // 検索が終わったことと所要時間は、これまでステータスバーにしか出ていなかった。
+    // 終わると同時に結果一覧が前に出るので、その表示は読む前に隠れてしまう。
+    // UVP と同じく、件数と所要時間を出したダイアログを残し、
+    // 閉じてから結果一覧を出す（読んでから次へ進む）。
+
+    private EditProgressWindow? _taskWindow;      // デスクトップ
+    private TaskProgressView? _taskView;          // ブラウザ（WASM）: ウィンドウが作れない
+    private Action? _taskOverlayRemove;
+    private DispatcherTimer? _taskTicker;
+
+    /// <summary>進捗ダイアログが出ているか。</summary>
+    private bool TaskProgressActive => _taskWindow is not null || _taskView is not null;
+
+    /// <summary>
+    /// 時間のかかる処理の進捗ダイアログを出す。
+    /// progress は 0..1 と補足文言を返す。完了・中止は EndTaskProgress で閉じる。
+    /// </summary>
+    private void BeginTaskProgress(string title, Func<(double Fraction, string Note)> progress, Action onCancel)
+    {
+        EndTaskProgress(null);
+
+        if (TopLevel.GetTopLevel(this) is Window owner)   // デスクトップ: 別ウィンドウ
+        {
+            var w = new EditProgressWindow(title);
+            w.Cancelled += onCancel;
+            w.Closed += (_, _) => { _taskWindow = null; _taskTicker?.Stop(); };
+            _taskWindow = w;
+            w.Show();
+            var size = owner.FrameSize ?? owner.ClientSize;
+            w.Position = new Avalonia.PixelPoint(
+                owner.Position.X + (int)((size.Width - w.Width) / 2),
+                owner.Position.Y + (int)(size.Height / 4));
+        }
+        else                                              // ブラウザ(WASM): アプリ内オーバーレイ
+        {
+            var v = new TaskProgressView(title);
+            v.Cancelled += onCancel;
+            v.CloseRequested += RemoveTaskOverlay;
+            _taskView = v;
+            _taskOverlayRemove = ShowOverlay(v, preferredWidth: 460, centered: true);
+        }
+
+        _taskTicker = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(200) };
+        _taskTicker.Tick += (_, _) =>
+        {
+            if (!TaskProgressActive) { _taskTicker?.Stop(); return; }
+            var (f, note) = progress();
+            _taskWindow?.ReportFraction(f, note);
+            _taskView?.ReportFraction(f, note);
+        };
+        _taskTicker.Start();
+    }
+
+    private void RemoveTaskOverlay()
+    {
+        _taskOverlayRemove?.Invoke();
+        _taskOverlayRemove = null;
+        _taskView = null;
+        _taskTicker?.Stop();
+    }
+
+    /// <summary>
+    /// 進捗ダイアログに結果を出して残す（summary が null ならそのまま閉じる）。
+    /// 結果と所要時間はユーザーが「閉じる」を押すまで読める。
+    /// </summary>
+    /// <param name="onClosed">
+    /// ダイアログが閉じたあとにやること。結果一覧のように、完了表示を隠してしまうものはここで出す
+    /// （件数と所要時間を読んでから次が出る）。
+    /// </param>
+    private void EndTaskProgress(string? summary, Action? onClosed = null)
+    {
+        _taskTicker?.Stop();
+        _taskTicker = null;
+
+        if (_taskWindow is { } w)
+        {
+            // 中止・失敗でも「かかった時間」は残す価値がある（summary に理由が入る）
+            OperationLog.Record(w.Title ?? "", w.Elapsed, summary);
+            if (onClosed is not null) w.Closed += (_, _) => onClosed();
+            if (summary is null) { w.CloseNow(); _taskWindow = null; return; }
+            w.Finish(summary);
+            _taskWindow = null;   // 以降はユーザーが閉じる
+            return;
+        }
+
+        if (_taskView is { } v)
+        {
+            OperationLog.Record(v.TitleText, v.Elapsed, summary);
+            if (onClosed is not null) v.CloseRequested += onClosed;
+            if (summary is null) { RemoveTaskOverlay(); onClosed?.Invoke(); return; }
+            v.Finish(summary);
+            _taskView = null;     // 以降はユーザーが閉じる（CloseRequested で外れる）
+            return;
+        }
+
+        onClosed?.Invoke();
+    }
+
     private void StartSearch()
     {
         if (_vm?.ActiveTab is not { } tab) return;
@@ -231,7 +361,16 @@ public partial class MainView : UserControl
         _currentHitOrdinal = 0;   // 新しい検索なので「C/Total」の C をリセット
         TextView.ClearEmphasis(); // 前の検索/ジャンプの強調を消し、次へ/前への基準もリセット
         PushSearchHistory(text); // Ver1.1-A: 検索履歴に追加
-        _ = tab.Session.StartSearchAsync(new SearchOptions(text, _vm.SearchIsRegex, _vm.SearchIgnoreCase));
+
+        var session = tab.Session;
+        BeginTaskProgress(
+            Ja ? $"検索: {text}" : $"Search: {text}",
+            () => (session.SearchProgress,
+                   Ja ? $"{session.SearchHits.Count:N0} 件見つかりました"
+                      : $"{session.SearchHits.Count:N0} hits so far"),
+            onCancel: () => session.CancelSearch());
+
+        _ = session.StartSearchAsync(new SearchOptions(text, _vm.SearchIsRegex, _vm.SearchIgnoreCase));
         TextView.Refresh(); // ハイライト regex は即時有効
     }
 
@@ -395,6 +534,9 @@ public partial class MainView : UserControl
     private FilterResultsViewModel? _filterResultsVm;
     private bool _autoPopupPending;
 
+    /// <summary>検索結果一覧が出ているか（自動テスト用）。</summary>
+    internal bool FilterResultsOpen => _filterResultsWindow is not null || _filterResultsView is not null;
+
     private void OpenFilterResults()
     {
         if (_filterResultsWindow is not null)             // デスクトップ: 既に開いていれば前面へ
@@ -445,17 +587,27 @@ public partial class MainView : UserControl
     /// アプリ内オーバーレイとして表示する。メインを同時に見られるよう画面右側にドッキングし、
     /// 左側（メイン表示）は暗転させず操作もそのまま通す。戻り値はオーバーレイを除去するアクション。
     /// </summary>
-    private Action ShowOverlay(Control content, double preferredWidth = 720)
+    /// <param name="centered">
+    /// true なら画面中央に小さく浮かせる（進捗ダイアログのように、中身の高さだけあれば足りるもの）。
+    /// 既定は右端へ全高でドッキング（結果一覧のように本文と並べて読むもの）。
+    /// </param>
+    private Action ShowOverlay(Control content, double preferredWidth = 720, bool centered = false)
     {
         var layer = Avalonia.Controls.Primitives.OverlayLayer.GetOverlayLayer(this);
         if (layer is null) return static () => { };
 
         var frame = new Border
         {
-            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right,   // 画面右端へドッキング
-            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Stretch,
+            HorizontalAlignment = centered
+                ? Avalonia.Layout.HorizontalAlignment.Center
+                : Avalonia.Layout.HorizontalAlignment.Right,   // 画面右端へドッキング
+            VerticalAlignment = centered
+                ? Avalonia.Layout.VerticalAlignment.Top
+                : Avalonia.Layout.VerticalAlignment.Stretch,
             Width = preferredWidth,
-            Margin = new Avalonia.Thickness(0, 6, 6, 6),
+            Margin = centered
+                ? new Avalonia.Thickness(0, 80, 0, 0)
+                : new Avalonia.Thickness(0, 6, 6, 6),
             Background = Avalonia.Media.Brushes.White,
             BorderBrush = new Avalonia.Media.SolidColorBrush(Avalonia.Media.Color.FromRgb(0x99, 0x99, 0x99)),
             BorderThickness = new Avalonia.Thickness(1),
@@ -537,12 +689,18 @@ public partial class MainView : UserControl
         UpdateSearchInfo();
         Minimap.InvalidateVisual();
 
-        // 検索完了 → ヒットありなら結果一覧を自動ポップアップ
+        // 検索完了 → 所要時間を残し、ヒットありなら結果一覧を自動ポップアップ
         if (_autoPopupPending && _vm?.ActiveTab?.Session is { IsSearching: false } s
             && s.ActiveSearch is not null)
         {
             _autoPopupPending = false;
-            if (s.SearchHits.Count > 0) OpenFilterResults();
+
+            // 結果一覧は完了ダイアログを閉じてから出す（先に出すと件数と所要時間が隠れる）
+            bool any = s.SearchHits.Count > 0;
+            EndTaskProgress(
+                Ja ? $"{s.SearchHits.Count:N0} 件見つかりました"
+                   : $"Found {s.SearchHits.Count:N0} matches",
+                onClosed: any ? OpenFilterResults : null);
         }
     }
 
@@ -603,7 +761,9 @@ public partial class MainView : UserControl
         foreach (var session in sessions)
         {
             var tab = new DocumentTabViewModel(session, t => _vm!.RequestClose(t));
-            session.IndexCompleted += (_, _) => OnIndexCompleted(tab);
+            // 開いてから行索引ができるまでを測る（大きなファイルではここが一番待たされる）
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+            session.IndexCompleted += (_, _) => OnIndexCompleted(tab, watch);
             _vm.Tabs.Add(tab);
             last = tab;
             RecordRecent(session.FilePath); // V1.1.1: 最近使ったファイル
@@ -786,8 +946,14 @@ public partial class MainView : UserControl
         }
     }
 
-    private void OnIndexCompleted(DocumentTabViewModel tab)
+    private void OnIndexCompleted(DocumentTabViewModel tab, System.Diagnostics.Stopwatch watch)
     {
+        watch.Stop();
+        OperationLog.Record(Ja ? "開く" : "Open", watch.Elapsed,
+            tab.Session.Index is { } ix
+                ? (Ja ? $"{ix.TotalLines:N0} 行" : $"{ix.TotalLines:N0} lines")
+                : null);
+
         // 旧設定からの復元（行番号）は索引完了後にだけ適用できる
         if (_pendingRestoreLine.Remove(tab, out long line) && tab.Session.Index is { } idx)
             tab.Session.TopLine = Math.Clamp(line, 0, Math.Max(0, idx.TotalLines - 1));
@@ -956,6 +1122,7 @@ public partial class MainView : UserControl
 
         // 動的文字列（コード生成分）を今の言語で作り直す
         _vm.RaiseFilePathChanged();
+        OperationLog.Clear();          // 記録は「そのとき表示していた言語」の文字列なので持ち越さない
         UpdateEncodingInfo();
         UpdateSearchInfo();
         UpdateStatus();

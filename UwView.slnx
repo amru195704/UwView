@@ -1,6 +1,7 @@
 <Solution>
   <Project Path="UwView.Core/UwView.Core.csproj" />
   <Project Path="UwView.Core.Tests/UwView.Core.Tests.csproj" />
+  <Project Path="UwView.UiTests/UwView.UiTests.csproj" />
   <Project Path="UwView/UwView.csproj" />
   <Project Path="UwView.Desktop/UwView.Desktop.csproj" />
   <Project Path="UwView.Browser/UwView.Browser.csproj" />

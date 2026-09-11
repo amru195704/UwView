@@ -51,6 +51,59 @@ pack_mac() { # $1=rid  $2=arch-label
   <key>CFBundlePackageType</key><string>APPL</string>
   <key>LSMinimumSystemVersion</key><string>11.0</string>
   <key>NSHighResolutionCapable</key><true/>
+  <!-- Finder の「このアプリケーションで開く」、アイコンへのドラッグ&ドロップ、
+       open -a UwView file.log を受けるための宣言。これが無いと Finder が候補に出さない。
+       テキストは LSHandlerRank=Alternate（既定のアプリを奪わない）。
+       .uwvz / .uwvhl は自前の形式なので Owner として宣言する。 -->
+  <key>CFBundleDocumentTypes</key>
+  <array>
+    <dict>
+      <key>CFBundleTypeName</key><string>Text File</string>
+      <key>CFBundleTypeRole</key><string>Viewer</string>
+      <key>LSHandlerRank</key><string>Alternate</string>
+      <key>LSItemContentTypes</key>
+      <array>
+        <string>public.plain-text</string>
+        <string>public.utf8-plain-text</string>
+        <string>public.utf16-plain-text</string>
+        <string>public.log</string>
+        <string>public.comma-separated-values-text</string>
+        <string>public.tab-separated-values-text</string>
+        <string>public.xml</string>
+        <string>public.json</string>
+      </array>
+    </dict>
+    <dict>
+      <!-- 拡張子の無いログ・未知の形式も受ける（ビューアなので開けて困らない） -->
+      <key>CFBundleTypeName</key><string>Any File</string>
+      <key>CFBundleTypeRole</key><string>Viewer</string>
+      <key>LSHandlerRank</key><string>Alternate</string>
+      <key>LSItemContentTypes</key><array><string>public.data</string></array>
+    </dict>
+    <dict>
+      <key>CFBundleTypeName</key><string>UwView Compressed Cache</string>
+      <key>CFBundleTypeRole</key><string>Viewer</string>
+      <key>LSHandlerRank</key><string>Owner</string>
+      <key>LSItemContentTypes</key><array><string>net.y42u.uwview.uwvz</string></array>
+    </dict>
+  </array>
+  <key>UTExportedTypeDeclarations</key>
+  <array>
+    <dict>
+      <key>UTTypeIdentifier</key><string>net.y42u.uwview.uwvz</string>
+      <key>UTTypeDescription</key><string>UwView Compressed Cache</string>
+      <key>UTTypeConformsTo</key><array><string>public.data</string></array>
+      <key>UTTypeTagSpecification</key>
+      <dict><key>public.filename-extension</key><array><string>uwvz</string></array></dict>
+    </dict>
+    <dict>
+      <key>UTTypeIdentifier</key><string>net.y42u.uwview.uwvhl</string>
+      <key>UTTypeDescription</key><string>UwView Highlighter Set</string>
+      <key>UTTypeConformsTo</key><array><string>public.data</string></array>
+      <key>UTTypeTagSpecification</key>
+      <dict><key>public.filename-extension</key><array><string>uwvhl</string></array></dict>
+    </dict>
+  </array>
 </dict></plist>
 PLIST
   cp "UwView.Desktop/macos/UwView.icns" "$app/Contents/Resources/UwView.icns"

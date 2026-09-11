@@ -189,6 +189,9 @@
         <Border DockPanel.Dock="Bottom" Background="#EEEEEE" BorderBrush="#CCCCCC"
                 BorderThickness="0,1,0,0" Padding="6,3">
             <DockPanel LastChildFill="True">
+                <!-- 直前の処理時間。ヒントに直近10件を出す（オーナー要望 2026-09-11） -->
+                <TextBlock x:Name="LastOpText" DockPanel.Dock="Right" Text=""
+                           VerticalAlignment="Center" Foreground="#4A5560" Margin="12,0,0,0" />
                 <!-- 索引パネルを右に先に確保（左情報が食い込まない） -->
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8"
                             Margin="12,0,0,0" VerticalAlignment="Center"

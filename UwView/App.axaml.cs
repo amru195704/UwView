@@ -2,9 +2,13 @@ using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Data.Core;
 using Avalonia.Data.Core.Plugins;
+using System;
+using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using Avalonia.Markup.Xaml;
+using Avalonia.Platform.Storage;
 using UwView.Localization;
 using UwView.Services;
 using UwView.ViewModels;
@@ -35,12 +39,60 @@ public partial class App : Application
         return CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ja" ? "ja" : "en";
     }
 
+    /// <summary>
+    /// Finder の「このアプリケーションで開く」・アイコンへのドラッグ&ドロップ・
+    /// <c>open -a UwView file.log</c> で渡されたファイル。
+    ///
+    /// macOS ではこの3つは<b>いずれも同じ Apple Event</b>（開くドキュメント）として届く。
+    /// argv ではないので、起動引数とは別に受ける必要がある。
+    /// </summary>
+    private static readonly List<string> _pendingOpen = [];
+
+    /// <summary>ファイルを開く係（メイン画面が起動時に差し込む）。</summary>
+    public static Action<string[]>? RequestOpenFiles;
+
+    /// <summary>
+    /// OS から渡されたファイルを開く。
+    /// 画面がまだ無い（＝ダブルクリックでの起動直後）なら溜めておき、
+    /// 画面ができたときに <see cref="TakePendingOpen"/> で引き取ってもらう。
+    /// </summary>
+    public static void OpenFromOs(IEnumerable<string> paths)
+    {
+        var list = paths.Where(p => !string.IsNullOrWhiteSpace(p) && File.Exists(p)).ToArray();
+        if (list.Length == 0) return;
+
+        if (RequestOpenFiles is { } open) open(list);
+        else _pendingOpen.AddRange(list);
+    }
+
+    /// <summary>溜めてあった分を引き取る（引き取ったら空にする）。</summary>
+    public static string[] TakePendingOpen()
+    {
+        var a = _pendingOpen.ToArray();
+        _pendingOpen.Clear();
+        return a;
+    }
+
+    /// <summary>OS からのファイル通知を購読する（対応していないプラットフォームでは何もしない）。</summary>
+    private void HookFileActivation()
+    {
+        if (ApplicationLifetime is not IActivatableLifetime activatable) return;
+
+        activatable.Activated += (_, e) =>
+        {
+            if (e is not FileActivatedEventArgs f) return;
+            OpenFromOs(f.Files.Select(i => i.TryGetLocalPath()).Where(p => p is not null)!);
+        };
+    }
+
     public override void OnFrameworkInitializationCompleted()
     {
         // 言語を VM 生成より先に適用（EncodingOptions 等の初期ラベルを正しい言語に）
         Settings = AppSettings.Load();
         UwView.Services.AppSettingsRef.Current = Settings; // 共有VMからの参照先
         Localizer.Instance.SetLanguage(ResolveLanguage(Settings));
+
+        HookFileActivation();
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {

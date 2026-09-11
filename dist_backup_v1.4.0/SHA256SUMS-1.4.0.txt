@@ -1,0 +1,6 @@
+13a4de5bfae73cb26dde8aab1a2e7dbce3824cf1ee03d84d5622cea0cd31881a  UwView-1.4.0-linux-aarch64.tar.gz
+f4331115096bde82dcd8f83d09adb3969896d1fecac8bdc7dc1aff20a4270daf  UwView-1.4.0-linux-x86_64.tar.gz
+716335788bd167ea5675990c6b5c77f7afc4ed02a61be08255b47195b370db33  UwView-1.4.0-mac-arm64.zip
+5f3d7baa007e66585bd1536c77f2fc7c989ee57ee3371e6f9f8dc2995e150c85  UwView-1.4.0-mac-x64.zip
+d5a56bcdbd79f5b77c317b2fea889d6736980c8aa211611c3c31416f9ea4a18e  UwView-1.4.0-win-arm64.zip
+502a685746d207bd9394f4013a9729951cf4408f0a8aef7dcece438e0df6f7ed  UwView-1.4.0-win-x64.zip
