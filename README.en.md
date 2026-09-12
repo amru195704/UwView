@@ -81,7 +81,7 @@ Measured against the well-known large-log viewer **[klogg](https://klogg.filimon
 
 ## Highlights
 
-*Current stable version: **v1.4.0**.* (v1.3.0 and v1.4.0 align the version number with UwView Pro; free-edition features are unchanged from v1.2.2. v1.4.0 fixes one defect: in line mode the status bar always showed 0% for the scroll position. The Pro edition now includes editing as an Edit Upgrade licence.)
+*Current stable version: **v1.5.1**.* (v1.3.0 and v1.4.0 aligned the version number with UwView Pro and were functionally identical to v1.2.2, apart from one fix in v1.4.0: in line mode the status bar always showed 0% for the scroll position. **v1.5.1 is a feature release for the free edition** — opening files from Finder/Explorer, a search progress dialog and a record of elapsed times, more options when saving search results, and a first-launch notice in the browser build. **On macOS it is now a signed, notarized DMG.**)
 
 - 🚀 **Instant display of gigantic files** — billions of lines with a tiny memory footprint (largest measured: 258.68 GB / 4,509,830,821 lines — **reached by the free edition too**). The file body is never resident; the index is ~6 MB at 200 M lines.
 - 📖 **Progressive open** — shows content the instant you open it (page mode) → builds the index in the background → promotes to line mode when done.
@@ -238,9 +238,15 @@ Self-contained archives (no .NET install required) are available from two places
 | `UwView-<version>-linux-aarch64.tar.gz` | Linux (ARM64) |
 | `UwView-<version>-linux-x86_64.tar.gz` | Linux (x86_64) |
 
-> About version numbers: v1.3.0 and v1.4.0 unify version numbering with [UwView Pro](https://uvp.y42u.net/pro/); **the free edition is functionally identical to v1.2.2** (v1.4.0 adds one bug fix), so archive names may show an older version than the README's stable-version line — they are still the current free edition.
+> About version numbers: there is no free-edition v1.5.0 — it was a Pro-only release, so the free edition goes from v1.4.0 to v1.5.1. v1.3.0 and v1.4.0 unified version numbering with [UwView Pro](https://uvp.y42u.net/pro/) and **were functionally identical to v1.2.2** (v1.4.0 adds one bug fix).
 
-macOS: unzip and launch `UwView.app` (unsigned — first launch: right-click → Open). Windows / Linux: run the bundled executable.
+macOS: open the DMG and drag `UwView.app` to Applications. Windows / Linux: unpack and run the bundled executable (`UwView.exe` / `UwView`).
+
+### About code signing
+
+- **macOS**: **signed with a Developer ID and notarized by Apple from v1.5.1 on** (the DMG itself is signed, notarized and stapled), so it opens without any warning. Builds up to v1.5.0 were unsigned zips — recent versions of macOS report those as "damaged", and Chrome may block the download outright. Use v1.5.1 or later.
+- **Windows**: unsigned. If SmartScreen appears, choose **More info → Run anyway**.
+- **Linux**: make it executable (`chmod +x UwView` → `./UwView`).
 
 ## Known limitations
 
