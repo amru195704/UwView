@@ -305,8 +305,8 @@ dotnet run --project UwView.Browser
 
 | ファイル | 対象 |
 | --- | --- |
-| `UwView-<版>-mac-arm64.zip` | macOS（Apple Silicon） |
-| `UwView-<版>-mac-x64.zip` | macOS（Intel） |
+| `UwView-<版>-mac-arm64.dmg` | macOS（Apple Silicon） |
+| `UwView-<版>-mac-x64.dmg` | macOS（Intel） |
 | `UwView-<版>-win-arm64.zip` | Windows（ARM64） |
 | `UwView-<版>-win-x64.zip` | Windows（x64） |
 | `UwView-<版>-linux-aarch64.tar.gz` | Linux（ARM64） |
@@ -314,17 +314,14 @@ dotnet run --project UwView.Browser
 
 > 無料版バイナリの版数について: v1.5.0 は Pro のみで、無料版は v1.4.0 の次が v1.5.1 です。v1.3.0・v1.4.0 は [UwView Pro](https://uvp.y42u.net/pro/) との版数統一で、**無料版の機能は v1.2.2 と同一**です（v1.4.0 で不具合修正が1件入っています）。そのため配布アーカイブの版表記が README の安定版表記と異なる場合がありますが、内容は最新の無料版です。
 
-展開後、macOS 版は `UwView.app` をそのまま起動、Windows / Linux 版は同梱の実行ファイル（`UwView.exe` / `UwView`）を実行してください。macOS 版アプリバンドルの生成手順は `UwView.Desktop/macos/build-app.sh` を参照してください（Windows / Linux 版は `dotnet publish -r <RID> --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true` で発行し、`UwView.Desktop`→`UwView` にリネーム）。
+macOS 版は DMG を開いて `UwView.app` を Applications へドラッグ、Windows / Linux 版は展開して同梱の実行ファイル（`UwView.exe` / `UwView`）を実行してください。macOS 版アプリバンドルの生成手順は `UwView.Desktop/macos/build-app.sh` を参照してください（Windows / Linux 版は `dotnet publish -r <RID> --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true` で発行し、`UwView.Desktop`→`UwView` にリネーム）。
 
-### 署名について（無料版の開き方）
+### 署名について
 
-**無料版 UwView はコード署名・公証を行っていません**（無償OSSのため）。初回起動時に OS の警告が出ることがありますが、次の手順で開けます。
-
-- **macOS**: `UwView.app` を右クリック →「開く」→ 確認ダイアログでもう一度「開く」。以後は通常どおり起動できます（「開発元を検証できません」と出た場合の正規手順です）。
-- **Windows**: SmartScreen が出たら「詳細情報」→「実行」。
+- **macOS**: **v1.5.1 から Developer ID 署名・Apple 公証済み**です（DMG 自体も署名・公証・staple 済み）。警告なしに開けます。
+  v1.5.0 以前の zip は未署名のため、右クリック →「開く」で開いてください。
+- **Windows**: 未署名です。SmartScreen が出たら「詳細情報」→「実行」。
 - **Linux**: 実行権限を付与（`chmod +x UwView` → `./UwView`）。
-
-> 上位版 **UwView Pro** は Developer ID 署名・Apple 公証済みで、こうした警告なしに起動できます。
 
 ## 既知の制限
 

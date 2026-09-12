@@ -1,13 +1,16 @@
 #!/usr/bin/env bash
 # UwView (Free / UVF) — 配布ビルド生成（mac / Linux / Windows）。
 #
-# 生成物: dist/UwView-<ver>-mac-<arch>.zip(.app内包) / -linux-<arch>.tar.gz / -win-<arch>.zip
+# 生成物: dist/UwView-<ver>-mac-<arch>.dmg(.app内包) / -linux-<arch>.tar.gz / -win-<arch>.zip
+#         mac は DMG のみ（UVP に合わせた。zip は作らない）。
 #         ＋ dist/SHA256SUMS.uwview。バージョンは UwView/UwView.csproj <Version> と一致。
 #
 # 注意: UVF の dist/ はリリース資産としてトラック済みのため、dist 全体は消さない
 #       （対象の出力ファイルだけを上書きする）。
 #
 # 署名・公証は環境変数がある時のみ（mac: MAC_SIGN_ID / AC_PROFILE、win: EV は publish-win.ps1）。
+#   MAC_SIGN_ID=9737970DAE0495030DFF12A5BB6B442C62B044F0 \
+#   AC_PROFILE=uwviewpro-notary build/publish.sh osx-arm64 osx-x64
 # 使い方: build/publish.sh [rids...]   既定: osx-arm64 osx-x64 win-x64 win-arm64 linux-x64 linux-arm64
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -111,19 +114,62 @@ PLIST
 
   if [ -n "${MAC_SIGN_ID:-}" ]; then
     echo "  codesign ($arch)…"
-    codesign --force --deep --options runtime --timestamp --sign "$MAC_SIGN_ID" "$app"
+    # .NET には entitlements が要る（JIT・実行メモリ・混在署名ライブラリの読込）。
+    # これを付けずに hardened runtime で署名すると、署名は通るのに起動時に落ちる。
+    local ent; ent="$(mktemp -t uwview-entitlements).plist"
+    cat > "$ent" <<'PLIST'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>com.apple.security.cs.allow-jit</key><true/>
+  <key>com.apple.security.cs.allow-unsigned-executable-memory</key><true/>
+  <key>com.apple.security.cs.disable-library-validation</key><true/>
+</dict></plist>
+PLIST
+    # --deep には頼らず内側→外側の順に署名する（取りこぼしが起きるため）
+    local mainbin="$macos/$EXE"
+    while IFS= read -r -d '' f; do
+      [ "$f" = "$mainbin" ] && continue
+      if file "$f" | grep -q 'Mach-O'; then
+        codesign --force --timestamp --options runtime -s "$MAC_SIGN_ID" "$f"
+      fi
+    done < <(find "$app/Contents" -type f -print0)
+    codesign --force --timestamp --options runtime --entitlements "$ent" -s "$MAC_SIGN_ID" "$mainbin"
+    codesign --force --timestamp --options runtime --entitlements "$ent" -s "$MAC_SIGN_ID" "$app"
+    codesign --verify --deep --strict --verbose=2 "$app"
+    rm -f "$ent"
+
     if [ -n "${AC_PROFILE:-}" ]; then
+      echo "  notarytool submit ($arch)…"
       local nz="$OUT/UwView-$VER-mac-$arch-notarize.zip"
       ditto -c -k --keepParent "$app" "$nz"
       xcrun notarytool submit "$nz" --keychain-profile "$AC_PROFILE" --wait
-      xcrun stapler staple "$app"; rm -f "$nz"
+      xcrun stapler staple "$app"; xcrun stapler validate "$app"
+      spctl --assess --type execute --verbose=4 "$app" || true
+      rm -f "$nz"
     fi
   else
     echo "  ⚠ MAC_SIGN_ID 未設定 → 未署名（配布前に署名・公証が必要）"
   fi
 
-  local out="$OUT/UwView-$VER-mac-$arch.zip"
-  rm -f "$out"; ditto -c -k --keepParent "$app" "$out"
+  # 配布物は DMG（UVP と同じ形。Applications へのリンクを置いてドラッグで入れられるようにする）
+  local stage; stage=$(mktemp -d)
+  cp -R "$app" "$stage/"
+  ln -s /Applications "$stage/Applications"
+  local out="$OUT/UwView-$VER-mac-$arch.dmg"
+  rm -f "$out"
+  hdiutil create -volname "UwView $VER ($arch)" -srcfolder "$stage" -fs HFS+ -format UDZO -ov "$out"
+  rm -rf "$stage"
+
+  # DMG 自身も署名・公証する（中の .app だけ公証しても、DMG が未署名だと警告が出る）
+  if [ -n "${MAC_SIGN_ID:-}" ]; then
+    codesign --force --timestamp --sign "$MAC_SIGN_ID" "$out"
+    if [ -n "${AC_PROFILE:-}" ]; then
+      xcrun notarytool submit "$out" --keychain-profile "$AC_PROFILE" --wait
+      xcrun stapler staple "$out"; xcrun stapler validate "$out"
+    fi
+  fi
+
   rm -rf "$app"
   echo "  → $out"
 }

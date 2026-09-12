@@ -64,6 +64,12 @@ UwView（無料版）v1.5.1 リリースノート
 
 **日本語 / English の切り替え**もこの画面から行えます。「OK」を押すと操作を始められます。
 
+### 🍎 macOS 版を DMG にしました
+
+配布形式を zip から **DMG** に変えました。開いて `UwView.app` を Applications へドラッグするだけです。
+あわせて **Developer ID 署名と Apple 公証**を行いました（有料版と同じ扱い）。
+これまで必要だった「右クリック →『開く』」の回避手順は要らなくなります。
+
 ### 🔧 その他
 
 - ボタンにマウスを置くと説明が出るようにしました（全ボタン）
@@ -73,11 +79,15 @@ UwView（無料版）v1.5.1 リリースノート
 
 | OS | ファイル |
 |---|---|
-| macOS (Apple Silicon) | `UwView-1.5.1-mac-arm64.zip` |
-| macOS (Intel) | `UwView-1.5.1-mac-x64.zip` |
+| macOS (Apple Silicon) | `UwView-1.5.1-mac-arm64.dmg` |
+| macOS (Intel) | `UwView-1.5.1-mac-x64.dmg` |
 | Windows (x64) | `UwView-1.5.1-win-x64.zip` |
 | Windows (ARM64) | `UwView-1.5.1-win-arm64.zip` |
 | Linux (x86_64) | `UwView-1.5.1-linux-x86_64.tar.gz` |
 | Linux (ARM64) | `UwView-1.5.1-linux-aarch64.tar.gz` |
 
-`dist/SHA256SUMS-1.5.1.txt` で確認できます。
+macOS 版は **DMG になりました**（従来は zip）。**v1.5.1 から Developer ID 署名・Apple 公証済み**で、
+DMG 自体も署名・公証・staple しているため、警告なしに開けます。
+Windows 版は未署名です（SmartScreen が出たら「詳細情報」→「実行」）。
+
+チェックサムは `dist/SHA256SUMS-1.5.1.txt` で確認できます。

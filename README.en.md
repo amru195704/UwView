@@ -231,8 +231,8 @@ Self-contained archives (no .NET install required) are available from two places
 
 | File | Target |
 | --- | --- |
-| `UwView-<version>-mac-arm64.zip` | macOS (Apple Silicon) |
-| `UwView-<version>-mac-x64.zip` | macOS (Intel) |
+| `UwView-<version>-mac-arm64.dmg` | macOS (Apple Silicon) |
+| `UwView-<version>-mac-x64.dmg` | macOS (Intel) |
 | `UwView-<version>-win-arm64.zip` | Windows (ARM64) |
 | `UwView-<version>-win-x64.zip` | Windows (x64) |
 | `UwView-<version>-linux-aarch64.tar.gz` | Linux (ARM64) |
