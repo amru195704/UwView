@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -136,12 +137,7 @@ public partial class MainView : UserControl
         {
             // OS から「これを開け」と言われたときの受け口を差し込む。
             // 起動後に Finder から開かれた場合はここが呼ばれる（タブが増える）
-            App.RequestOpenFiles = paths =>
-            {
-                DocumentTabViewModel? last = null;
-                foreach (var p in paths) last = OpenPath(p) ?? last;
-                if (last is not null && _vm is not null) _vm.ActiveTab = last;
-            };
+            App.RequestOpenFiles = paths => _ = OpenPathsAsync(paths.ToList());
 
             // 起動の引数と、画面ができる前に届いた分を合わせて開く。
             // ダブルクリック起動では argv ではなく Apple Event で届くので、両方を見る
@@ -750,8 +746,140 @@ public partial class MainView : UserControl
         var top = TopLevel.GetTopLevel(this);
         if (top is null) return;
 
+        // 圧縮ファイル（.gz/.zip）は開き方を選ばせる必要があるので、
+        // パスが取れる head ではパスで受け取ってから分岐する
+        if (App.DocumentOpener.SupportsPathPicking)
+        {
+            var paths = await App.DocumentOpener.PickPathsAsync(top);
+            if (paths.Count > 0) await OpenPathsAsync(paths);
+            return;
+        }
+
         var sessions = await App.DocumentOpener.PickFilesAsync(top);
         AddSessions(sessions);
+    }
+
+    // ── 圧縮ファイルを開く（指示書 0-doc/実装指示書_UVP_圧縮読み込み.md 工程A）──
+    //
+    // gz/zip は「展開してから開く」か「.uwvz へ直接変換して開く（Pro）」を選ばせる。
+    // 展開は無料の基本機能——gunzip してから開く手作業を1クリックにするのが値打ち。
+
+    /// <summary>
+    /// .uwvz への直接変換（Pro）。UVP が起動時に差し込む。
+    /// 戻り値は開いたタブ（失敗・中止なら null）。公開版では null のまま＝選択肢はグレーアウト。
+    /// </summary>
+    public static Func<MainView, string, CompressedKind, Task<DocumentTabViewModel?>>? ProConvertAndOpen { get; set; }
+
+    /// <summary>パスをまとめて開く。圧縮ファイルは方式を尋ねてから開く。</summary>
+    public async Task OpenPathsAsync(System.Collections.Generic.IReadOnlyList<string> paths)
+    {
+        DocumentTabViewModel? last = null;
+        foreach (string path in paths)
+        {
+            var probe = CompressedInput.Probe(path);
+
+            if (probe.IsRejected)
+            {
+                // 黙って失敗させない。理由を出して次へ
+                await NoticeAsync(CompressedOpenDialog.RejectMessage(probe.Reject,
+                    System.IO.Path.GetFileName(path)));
+                continue;
+            }
+
+            last = probe.IsCompressed
+                ? await OpenCompressedAsync(path, probe.Kind) ?? last
+                : OpenPath(path) ?? last;
+        }
+        if (last is not null && _vm is not null) _vm.ActiveTab = last;
+    }
+
+    private async Task<DocumentTabViewModel?> OpenCompressedAsync(string path, CompressedKind kind)
+    {
+        if (TopLevel.GetTopLevel(this) is not Window owner) return null;   // ブラウザ版は対象外
+        string name = System.IO.Path.GetFileName(path);
+
+        var method = await CompressedOpenDialog.AskAsync(owner, name, kind);
+        if (method == CompressedOpenMethod.Cancel) return null;
+
+        if (method == CompressedOpenMethod.ConvertToUwvz)
+            return ProConvertAndOpen is null ? null : await ProConvertAndOpen(this, path, kind);
+
+        return await ExpandAndOpenAsync(owner, path, name);
+    }
+
+    /// <summary>gz を平文に展開してから通常オープンする（§2A）。</summary>
+    private async Task<DocumentTabViewModel?> ExpandAndOpenAsync(Window owner, string path, string name)
+    {
+        string dst = CompressedInput.DerivePlainPath(path);
+
+        // 既に同名の平文がある: 開き直すか展開し直すかを尋ねる（勝手に上書きしない）
+        if (System.IO.File.Exists(dst))
+        {
+            bool reuse = await ConfirmDialog.AskAsync(owner,
+                Ja ? "展開済みのファイルがあります" : "An expanded file already exists",
+                Ja ? $"{System.IO.Path.GetFileName(dst)} が既にあります。そちらを開きますか？"
+                   : $"{System.IO.Path.GetFileName(dst)} already exists. Open it instead?",
+                Ja ? "それを開く" : "Open it",
+                Ja ? "展開し直す" : "Expand again");
+            if (reuse) return OpenPath(dst);
+        }
+
+        // 空き容量の事前チェック。展開後サイズは事前に分からない（gzip の ISIZE は
+        // 4GB 超で mod 2^32 になるため使えない）ので、圧縮サイズ×4 を目安にする
+        long guess = CompressedInput.GuessPlainSize(path);
+        if (CompressedInput.FreeSpaceFor(dst) is { } free && guess > 0 && free < guess)
+        {
+            bool go = await ConfirmDialog.AskAsync(owner,
+                Ja ? "空き容量が足りないかもしれません" : "Disk space may be short",
+                CompressedOpenDialog.LowSpaceMessage(guess, free),
+                Ja ? "続ける" : "Continue", Ja ? "やめる" : "Cancel");
+            if (!go) return null;
+        }
+
+        using var cts = new System.Threading.CancellationTokenSource();
+        double fraction = 0;
+        BeginTaskProgress(
+            Ja ? $"展開: {name}" : $"Expanding: {name}",
+            () => (fraction, Ja ? "圧縮側の読み進み" : "read from the compressed file"),
+            onCancel: cts.Cancel);
+
+        try
+        {
+            long written = await CompressedInput.ExpandGzipAsync(path, dst,
+                new Progress<double>(f => fraction = f), cts.Token);
+            EndTaskProgress(Ja ? $"{written:N0} バイトに展開しました"
+                               : $"Expanded to {written:N0} bytes");
+            return OpenPath(dst);
+        }
+        catch (OperationCanceledException)
+        {
+            EndTaskProgress(Ja ? "中止しました" : "Cancelled");
+            return null;
+        }
+        catch (InvalidDataException)
+        {
+            EndTaskProgress(Ja ? "壊れています" : "Corrupted");
+            await NoticeAsync(CompressedOpenDialog.CorruptAfterExpandMessage(name));
+            return null;
+        }
+        catch (IOException ex)
+        {
+            EndTaskProgress(Ja ? "書き込みに失敗しました" : "Write failed");
+            await NoticeAsync(Ja
+                ? $"{name} を展開できませんでした（ディスクの空き容量不足かもしれません）。\n{ex.Message}"
+                : $"Could not expand {name} (the disk may be full).\n{ex.Message}");
+            return null;
+        }
+    }
+
+    /// <summary>お知らせを1つ出す（確認ではないので選択肢は「閉じる」だけ）。</summary>
+    private async Task NoticeAsync(string message)
+    {
+        if (CompressedOpenDialog.NoticeOverride is { } stub) { stub(message); return; }
+        if (TopLevel.GetTopLevel(this) is not Window owner) { SetTransientStatus(message); return; }
+        await ConfirmDialog.AskAsync(owner,
+            Ja ? "開けません" : "Cannot open", message,
+            Ja ? "閉じる" : "Close", Ja ? "閉じる" : "Close");
     }
 
     private DocumentTabViewModel? AddSessions(IEnumerable<DocumentSession> sessions)
@@ -838,7 +966,7 @@ public partial class MainView : UserControl
             SetTransientStatus(L.Format("FileMissing", System.IO.Path.GetFileName(path)));
             return;
         }
-        OpenPath(path);
+        _ = OpenPathsAsync(new[] { path });
     }
 
     /// <summary>アクティブタブのお気に入りを切替。</summary>
@@ -886,7 +1014,7 @@ public partial class MainView : UserControl
         var existing = fileArgs.Where(System.IO.File.Exists).ToList();
         if (existing.Count > 0)
         {
-            foreach (var p in existing) OpenPath(p); // 指定ファイルのみ・確認なし・復元しない（§2-3）
+            await OpenPathsAsync(existing); // 指定ファイルのみ・確認なし・復元しない（§2-3）
             return;
         }
 
@@ -999,16 +1127,20 @@ public partial class MainView : UserControl
             : DragDropEffects.None;
     }
 
-    private void OnDrop(object? sender, DragEventArgs e)
+    private async void OnDrop(object? sender, DragEventArgs e)
     {
         var files = e.DataTransfer.TryGetFiles();
         if (files is null) return;
-        var sessions = files.Select(f => f.TryGetLocalPath())
-                            .OfType<string>()
-                            .Select(App.DocumentOpener.OpenLocalPath)
-                            .OfType<DocumentSession>()
-                            .ToList();
-        AddSessions(sessions);
+        var paths = files.Select(f => f.TryGetLocalPath()).OfType<string>().ToList();
+        if (paths.Count == 0) return;
+
+        // ブラウザ版はパスを持てないので、従来どおりセッションを直接作る
+        if (!App.DocumentOpener.SupportsPathPicking)
+        {
+            AddSessions(paths.Select(App.DocumentOpener.OpenLocalPath).OfType<DocumentSession>().ToList());
+            return;
+        }
+        await OpenPathsAsync(paths);   // 圧縮ファイルなら方式を尋ねる
     }
 
     // ── 文字コード手動切替（索引再構築なし §4.6）──────────────

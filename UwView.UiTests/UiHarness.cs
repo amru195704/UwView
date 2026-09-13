@@ -100,6 +100,10 @@ public static class UiHarness
         await WaitUntil(() => !s.IsSearching, "検索完了", timeoutMs);
     }
 
+    /// <summary>表示言語に合わせた期待文字列（テストの読み比べ用）。</summary>
+    public static string Ja(string ja, string en)
+        => UwView.Localization.Localizer.Instance.Culture.TwoLetterISOLanguageName == "ja" ? ja : en;
+
     public static async Task Pump(int rounds = 10)
     {
         for (int i = 0; i < rounds; i++) { Dispatcher.UIThread.RunJobs(); await Task.Delay(10); }
