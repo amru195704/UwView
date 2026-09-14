@@ -91,6 +91,16 @@ public static class CompressedOpenDialog
         _ => "",
     };
 
+    /// <summary>
+    /// zip はまだ開けない（エントリ選択は次の工程）。gz の展開に通すと
+    /// 正しい zip でも「壊れています」と出てしまうので、理由を出して止める。
+    /// </summary>
+    public static string ZipNotSupportedMessage(string fileName) => T(
+        $"{fileName} は zip です。zip を直接開く機能は準備中です（今後の版で対応します）。"
+        + "いまは展開してから開いてください。",
+        $"{fileName} is a zip file. Opening zip files directly is not available yet (coming in a later version). "
+        + "Please extract it first.");
+
     /// <summary>展開が失敗したときの説明（切り詰め・破損）。</summary>
     public static string CorruptAfterExpandMessage(string fileName) => T(
         $"{fileName} は途中で切れているか壊れています（gzip の照合が合いません）。"

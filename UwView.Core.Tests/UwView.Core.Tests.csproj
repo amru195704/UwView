@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\UwView.Core\UwView.Core.csproj" />
+    <ProjectReference Include="..\UwView.Cli\UwView.Cli.csproj" />
   </ItemGroup>
 
 </Project>

@@ -2,6 +2,7 @@
 # UwView (Free / UVF) — 配布ビルド生成（mac / Linux / Windows）。
 #
 # 生成物: dist/UwView-<ver>-mac-<arch>.dmg(.app内包) / -linux-<arch>.tar.gz / -win-<arch>.zip
+#         どれにも CLI の uvf を GUI 実行ファイルの隣に入れる。
 #         mac は DMG のみ（UVP に合わせた。zip は作らない）。
 #         ＋ dist/SHA256SUMS.uwview。バージョンは UwView/UwView.csproj <Version> と一致。
 #
@@ -31,7 +32,22 @@ publish_one() {
   dotnet publish "$APP_PROJ" -c Release -r "$rid" --self-contained true \
     -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true \
     -p:DebugType=none -o "$pubdir" 1>&2
+  add_cli "$rid" "$pubdir"
   echo "$pubdir"
+}
+
+# CLI（uvf）を GUI の隣に置く。uvf -open は「自分と同じフォルダの GUI」を起動するので、
+# 必ず GUI 実行ファイルと同じ場所に入れる（mac は .app/Contents/MacOS、win/linux はアーカイブ直下）。
+# 別フォルダに単一ファイルで発行してから実行ファイルだけを写す（GUI の出力と混ぜない）。
+CLI_PROJ="UwView.Cli/UwView.Cli.csproj"
+add_cli() { # $1=rid $2=GUI の発行先
+  local rid="$1" dest="$2" clipub="obj/pub-cli/$rid"
+  rm -rf "$clipub"
+  dotnet publish "$CLI_PROJ" -c Release -r "$rid" --self-contained true \
+    -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true \
+    -p:EnableCompressionInSingleFile=true -p:DebugType=none -o "$clipub" 1>&2
+  find "$clipub" -maxdepth 1 -type f \( -name 'uvf' -o -name 'uvf.exe' \) -exec cp {} "$dest/" \;
+  [ -f "$dest/uvf" ] || [ -f "$dest/uvf.exe" ] || { echo "uvf の発行に失敗: $rid" >&2; exit 1; }
 }
 
 pack_mac() { # $1=rid  $2=arch-label
@@ -130,7 +146,10 @@ PLIST
     local mainbin="$macos/$EXE"
     while IFS= read -r -d '' f; do
       [ "$f" = "$mainbin" ] && continue
-      if file "$f" | grep -q 'Mach-O'; then
+      if [ "$(basename "$f")" = "uvf" ]; then
+        # CLI も .NET の実行ファイルなので GUI と同じ entitlements が要る（無いと実行時に落ちる）
+        codesign --force --timestamp --options runtime --entitlements "$ent" -s "$MAC_SIGN_ID" "$f"
+      elif file "$f" | grep -q 'Mach-O'; then
         codesign --force --timestamp --options runtime -s "$MAC_SIGN_ID" "$f"
       fi
     done < <(find "$app/Contents" -type f -print0)

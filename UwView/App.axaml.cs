@@ -26,6 +26,36 @@ public partial class App : Application
     /// <summary>ファイル指定起動の引数（ダブルクリック/D&D/CLI）。V1.1.1: あればそれのみ開き復元しない。</summary>
     public static string[]? LaunchFileArgs { get; private set; }
 
+    /// <summary>
+    /// CLI（uvf -open）から渡された検索パターン。開いたファイルでこの語を検索する。
+    /// 画面ができたら <see cref="Views.MainView"/> が取り出して使う。
+    /// </summary>
+    public static string? PendingCliSearch { get; internal set; }
+
+    /// <summary>uvf が GUI を起動するときに付ける引数名（uvf 側と同じ）。</summary>
+    public const string CliSearchArgument = "--uvf-search";
+
+    /// <summary>
+    /// 起動引数から <c>--uvf-search &lt;base64&gt;</c> を取り除き、残り（ファイル指定）を返す。
+    /// 壊れていたら検索だけ諦める（ファイルは普通に開く。起動は止めない）。
+    /// </summary>
+    internal static string[] ExtractCliSearch(string[] args, out string? pattern)
+    {
+        pattern = null;
+        var rest = new System.Collections.Generic.List<string>(args.Length);
+        for (int i = 0; i < args.Length; i++)
+        {
+            if (args[i] == CliSearchArgument && i + 1 < args.Length)
+            {
+                try { pattern = System.Text.Encoding.UTF8.GetString(System.Convert.FromBase64String(args[++i])); }
+                catch (System.FormatException) { pattern = null; }
+                continue;
+            }
+            rest.Add(args[i]);
+        }
+        return [.. rest];
+    }
+
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
@@ -96,7 +126,9 @@ public partial class App : Application
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            LaunchFileArgs = desktop.Args; // ファイル指定起動の判定用
+            // uvf -open から来た検索パターンを抜く（残りがファイル指定）
+            LaunchFileArgs = ExtractCliSearch(desktop.Args ?? [], out var pattern);
+            PendingCliSearch = pattern;
             desktop.MainWindow = new MainWindow
             {
                 DataContext = new MainViewModel()

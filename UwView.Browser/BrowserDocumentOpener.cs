@@ -34,4 +34,10 @@ public sealed class BrowserDocumentOpener : IDocumentOpener
 
     // ブラウザではローカルパス直開き不可（既知制限 §9）
     public DocumentSession? OpenLocalPath(string path) => null;
+
+    /// <summary>ブラウザはローカルパスを持てない（JS の File を直接読む）。</summary>
+    public bool SupportsPathPicking => false;
+
+    public Task<IReadOnlyList<string>> PickPathsAsync(TopLevel topLevel)
+        => Task.FromResult<IReadOnlyList<string>>([]);
 }

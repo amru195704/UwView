@@ -370,6 +370,31 @@ public partial class MainView : UserControl
         TextView.Refresh(); // ハイライト regex は即時有効
     }
 
+    /// <summary>
+    /// CLI（uvf -open）から来た検索パターンで検索する。
+    /// uvf の stdout 出力と同じ答えになるよう、<b>普通の検索・大小区別</b>で行う
+    /// （画面のチェック状態は使わない）。結果の出し方は画面で検索したときと同じ。
+    /// </summary>
+    internal async Task SearchFromCliAsync(string pattern)
+    {
+        if (_vm?.ActiveTab is not { } tab) return;
+
+        // 結果一覧は行番号を使うので、索引ができるまで待つ
+        if (!tab.Session.IsIndexed)
+        {
+            var done = new TaskCompletionSource();
+            void OnDone(object? s, EventArgs e) => done.TrySetResult();
+            tab.Session.IndexCompleted += OnDone;
+            if (!tab.Session.IsIndexed) await done.Task;
+            tab.Session.IndexCompleted -= OnDone;
+        }
+
+        _vm.SearchIsRegex = false;
+        _vm.SearchIgnoreCase = false;
+        _vm.SearchText = pattern;
+        StartSearch();
+    }
+
     // ── Ver1.1-A: 検索履歴・定義済みフィルタ ──────────────────────
 
     private void PushSearchHistory(string pattern)
@@ -786,6 +811,14 @@ public partial class MainView : UserControl
                 continue;
             }
 
+            if (probe.Kind == CompressedKind.Zip)
+            {
+                // zip は工程B（エントリ選択）まで開かない。gz の展開に入れると「壊れています」になる
+                await NoticeAsync(CompressedOpenDialog.ZipNotSupportedMessage(
+                    System.IO.Path.GetFileName(path)));
+                continue;
+            }
+
             last = probe.IsCompressed
                 ? await OpenCompressedAsync(path, probe.Kind) ?? last
                 : OpenPath(path) ?? last;
@@ -1015,6 +1048,12 @@ public partial class MainView : UserControl
         if (existing.Count > 0)
         {
             await OpenPathsAsync(existing); // 指定ファイルのみ・確認なし・復元しない（§2-3）
+            // uvf -open から検索パターンが来ていれば、開いたファイルで検索まで行う
+            if (UwView.App.PendingCliSearch is { } pattern)
+            {
+                UwView.App.PendingCliSearch = null;
+                await SearchFromCliAsync(pattern);
+            }
             return;
         }
 
