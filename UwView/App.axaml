@@ -18,5 +18,11 @@
 
     <Application.Styles>
         <FluentTheme />
+        <!-- 候補の一覧（検索履歴など）が開いているときの1回目のクリックを、一覧を閉じるだけで終わらせない。
+             既定では透明な層がクリックを受け止めるので、隣の虫眼鏡などを押しても1回目は効かなかった
+             （オーナー指摘 2026-09-14）。閉じると同時に、押した場所のボタンにも届ける -->
+        <Style Selector="AutoCompleteBox /template/ Popup">
+            <Setter Property="OverlayDismissEventPassThrough" Value="True" />
+        </Style>
     </Application.Styles>
 </Application>

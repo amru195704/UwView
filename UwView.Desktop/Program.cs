@@ -36,6 +36,7 @@ sealed class Program
         {
             StdOut = Console.OpenStandardOutput(),
             StdErr = Console.Error,
+            Japanese = CliLanguage.IsJapanese(CliLanguage.FreeSettingsFolder),   // アプリの設定で選んだ言語
             // -open: 自分自身を GUI として起動し直す（検索パターンとファイルを渡す）
             LaunchGui = (file, pattern) => CliHost.LaunchSelfAsGui(
                 (pattern is not null && file is not null

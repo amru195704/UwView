@@ -7,7 +7,7 @@ using UwView.Views;
 namespace UwView.UiTests;
 
 /// <summary>
-/// ヘルプ「コマンドラインツール（PATH）…」で uvf をコンソールから使えるようにする（2026-09-14）。
+/// ヘルプ「コマンドライン設定…」で uvf をコンソールから使えるようにする（2026-09-14）。
 /// 本物の登録（/usr/local/bin・レジストリ）はせず、状態と実行を差し替えて画面の流れだけを見る。
 /// </summary>
 public class CliCommandMenuTests : IDisposable

@@ -35,6 +35,12 @@ public sealed class UvfEnvironment
     public Func<string?, string?, bool>? LaunchGui { get; init; }
 
     public bool Japanese { get; init; } = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ja";
+
+    /// <summary>
+    /// 表示に使うコマンド名。UwView Pro の uvp も、ライセンスが無いときはこの2つの形で動く
+    /// （画面の未購入時が無料版と同じ動きなのに合わせる）ので、その場合は "uvp" と名乗る。
+    /// </summary>
+    public string ToolName { get; init; } = "uvf";
 }
 
 /// <summary>
@@ -58,7 +64,7 @@ public static class UvfCli
     /// <summary>GUI へ検索パターンを渡す引数名（GUI 側の App と同じ）。</summary>
     public const string SearchArgument = "--uvf-search";
 
-    public static string Usage(bool ja) => ja
+    public static string Usage(bool ja, string tool = "uvf") => (ja
         ? """
           使い方（この2つの形だけです）:
             uvf -open [ファイル] [検索パターン]   GUI を起動。ファイルがあれば開き、パターンがあれば検索まで
@@ -72,7 +78,7 @@ public static class UvfCli
             uvf file pattern [-open]         search and print the results (-open shows them in the app)
 
           Output is "line<TAB>text". Exit codes: 0=found 1=not found 2=error
-          """;
+          """).Replace("uvf ", tool + " ");
 
     public static (UvfInvocation? Invocation, string? ErrorJa, string? ErrorEn) Parse(IReadOnlyList<string> argv)
     {
@@ -109,13 +115,14 @@ public static class UvfCli
     {
         bool ja = env.Japanese;
         string T(string j, string e) => ja ? j : e;
-        void Err(string m) => env.StdErr.WriteLine("uvf: " + m);
+        string tool = env.ToolName;
+        void Err(string m) => env.StdErr.WriteLine(tool + ": " + m);
 
         var (inv, errJa, errEn) = Parse(argv);
         if (inv is null)
         {
             Err(ja ? errJa! : errEn!);
-            env.StdErr.WriteLine(Usage(ja));
+            env.StdErr.WriteLine(Usage(ja, tool));
             return UvfExit.Error;
         }
 
@@ -154,8 +161,8 @@ public static class UvfCli
         var probe = CompressedInput.Probe(inv.File!);
         if (probe.IsCompressed || probe.IsRejected)
         {
-            Err(T($"{Path.GetFileName(inv.File)} は圧縮ファイルです。uvf -open {inv.File} で GUI から開いてください",
-                  $"{Path.GetFileName(inv.File)} is compressed. Open it in the app with: uvf -open {inv.File}"));
+            Err(T($"{Path.GetFileName(inv.File)} は圧縮ファイルです。{tool} -open {inv.File} で GUI から開いてください",
+                  $"{Path.GetFileName(inv.File)} is compressed. Open it in the app with: {tool} -open {inv.File}"));
             return UvfExit.Error;
         }
 
@@ -204,8 +211,8 @@ public static class UvfCli
             }
         }
 
-        env.StdErr.WriteLine(t($"uvf: {hits.Length:N0} 件（{watch.Elapsed.TotalSeconds:F2} 秒）",
-                               $"uvf: {hits.Length:N0} results ({watch.Elapsed.TotalSeconds:F2}s)"));
+        env.StdErr.WriteLine(t($"{env.ToolName}: {hits.Length:N0} 件（{watch.Elapsed.TotalSeconds:F2} 秒）",
+                               $"{env.ToolName}: {hits.Length:N0} results ({watch.Elapsed.TotalSeconds:F2}s)"));
 
         // 打ち切りは隠さない。出力は不完全なので、スクリプトが成功と取り違えないようエラーで返す
         if (session.SearchTruncated)

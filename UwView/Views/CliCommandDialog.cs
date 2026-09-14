@@ -9,7 +9,7 @@ using UwView.Localization;
 namespace UwView.Views;
 
 /// <summary>
-/// メニュー「コマンドラインツール（PATH）…」。uvf / uvp を、コンソールで名前だけ打って使えるようにする／解除する
+/// メニュー「コマンドライン設定…」。uvf / uvp を、コンソールで名前だけ打って使えるようにする／解除する
 /// （UVF・UVP 共通。中身は <see cref="CliCommandSetup"/>）。
 /// </summary>
 public static class CliCommandDialog
@@ -81,8 +81,8 @@ public static class CliCommandDialog
                 ? $"次のリンクを作ります:\n  {s.Location} → {s.Launcher}\n\n管理者のパスワードを聞かれることがあります。"
                 : $"This creates the link:\n  {s.Location} → {s.Launcher}\n\nYou may be asked for an administrator password.";
         return Ja
-            ? $"次のリンクを作ります:\n  {s.Location} → {s.Launcher}"
-            : $"This creates the link:\n  {s.Location} → {s.Launcher}";
+            ? $"次のリンクを作ります:\n  {s.Location} → {s.Launcher}\n\n管理者のパスワードを聞かれることがあります。管理者になれない場合は ~/.local/bin に置きます（ログインし直すと使えます）。"
+            : $"This creates the link:\n  {s.Location} → {s.Launcher}\n\nYou may be asked for an administrator password. Without administrator rights it goes into ~/.local/bin instead (usable after you log in again).";
     }
 
     private static string Where(CliCommandStatus s) => OperatingSystem.IsWindows()
@@ -112,15 +112,27 @@ public static class CliCommandDialog
             ? (Ja ? "新しく開いたコマンドプロンプト／PowerShell から使えます（開いたままの画面には反映されません）。"
                   : "Open a new Command Prompt / PowerShell window (windows already open do not see the change).")
             : (Ja ? "新しく開いたターミナルから使えます。" : "Open a new terminal window to use it.");
+        string placed = r.InstalledAt ?? s.Location;
+        bool fellBack = r.InstalledAt is not null && r.InstalledAt != s.Location;
+        string placedDir = Path.GetDirectoryName(placed)!;
         string pathNote = "";
-        if (OperatingSystem.IsLinux() && !OnPath(Path.GetDirectoryName(s.Location)!))
-            pathNote = Ja
-                ? "\n\n~/.local/bin が PATH に入っていません。~/.profile に次の1行を足してください:\n  export PATH=\"$HOME/.local/bin:$PATH\""
-                : "\n\n~/.local/bin is not in your PATH. Add this line to ~/.profile:\n  export PATH=\"$HOME/.local/bin:$PATH\"";
+        if (OperatingSystem.IsLinux() && (fellBack || !OnPath(placedDir)))
+        {
+            string why = fellBack
+                ? (Ja ? $"管理者になれなかったので {placed} に置きました。" : $"Administrator rights were not available, so it was placed in {placed}. ")
+                : "";
+            pathNote = OnPath(placedDir)
+                ? "\n\n" + why
+                : Ja
+                    ? $"\n\n{why}{placedDir} はまだ PATH に入っていません。ログインし直すと入ります（Ubuntu など）。"
+                      + "入らない場合は ~/.profile に次の1行を足してください:\n  export PATH=\"$HOME/.local/bin:$PATH\""
+                    : $"\n\n{why}{placedDir} is not in your PATH yet. Log in again to pick it up (Ubuntu and similar). "
+                      + "If it still is not, add this line to ~/.profile:\n  export PATH=\"$HOME/.local/bin:$PATH\"";
+        }
 
         await Notice(owner, Ja
-            ? $"{s.Tool} を使えるようにしました。\n{fresh}\n\n{examples}{pathNote}"
-            : $"{s.Tool} is installed.\n{fresh}\n\n{examples}{pathNote}");
+            ? $"{s.Tool} を使えるようにしました（{placed}）。\n{fresh}\n\n{examples}{pathNote}"
+            : $"{s.Tool} is installed ({placed}).\n{fresh}\n\n{examples}{pathNote}");
     }
 
     private static bool OnPath(string dir) =>
@@ -141,5 +153,5 @@ public static class CliCommandDialog
         return ConfirmDialog.NoticeAsync(owner, Title, message, Ja ? "閉じる" : "Close");
     }
 
-    private static string Title => Ja ? "コマンドラインツール" : "Command-line tool";
+    private static string Title => Ja ? "コマンドライン設定" : "Command line setup";
 }

@@ -104,6 +104,64 @@ public class CliCommandSetupTests : IDisposable
     }
 
     [Fact]
+    public void Linuxはusr_local_binを正としlocal_binの登録も見る()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        string launcher = MakeLauncher("app");
+        string system = Path.Combine(_dir, "usr-local-bin");
+        string user = Path.Combine(_dir, "home-local-bin");
+
+        // どちらにも無い → /usr/local/bin に置く予定
+        var none = CliCommandSetup.InspectLinux("uvf", launcher, system, user);
+        Assert.Equal(CliCommandState.NotInstalled, none.State);
+        Assert.Equal(Path.Combine(system, "uvf"), none.Location);
+
+        // 管理者になれず ~/.local/bin に置いた登録も、登録済みと見る（解除もそこを消す）
+        CliCommandSetup.InstallLink(launcher, Path.Combine(user, "uvf"));
+        var inUser = CliCommandSetup.InspectLinux("uvf", launcher, system, user);
+        Assert.Equal(CliCommandState.Installed, inUser.State);
+        Assert.Equal(Path.Combine(user, "uvf"), inUser.Location);
+
+        // /usr/local/bin にもあれば、そちらを正とする
+        CliCommandSetup.InstallLink(launcher, Path.Combine(system, "uvf"));
+        Assert.Equal(Path.Combine(system, "uvf"), CliCommandSetup.InspectLinux("uvf", launcher, system, user).Location);
+    }
+
+    [Fact]
+    public void Linuxでlocal_binに別の場所を指すリンクが残っていればそれを置き換える()
+    {
+        // Ubuntu は ~/.local/bin を PATH の先頭に足すので、そこの古いリンクが先に見つかってしまう
+        if (OperatingSystem.IsWindows()) return;
+        string oldLauncher = MakeLauncher("old");
+        string launcher = MakeLauncher("new");
+        string system = Path.Combine(_dir, "usr-local-bin");
+        string user = Path.Combine(_dir, "home-local-bin");
+        CliCommandSetup.InstallLink(oldLauncher, Path.Combine(user, "uvf"));
+        CliCommandSetup.InstallLink(launcher, Path.Combine(system, "uvf"));
+
+        var status = CliCommandSetup.InspectLinux("uvf", launcher, system, user);
+        Assert.Equal(CliCommandState.OtherTarget, status.State);
+        Assert.Equal(Path.Combine(user, "uvf"), status.Location);
+        Assert.Equal(oldLauncher, status.Existing);
+
+        // 利用者が自分で置いた普通のファイルは対象にしない
+        File.Delete(Path.Combine(user, "uvf"));
+        File.WriteAllText(Path.Combine(user, "uvf"), "#!/bin/sh\n");
+        Assert.Equal(CliCommandState.Installed, CliCommandSetup.InspectLinux("uvf", launcher, system, user).State);
+    }
+
+    [Theory]
+    [InlineData(0, true, false, false)]
+    [InlineData(126, false, true, false)]    // パスワード画面を閉じた
+    [InlineData(127, false, false, false)]   // 管理者になれなかった → ~/.local/bin へ
+    [InlineData(1, false, false, true)]      // コマンド自体の失敗
+    public void pkexecの終了コードを読み分ける(int exit, bool ok, bool cancelled, bool error)
+    {
+        var r = CliCommandSetup.FromPkexecExit(exit, "ln: failed");
+        Assert.Equal((ok, cancelled, error), (r.Ok, r.Cancelled, r.Error is not null));
+    }
+
+    [Fact]
     public void 書ける場所のアプリは置き場所として使える()
     {
         if (OperatingSystem.IsWindows()) return;
