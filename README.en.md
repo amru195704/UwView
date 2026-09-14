@@ -18,7 +18,7 @@
 
 **The line-count ceiling has not come into view yet.** In theory about 9.2 quintillion lines are addressable; nobody is going to get there. With the current settings the practical ceiling is around 550 billion lines (raise it in settings if you like — there is no point), and **in practice your filesystem's size limit arrives first.**
 
-📊 **Measured against other tools → [Benchmarks](https://uvp.y42u.net/en/benchmarks-en/)** (EmEditor, klogg, 010 Editor, UltraEdit, PilotEdit, lnav, Log Viewer, Log Voyager, grep, ripgrep, sed and amber, from 3 GB to 250 GB. **The numbers where UwView loses, and the tools that crashed, are published as measured.**)
+📊 **Measured against other tools → [Benchmarks](https://uvp.y42u.net/en/benchmarks-en/)** (EmEditor, klogg, 010 Editor, UltraEdit, Log Viewer, grep, ripgrep, amber and BSD grep, from 3 GB to 250 GB. **The numbers where UwView loses are published as measured.**)
 
 ## Which one should I use?
 
@@ -31,6 +31,7 @@
 | **up to 250 GB / 4.5 B lines** | look **once** | **UwView (free edition)** |
 | **up to 250 GB / 4.5 B lines** | open it **again and again** | **[UwView Pro](https://uvp.y42u.net/en/pro-en/)** |
 | any size | **edit it** | **UwView Pro + Edit Upgrade** |
+| any size | **search it from a script** (v1.6.0+) | **`uvf`** (free — [below](#-v160-the-uvf-command-and-opening-gzip-directly)) / `uvp` (Pro — narrowing, counts, `.uwvz`) |
 
 **Where the free edition is enough is clear-cut.**
 
@@ -41,6 +42,35 @@
 **Pro earns its keep when you keep coming back to the same file.** The free edition holds no index, so **it re-reads the whole file every time you open it and every time you search** (a steady ~480 MB/s to open and ~580 MB/s to search, regardless of size). Pro stores an index and a compressed cache, so **re-opening takes 0.02–0.07 s** and **searching 250 GB takes 32.4 s** (against roughly 7 min 30 s for the free edition). You can also **delete the original, keep about 1/9 of the size, and read that directly.**
 
 > **One-time $129 / $9 per month** (Edit Upgrade +$120 / +$8). A **14-day free trial** includes the editing features → [product page](https://uvp.y42u.net/en/pro-en/)
+
+## 🆕 v1.6.0: the `uvf` command, and opening gzip directly
+
+### `uvf` — search from the terminal, hand a hit to the GUI
+
+The free edition now ships **`uvf`**, callable from the terminal. It accepts **only two forms**:
+
+```bash
+uvf -open [file] [pattern]     # launch the app; open the file and search if given
+uvf file pattern [-open]       # search and print the results; -open shows them in the app instead
+```
+
+- Output is **`line<TAB>text`**. Lines are printed in full (the 8,192-character display cut-off does not apply)
+- **Exit codes are grep's**: `0` found / `1` not found / `2` error. `if uvf app.log 'FATAL'; then …` works as written
+- **Stops at 1,000,000 hits and returns `2`**, so a script cannot mistake truncated output for success
+- The search is the same plain search as the GUI (case-sensitive, no regex). Handing over with `-open` re-runs the same search in the window, so the results match
+- `uvf` is a tiny launcher that starts the app with `--uvf` (no second copy of .NET, so the download barely grows). **To call it by name, register it from Help → "Command-line tools (PATH)…"**
+- Compressed files (`.gz`) are not accepted by the `uvf` search. Use `uvf -open file.gz` to open them in the app
+
+**It is not a speed tool.** There is no index, so a 50 GB search takes 205 s with `uvf` (open + search + output) against 56 s for ripgrep. **What `uvf` is for is the exit code and `-open`** — catch something from a script, then let a person look. Narrowing (two terms), regex, case-insensitive search, frequency counts (`-uniq`), ordered search (`-seq`), `-out .gz`, reading and writing `.uwvz`, and `-extract` belong to **Pro's `uvp`** ([uvp measured against ripgrep](https://uvp.y42u.net/en/blog/uvp-cli-release-vs-ripgrep-en/)).
+
+### Opening gzip directly
+
+Open a `.gz` and the app asks how. **"Expand and open"** writes the decompressed file into the same folder and opens it (the same result as `gunzip` first). With Pro installed you can also choose "Convert to `.uwvz`".
+
+- After expanding, the gzip trailer (CRC) is verified: **a truncated file is reported as damaged, and no partial file is left behind**
+- `.tar.gz` / `.tgz` (a tar inside), doubly gzipped files, and files that are only `.gz` by extension are refused with a reason
+- **`.zip` cannot be opened yet** (entry selection comes in a later version). Extract it first for now
+
 
 ![UwView — a 51 GB / 892-million-line OSM Japan file in line mode](press-kit/screenshots/line-mode.png)
 
@@ -59,6 +89,8 @@ It is a **viewer**, not an editor (read-only).
 - **Drill-down Search** — refine results with another term, then another (the GUI version of `grep -C N w1 | grep w2 | grep w3`). **Up to 8 stages, ±N context set independently per stage**; stages after the first are instant. Measured: on a 51 GB / 892-million-line file, two refinements took "Tokyo 94,979 hits → Nerima 184 → Saitama 54".
 - **Sequence Search** — find only the flows where "w1 → w2 → w3 appear **in that order**" (the desktop, local-file equivalent of Elastic EQL `sequence` / Splunk `transaction`). Right-click a result and open **History (refinement path)** to jump straight to each line that formed the flow.
 - Where klogg's Boolean search works within a single line (and/or), these search **co-occurrence across nearby lines, and order**.
+
+**v1.6.0 adds a CLI, `uvp`, to Pro as well** ([measured article](https://uvp.y42u.net/en/blog/uvp-cli-release-vs-ripgrep-en/)). It prints the same lines as ripgrep, verified across 30 combinations. At 10 GB and 50 GB it is **6–8× faster than ripgrep from the second question on**; at 3 GB it loses. The `.uwvz` is the size of gzip, **searchable on its own with the original deleted, and `-extract` restores the original for free** ([article](https://uvp.y42u.net/en/blog/uwvz-compressed-archive-search-extract-en/)).
 
 Measured against the well-known large-log viewer **[klogg](https://klogg.filimonov.dev/)** (same file, same patterns, across **three storage types**):
 
@@ -81,7 +113,7 @@ Measured against the well-known large-log viewer **[klogg](https://klogg.filimon
 
 ## Highlights
 
-*Current stable version: **v1.5.1**.* (v1.3.0 and v1.4.0 aligned the version number with UwView Pro and were functionally identical to v1.2.2, apart from one fix in v1.4.0: in line mode the status bar always showed 0% for the scroll position. **v1.5.1 is a feature release for the free edition** — opening files from Finder/Explorer, a search progress dialog and a record of elapsed times, more options when saving search results, and a first-launch notice in the browser build. **On macOS it is now a signed, notarized DMG.**)
+*Current stable version: **v1.6.0** — adds the `uvf` command and direct opening of gzip files.* (v1.5.1 was the previous feature release.) (v1.3.0 and v1.4.0 aligned the version number with UwView Pro and were functionally identical to v1.2.2, apart from one fix in v1.4.0: in line mode the status bar always showed 0% for the scroll position. **v1.5.1 is a feature release for the free edition** — opening files from Finder/Explorer, a search progress dialog and a record of elapsed times, more options when saving search results, and a first-launch notice in the browser build. **On macOS it is now a signed, notarized DMG.**)
 
 - 🚀 **Instant display of gigantic files** — billions of lines with a tiny memory footprint (largest measured: 258.68 GB / 4,509,830,821 lines — **reached by the free edition too**). The file body is never resident; the index is ~6 MB at 200 M lines.
 - 📖 **Progressive open** — shows content the instant you open it (page mode) → builds the index in the background → promotes to line mode when done.
@@ -95,6 +127,8 @@ Measured against the well-known large-log viewer **[klogg](https://klogg.filimon
 - ↔️ **Horizontal scrolling** (v1.2.2+) — read long lines (OSM XML, JSON logs, single-line CSV) all the way to the end. Horizontal scrollbar, trackpad swipe, Shift+wheel and `←`/`→` keys (`Home` returns to the start of the line; `Cmd/Ctrl+Home` goes to the top of the file). **Line numbers stay pinned on the left** while only the text moves. The search-results popup scrolls horizontally too.
 - ⭐ **Bookmarks** — toggle any line, jump prev/next. Kept by byte offset, so they survive encoding switches. Shown in the minimap.
 - 📡 **Real-time tail** — detects appends, re-maps mmap, extends the index incrementally, and auto-scrolls to the end. Opens logs that are still being written (FileShare.ReadWrite).
+- 🧰 **The `uvf` command** (v1.6.0+) — search from the terminal, output `line<TAB>text`, grep-compatible exit codes (0/1/2), a 1,000,000-hit cap, and `-open` to hand results to the GUI ([details](#-v160-the-uvf-command-and-opening-gzip-directly)).
+- 🗜 **Opens gzip directly** (v1.6.0+) — a `.gz` is expanded into the same folder and opened. Truncated, doubly-compressed and tar files are refused with a reason. `.zip` comes in a later version.
 - 🌐 **Bilingual UI** — Japanese / English, switchable at runtime (persisted).
 - 🖥 **Identical rendering on every OS** — Avalonia's own Skia rendering makes Windows / macOS / Linux look the same. A browser (WASM) build ships a bundled Japanese font.
 - 💾 **Session restore, recent files & favorites** (v1.1.1+) — on a normal launch, a confirmation dialog offers to restore the previous files (n), reopening the previous tabs near their last scroll position. Recent files (up to 15) and favorites (★ toggle) are available from the start screen shown when no file is open. When launched with a specific file (double-click / drag & drop / CLI argument), it opens just that file without asking.
@@ -238,7 +272,7 @@ Self-contained archives (no .NET install required) are available from two places
 | `UwView-<version>-linux-aarch64.tar.gz` | Linux (ARM64) |
 | `UwView-<version>-linux-x86_64.tar.gz` | Linux (x86_64) |
 
-> About version numbers: there is no free-edition v1.5.0 — it was a Pro-only release, so the free edition goes from v1.4.0 to v1.5.1. v1.3.0 and v1.4.0 unified version numbering with [UwView Pro](https://uvp.y42u.net/pro/) and **were functionally identical to v1.2.2** (v1.4.0 adds one bug fix).
+> About version numbers: v1.6.0 ships for both the free edition and Pro (the free edition gains `uvf` and gzip support). There is no free-edition v1.5.0 — it was a Pro-only release, so the free edition goes from v1.4.0 to v1.5.1. v1.3.0 and v1.4.0 unified version numbering with [UwView Pro](https://uvp.y42u.net/pro/) and **were functionally identical to v1.2.2** (v1.4.0 adds one bug fix).
 
 macOS: open the DMG and drag `UwView.app` to Applications. Windows / Linux: unpack and run the bundled executable (`UwView.exe` / `UwView`).
 
