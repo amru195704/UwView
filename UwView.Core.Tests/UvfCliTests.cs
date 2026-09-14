@@ -1,6 +1,6 @@
 using System.IO.Compression;
 using System.Text;
-using UwView.Cli;
+using UwView.Core.Cli;
 
 namespace UwView.Core.Tests;
 

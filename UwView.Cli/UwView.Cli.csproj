@@ -8,13 +8,18 @@
     <RootNamespace>UwView.Cli</RootNamespace>
     <!-- コマンド名は uvf（無料版 UwView の CLI。オーナー指示 2026-09-14） -->
     <AssemblyName>uvf</AssemblyName>
-    <!-- GUI（UwView）と同じ版 -->
     <Version>1.6.0</Version>
-  </PropertyGroup>
 
-  <ItemGroup>
-    <!-- 画面を持たないので Avalonia に依存しない。検索は GUI と同じ UwView.Core -->
-    <ProjectReference Include="..\UwView.Core\UwView.Core.csproj" />
-  </ItemGroup>
+    <!-- 中身は「UwView 本体を CLI モードで起動する」だけの起動アプリ。
+         .NET 一式を抱えると 36MB になるので、使わない部分を削って小さくする（オーナー指摘 2026-09-14） -->
+    <PublishTrimmed>true</PublishTrimmed>
+    <TrimMode>full</TrimMode>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <UseSystemResourceKeys>true</UseSystemResourceKeys>
+    <EventSourceSupport>false</EventSourceSupport>
+    <DebuggerSupport>false</DebuggerSupport>
+    <EnableUnsafeBinaryFormatterSerialization>false</EnableUnsafeBinaryFormatterSerialization>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+  </PropertyGroup>
 
 </Project>

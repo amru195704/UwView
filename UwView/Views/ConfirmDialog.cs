@@ -46,4 +46,30 @@ public static class ConfirmDialog
         await dialog.ShowDialog(owner);
         return result;
     }
+
+    /// <summary>お知らせ（ボタンは1つ）。本文は選んでコピーできる（コマンド例を貼り付けて使うため）。</summary>
+    public static async Task NoticeAsync(Window owner, string title, string message, string closeLabel)
+    {
+        var dialog = new Window
+        {
+            Title = title,
+            Width = 520,
+            SizeToContent = SizeToContent.Height,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            CanResize = false,
+        };
+        var close = new Button { Content = closeLabel, MinWidth = 96, IsDefault = true, IsCancel = true, HorizontalContentAlignment = HorizontalAlignment.Center };
+        close.Click += (_, _) => dialog.Close();
+        dialog.Content = new StackPanel
+        {
+            Margin = new Thickness(22),
+            Spacing = 16,
+            Children =
+            {
+                new SelectableTextBlock { Text = message, TextWrapping = TextWrapping.Wrap, Foreground = Brushes.Black },
+                new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Children = { close } },
+            },
+        };
+        await dialog.ShowDialog(owner);
+    }
 }

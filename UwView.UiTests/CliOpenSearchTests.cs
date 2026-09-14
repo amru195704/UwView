@@ -1,6 +1,6 @@
 using System.Text;
 using Avalonia.Headless.XUnit;
-using UwView.Cli;
+using UwView.Core.Cli;
 using UwView.Views;
 
 namespace UwView.UiTests;

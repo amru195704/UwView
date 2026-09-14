@@ -32,13 +32,16 @@ publish_one() {
   dotnet publish "$APP_PROJ" -c Release -r "$rid" --self-contained true \
     -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true \
     -p:DebugType=none -o "$pubdir" 1>&2
+  # 配布物に不要なもの（依存パッケージ同梱のデバッグ情報 libSkiaSharp.pdb など）は入れない
+  find "$pubdir" -name '*.pdb' -delete
   add_cli "$rid" "$pubdir"
   echo "$pubdir"
 }
 
-# CLI（uvf）を GUI の隣に置く。uvf -open は「自分と同じフォルダの GUI」を起動するので、
-# 必ず GUI 実行ファイルと同じ場所に入れる（mac は .app/Contents/MacOS、win/linux はアーカイブ直下）。
-# 別フォルダに単一ファイルで発行してから実行ファイルだけを写す（GUI の出力と混ぜない）。
+# CLI（uvf）を GUI の隣に置く。uvf は「同じフォルダの UwView 本体を --uvf 付きで起動する」だけの
+# 小さな起動アプリ（CLI の中身は本体にある）。本体と同じ場所に入れる（mac は .app/Contents/MacOS、
+# win/linux はアーカイブ直下）。トリミング設定は UwView.Cli.csproj 側（約11MB）。
+# 別フォルダに発行してから実行ファイルだけを写す（GUI の出力と混ぜない）。
 CLI_PROJ="UwView.Cli/UwView.Cli.csproj"
 add_cli() { # $1=rid $2=GUI の発行先
   local rid="$1" dest="$2" clipub="obj/pub-cli/$rid"
@@ -147,7 +150,7 @@ PLIST
     while IFS= read -r -d '' f; do
       [ "$f" = "$mainbin" ] && continue
       if [ "$(basename "$f")" = "uvf" ]; then
-        # CLI も .NET の実行ファイルなので GUI と同じ entitlements が要る（無いと実行時に落ちる）
+        # 起動アプリ uvf も .NET の実行ファイルなので GUI と同じ entitlements が要る（無いと実行時に落ちる）
         codesign --force --timestamp --options runtime --entitlements "$ent" -s "$MAC_SIGN_ID" "$f"
       elif file "$f" | grep -q 'Mach-O'; then
         codesign --force --timestamp --options runtime -s "$MAC_SIGN_ID" "$f"
@@ -196,14 +199,16 @@ PLIST
 pack_linux() { # $1=rid  $2=arch-label(x86_64/aarch64)
   local rid="$1" arch="$2" pub; pub=$(publish_one "$rid")
   local out="$OUT/UwView-$VER-linux-$arch.tar.gz"
-  rm -f "$out"; tar -C "$pub" -czf "$out" .
+  # COPYFILE_DISABLE: mac の tar が付ける ._* （拡張属性の退避ファイル）を入れない
+  rm -f "$out"; COPYFILE_DISABLE=1 tar -C "$pub" -czf "$out" .
   echo "  → $out"
 }
 
 pack_win() { # $1=rid  $2=arch-label(x64/arm64)
   local rid="$1" arch="$2" pub; pub=$(publish_one "$rid")
   local out="$PWD/$OUT/UwView-$VER-win-$arch.zip"
-  rm -f "$out"; ( cd "$pub" && ditto -c -k . "$out" )
+  # --norsrc --noextattr: mac の ._* （リソースフォーク・拡張属性）を zip に入れない
+  rm -f "$out"; ( cd "$pub" && ditto -c -k --norsrc --noextattr . "$out" )
   echo "  → $OUT/UwView-$VER-win-$arch.zip（署名は Windows で EV 署名）"
 }
 

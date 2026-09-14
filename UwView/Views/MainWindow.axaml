@@ -33,6 +33,8 @@
                         <NativeMenuItemSeparator />
                         <NativeMenuItem Header="GitHub: UwView" Click="OnMenuGitHubUwView" />
                         <NativeMenuItem Header="GitHub: amru195704" Click="OnMenuGitHubProfile" />
+                        <NativeMenuItemSeparator />
+                        <NativeMenuItem Header="{loc:Localize CliCommandMenu}" Click="OnMenuCliCommand" />
                     </NativeMenu>
                 </NativeMenuItem.Menu>
             </NativeMenuItem>
@@ -54,6 +56,8 @@
                 <Separator />
                 <MenuItem Header="GitHub: UwView" Click="OnWinGitHubUwView" />
                 <MenuItem Header="GitHub: amru195704" Click="OnWinGitHubProfile" />
+                <Separator />
+                <MenuItem x:Name="WinCliCommandItem" Header="{loc:Localize CliCommandMenu}" Click="OnWinCliCommand" />
                 <Separator />
                 <MenuItem Header="{loc:Localize AboutMenu}" Click="OnWinAbout" />
             </MenuItem>

@@ -1,9 +1,8 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.Text;
-using UwView.Core;
 
-namespace UwView.Cli;
+namespace UwView.Core.Cli;
 
 /// <summary>uvf の2つの形のどちらか。</summary>
 public enum UvfMode
@@ -40,6 +39,10 @@ public sealed class UvfEnvironment
 
 /// <summary>
 /// 無料版 UwView の CLI（オーナー指示 2026-09-14）。<b>次の2つの形だけ</b>を受け付ける。
+///
+/// 別の実行ファイルは持たない。<b>GUI 本体（UwView）を <c>--uvf</c> 付きで起動すると CLI として動く</b>
+/// （配布物の <c>uvf</c> はその呼び出しを書いただけのスクリプト）。CLI 専用の実行ファイルを入れると
+/// .NET 一式をもう1つ抱えることになり、配布物が約 30MB 増えるため（オーナー指摘 2026-09-14）。
 /// <code>
 /// uvf -open [ファイル] [検索パターン]     GUI を起動。ファイルがあれば開き、パターンがあれば検索まで
 /// uvf ファイル 検索パターン [-open]       検索。-open なら結果を GUI で、無ければ stdout へ

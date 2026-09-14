@@ -35,6 +35,7 @@ public partial class MainWindow : Window
     private void OnMenuSupport(object? s, EventArgs e) => App.OpenExternal(SiteLinks.SupportLink);
     private void OnMenuGitHubUwView(object? s, EventArgs e) => App.OpenExternal(SiteLinks.GitHubRepoLink);
     private void OnMenuGitHubProfile(object? s, EventArgs e) => App.OpenExternal(SiteLinks.GitHubProfileLink);
+    private void OnMenuCliCommand(object? s, EventArgs e) => _ = CliCommandDialog.RunAsync(this, "uvf");
 
     // ── Windows/Linux: ウィンドウ内 Menu のハンドラ（RoutedEventArgs）────
     private void OnWinOpen(object? s, RoutedEventArgs e) => App.RequestOpenFile?.Invoke();
@@ -45,5 +46,6 @@ public partial class MainWindow : Window
     private void OnWinSupport(object? s, RoutedEventArgs e) => App.OpenExternal(SiteLinks.SupportLink);
     private void OnWinGitHubUwView(object? s, RoutedEventArgs e) => App.OpenExternal(SiteLinks.GitHubRepoLink);
     private void OnWinGitHubProfile(object? s, RoutedEventArgs e) => App.OpenExternal(SiteLinks.GitHubProfileLink);
+    private void OnWinCliCommand(object? s, RoutedEventArgs e) => _ = CliCommandDialog.RunAsync(this, "uvf");
     private void OnWinAbout(object? s, RoutedEventArgs e) => App.ShowAbout();
 }
