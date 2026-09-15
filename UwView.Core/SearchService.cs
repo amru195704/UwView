@@ -4,7 +4,20 @@ using System.Text.RegularExpressions;
 
 namespace UwView.Core;
 
-public sealed record SearchOptions(string Pattern, bool UseRegex = false, bool IgnoreCase = false);
+/// <param name="MaxHits">
+/// 1回の検索で保持する最大ヒット数。null なら既定（<see cref="SearchService.MaxHits"/>）、0 以下なら無制限
+/// （指示書 2026-09-15「検索上限のパラメータ化」）。
+/// </param>
+public sealed record SearchOptions(string Pattern, bool UseRegex = false, bool IgnoreCase = false, int? MaxHits = null)
+{
+    /// <summary>実際に使う上限（無制限なら long.MaxValue）。</summary>
+    public long HitLimit => MaxHits switch
+    {
+        null => SearchService.DefaultMaxHits <= 0 ? long.MaxValue : SearchService.DefaultMaxHits,
+        <= 0 => long.MaxValue,
+        { } n => n,
+    };
+}
 
 public sealed record SearchOutcome(long TotalHits, bool Truncated, bool Completed);
 
@@ -13,11 +26,25 @@ public sealed record SearchOutcome(long TotalHits, bool Truncated, bool Complete
 /// ヒットは「マッチを含む行の行頭バイトオフセット」（昇順・1行1件）。
 /// バイトオフセット基準なのでエンコード切替・索引未完了（ページモード）でも一貫して有効。
 /// - literal（大小区別あり）: エンコード済みバイト列の SIMD IndexOf 高速パス
-/// - regex / 大小無視: 行単位デコード + Regex.IsMatch(Span) パス
+/// - regex / 大小無視: 行単位デコード + Regex.IsMatch(Span) パス。
+///   正規表現に必須リテラルがあれば（<see cref="RegexLiterals"/>）、先にそのバイト列で候補行を探し、候補行だけをデコードして当てる
 /// </summary>
 public static class SearchService
 {
-    public const int MaxHits = 1_000_000;          // 8MB 上限（long×100万）
+    /// <summary>最大ヒット数の初期値（8MB＝long×100万）。</summary>
+    public const int MaxHits = 1_000_000;
+
+    /// <summary>
+    /// <see cref="SearchOptions.MaxHits"/> を指定しなかったときの上限（0 以下＝無制限）。
+    /// UVP の画面は設定「1回の検索で保持する最大ヒット数」をここへ入れる（検索条件を作る場所が多いため）。
+    /// </summary>
+    public static int DefaultMaxHits { get; set; } = MaxHits;
+
+    /// <summary>
+    /// 正規表現の必須リテラルで候補行を先に絞るか（既定 true）。
+    /// 効果の測定（切ったときと比べる）と、万一の不具合時に元の動きへ戻すための切り替え。
+    /// </summary>
+    public static bool UseLiteralPrefilter { get; set; } = true;
     private const int BufSize = 1 << 20;            // 1MB ブロック
     private const int MaxLineMatchBytes = 64 * 1024; // 長大行はこの範囲でマッチ判定
 
@@ -27,6 +54,18 @@ public static class SearchService
         if (options.IgnoreCase) opts |= RegexOptions.IgnoreCase;
         string pattern = options.UseRegex ? options.Pattern : Regex.Escape(options.Pattern);
         return new Regex(pattern, opts, TimeSpan.FromSeconds(5));
+    }
+
+    /// <summary>
+    /// 全文検索で全行に当てる正規表現。意味は <see cref="BuildRegex"/> と同じで、コンパイルする
+    /// （3GB の実測で指定なしより最大 1.6 倍速く、NonBacktracking は 3 割遅かった）。ブラウザ（WASM）はコンパイルしない。
+    /// </summary>
+    private static Regex BuildScanRegex(SearchOptions options)
+    {
+        var regex = BuildRegex(options);
+        return OperatingSystem.IsBrowser()
+            ? regex
+            : new Regex(regex.ToString(), regex.Options | RegexOptions.Compiled, regex.MatchTimeout);
     }
 
     /// <param name="hitBatches">ヒットのバッチ通知。背景スレッドから同期的に呼ばれる
@@ -48,8 +87,10 @@ public static class SearchService
         bool bytePath = options is { UseRegex: false, IgnoreCase: false } && options.Pattern.Length > 0;
         byte[] needle = bytePath ? encoding.GetBytes(options.Pattern) : [];
         if (bytePath && needle.Length == 0) bytePath = false;
-        Regex? regex = bytePath ? null : BuildRegex(options);
+        Regex? regex = bytePath ? null : BuildScanRegex(options);
         Decoder? decoder = bytePath ? null : encoding.GetDecoder();
+        LiteralFinder? prefilter = CreatePrefilter(options, encoding);
+        long limit = options.HitLimit;
 
         long totalHits = 0;
         bool truncated = false;
@@ -161,6 +202,7 @@ public static class SearchService
         // regex パス: 行単位にデコードして Span マッチ（長大行は先頭 MaxLineMatchBytes で判定）
         void ProcessLines(ReadOnlySpan<byte> region, long regionBase, bool oversized)
         {
+            if (prefilter is not null) { ProcessCandidateLines(region, regionBase); return; }
             int lineStart = 0;
             while (lineStart < region.Length)
             {
@@ -183,13 +225,55 @@ public static class SearchService
             }
         }
 
+        // regex パス（必須リテラルあり）: リテラルの現れる行だけをデコードして当てる。判定は上と同じ
+        void ProcessCandidateLines(ReadOnlySpan<byte> region, long regionBase)
+        {
+            prefilter!.Reset();
+            int from = 0;
+            while (from < region.Length)
+            {
+                int at = prefilter.IndexOf(region, from);
+                if (at < 0) break;
+                int lineStart = region[..at].LastIndexOf((byte)'\n') + 1;
+                int nl = region[at..].IndexOf((byte)'\n');
+                int lineEnd = nl < 0 ? region.Length : at + nl;
+
+                var line = region[lineStart..lineEnd];
+                if (line.Length > 0 && line[^1] == (byte)'\r') line = line[..^1];
+                if (line.Length > MaxLineMatchBytes) line = line[..MaxLineMatchBytes];
+
+                decoder!.Reset();
+                int charCount = decoder.GetChars(line, chars, flush: true);
+                if (regex!.IsMatch(chars.AsSpan(0, charCount)))
+                {
+                    if (AddHit(regionBase + lineStart)) return;
+                }
+
+                if (nl < 0) break;
+                from = lineEnd + 1;
+            }
+        }
+
         bool AddHit(long lineOffset)
         {
             batch.Add(lineOffset);
             totalHits++;
-            if (totalHits >= MaxHits) { truncated = true; Flush(); return true; }
+            if (totalHits >= limit) { truncated = true; Flush(); return true; }
             return false;
         }
+    }
+
+    /// <summary>
+    /// 正規表現の必須リテラルで候補行を探す係（使えないときは null＝全行を見る）。
+    /// 大小無視・UTF-8 以外・リテラルが取れない式では使わない。
+    /// </summary>
+    public static LiteralFinder? CreatePrefilter(SearchOptions options, Encoding encoding)
+    {
+        if (!UseLiteralPrefilter || !options.UseRegex || options.IgnoreCase || !LiteralFinder.Supports(encoding))
+            return null;
+        return RegexLiterals.Extract(options.Pattern, ignoreCase: false) is { } literals
+            ? new LiteralFinder(literals, encoding)
+            : null;
     }
 
     /// <summary>from から次の '\n' の直後までファイル位置を進める（長大行の読み飛ばし）。</summary>

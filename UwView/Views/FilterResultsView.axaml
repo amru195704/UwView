@@ -18,6 +18,10 @@
             <WrapPanel x:Name="ToolbarPanel" Orientation="Horizontal" ItemSpacing="10" LineSpacing="4"
                        VerticalAlignment="Center">
                 <TextBlock Text="{Binding HitInfo}" VerticalAlignment="Center" Foreground="Black" />
+                <!-- 上限で打ち切ったとき、上限を変える設定画面へ（UVP のみ） -->
+                <Button x:Name="ChangeLimitButton" Content="{loc:Localize ChangeSearchLimit}"
+                        ToolTip.Tip="{loc:Localize TipChangeSearchLimit}"
+                        IsVisible="{Binding ShowChangeLimit}" />
                 <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center"
                             IsVisible="{Binding AllowContext}">
                     <TextBlock Text="{loc:Localize ContextLabel}" VerticalAlignment="Center" Foreground="Black" />

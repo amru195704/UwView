@@ -1,6 +1,4 @@
 using System.Globalization;
-using System.Text.Json;
-using System.Text.Json.Nodes;
 
 namespace UwView.Core.Cli;
 
@@ -17,23 +15,11 @@ public static class CliLanguage
 
     /// <param name="appDataFolder">設定フォルダ名（UVF は "UwView"、UVP は "UwViewPro"）。</param>
     public static bool IsJapanese(string appDataFolder)
-        => IsJapaneseFromSettings(Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), appDataFolder, "settings.json"));
+        => IsJapaneseFromSettings(CliSettings.PathFor(appDataFolder));
 
     /// <summary>設定ファイルを直接指定する版（テスト用に分けてある）。</summary>
     public static bool IsJapaneseFromSettings(string settingsPath)
-    {
-        try
-        {
-            if (File.Exists(settingsPath)
-                && JsonNode.Parse(File.ReadAllText(settingsPath)) is JsonObject root
-                && root["Language"] is JsonValue value
-                && value.TryGetValue(out string? language)
-                && !string.IsNullOrWhiteSpace(language))
-                return language == "ja";
-        }
-        catch (Exception e) when (e is IOException or JsonException or UnauthorizedAccessException) { }
-
-        return CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ja";
-    }
+        => CliSettings.ReadStringFrom(settingsPath, "Language") is { } language && !string.IsNullOrWhiteSpace(language)
+            ? language == "ja"
+            : CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ja";
 }

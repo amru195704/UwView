@@ -236,7 +236,7 @@ public static class CompressedInput
     /// </summary>
     public static long GuessPlainSize(string compressedPath)
     {
-        try { return new FileInfo(compressedPath).Length * PlainSizeGuessFactor; }
+        try { return LinkedFile.Info(compressedPath).Length * PlainSizeGuessFactor; }
         catch (IOException) { return 0; }
     }
 

@@ -97,6 +97,9 @@
   <data name="SearchHitsCurrent" xml:space="preserve"><value>{0}/{1} hits</value></data>
   <data name="ClearSearchTip" xml:space="preserve"><value>Clear search</value></data>
   <data name="SearchTruncated" xml:space="preserve"><value> (truncated at limit)</value></data>
+  <data name="SearchTruncatedChangeable" xml:space="preserve"><value> (cut off at the limit; you can change it in Settings)</value></data>
+  <data name="ChangeSearchLimit" xml:space="preserve"><value>Change limit…</value></data>
+  <data name="TipChangeSearchLimit" xml:space="preserve"><value>Change “Maximum hits kept per search” in Settings</value></data>
   <data name="FilterResultsOpen" xml:space="preserve"><value>Results</value></data>
   <data name="FilterResultsOpenTip" xml:space="preserve"><value>Open search results in a separate window (jump / save)</value></data>
   <data name="FilterResultsTitle" xml:space="preserve"><value>Filter results</value></data>

@@ -27,7 +27,7 @@ public sealed unsafe class MmapByteSource : IByteSource
     public MmapByteSource(string path)
     {
         _path = path;
-        long len = new FileInfo(path).Length;
+        long len = LinkedFile.Info(path).Length;   // リンクならリンク先の長さ（mmap はリンク先を開くため）
         if (len > 0)
             Map(len);
         _length = len;
@@ -85,7 +85,7 @@ public sealed unsafe class MmapByteSource : IByteSource
     {
         if (_disposed) return false;
         long newLen;
-        try { newLen = new FileInfo(_path).Length; }
+        try { newLen = LinkedFile.Info(_path).Length; }
         catch { return false; }
         if (newLen <= Length) return false;
 

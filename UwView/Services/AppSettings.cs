@@ -124,6 +124,12 @@ public sealed class AppSettings
     public bool CommandModeEnabled { get; set; } = true;
 
     /// <summary>
+    /// UVP: 1回の検索で保持する最大ヒット数（0＝無制限）。CLI（uvp）も同じ値を読む
+    /// （指示書 2026-09-15「検索上限のパラメータ化」）。無料版では使わない。
+    /// </summary>
+    public int SearchMaxHits { get; set; } = UwView.Core.SearchService.MaxHits;
+
+    /// <summary>
     /// 設定フォルダ名（%AppData%/&lt;この名前&gt;/settings.json）。
     /// 既定は "UwView"（UVF）。UVP は起動時に "UwViewPro" へ変更し、UVF と設定・ライセンスを分離する。
     /// </summary>

@@ -49,6 +49,7 @@ public partial class FilterResultsView : UserControl
         if (_vm.AllowExtractOptions) UwView.Services.ExtractSaveOptions.ApplyTo(_vm);
         CancelSaveButton.Click += (_, _) => _vm.CancelSave();
         CloseButton.Click += (_, _) => CloseRequested?.Invoke();
+        ChangeLimitButton.Click += (_, _) => ViewModels.FilterResultsViewModel.OpenSearchLimitSettings?.Invoke();
 
         RowList.AttachScrollBar(RowScroll);
         RowList.AttachHScrollBar(RowHScroll);

@@ -173,6 +173,14 @@ public sealed partial class FilterResultsViewModel : ObservableObject, IDisposab
     /// </summary>
     public bool AllowExtractOptions { get; init; }
 
+    /// <summary>
+    /// 最大ヒット数を変える設定画面を開く（UVP が起動時に入れる。無料版は null＝導線を出さない）。
+    /// </summary>
+    public static Action? OpenSearchLimitSettings { get; set; }
+
+    /// <summary>上限で打ち切ったときに「上限を変更…」を出すか。</summary>
+    [ObservableProperty] private bool _showChangeLimit;
+
     /// <summary>文脈のチェックが意味を持つか（±N を出しているときだけ）。</summary>
     public bool ContextSaveApplies => AllowExtractOptions && AllowContext && ContextN > 0;
 
@@ -385,7 +393,10 @@ public sealed partial class FilterResultsViewModel : ObservableObject, IDisposab
         HitInfo = (_currentOrdinal > 0
                 ? Localizer.Instance.Format("SearchHitsCurrent", _currentOrdinal.ToString("N0", culture), total)
                 : Localizer.Instance.Format("SearchHits", total))
-            + (s.SearchTruncated ? Localizer.Instance["SearchTruncated"] : "");
+            + (s.SearchTruncated
+                ? Localizer.Instance[OpenSearchLimitSettings is null ? "SearchTruncated" : "SearchTruncatedChangeable"]
+                : "");
+        ShowChangeLimit = s.SearchTruncated && OpenSearchLimitSettings is not null;
     }
 
     /// <summary>

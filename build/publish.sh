@@ -226,4 +226,7 @@ done
 
 ( cd "$OUT" && shasum -a 256 UwView-$VER-* > "SHA256SUMS-$VER.txt" )
 echo "SHA256SUMS-$VER.txt:"; cat "$OUT/SHA256SUMS-$VER.txt"
+
+# サイト用: 版数なしの名前の複製（dist/latest/。6点揃ったときだけ）
+build/make-latest.sh UwView "$VER" "$OUT"
 echo "done. → $OUT/"
