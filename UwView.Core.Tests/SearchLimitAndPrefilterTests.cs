@@ -10,7 +10,7 @@ public class SearchLimitAndPrefilterTests : IDisposable
     public void Dispose()
     {
         SearchService.UseLiteralPrefilter = true;
-        SearchService.DefaultMaxHits = SearchService.MaxHits;
+        SearchService.DefaultMaxHits = 0;
     }
 
     private static byte[] Tricky()

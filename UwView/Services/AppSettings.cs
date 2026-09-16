@@ -74,6 +74,9 @@ public sealed class LicenseData
     public long ExpiresUtcTicks { get; set; }
     /// <summary>初回起動時刻（UTC ticks。トライアル起算。0=未設定）。</summary>
     public long FirstRunUtcTicks { get; set; }
+
+    /// <summary>初回起動時刻の封（UVP が付ける。書き換えると試用は使えない扱いになる）。</summary>
+    public string? FirstRunSeal { get; set; }
 }
 
 /// <summary>ユーザー設定（言語・Ver1.1 機能・UVPライセンス）を JSON で永続化。保存不可な環境は握りつぶす。</summary>
@@ -127,7 +130,8 @@ public sealed class AppSettings
     /// UVP: 1回の検索で保持する最大ヒット数（0＝無制限）。CLI（uvp）も同じ値を読む
     /// （指示書 2026-09-15「検索上限のパラメータ化」）。無料版では使わない。
     /// </summary>
-    public int SearchMaxHits { get; set; } = UwView.Core.SearchService.MaxHits;
+    /// <summary>1回の検索で保持する最大ヒット数（0＝無制限・既定）。CLI（uvp）も同じ値を使う。</summary>
+    public int SearchMaxHits { get; set; }
 
     /// <summary>
     /// 設定フォルダ名（%AppData%/&lt;この名前&gt;/settings.json）。
@@ -177,8 +181,14 @@ public sealed class AppSettings
         try
         {
             if (File.Exists(FilePath))
-                return JsonSerializer.Deserialize(File.ReadAllText(FilePath), SettingsJsonContext.Default.AppSettings)
-                       ?? new AppSettings();
+            {
+                var loaded = JsonSerializer.Deserialize(File.ReadAllText(FilePath), SettingsJsonContext.Default.AppSettings)
+                             ?? new AppSettings();
+                // v1.6.0 の既定（100万件）が保存されているだけなら、新しい既定＝無制限に読み替える
+                // （2026-09-16 裁定。自分で 100万件と決めた人は、設定画面で入れ直せば同じ値を保てる）
+                if (loaded.SearchMaxHits == UwView.Core.SearchService.LegacyDefaultMaxHits) loaded.SearchMaxHits = 0;
+                return loaded;
+            }
         }
         catch { /* 破損・アクセス不可時は既定へフォールバック */ }
         return new AppSettings();

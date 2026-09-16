@@ -5,8 +5,8 @@ using System.Text.RegularExpressions;
 namespace UwView.Core;
 
 /// <param name="MaxHits">
-/// 1回の検索で保持する最大ヒット数。null なら既定（<see cref="SearchService.MaxHits"/>）、0 以下なら無制限
-/// （指示書 2026-09-15「検索上限のパラメータ化」）。
+/// 1回の検索で保持する最大ヒット数。null なら既定（<see cref="SearchService.DefaultMaxHits"/>・初期値は無制限）、
+/// 0 以下なら無制限（指示書 2026-09-15「検索上限のパラメータ化」／2026-09-16「既定を無制限に」）。
 /// </param>
 public sealed record SearchOptions(string Pattern, bool UseRegex = false, bool IgnoreCase = false, int? MaxHits = null)
 {
@@ -31,14 +31,19 @@ public sealed record SearchOutcome(long TotalHits, bool Truncated, bool Complete
 /// </summary>
 public static class SearchService
 {
-    /// <summary>最大ヒット数の初期値（8MB＝long×100万）。</summary>
-    public const int MaxHits = 1_000_000;
+    /// <summary>
+    /// v1.6.0 までの既定だった上限（100万件＝long で 8MB）。
+    /// いまは既定＝無制限なので、<b>保存済みの設定がこの値なら「旧い既定」とみなして無制限に読み替える</b>ためだけに使う
+    /// （オーナー裁定 2026-09-16。上限に当たった打ち切りで結果が変わる事故を既定では起こさない）。
+    /// </summary>
+    public const int LegacyDefaultMaxHits = 1_000_000;
 
     /// <summary>
-    /// <see cref="SearchOptions.MaxHits"/> を指定しなかったときの上限（0 以下＝無制限）。
+    /// <see cref="SearchOptions.MaxHits"/> を指定しなかったときの上限（0 以下＝無制限）。**初期値は無制限**。
     /// UVP の画面は設定「1回の検索で保持する最大ヒット数」をここへ入れる（検索条件を作る場所が多いため）。
+    /// 件数を絞りたいときは検索条件の <c>MaxHits</c>（CLI は -limit）で明示する。
     /// </summary>
-    public static int DefaultMaxHits { get; set; } = MaxHits;
+    public static int DefaultMaxHits { get; set; }
 
     /// <summary>
     /// 正規表現の必須リテラルで候補行を先に絞るか（既定 true）。

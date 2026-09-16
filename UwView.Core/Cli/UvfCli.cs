@@ -217,8 +217,8 @@ public static class UvfCli
         // 打ち切りは隠さない。出力は不完全なので、スクリプトが成功と取り違えないようエラーで返す
         if (session.SearchTruncated)
         {
-            err(t($"結果が上限（{SearchService.MaxHits:N0} 件）で打ち切られました。出力は不完全です",
-                  $"Results were cut off at the limit ({SearchService.MaxHits:N0}). The output is incomplete."));
+            err(t($"結果が上限（{SearchService.DefaultMaxHits:N0} 件）で打ち切られました。出力は不完全です",
+                  $"Results were cut off at the limit ({SearchService.DefaultMaxHits:N0}). The output is incomplete."));
             return UvfExit.Error;
         }
         return hits.Length > 0 ? UvfExit.Found : UvfExit.NotFound;
