@@ -31,7 +31,7 @@
 | **up to 250 GB / 4.5 B lines** | look **once** | **UwView (free edition)** |
 | **up to 250 GB / 4.5 B lines** | open it **again and again** | **[UwView Pro](https://uvp.y42u.net/en/pro-en/)** |
 | any size | **edit it** | **UwView Pro + Edit Upgrade** |
-| any size | **search it from a script** (v1.6.0+) | **`uvf`** (free — [below](#-v160-the-uvf-command-and-opening-gzip-directly)) / `uvp` (Pro — narrowing, counts, `.uwvz`) |
+| any size | **search it from a script** (v1.6.0+) | **`uvf`** (free — [below](#-v163-uvf-now-runs-at-ripgrep-speed)) / `uvp` (Pro — narrowing, counts, `.uwvz`) |
 
 **Where the free edition is enough is clear-cut.**
 
@@ -43,7 +43,23 @@
 
 > **One-time $129 / $9 per month** (Edit Upgrade +$120 / +$8). A **14-day free trial** includes the editing features → [product page](https://uvp.y42u.net/en/pro-en/)
 
-## 🆕 v1.6.0: the `uvf` command, and opening gzip directly
+## 🆕 v1.6.3: `uvf` now runs at ripgrep speed
+
+The free edition's CLI, `uvf`, has been rebuilt. It reads the file **once, straight through** — line numbers, matches and line text all come out of the same pass — so it lands within a few percent of ripgrep from 3 GB to 50 GB, in about 50 MB of memory. (Up to v1.6.2 it built a line index first, which is why 50 GB took 205 s.)
+
+**Speed** (Mac M4, external USB SSD, `sudo purge` before each cold run and a hot second run, OSM Japan, fixed-string search, output identical to ripgrep):
+
+| | ripgrep 15.2.0 cold / hot | `uvf` cold / hot |
+|---|---:|---:|
+| 3 GB | 3.26 s / 0.33 s | 3.32 s / 0.55 s |
+| 10 GB | 10.96 s / 10.89 s | **10.48 s / 10.25 s** |
+| 50 GB | 54.76 s / 55.15 s | **50.82 s / 50.63 s** |
+
+`uvf` also gained **`-i` (ignore case), `-E` (regular expression) and `-v` (non-matching lines)** — up to v1.6.2 it only did plain string search. Those stay in the same band at 50 GB, 51–53 s against ripgrep's 55–58 s, and the output matches ripgrep across 3 sizes × 7 patterns. Where ripgrep still wins is 3 GB with the file in RAM (0.33 s against 0.55 s), and one `-v` case at 10 GB.
+
+When the seconds are the same, what differs is **what happens after the hit**. `uvf file 'FATAL' -open` opens the matching lines in the GUI so you can read around them, which makes `uvf` the more convenient of the two even at 3 GB when "find it, then read it" is one step. For narrowing, tallies and `.uwvz` — 5–8× faster than ripgrep from 10 GB up — there is Pro's `uvp`.
+
+### v1.6.0: the `uvf` command, and opening gzip directly
 
 ### `uvf` — search from the terminal, hand a hit to the GUI
 
@@ -58,26 +74,17 @@ Options (spelled the same as in `uvp`):
 
 | | Meaning |
 |---|---|
-| `-i` | ignore case |
-| `-E` | treat the pattern as a regular expression |
-| `-v` | print the lines that do **not** match |
+| `-i` | ignore case (v1.6.3+) |
+| `-E` | treat the pattern as a regular expression (v1.6.3+) |
+| `-v` | print the lines that do **not** match (v1.6.3+) |
 | `-open` | show the results in the app instead of stdout (cannot be combined with `-i`/`-E`/`-v`) |
 
 - Output is **`line<TAB>text`**. Lines are printed in full (the 8,192-character display cut-off does not apply)
 - **Exit codes are grep's**: `0` found / `1` not found / `2` error. `if uvf app.log 'FATAL'; then …` works as written
 - If the hit limit (unlimited by default) cuts the output short, `uvf` returns `2`, so a script cannot mistake truncated output for success
 - Handing over with `-open` re-runs the same search in the window, so the results match
-- `uvf` is a tiny launcher that starts the app with `--uvf` (no second copy of .NET, so the download barely grows). **To call it by name, register it from Help → "Command-line tools (PATH)…"**
+- `uvf` is a tiny launcher that starts the app with `--uvf` (no second copy of .NET, so the download barely grows). **To call it by name, register it from Help → "Command line setup…"**
 - Compressed files (`.gz`) are not accepted by the `uvf` search. Use `uvf -open file.gz` to open them in the app
-
-**Speed** (Mac M4, external USB SSD, cold cache):
-
-| | ripgrep | `uvf` |
-|---|---:|---:|
-| 10 GB | 11.19 s | **10.34 s** |
-| 50 GB | 56.75 s | **51.03 s** |
-
-Up to v1.6.2 `uvf` built a line index before searching, which is why 50 GB took 205 s. It now reads the file **once, straight through** — line numbers, matches and line text all come out of the same pass — so it runs close to the speed of the drive, in about 50 MB of memory.
 
 Narrowing (two terms), context lines (`-C`), frequency counts (`-uniq`), ordered search (`-seq`), `-out .gz`, reading and writing `.uwvz`, and `-extract` belong to **Pro's `uvp`** ([uvp measured against ripgrep](https://uvp.y42u.net/en/blog/uvp-cli-release-vs-ripgrep-en/)).
 
@@ -131,7 +138,7 @@ Measured against the well-known large-log viewer **[klogg](https://klogg.filimon
 
 ## Highlights
 
-*Current stable version: **v1.6.0** — adds the `uvf` command and direct opening of gzip files.* (v1.5.1 was the previous feature release.) (v1.3.0 and v1.4.0 aligned the version number with UwView Pro and were functionally identical to v1.2.2, apart from one fix in v1.4.0: in line mode the status bar always showed 0% for the scroll position. **v1.5.1 is a feature release for the free edition** — opening files from Finder/Explorer, a search progress dialog and a record of elapsed times, more options when saving search results, and a first-launch notice in the browser build. **On macOS it is now a signed, notarized DMG.**)
+*Current stable version: **v1.6.3** — `uvf` rebuilt as a single pass (50 GB: 205 s → 51 s) with `-i`/`-E`/`-v` added. v1.6.0 added the `uvf` command and direct opening of gzip files.* (v1.5.1 was the previous feature release.) (v1.3.0 and v1.4.0 aligned the version number with UwView Pro and were functionally identical to v1.2.2, apart from one fix in v1.4.0: in line mode the status bar always showed 0% for the scroll position. **v1.5.1 is a feature release for the free edition** — opening files from Finder/Explorer, a search progress dialog and a record of elapsed times, more options when saving search results, and a first-launch notice in the browser build. **On macOS it is now a signed, notarized DMG.**)
 
 - 🚀 **Instant display of gigantic files** — billions of lines with a tiny memory footprint (largest measured: 258.68 GB / 4,509,830,821 lines — **reached by the free edition too**). The file body is never resident; the index is ~6 MB at 200 M lines.
 - 📖 **Progressive open** — shows content the instant you open it (page mode) → builds the index in the background → promotes to line mode when done.
@@ -145,7 +152,7 @@ Measured against the well-known large-log viewer **[klogg](https://klogg.filimon
 - ↔️ **Horizontal scrolling** (v1.2.2+) — read long lines (OSM XML, JSON logs, single-line CSV) all the way to the end. Horizontal scrollbar, trackpad swipe, Shift+wheel and `←`/`→` keys (`Home` returns to the start of the line; `Cmd/Ctrl+Home` goes to the top of the file). **Line numbers stay pinned on the left** while only the text moves. The search-results popup scrolls horizontally too.
 - ⭐ **Bookmarks** — toggle any line, jump prev/next. Kept by byte offset, so they survive encoding switches. Shown in the minimap.
 - 📡 **Real-time tail** — detects appends, re-maps mmap, extends the index incrementally, and auto-scrolls to the end. Opens logs that are still being written (FileShare.ReadWrite).
-- 🧰 **The `uvf` command** (v1.6.0+) — search from the terminal, output `line<TAB>text`, grep-compatible exit codes (0/1/2), a 1,000,000-hit cap, and `-open` to hand results to the GUI ([details](#-v160-the-uvf-command-and-opening-gzip-directly)).
+- 🧰 **The `uvf` command** (v1.6.0+, rebuilt in v1.6.3 to ripgrep speed) — search from the terminal, output `line<TAB>text`, grep-compatible exit codes (0/1/2), `-i`/`-E`/`-v`, and `-open` to hand results to the GUI ([details](#-v163-uvf-now-runs-at-ripgrep-speed)).
 - 🗜 **Opens gzip directly** (v1.6.0+) — a `.gz` is expanded into the same folder and opened. Truncated, doubly-compressed and tar files are refused with a reason. `.zip` comes in a later version.
 - 🌐 **Bilingual UI** — Japanese / English, switchable at runtime (persisted).
 - 🖥 **Identical rendering on every OS** — Avalonia's own Skia rendering makes Windows / macOS / Linux look the same. A browser (WASM) build ships a bundled Japanese font.
@@ -290,7 +297,7 @@ Self-contained archives (no .NET install required) are available from two places
 | `UwView-<version>-linux-aarch64.tar.gz` | Linux (ARM64) |
 | `UwView-<version>-linux-x86_64.tar.gz` | Linux (x86_64) |
 
-> About version numbers: v1.6.0 ships for both the free edition and Pro (the free edition gains `uvf` and gzip support). There is no free-edition v1.5.0 — it was a Pro-only release, so the free edition goes from v1.4.0 to v1.5.1. v1.3.0 and v1.4.0 unified version numbering with [UwView Pro](https://uvp.y42u.net/pro/) and **were functionally identical to v1.2.2** (v1.4.0 adds one bug fix).
+> About version numbers: v1.6.3 is a free-edition feature release (the `uvf` rebuild); v1.6.1 and v1.6.2 were not distributed for the free edition. v1.6.0 ships for both the free edition and Pro (the free edition gains `uvf` and gzip support). There is no free-edition v1.5.0 — it was a Pro-only release, so the free edition goes from v1.4.0 to v1.5.1. v1.3.0 and v1.4.0 unified version numbering with [UwView Pro](https://uvp.y42u.net/pro/) and **were functionally identical to v1.2.2** (v1.4.0 adds one bug fix).
 
 macOS: open the DMG and drag `UwView.app` to Applications. Windows / Linux: unpack and run the bundled executable (`UwView.exe` / `UwView`).
 
