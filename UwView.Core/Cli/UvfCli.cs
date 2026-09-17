@@ -15,7 +15,11 @@ public enum UvfMode
     SearchInGui,
 }
 
-public sealed record UvfInvocation(UvfMode Mode, string? File, string? Pattern);
+/// <param name="IgnoreCase">-i … 大文字小文字を区別しない。</param>
+/// <param name="Regex">-E … パターンを正規表現として扱う。</param>
+/// <param name="Invert">-v … 当てはまら<b>ない</b>行を出す。</param>
+public sealed record UvfInvocation(UvfMode Mode, string? File, string? Pattern,
+                                   bool IgnoreCase = false, bool Regex = false, bool Invert = false);
 
 /// <summary>終了コード（grep 互換。UwView Pro の uvp と同じ）。</summary>
 public static class UvfExit
@@ -68,14 +72,26 @@ public static class UvfCli
         ? """
           使い方（この2つの形だけです）:
             uvf -open [ファイル] [検索パターン]   GUI を起動。ファイルがあれば開き、パターンがあれば検索まで
-            uvf ファイル 検索パターン [-open]     検索して結果を出す（-open なら GUI で表示）
+            uvf ファイル 検索パターン [オプション]  検索して結果を出す
+
+          オプション:
+            -i        大文字小文字を区別しない
+            -E        パターンを正規表現として扱う
+            -v        当てはまらない行を出す
+            -open     結果を stdout ではなく GUI で表示する（-i/-E/-v とは併用できません）
 
           出力は「行番号<TAB>本文」。終了コード: 0=見つかった 1=見つからない 2=エラー
           """
         : """
           Usage (only these two forms):
             uvf -open [file] [pattern]       launch the app; open the file and search if given
-            uvf file pattern [-open]         search and print the results (-open shows them in the app)
+            uvf file pattern [options]       search and print the results
+
+          Options:
+            -i        ignore case
+            -E        treat the pattern as a regular expression
+            -v        print the lines that do NOT match
+            -open     show the results in the app instead of stdout (cannot be combined with -i/-E/-v)
 
           Output is "line<TAB>text". Exit codes: 0=found 1=not found 2=error
           """).Replace("uvf ", tool + " ");
@@ -99,16 +115,38 @@ public static class UvfCli
                                       rest.Count > 1 ? rest[1] : null), null, null);
         }
 
-        // 2) uvf ファイル 検索パターン [-open]
+        // 2) uvf ファイル 検索パターン [-i] [-E] [-v] [-open]
         var args = argv.ToList();
         bool open = args.Count > 0 && args[^1] == "-open";
         if (open) args.RemoveAt(args.Count - 1);
         if (args.Contains("-open"))
             return (null, "-open は先頭か末尾に書いてください", "Put -open at the start or at the end");
+
+        // 検索の指定（uvp と同じ綴り）。同じものを2回書いても害はないので黙って受ける
+        bool icase = false, regex = false, invert = false;
+        for (int i = args.Count - 1; i >= 0; i--)
+        {
+            switch (args[i])
+            {
+                case "-i": icase = true; break;
+                case "-E": regex = true; break;
+                case "-v": invert = true; break;
+                default: continue;
+            }
+            args.RemoveAt(i);
+        }
+
         if (args.Count != 2)
             return (null, "ファイルと検索パターンを1つずつ指定してください",
                           "Specify exactly one file and one search pattern");
-        return (new UvfInvocation(open ? UvfMode.SearchInGui : UvfMode.Search, args[0], args[1]), null, null);
+
+        // GUI へ渡せるのは素の検索だけ（画面側に -i/-E/-v の受け口が無い）
+        if (open && (icase || regex || invert))
+            return (null, "-open と -i/-E/-v は一緒に使えません",
+                          "-open cannot be combined with -i/-E/-v");
+
+        return (new UvfInvocation(open ? UvfMode.SearchInGui : UvfMode.Search, args[0], args[1],
+                                  icase, regex, invert), null, null);
     }
 
     public static async Task<int> RunAsync(IReadOnlyList<string> argv, UvfEnvironment env, CancellationToken ct = default)
@@ -168,7 +206,7 @@ public static class UvfCli
 
         try
         {
-            return await SearchToStdoutAsync(inv.File!, inv.Pattern!, env, T, Err, ct);
+            return await SearchToStdoutAsync(inv.File!, inv, env, T, Err, ct);
         }
         catch (OperationCanceledException)
         {
@@ -186,16 +224,13 @@ public static class UvfCli
     /// 1回読みの検索（指示書 2026-09-17）。索引を作らず、通しで読みながら
     /// 行番号・一致・本文をまとめて出す。読みは <see cref="SequentialFileByteSource"/>（pread）。
     /// 50GB の実測で 203 秒 → 60 秒台（媒体の帯域に近い）。
-    /// 素の文字列検索でないときだけ <see cref="SearchViaIndexAsync"/> へ戻す。
+    /// -i / -E / -v も同じ1回読みで扱う。
     /// </summary>
     private static async Task<int> SearchToStdoutAsync(
-        string path, string pattern, UvfEnvironment env,
+        string path, UvfInvocation inv, UvfEnvironment env,
         Func<string, string, string> t, Action<string> err, CancellationToken ct)
     {
-        var options = new SearchOptions(pattern);
-        if (!RawGrep.CanUse(options))
-            return await SearchViaIndexAsync(path, pattern, env, t, err, ct);
-
+        var options = new SearchOptions(inv.Pattern!, UseRegex: inv.Regex, IgnoreCase: inv.IgnoreCase);
         var watch = Stopwatch.StartNew();
         await using var src = new SequentialFileByteSource(path);
         var detected = EncodingDetector.Detect(src);
@@ -205,7 +240,7 @@ public static class UvfCli
         await using (var w = new StreamWriter(env.StdOut, new UTF8Encoding(false), 1 << 16, leaveOpen: true) { NewLine = "\n" })
         {
             var writer = w;
-            outcome = await RawGrep.RunAsync(src, detected.BomLength, encoding, options, Write, ct);
+            outcome = await RawGrep.RunAsync(src, detected.BomLength, encoding, options, inv.Invert, Write, ct);
 
             void Write(long line, ReadOnlySpan<byte> text)
             {
@@ -227,72 +262,4 @@ public static class UvfCli
         return outcome.Hits > 0 ? UvfExit.Found : UvfExit.NotFound;
     }
 
-    /// <summary>従来の経路（索引を作ってから検索する）。正規表現・大小無視のときだけ通る。</summary>
-    private static async Task<int> SearchViaIndexAsync(
-        string path, string pattern, UvfEnvironment env,
-        Func<string, string, string> t, Action<string> err, CancellationToken ct)
-    {
-        var watch = Stopwatch.StartNew();
-        await using var session = DocumentSession.Open(path);
-        await session.BuildIndexAsync();                           // 行番号を出すのに要る
-        ct.ThrowIfCancellationRequested();
-        await session.StartSearchAsync(new SearchOptions(pattern)); // GUI と同じ検索（普通の検索・大小区別）
-
-        var doc = session.Document;
-        var hits = session.SearchHits.ToArray();
-        Array.Sort(hits);
-
-        await using (var w = new StreamWriter(env.StdOut, new UTF8Encoding(false), 1 << 16, leaveOpen: true) { NewLine = "\n" })
-        {
-            long previous = -1;
-            foreach (long offset in hits)
-            {
-                ct.ThrowIfCancellationRequested();
-                long line = doc.OffsetToLineIndex(offset);
-                if (line == previous) continue;                    // 同じ行を2度出さない
-                previous = line;
-                await w.WriteAsync((line + 1).ToString(CultureInfo.InvariantCulture));
-                await w.WriteAsync('\t');
-                await w.WriteLineAsync(ReadFullLine(session, line));
-            }
-        }
-
-        env.StdErr.WriteLine(t($"{env.ToolName}: {hits.Length:N0} 件（{watch.Elapsed.TotalSeconds:F2} 秒）",
-                               $"{env.ToolName}: {hits.Length:N0} results ({watch.Elapsed.TotalSeconds:F2}s)"));
-
-        // 打ち切りは隠さない。出力は不完全なので、スクリプトが成功と取り違えないようエラーで返す
-        if (session.SearchTruncated)
-        {
-            err(t($"結果が上限（{SearchService.DefaultMaxHits:N0} 件）で打ち切られました。出力は不完全です",
-                  $"Results were cut off at the limit ({SearchService.DefaultMaxHits:N0}). The output is incomplete."));
-            return UvfExit.Error;
-        }
-        return hits.Length > 0 ? UvfExit.Found : UvfExit.NotFound;
-    }
-
-    /// <summary>
-    /// 1行を<b>省略せずに</b>読む。表示用の <see cref="LineDocument.GetLine"/> は 8,192 文字で
-    /// 「…（省略）」に切り詰めるので、CLI の出力に使うとデータが黙って壊れる。
-    /// </summary>
-    internal static string ReadFullLine(DocumentSession session, long lineIndex)
-    {
-        var doc = session.Document;
-        long total = doc.TotalLines ?? 0;
-        long start = doc.LineStartOffset(lineIndex);
-        long end = lineIndex + 1 < total ? doc.LineStartOffset(lineIndex + 1) : session.Source.Length;
-        if (end <= start) return "";
-
-        var buffer = new byte[end - start];
-        int got = 0;
-        while (got < buffer.Length)
-        {
-            int n = session.Source.Read(start + got, buffer.AsSpan(got));
-            if (n <= 0) break;
-            got += n;
-        }
-        int len = got;
-        if (len > 0 && buffer[len - 1] == (byte)'\n') len--;
-        if (len > 0 && buffer[len - 1] == (byte)'\r') len--;
-        return doc.Encoding.GetString(buffer, 0, len);
-    }
 }

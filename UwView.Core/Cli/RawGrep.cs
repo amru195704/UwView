@@ -1,5 +1,6 @@
 using System.Buffers;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace UwView.Core.Cli;
 
@@ -18,13 +19,11 @@ public readonly record struct RawGrepOutcome(long Hits, bool Truncated);
 /// </list>
 /// と<b>2回半</b>読んでいた。50GB の実測 203 秒の内訳は 索引 約100秒 ＋ 検索 約82秒 ＋ 出力 約20秒。
 ///
-/// ここでは通しの1回読みの最中に「改行を数える（＝行番号）」「一致を探す」「その行の本文をそのまま渡す」
+/// ここでは通しの1回読みの最中に「改行を数える（＝行番号）」「一致を判定する」「その行の本文をそのまま渡す」
 /// を同時に行う。読むのは <see cref="SequentialFileByteSource"/>（pread）なので媒体の帯域に近い速度が出る。
 ///
-/// 一致の判定規則は <see cref="SearchService"/> のバイト高速パスと同じにしてある
-/// （大小を区別する素の文字列・1行1件・改行なしの長大行は先頭 64KB で判定）。
-/// 正規表現・大小無視は扱わない（<see cref="CanUse"/> が false を返し、呼び出し側が従来経路へ戻る）。
-///
+/// 判定の規則は <see cref="SearchService"/> に合わせてある
+/// （1行1件・改行なしの長大行は先頭 64KB で判定・正規表現は必須リテラルで候補行を絞る）。
 /// 行番号は「その行より前にある '\n' の数」で数える。<see cref="SparseLineIndex"/> も改行スタイルに
 /// 関わらず '\n' だけを数えているので、索引を作ったときと同じ番号になる。
 /// </summary>
@@ -36,16 +35,37 @@ public static class RawGrep
     /// <summary>ヒット行を受け取る係（行は 0 始まり・末尾の改行は取り除いてある）。</summary>
     public delegate void LineSink(long lineIndex, ReadOnlySpan<byte> line);
 
-    /// <summary>この経路で同じ結果が出せる条件か。外れたら従来の「索引＋検索」へ戻す。</summary>
-    public static bool CanUse(SearchOptions options)
-        => options is { UseRegex: false, IgnoreCase: false } && options.Pattern.Length > 0;
-
+    /// <param name="invert">当てはまら<b>ない</b>行を出す（grep -v / uvf -v）。</param>
     public static async Task<RawGrepOutcome> RunAsync(
-        IByteSource src, int bomLength, Encoding encoding, SearchOptions options,
+        IByteSource src, int bomLength, Encoding encoding, SearchOptions options, bool invert,
         LineSink sink, CancellationToken ct = default)
     {
-        byte[] needle = encoding.GetBytes(options.Pattern);
-        if (needle.Length == 0) return new RawGrepOutcome(0, false);
+        // 判定の道具立て（素の文字列は SearchService と同じ選び方）
+        bool bytePath = options is { UseRegex: false, IgnoreCase: false } && options.Pattern.Length > 0;
+        byte[] needle = bytePath ? encoding.GetBytes(options.Pattern) : [];
+        if (bytePath && needle.Length == 0) bytePath = false;
+
+        // -i の素の文字列は、条件が合えばバイトのまま大小無視で探す（デコードも正規表現も要らない）
+        bool byteIcase = !bytePath
+            && options is { UseRegex: false, IgnoreCase: true }
+            && AsciiCaseFold.IsFoldable(options.Pattern)
+            && AsciiCaseFold.IsAsciiCompatible(encoding);
+        byte[] folded = byteIcase ? AsciiCaseFold.ToLowerBytes(options.Pattern) : [];
+        int foldAt = 0;
+        var foldAnchor = byteIcase ? AsciiCaseFold.Anchor(folded, out foldAt) : null;
+
+        bool literal = bytePath || byteIcase;
+        Regex? regex = literal ? null : BuildRegex(options);
+        Decoder? decoder = literal ? null : encoding.GetDecoder();
+        LiteralFinder? prefilter = SearchService.CreatePrefilter(options, encoding);
+
+        // -i（正規表現でも素の文字列でも）の手がかり。`RegexLiterals` は大小無視だと必須リテラルを
+        // 出さない（`LiteralFinder` がバイト一致でしか探せないため）ので、こちらで用意する。
+        byte[] icaseClue = prefilter is null && !literal ? IcaseClue(options, encoding) : [];
+        int clueAt = 0;
+        var clueAnchor = icaseClue.Length > 0 ? AsciiCaseFold.Anchor(icaseClue, out clueAt) : null;
+
+        bool hasClue = prefilter is not null || icaseClue.Length > 0;
 
         long fileLength = src.Length;
         long limit = options.HitLimit;
@@ -54,6 +74,7 @@ public static class RawGrep
 
         // 行が途中で切れたぶんを先頭へ繰り越すので、バッファは 2 倍取る（SearchService と同じ作り）
         byte[] buf = ArrayPool<byte>.Shared.Rent(BufSize * 2);
+        char[] chars = literal ? [] : ArrayPool<char>.Shared.Rent(MaxLineMatchBytes + 16);
         try
         {
             long bufBase = bomLength;   // buf[0] のファイル上の位置
@@ -79,18 +100,14 @@ public static class RawGrep
                 else if (filled >= BufSize)
                 {
                     // 1 ブロック内に改行がない長大行: 先頭 64KB だけで判定し、次の改行まで読み飛ばす
-                    if (span[..Math.Min(filled, MaxLineMatchBytes)].IndexOf(needle) >= 0)
+                    bool hit = Matches(span[..Math.Min(filled, MaxLineMatchBytes)]) != invert;
+                    long end = await LineEndAsync(src, bufBase + filled, fileLength, ct);
+                    if (hit)
                     {
-                        long end = await LineEndAsync(src, bufBase + filled, fileLength, ct);
                         await EmitLongLineAsync(src, bufBase, end, lineNo, sink, ct);
                         if (++hits >= limit) { truncated = true; break; }
-                        bufBase = pos = end + 1;
                     }
-                    else
-                    {
-                        long next = await LineEndAsync(src, bufBase + filled, fileLength, ct);
-                        bufBase = pos = next + 1;
-                    }
+                    bufBase = pos = end + 1;
                     lineNo++;                       // 読み飛ばした長大行ぶん
                     carry = 0;
                     if (pos >= fileLength) break;
@@ -115,61 +132,181 @@ public static class RawGrep
 
             return new RawGrepOutcome(hits, truncated);
 
-            // region は行頭から始まる完結行の集まり。改行を数えながら一致行を出し、次の行番号を返す
+            // region は行頭から始まる完結行の集まり。改行を数えながら出すべき行を出し、次の行番号を返す
+            //
+            // 「手がかり」（素の文字列そのもの／正規表現の必須リテラル）がある限り、そこへ飛びながら見る。
+            // 手がかりの無い区間は改行をまとめて数えるだけで済み、行の切り出しもデコードもしない。
+            // -v は全行を出す判断が要るので、1行ずつ見る道（ScanLines）へ回す。
             long Scan(ReadOnlySpan<byte> region, long regionBase, long firstLine)
+                => !invert && (literal || hasClue) ? ScanByClue(region, firstLine) : ScanLines(region, firstLine);
+
+            long ScanByClue(ReadOnlySpan<byte> region, long firstLine)
             {
+                prefilter?.Reset();
                 int cursor = 0;            // まだ見ていない範囲の先頭（必ず行頭）
                 long cursorLine = firstLine;
 
                 while (cursor < region.Length)
                 {
-                    int rel = region[cursor..].IndexOf(needle);
-                    if (rel < 0) break;
-                    int hitAt = cursor + rel;
+                    int clueAt = FindClue(region, cursor);
+                    if (clueAt < 0) break;
 
-                    // cursor から一致位置までの改行を数えて、その行の先頭を求める
-                    int lineStart = cursor;
-                    long line = cursorLine;
-                    for (int i = cursor; i < hitAt; )
-                    {
-                        int nl = region[i..hitAt].IndexOf((byte)'\n');
-                        if (nl < 0) break;
-                        i += nl + 1;
-                        line++;
-                        lineStart = i;
-                    }
+                    // cursor から手がかりの位置までの改行を数えて、その行の先頭を求める。
+                    // 1本ずつ IndexOf で進むのではなく、まとめて数える（SIMD が効いて 5 倍速い）
+                    var before = region[cursor..clueAt];
+                    long line = cursorLine + before.Count((byte)'\n');
+                    int lastNlBefore = before.LastIndexOf((byte)'\n');
+                    int lineStart = lastNlBefore < 0 ? cursor : cursor + lastNlBefore + 1;
 
-                    int nlAfter = region[hitAt..].IndexOf((byte)'\n');
-                    int lineEnd = nlAfter < 0 ? region.Length : hitAt + nlAfter;
+                    int nlAfter = region[clueAt..].IndexOf((byte)'\n');
+                    int lineEnd = nlAfter < 0 ? region.Length : clueAt + nlAfter;
 
                     var text = region[lineStart..lineEnd];
                     if (text.Length > 0 && text[^1] == (byte)'\r') text = text[..^1];
-                    sink(line, text);
 
-                    if (++hits >= limit) { truncated = true; return line + 1; }
+                    // 素の文字列なら手がかり＝一致そのもの。正規表現はこの行に当ててみる
+                    if (literal || Matches(text))
+                    {
+                        Emit(line, text, stripped: true);
+                        if (truncated) return line + 1;
+                    }
 
-                    if (nlAfter < 0) { cursor = region.Length; cursorLine = line; break; }
+                    if (nlAfter < 0) { cursor = region.Length; cursorLine = line + 1; break; }
                     cursor = lineEnd + 1;
                     cursorLine = line + 1;
                 }
 
                 return cursorLine + CountNewlines(region[cursor..]);
             }
+
+            // cursor 以降で次の手がかりの位置（無ければ -1）
+            int FindClue(ReadOnlySpan<byte> region, int cursor)
+            {
+                if (literal)
+                {
+                    int rel = FindFrom(region[cursor..]);
+                    return rel < 0 ? -1 : cursor + rel;
+                }
+                if (prefilter is not null) return prefilter.IndexOf(region, cursor);
+                if (icaseClue.Length > 0)
+                {
+                    int rel = AsciiCaseFold.IndexOf(region[cursor..], icaseClue, clueAnchor!, clueAt);
+                    return rel < 0 ? -1 : cursor + rel;
+                }
+                return -1;
+            }
+
+            // -v・手がかりの無い正規表現: 1行ずつ見る
+            long ScanLines(ReadOnlySpan<byte> region, long firstLine)
+            {
+                prefilter?.Reset();
+                int candidate = prefilter is null ? -1 : prefilter.IndexOf(region, 0);
+
+                long line = firstLine;
+                int start = 0;
+                while (start < region.Length)
+                {
+                    int nl = region[start..].IndexOf((byte)'\n');
+                    int end = nl < 0 ? region.Length : start + nl;
+
+                    bool maybe = true;
+                    if (prefilter is not null)
+                    {
+                        while (candidate >= 0 && candidate < start)
+                            candidate = prefilter.IndexOf(region, candidate + 1);
+                        maybe = candidate >= 0 && candidate < end;
+                    }
+
+                    var text = region[start..end];
+                    if (text.Length > 0 && text[^1] == (byte)'\r') text = text[..^1];
+
+                    if ((maybe && Matches(text)) != invert)
+                    {
+                        Emit(line, text, stripped: true);
+                        if (truncated) return line + 1;
+                    }
+
+                    line++;
+                    if (nl < 0) break;
+                    start = end + 1;
+                }
+
+                return line;
+            }
+
+            void Emit(long line, ReadOnlySpan<byte> text, bool stripped = false)
+            {
+                if (!stripped && text.Length > 0 && text[^1] == (byte)'\r') text = text[..^1];
+                sink(line, text);
+                if (++hits >= limit) truncated = true;
+            }
+
+            // 1行が当てはまるか（長大行は先頭 64KB だけで見る＝SearchService と同じ約束）
+            bool Matches(ReadOnlySpan<byte> line)
+            {
+                var probe = line.Length > MaxLineMatchBytes ? line[..MaxLineMatchBytes] : line;
+                if (literal) return FindFrom(probe) >= 0;
+
+                // 前チェック: 当たるなら必ず入っている手がかりが無ければ、デコードせずに外す
+                // （-v はここを通る。手がかりで飛ぶ道が使えないため）
+                if (icaseClue.Length > 0 && AsciiCaseFold.IndexOf(probe, icaseClue, clueAnchor!, clueAt) < 0)
+                    return false;
+
+                decoder!.Reset();
+                int n = decoder.GetChars(probe, chars, flush: true);
+                return regex!.IsMatch(chars.AsSpan(0, n));
+            }
+
+            // 素の文字列（-i も）を探す。見つからなければ -1
+            int FindFrom(ReadOnlySpan<byte> hay)
+                => bytePath ? hay.IndexOf(needle) : AsciiCaseFold.IndexOf(hay, folded, foldAnchor!, foldAt);
         }
-        finally { ArrayPool<byte>.Shared.Return(buf); }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(buf);
+            if (chars.Length > 0) ArrayPool<char>.Shared.Return(chars);
+        }
     }
 
-    private static long CountNewlines(ReadOnlySpan<byte> span)
+    /// <summary>
+    /// <c>-E -i</c> の手がかり（当たる行には必ず入っている文字列を、ASCII の大小を畳んだ小文字で返す）。
+    ///
+    /// <see cref="RegexLiterals.Extract"/> は大小無視のとき null を返す（<see cref="LiteralFinder"/> が
+    /// バイト一致しかできないため）。ここでは同じ抽出を大小を区別する形で1回行い、得られた必須リテラルを
+    /// <see cref="AsciiCaseFold.IndexOf"/> で大小を畳んで探す。当たる行は必ずそのリテラルの大小どれかを含むので
+    /// 取りこぼしは無い。ただし <c>k</c>/<c>K</c> を含むリテラルは U+212A とも一致しうるので使わない。
+    /// 候補が複数（選択肢）のときは、どれが入るか決められないので手がかりにしない。
+    /// </summary>
+    private static byte[] IcaseClue(SearchOptions options, Encoding encoding)
     {
-        long n = 0;
-        for (int i = 0; i < span.Length; )
-        {
-            int nl = span[i..].IndexOf((byte)'\n');
-            if (nl < 0) break;
-            n++; i += nl + 1;
-        }
-        return n;
+        if (options is not { IgnoreCase: true } || !AsciiCaseFold.IsAsciiCompatible(encoding)) return [];
+
+        // 当たる行に必ず入っている文字列。素の文字列ならそれ自身、正規表現なら必須リテラル
+        string? required = options.UseRegex
+            ? RegexLiterals.Extract(options.Pattern, ignoreCase: false) is [string only] ? only : null
+            : options.Pattern;
+        if (required is null) return [];
+
+        string run = AsciiCaseFold.LongestFoldableRun(required);
+        return run.Length == 0 ? [] : AsciiCaseFold.ToLowerBytes(run);
     }
+
+
+    /// <summary>全行に当てる正規表現（<see cref="SearchService"/> の全文検索と同じ作り方）。</summary>
+    private static Regex BuildRegex(SearchOptions options)
+    {
+        var regex = SearchService.BuildRegex(options);
+        return OperatingSystem.IsBrowser()
+            ? regex
+            : new Regex(regex.ToString(), regex.Options | RegexOptions.Compiled, regex.MatchTimeout);
+    }
+
+    /// <summary>
+    /// 改行の本数（行番号づけの土台）。<see cref="MemoryExtensions.Count{T}"/> は SIMD で数えるので、
+    /// 1本ずつ IndexOf で進むより 5 倍以上速い（1GB・改行3,350万本で 0.302秒 → 0.055秒）。
+    /// 索引を持たない uvf はここを全バイトに対して通るため、この差がそのまま検索時間に出る。
+    /// </summary>
+    private static long CountNewlines(ReadOnlySpan<byte> span) => span.Count((byte)'\n');
 
     /// <summary>from 以降で最初の '\n' の位置（無ければファイル末尾）。</summary>
     private static async Task<long> LineEndAsync(IByteSource src, long from, long fileLength, CancellationToken ct)

@@ -51,17 +51,35 @@ The free edition now ships **`uvf`**, callable from the terminal. It accepts **o
 
 ```bash
 uvf -open [file] [pattern]     # launch the app; open the file and search if given
-uvf file pattern [-open]       # search and print the results; -open shows them in the app instead
+uvf file pattern [options]     # search and print the results
 ```
+
+Options (spelled the same as in `uvp`):
+
+| | Meaning |
+|---|---|
+| `-i` | ignore case |
+| `-E` | treat the pattern as a regular expression |
+| `-v` | print the lines that do **not** match |
+| `-open` | show the results in the app instead of stdout (cannot be combined with `-i`/`-E`/`-v`) |
 
 - Output is **`line<TAB>text`**. Lines are printed in full (the 8,192-character display cut-off does not apply)
 - **Exit codes are grep's**: `0` found / `1` not found / `2` error. `if uvf app.log 'FATAL'; then …` works as written
-- **Stops at 1,000,000 hits and returns `2`**, so a script cannot mistake truncated output for success
-- The search is the same plain search as the GUI (case-sensitive, no regex). Handing over with `-open` re-runs the same search in the window, so the results match
+- If the hit limit (unlimited by default) cuts the output short, `uvf` returns `2`, so a script cannot mistake truncated output for success
+- Handing over with `-open` re-runs the same search in the window, so the results match
 - `uvf` is a tiny launcher that starts the app with `--uvf` (no second copy of .NET, so the download barely grows). **To call it by name, register it from Help → "Command-line tools (PATH)…"**
 - Compressed files (`.gz`) are not accepted by the `uvf` search. Use `uvf -open file.gz` to open them in the app
 
-**It is not a speed tool.** There is no index, so a 50 GB search takes 205 s with `uvf` (open + search + output) against 56 s for ripgrep. **What `uvf` is for is the exit code and `-open`** — catch something from a script, then let a person look. Narrowing (two terms), regex, case-insensitive search, frequency counts (`-uniq`), ordered search (`-seq`), `-out .gz`, reading and writing `.uwvz`, and `-extract` belong to **Pro's `uvp`** ([uvp measured against ripgrep](https://uvp.y42u.net/en/blog/uvp-cli-release-vs-ripgrep-en/)).
+**Speed** (Mac M4, external USB SSD, cold cache):
+
+| | ripgrep | `uvf` |
+|---|---:|---:|
+| 10 GB | 11.19 s | **10.34 s** |
+| 50 GB | 56.75 s | **51.03 s** |
+
+Up to v1.6.2 `uvf` built a line index before searching, which is why 50 GB took 205 s. It now reads the file **once, straight through** — line numbers, matches and line text all come out of the same pass — so it runs close to the speed of the drive, in about 50 MB of memory.
+
+Narrowing (two terms), context lines (`-C`), frequency counts (`-uniq`), ordered search (`-seq`), `-out .gz`, reading and writing `.uwvz`, and `-extract` belong to **Pro's `uvp`** ([uvp measured against ripgrep](https://uvp.y42u.net/en/blog/uvp-cli-release-vs-ripgrep-en/)).
 
 ### Opening gzip directly
 

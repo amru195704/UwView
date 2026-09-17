@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.RegularExpressions;
 using UwView.Core;
 using UwView.Core.Cli;
 
@@ -24,15 +25,15 @@ public class RawGrepTests : IDisposable
 
     private string P(string name) => Path.Combine(_dir, name);
 
-    /// <summary>uvf の検索を実行して stdout を返す。</summary>
-    private static async Task<(int Exit, string Out)> Search(string path, string pattern)
+    /// <summary>uvf の検索を実行して stdout を返す（options は -i / -E / -v）。</summary>
+    private static async Task<(int Exit, string Out)> Search(string path, string pattern, params string[] options)
     {
         using var stdout = new MemoryStream();
         var env = new UvfEnvironment
         {
             StdOut = stdout, StdErr = new StringWriter(), Japanese = false, LaunchGui = (_, _) => true,
         };
-        int code = await UvfCli.RunAsync([path, pattern], env);
+        int code = await UvfCli.RunAsync([path, pattern, .. options], env);
         return (code, Encoding.UTF8.GetString(stdout.ToArray()));
     }
 
@@ -196,5 +197,215 @@ public class RawGrepTests : IDisposable
         var (_, output) = await Search(P("cmp.log"), "東京");
         var actual = output.TrimEnd('\n').Split('\n').Select(l => long.Parse(l.Split('\t')[0])).ToArray();
         Assert.Equal(expected, actual);
+    }
+
+    // ── -i / -E / -v（2026-09-17 オーナー指示で uvf にも入れた）────────────
+
+    /// <summary>
+    /// 参照実装（-i / -E / -v つき）。
+    ///
+    /// -i は <c>OrdinalIgnoreCase</c> ではなく<b>正規表現の IgnoreCase</b> で書く。この2つは同じではなく、
+    /// 正規表現のほうは U+212A（ケルビン記号）を 'k' と同じに扱う（ripgrep の -i も畳む）。
+    /// uvf は画面の検索と同じ規則＝正規表現側に合わせているので、参照もそちらで書く。
+    /// </summary>
+    private static string Reference(string path, string pattern, bool icase, bool regex, bool invert)
+    {
+        var options = regex || icase
+            ? new Regex(regex ? pattern : Regex.Escape(pattern),
+                        RegexOptions.CultureInvariant | (icase ? RegexOptions.IgnoreCase : RegexOptions.None))
+            : null;
+        var sb = new StringBuilder();
+        long n = 0;
+        foreach (string text in File.ReadLines(path))
+        {
+            n++;
+            bool hit = options is not null ? options.IsMatch(text) : text.Contains(pattern, StringComparison.Ordinal);
+            if (hit != invert) sb.Append(n).Append('\t').Append(text).Append('\n');
+        }
+        return sb.ToString();
+    }
+
+    private string Mixed()
+    {
+        var sb = new StringBuilder();
+        for (int i = 0; i < 3_000; i++)
+            sb.Append($"{i:D5} {(i % 3 == 0 ? "ERROR" : i % 3 == 1 ? "error" : "info")} dev{i % 4} code={i % 7}\n");
+        File.WriteAllText(P("mixed.log"), sb.ToString());
+        return P("mixed.log");
+    }
+
+    [Fact]
+    public async Task 大小無視で探す()
+    {
+        string log = Mixed();
+        var (exit, output) = await Search(log, "error", "-i");
+        Assert.Equal(UvfExit.Found, exit);
+        Assert.Equal(Reference(log, "error", icase: true, regex: false, invert: false), output);
+
+        var (_, sensitive) = await Search(log, "error");     // -i なしと違うこと（取りこぼしの確認）
+        Assert.NotEqual(sensitive, output);
+    }
+
+    [Fact]
+    public async Task 正規表現で探す()
+    {
+        string log = Mixed();
+        foreach (string pattern in new[] { @"code=[13]$", @"^0000\d ERROR", @"dev[02] code=\d" })
+        {
+            var (_, output) = await Search(log, pattern, "-E");
+            Assert.Equal(Reference(log, pattern, icase: false, regex: true, invert: false), output);
+        }
+    }
+
+    [Fact]
+    public async Task 正規表現と大小無視を一緒に使う()
+    {
+        string log = Mixed();
+        var (_, output) = await Search(log, @"^\d+ error", "-E", "-i");
+        Assert.Equal(Reference(log, @"^\d+ error", icase: true, regex: true, invert: false), output);
+        Assert.NotEqual("", output);
+    }
+
+    [Fact]
+    public async Task 当てはまらない行を出す()
+    {
+        string log = Mixed();
+        var (_, output) = await Search(log, "ERROR", "-v");
+        Assert.Equal(Reference(log, "ERROR", icase: false, regex: false, invert: true), output);
+
+        var (_, hit) = await Search(log, "ERROR");
+        // -v と素の検索を足すと全行になる
+        Assert.Equal(3_000, output.Split('\n', StringSplitOptions.RemoveEmptyEntries).Length
+                          + hit.Split('\n', StringSplitOptions.RemoveEmptyEntries).Length);
+    }
+
+    [Fact]
+    public async Task 正規表現と_v_を一緒に使う()
+    {
+        string log = Mixed();
+        var (_, output) = await Search(log, @"code=[0-3]$", "-E", "-v");
+        Assert.Equal(Reference(log, @"code=[0-3]$", icase: false, regex: true, invert: true), output);
+    }
+
+    [Fact]
+    public async Task 全行が当てはまらないときは見つからない扱い()
+    {
+        File.WriteAllText(P("all.log"), "HIT a\nHIT b\n");
+        var (exit, output) = await Search(P("all.log"), "HIT", "-v");
+        Assert.Equal(UvfExit.NotFound, exit);
+        Assert.Equal("", output);
+    }
+
+    [Fact]
+    public async Task ブロックをまたいでも_v_と正規表現の行番号が合う()
+    {
+        var sb = new StringBuilder();
+        for (int i = 0; i < 60_000; i++)
+            sb.Append($"{i:D8} {new string('x', 70)} {(i % 997 == 0 ? "HIT" : "---")} {i}\n");
+        File.WriteAllText(P("big2.log"), sb.ToString());
+        Assert.True(new FileInfo(P("big2.log")).Length > 5 << 20);
+
+        var (_, inverted) = await Search(P("big2.log"), "HIT", "-v");
+        Assert.Equal(Reference(P("big2.log"), "HIT", icase: false, regex: false, invert: true), inverted);
+
+        var (_, byRegex) = await Search(P("big2.log"), @"HIT \d+$", "-E");
+        Assert.Equal(Reference(P("big2.log"), @"HIT \d+$", icase: false, regex: true, invert: false), byRegex);
+    }
+
+    [Fact]
+    public async Task 長大行も_v_と正規表現で同じ扱いになる()
+    {
+        string huge = new('z', 6 << 20);
+        File.WriteAllText(P("skip2.log"), $"one\n{huge}\nthree HIT\nfour\n");
+
+        var (_, inverted) = await Search(P("skip2.log"), "HIT", "-v");
+        Assert.Equal($"1\tone\n2\t{huge}\n4\tfour\n", inverted);
+
+        var (_, byRegex) = await Search(P("skip2.log"), "^z+$", "-E");
+        Assert.Equal($"2\t{huge}\n", byRegex);
+    }
+
+    [Theory]
+    [InlineData("-i")]
+    [InlineData("-E")]
+    [InlineData("-v")]
+    public async Task openとは一緒に使えない(string option)
+    {
+        var (inv, ja, _) = UvfCli.Parse([P("x.log"), "HIT", option, "-open"]);
+        Assert.Null(inv);
+        Assert.Contains("一緒に使えません", ja);
+    }
+
+    [Fact]
+    public void オプションは書く場所を選ばない()
+    {
+        var (inv, _, _) = UvfCli.Parse(["-i", "a.log", "-E", "HIT", "-v"]);
+        Assert.Equal(new UvfInvocation(UvfMode.Search, "a.log", "HIT", true, true, true), inv);
+    }
+
+    // ── -i の前チェックとバイト折り畳み（オーナー指摘 2026-09-17）────────
+
+    [Fact]
+    public async Task 大小無視はケルビン記号も従来どおり拾う()
+    {
+        // .NET の IgnoreCase は U+212A（ケルビン記号）を 'k' と同じに扱う。
+        // バイトのまま畳む速い道は k を含む語では使わないので、ここが崩れないことを見る
+        File.WriteAllText(P("kelvin.log"), "1 kilo\n2 KILO\n3 Kilo\n4 other\n");
+
+        var (_, output) = await Search(P("kelvin.log"), "kilo", "-i");
+        Assert.Equal("1\t1 kilo\n2\t2 KILO\n3\t3 Kilo\n", output);
+    }
+
+    [Fact]
+    public async Task 大小無視の前チェックは当たる行を落とさない()
+    {
+        // k を含む語は前チェック（k 以外の1文字）で絞ってから正規表現に当てる。
+        // 絞り込みで取りこぼしが出ないことを、記号つき・大小混在で確かめる
+        File.WriteAllText(P("anchor.log"), string.Concat(
+            Enumerable.Range(0, 500).Select(i => (i % 5) switch
+            {
+                0 => $"{i} key=ok\n",
+                1 => $"{i} KEY=OK\n",
+                2 => $"{i} Key=ok\n",     // ケルビン記号の k
+                3 => $"{i} Key=Ok\n",
+                _ => $"{i} nothing here\n",
+            })));
+
+        var (_, output) = await Search(P("anchor.log"), "key=ok", "-i");
+        Assert.Equal(Reference(P("anchor.log"), "key=ok", icase: true, regex: false, invert: false), output);
+        // 5行のうち4行（key=ok / KEY=OK / ケルビン記号の k / Key=Ok）が当たる
+        Assert.Equal(400, output.Split('\n', StringSplitOptions.RemoveEmptyEntries).Length);
+    }
+
+    [Theory]
+    [InlineData("highway")]        // 英字だけ（バイト折り畳みの道）
+    [InlineData("K=\"NAME\"")]     // k を含む（前チェック＋正規表現の道）
+    [InlineData("東京")]            // 非 ASCII（従来の道）
+    [InlineData("a")]              // 1文字
+    public async Task 大小無視はどの語でも参照実装と一致する(string pattern)
+    {
+        var sb = new StringBuilder();
+        for (int i = 0; i < 4_000; i++)
+            sb.Append((i % 4) switch
+            {
+                0 => $"{i} HIGHWAY K=\"NAME\" 東京 A\n",
+                1 => $"{i} highway k=\"name\" 大阪 a\n",
+                2 => $"{i} HighWay K=\"Name\" 東京タワー A\n",
+                _ => $"{i} nothing\n",
+            });
+        File.WriteAllText(P("icase.log"), sb.ToString());
+
+        var (_, output) = await Search(P("icase.log"), pattern, "-i");
+        Assert.Equal(Reference(P("icase.log"), pattern, icase: true, regex: false, invert: false), output);
+        Assert.NotEqual("", output);
+    }
+
+    [Fact]
+    public async Task 大小無視の_v_も参照実装と一致する()
+    {
+        File.WriteAllText(P("iv.log"), "1 HIGHWAY\n2 highway\n3 other\n");
+        var (_, output) = await Search(P("iv.log"), "highway", "-i", "-v");
+        Assert.Equal("3\t3 other\n", output);
+        Assert.Equal(Reference(P("iv.log"), "highway", icase: true, regex: false, invert: true), output);
     }
 }
