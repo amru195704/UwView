@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Reflection;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.LogicalTree;
@@ -36,6 +37,19 @@ public static class UiHarness
         OperationLog.Clear();                            // 前のテストの記録を持ち越さない
         return settings;
     }
+
+    /// <summary>
+    /// 進捗ダイアログの参照を捨てる（<b>閉じない</b>）。テストの前後どちらからでも呼べる。
+    ///
+    /// <see cref="EditProgressWindow.Current"/> は静的なので、AvaloniaFact がテストごとに
+    /// 窓を片付けたあとも参照が残る。そこを閉じにいくと Closed が走り、前のテストの MainView が
+    /// 絞り込み結果を「閉じた親の上に」出そうとして落ちる（閉じた窓でも IsVisible は true のままで
+    /// 見分けられない）。窓そのものは AvaloniaFact がテストごとに片付けるので、参照を捨てれば足りる。
+    /// </summary>
+    public static void ForgetProgressWindow()
+        => typeof(EditProgressWindow).GetProperty(nameof(EditProgressWindow.Current),
+               BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public)!
+           .GetSetMethod(nonPublic: true)!.Invoke(null, [null]);
 
     /// <summary>本番と同じ MainWindow を組み立てて表示する（Headless なので画面には出ない）。</summary>
     public static (MainWindow Window, MainView View, MainViewModel Vm) OpenMainWindow()

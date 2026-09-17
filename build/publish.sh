@@ -175,13 +175,33 @@ PLIST
   fi
 
   # 配布物は DMG（UVP と同じ形。Applications へのリンクを置いてドラッグで入れられるようにする）
-  local stage; stage=$(mktemp -d)
-  cp -R "$app" "$stage/"
-  ln -s /Applications "$stage/Applications"
   local out="$OUT/UwView-$VER-mac-$arch.dmg"
   rm -f "$out"
-  hdiutil create -volname "UwView $VER ($arch)" -srcfolder "$stage" -fs HFS+ -format UDZO -ov "$out"
-  rm -rf "$stage"
+
+  # hdiutil create -srcfolder は「中身をコピー → 一時ボリュームを unmount → 圧縮」の順に動くが、
+  # 公証・staple 済みの .app を置いた直後は OS 側がそれを掴んでいて unmount が
+  # 「リソースが使用中です」で失敗することがある（2026-09-17 の x64 ビルドで再現）。
+  # そこで 書き込み可能イメージを作る → attach → 中身を置く → detach -force → 圧縮に分ける。
+  #
+  # 置くときは <b>.app を名指しで</b> ditto する。フォルダごと（中身まとめて）コピーすると
+  # macOS の App Management 保護に当たって「Operation not permitted」で弾かれる。
+  # マウント先は自前の場所を指定する。/Volumes に同名が残っていると（前回の失敗で detach し損ねた等）
+  # 別名で mount され、こちらは残骸のほうへ書いてしまう（2026-09-17 に発生）。
+  local vol="UwView $VER ($arch)"
+  local rw mnt size
+  rw=$(mktemp -u).rw.dmg
+  mnt=$(mktemp -d)
+  size=$(( $(du -sm "$app" | cut -f1) + 80 ))             # 余白 80MB
+  hdiutil create -size "${size}m" -fs HFS+ -volname "$vol" -type UDIF -ov "$rw"
+  local dev; dev=$(hdiutil attach "$rw" -nobrowse -noverify -noautoopen -mountpoint "$mnt" \
+                   | grep -Eo '^/dev/disk[0-9]+' | head -1)
+  ditto "$app" "$mnt/UwView.app"
+  ln -s /Applications "$mnt/Applications"
+  sync
+  hdiutil detach "$dev" -force
+  rmdir "$mnt" 2>/dev/null || true
+  hdiutil convert "$rw" -format UDZO -o "$out"
+  rm -f "$rw"
 
   # DMG 自身も署名・公証する（中の .app だけ公証しても、DMG が未署名だと警告が出る）
   if [ -n "${MAC_SIGN_ID:-}" ]; then

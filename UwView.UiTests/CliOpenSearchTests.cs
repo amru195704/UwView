@@ -17,12 +17,13 @@ public class CliOpenSearchTests : IDisposable
     {
         Directory.CreateDirectory(_dir);
         UwView.App.PendingCliSearch = null;
+        UiHarness.ForgetProgressWindow();   // 前のテストが残した窓の参照を持ち越さない
     }
 
     public void Dispose()
     {
         UwView.App.PendingCliSearch = null;
-        EditProgressWindow.Current?.CloseNow();
+        UiHarness.ForgetProgressWindow();
         try { Directory.Delete(_dir, recursive: true); } catch (IOException) { }
     }
 

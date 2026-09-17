@@ -54,7 +54,7 @@ public class SearchProgressTests
             var vm = (UwView.ViewModels.MainViewModel)window.DataContext!;
             await UiHarness.WaitSearchDone(vm.ActiveTab!.Session);
             await UiHarness.Pump();
-            EditProgressWindow.Current?.CloseNow();
+            UiHarness.ForgetProgressWindow();
         }
         finally { File.Delete(path); }
     }
@@ -93,7 +93,7 @@ public class SearchProgressTests
             var vm = (UwView.ViewModels.MainViewModel)window.DataContext!;
             await UiHarness.WaitSearchDone(vm.ActiveTab!.Session);
             await UiHarness.Pump();
-            EditProgressWindow.Current?.CloseNow();
+            UiHarness.ForgetProgressWindow();
             await UiHarness.Pump();
 
             var last = UiHarness.Find<TextBlock>(view, "LastOpText");
@@ -120,7 +120,7 @@ public class SearchProgressTests
             await UiHarness.Pump(30);
 
             // 中止でもダイアログは残り、経過時間が読める（UVP と同じ扱い）
-            EditProgressWindow.Current?.CloseNow();
+            UiHarness.ForgetProgressWindow();
             Dispatcher.UIThread.RunJobs();
         }
         finally { File.Delete(path); }

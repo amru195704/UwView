@@ -182,7 +182,53 @@ public static class UvfCli
         }
     }
 
+    /// <summary>
+    /// 1回読みの検索（指示書 2026-09-17）。索引を作らず、通しで読みながら
+    /// 行番号・一致・本文をまとめて出す。読みは <see cref="SequentialFileByteSource"/>（pread）。
+    /// 50GB の実測で 203 秒 → 60 秒台（媒体の帯域に近い）。
+    /// 素の文字列検索でないときだけ <see cref="SearchViaIndexAsync"/> へ戻す。
+    /// </summary>
     private static async Task<int> SearchToStdoutAsync(
+        string path, string pattern, UvfEnvironment env,
+        Func<string, string, string> t, Action<string> err, CancellationToken ct)
+    {
+        var options = new SearchOptions(pattern);
+        if (!RawGrep.CanUse(options))
+            return await SearchViaIndexAsync(path, pattern, env, t, err, ct);
+
+        var watch = Stopwatch.StartNew();
+        await using var src = new SequentialFileByteSource(path);
+        var detected = EncodingDetector.Detect(src);
+        var encoding = detected.Encoding;
+
+        RawGrepOutcome outcome;
+        await using (var w = new StreamWriter(env.StdOut, new UTF8Encoding(false), 1 << 16, leaveOpen: true) { NewLine = "\n" })
+        {
+            var writer = w;
+            outcome = await RawGrep.RunAsync(src, detected.BomLength, encoding, options, Write, ct);
+
+            void Write(long line, ReadOnlySpan<byte> text)
+            {
+                writer.Write((line + 1).ToString(CultureInfo.InvariantCulture));
+                writer.Write('\t');
+                writer.WriteLine(encoding.GetString(text));
+            }
+        }
+
+        env.StdErr.WriteLine(t($"{env.ToolName}: {outcome.Hits:N0} 件（{watch.Elapsed.TotalSeconds:F2} 秒）",
+                               $"{env.ToolName}: {outcome.Hits:N0} results ({watch.Elapsed.TotalSeconds:F2}s)"));
+
+        if (outcome.Truncated)
+        {
+            err(t($"結果が上限（{SearchService.DefaultMaxHits:N0} 件）で打ち切られました。出力は不完全です",
+                  $"Results were cut off at the limit ({SearchService.DefaultMaxHits:N0}). The output is incomplete."));
+            return UvfExit.Error;
+        }
+        return outcome.Hits > 0 ? UvfExit.Found : UvfExit.NotFound;
+    }
+
+    /// <summary>従来の経路（索引を作ってから検索する）。正規表現・大小無視のときだけ通る。</summary>
+    private static async Task<int> SearchViaIndexAsync(
         string path, string pattern, UvfEnvironment env,
         Func<string, string, string> t, Action<string> err, CancellationToken ct)
     {
