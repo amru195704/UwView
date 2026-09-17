@@ -77,7 +77,7 @@ Options (spelled the same as in `uvp`):
 | `-i` | ignore case (v1.6.3+) |
 | `-E` | treat the pattern as a regular expression (v1.6.3+) |
 | `-v` | print the lines that do **not** match (v1.6.3+) |
-| `-open` | show the results in the app instead of stdout (cannot be combined with `-i`/`-E`/`-v`) |
+| `-open` | show the results in the app instead of stdout (cannot be combined with `-i`/`-E`/`-v`; Pro's `uvp -open` can) |
 
 - Output is **`line<TAB>text`**. Lines are printed in full (the 8,192-character display cut-off does not apply)
 - **Exit codes are grep's**: `0` found / `1` not found / `2` error. `if uvf app.log 'FATAL'; then …` works as written

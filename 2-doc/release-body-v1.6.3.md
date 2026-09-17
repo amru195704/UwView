@@ -60,7 +60,8 @@ v1.6.2 までの `uvf` は、素の文字列検索だけでした。`uvp`（Pro�
 
 ### 🔧 その他
 
-- `-open` は `-i`／`-E`／`-v` とは併用できません（画面側は同じ検索をやり直す作りのため）
+- `-open` は `-i`／`-E`／`-v` とは併用できません。`uvf -open` は**検索語だけ**を画面へ渡し、画面側が同じ検索をやり直す作りのためです（条件を渡す口がまだありません。今後の版で入れます）。
+  **Pro の `uvp -open` は併用できます。**こちらは段の内容ごと画面へ渡すので、`-i`／`-E`／`-v`／`-w` もそのまま再現されます
 - 名前だけで打てるようにするには、ヘルプの**「コマンドライン設定…」**（英語版は *Command line setup…*）で登録してください
 
 ### 📥 ダウンロード
@@ -162,7 +163,8 @@ output short, `uvf` still returns `2`, so a script cannot mistake truncated outp
 
 ### 🔧 Other changes
 
-- `-open` cannot be combined with `-i` / `-E` / `-v` (the window re-runs the search itself)
+- `-open` cannot be combined with `-i` / `-E` / `-v`. `uvf -open` hands the window **only the pattern**, and the window runs the search again — there is no channel for the flags yet. A later version will add one.
+  **Pro's `uvp -open` does allow the combination**: it hands over the whole pipeline, so `-i` / `-E` / `-v` / `-w` are reproduced as given
 - To call it by name, register it from Help → **"Command line setup…"**
 
 ### 📥 Downloads
