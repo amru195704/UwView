@@ -125,4 +125,54 @@ public class SearchProgressTests
         }
         finally { File.Delete(path); }
     }
+
+    // ── 連続検索（2026-09-18 クラッシュ調査）────────────────────────
+
+    [AvaloniaFact]
+    public async Task 同じファイルで検索を2回しても落ちない()
+    {
+        // オーナー実機で 1回目は成功・2回目の直後に落ちた（UI スレッドの未処理例外）。
+        // 同じ手順（検索 → ダイアログを閉じる → もう一度検索）をここで踏む
+        var (view, window, path) = await OpenWithFile();
+        try
+        {
+            var vm = (UwView.ViewModels.MainViewModel)window.DataContext!;
+            for (int round = 1; round <= 3; round++)
+            {
+                StartSearch(view, window, round % 2 == 1 ? "ERROR" : "INFO");
+                await UiHarness.WaitSearchDone(vm.ActiveTab!.Session);
+                await UiHarness.Pump();
+
+                var dialog = EditProgressWindow.Current;
+                Assert.NotNull(dialog);
+                dialog!.CloseNow();                 // ここで結果一覧が開く
+                await UiHarness.Pump();
+                Assert.True(view.FilterResultsOpen, $"{round} 回目で結果一覧が出ない");
+            }
+        }
+        finally { File.Delete(path); }
+    }
+
+    [AvaloniaFact]
+    public async Task ダイアログを閉じずに検索を2回しても落ちない()
+    {
+        // 1回目のダイアログを閉じないまま次の検索を始める（実機はこちらの可能性がある）
+        var (view, window, path) = await OpenWithFile();
+        try
+        {
+            var vm = (UwView.ViewModels.MainViewModel)window.DataContext!;
+            StartSearch(view, window, "ERROR");
+            await UiHarness.WaitSearchDone(vm.ActiveTab!.Session);
+            await UiHarness.Pump();
+
+            StartSearch(view, window, "INFO");      // 前のダイアログが残ったまま
+            await UiHarness.WaitSearchDone(vm.ActiveTab!.Session);
+            await UiHarness.Pump();
+
+            EditProgressWindow.Current?.CloseNow();
+            await UiHarness.Pump();
+            UiHarness.ForgetProgressWindow();
+        }
+        finally { File.Delete(path); }
+    }
 }

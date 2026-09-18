@@ -329,11 +329,13 @@ public class RawGrepTests : IDisposable
     [InlineData("-i")]
     [InlineData("-E")]
     [InlineData("-v")]
-    public async Task openとは一緒に使えない(string option)
+    public void openと並べても受け付ける(string option)
     {
+        // オーナー指示 2026-09-18 で併用可にした（それまではエラーだった）
         var (inv, ja, _) = UvfCli.Parse([P("x.log"), "HIT", option, "-open"]);
-        Assert.Null(inv);
-        Assert.Contains("一緒に使えません", ja);
+        Assert.True(inv is not null, ja);
+        Assert.Equal(UvfMode.SearchInGui, inv!.Mode);
+        Assert.Equal(option, "-" + UvfCli.OptionLetters(inv));
     }
 
     [Fact]
@@ -480,17 +482,91 @@ public class RawGrepTests : IDisposable
         await Task.CompletedTask;
     }
 
-    [Fact]
-    public async Task openでも_i_や_v_は受け付けない()
+    [Theory]
+    [InlineData(new[] { "-i" }, "i")]
+    [InlineData(new[] { "-E" }, "E")]
+    [InlineData(new[] { "-v" }, "v")]
+    [InlineData(new[] { "-E", "-i" }, "iE")]
+    public async Task openは_i_E_v_と併用できる(string[] opts, string letters)
     {
-        // -open は素の検索だけ（画面側に受け口が無い）。ここが崩れると受け渡しの条件も合わなくなる
-        File.WriteAllText(P("o2.log"), "1 ERROR\n");
+        // オーナー指示 2026-09-18: -i/-E/-v を付けた検索でも -open が効くこと。
+        // CLI 側で解決して渡すので、画面は検索し直さない
+        File.WriteAllText(P("o2.log"), "1 ERROR a\n2 error b\n3 plain c\n");
         var env = new UvfEnvironment
         {
             StdOut = new MemoryStream(), StdErr = new StringWriter(), Japanese = false,
             LaunchGui = (_, _) => true,
         };
-        Assert.Equal(UvfExit.Error, await UvfCli.RunAsync([P("o2.log"), "ERROR", "-i", "-open"], env));
-        Assert.Null(env.HandoffPath);
+        Assert.Equal(UvfExit.Found, await UvfCli.RunAsync([P("o2.log"), "ERROR", .. opts, "-open"], env));
+
+        Assert.Equal(letters, env.SearchOptionLetters);          // 画面へ渡す種類
+        Assert.NotNull(env.HandoffPath);
+        var taken = CliHandoff.TakeFrom(env.HandoffPath!);
+        Assert.NotNull(taken);
+
+        // 渡した件数は、同じ条件で stdout に出したときと同じ
+        var (_, output) = await Search(P("o2.log"), "ERROR", opts);
+        Assert.Equal(output.TrimEnd('\n').Split('\n').Length, taken!.Hits.Length);
+        Assert.Equal(opts.Contains("-i"), taken.IgnoreCase);
+        Assert.Equal(opts.Contains("-E"), taken.Regex);
+        Assert.Equal(opts.Contains("-v"), taken.Invert);
+    }
+
+    // ── 検索と同時に索引も作る（オーナー指示 2026-09-18）────────────
+
+    [Theory]
+    [InlineData(20_000)]        // 目印が何度も出る
+    [InlineData(300)]           // 目印が1つも出ない小さいファイル
+    public async Task 検索のついでに作った索引は画面が作るものと同じ(int lines)
+    {
+        var sb = new StringBuilder();
+        for (int i = 0; i < lines; i++) sb.Append($"{i:D6} {(i % 9 == 0 ? "ERROR" : "info")} x\n");
+        File.WriteAllText(P("idx.log"), sb.ToString());
+
+        var env = new UvfEnvironment
+        {
+            StdOut = new MemoryStream(), StdErr = new StringWriter(), Japanese = false,
+            LaunchGui = (_, _) => true,
+        };
+        await UvfCli.RunAsync([P("idx.log"), "ERROR", "-open"], env);
+        var handoff = CliHandoff.TakeFrom(env.HandoffPath!);
+        Assert.NotNull(handoff);
+
+        await using var session = DocumentSession.Open(P("idx.log"));
+        var mine = handoff!.BuildIndex(session.Document.BomLength, session.Newline);
+        Assert.NotNull(mine);
+
+        // 画面が自分で作った索引と突き合わせる
+        await session.BuildIndexAsync();
+        var theirs = session.Document.Index!;
+        Assert.Equal(theirs.TotalLines, mine!.TotalLines);
+        Assert.Equal(theirs.CheckpointCount, mine.CheckpointCount);
+        for (int k = 0; k < theirs.CheckpointCount; k++)
+            Assert.Equal(theirs.GetCheckpoint(k), mine.GetCheckpoint(k));
+
+        // 目印の間隔・BOM・改行スタイルもそろっている
+        Assert.Equal(theirs.BlockLines, mine.BlockLines);
+        Assert.Equal(theirs.BomLength, mine.BomLength);
+        Assert.Equal(theirs.Newline, mine.Newline);
+        Assert.Equal(theirs.FileLength, mine.FileLength);
+    }
+
+    [Fact]
+    public async Task 末尾に改行が無いファイルでも索引が合う()
+    {
+        File.WriteAllText(P("idx2.log"), "1 ERROR a\n2 info b\n3 ERROR c");   // 最後に改行なし
+        var env = new UvfEnvironment
+        {
+            StdOut = new MemoryStream(), StdErr = new StringWriter(), Japanese = false,
+            LaunchGui = (_, _) => true,
+        };
+        await UvfCli.RunAsync([P("idx2.log"), "ERROR", "-open"], env);
+        var handoff = CliHandoff.TakeFrom(env.HandoffPath!)!;
+
+        await using var session = DocumentSession.Open(P("idx2.log"));
+        var mine = handoff.BuildIndex(session.Document.BomLength, session.Newline)!;
+        await session.BuildIndexAsync();
+        Assert.Equal(session.Document.Index!.TotalLines, mine.TotalLines);
+        Assert.Equal(3, mine.TotalLines);
     }
 }

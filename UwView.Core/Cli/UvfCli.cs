@@ -45,6 +45,9 @@ public sealed class UvfEnvironment
     /// </summary>
     public string? HandoffPath { get; set; }
 
+    /// <summary>-open のとき、検索の種類（<c>i</c>/<c>E</c>/<c>v</c> の並び）。<see cref="LaunchGui"/> が GUI へ渡す。</summary>
+    public string? SearchOptionLetters { get; set; }
+
     public bool Japanese { get; init; } = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ja";
 
     /// <summary>
@@ -72,8 +75,21 @@ public sealed class UvfEnvironment
 /// </summary>
 public static class UvfCli
 {
+    /// <summary>索引の目印の間隔（画面の既定と同じ。<see cref="LineDocument"/> の blockLines）。</summary>
+    private const int IndexBlockLines = 256;
+
     /// <summary>GUI へ検索パターンを渡す引数名（GUI 側の App と同じ）。</summary>
     public const string SearchArgument = "--uvf-search";
+
+    /// <summary>
+    /// GUI へ検索の種類を渡す引数名。値は <c>i</c>（大小無視）<c>E</c>（正規表現）<c>v</c>（含まない）の並び。
+    /// 受け渡しが使えなかったとき、画面が<b>違う条件で検索し直さない</b>ために要る。
+    /// </summary>
+    public const string OptionsArgument = "--uvf-search-opts";
+
+    /// <summary>この呼び出しの種類を <see cref="OptionsArgument"/> の値にする。</summary>
+    public static string OptionLetters(UvfInvocation inv)
+        => (inv.IgnoreCase ? "i" : "") + (inv.Regex ? "E" : "") + (inv.Invert ? "v" : "");
 
     public static string Usage(bool ja, string tool = "uvf") => (ja
         ? """
@@ -85,7 +101,7 @@ public static class UvfCli
             -i        大文字小文字を区別しない
             -E        パターンを正規表現として扱う
             -v        当てはまらない行を出す
-            -open     結果を stdout ではなく GUI で表示する（-i/-E/-v とは併用できません）
+            -open     結果を stdout ではなく GUI で表示する（-i/-E/-v と併用できます）
 
           出力は「行番号<TAB>本文」。終了コード: 0=見つかった 1=見つからない 2=エラー
           """
@@ -98,7 +114,7 @@ public static class UvfCli
             -i        ignore case
             -E        treat the pattern as a regular expression
             -v        print the lines that do NOT match
-            -open     show the results in the app instead of stdout (cannot be combined with -i/-E/-v)
+            -open     show the results in the app instead of stdout (can be combined with -i/-E/-v)
 
           Output is "line<TAB>text". Exit codes: 0=found 1=not found 2=error
           """).Replace("uvf ", tool + " ");
@@ -147,11 +163,6 @@ public static class UvfCli
             return (null, "ファイルと検索パターンを1つずつ指定してください",
                           "Specify exactly one file and one search pattern");
 
-        // GUI へ渡せるのは素の検索だけ（画面側に -i/-E/-v の受け口が無い）
-        if (open && (icase || regex || invert))
-            return (null, "-open と -i/-E/-v は一緒に使えません",
-                          "-open cannot be combined with -i/-E/-v");
-
         return (new UvfInvocation(open ? UvfMode.SearchInGui : UvfMode.Search, args[0], args[1],
                                   icase, regex, invert), null, null);
     }
@@ -194,9 +205,11 @@ public static class UvfCli
             string? file = inv.File is null ? null : Path.GetFullPath(inv.File);
 
             // 検索まで頼まれているなら、ここで探してから渡す（画面が同じ検索をやり直さずに済む。
-            // 50GB なら丸ごと読み直す時間がそのまま浮く。オーナー指示 2026-09-18）
+            // 50GB なら丸ごと読み直す時間がそのまま浮く。オーナー指示 2026-09-18）。
+            // -i / -E / -v もここで解決するので、そのまま -open に付けられる（同 2026-09-18）
             if (inv.Mode == UvfMode.SearchInGui && file is not null && inv.Pattern is { Length: > 0 })
             {
+                env.SearchOptionLetters = OptionLetters(inv);
                 var check = CompressedInput.Probe(file);
                 if (!check.IsCompressed && !check.IsRejected)
                     env.HandoffPath = await CollectForGuiAsync(file, inv, ct);
@@ -251,10 +264,15 @@ public static class UvfCli
             var options = new SearchOptions(inv.Pattern!, UseRegex: inv.Regex, IgnoreCase: inv.IgnoreCase);
 
             var hits = new List<long>();
+            var lines = new List<long>();
+            // 検索のついでに索引の目印も集める（画面がファイルを読み直さずに済む）
+            var marks = new RawGrep.IndexMarks(IndexBlockLines);
             var outcome = await RawGrep.RunAsync(src, detected.BomLength, detected.Encoding, options, inv.Invert,
-                                                 (_, lineStart, _) => hits.Add(lineStart), ct);
+                                                 (line, lineStart, _) => { hits.Add(lineStart); lines.Add(line); },
+                                                 ct, marks);
             return new CliHandoff(inv.Pattern!, inv.IgnoreCase, inv.Regex, inv.Invert,
-                                  src.Length, outcome.Truncated, [.. hits]).WriteTemp();
+                                  src.Length, outcome.Truncated, [.. hits], [.. lines],
+                                  IndexBlockLines, [.. marks.Marks], marks.NewlineCount, marks.LastByte).WriteTemp();
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidDataException
                                        or OperationCanceledException)

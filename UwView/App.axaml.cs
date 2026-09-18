@@ -35,6 +35,9 @@ public partial class App : Application
     /// <summary>uvf -open が渡してきた検索結果の置き場所（一度使ったら消える）。</summary>
     public static string? PendingCliHits { get; internal set; }
 
+    /// <summary>uvf -open が渡してきた検索の種類（i/E/v の並び）。</summary>
+    public static string? PendingCliOptions { get; internal set; }
+
     /// <summary>uvf が GUI を起動するときに付ける引数名（uvf 側と同じ）。</summary>
     public const string CliSearchArgument = "--uvf-search";
 
@@ -47,9 +50,15 @@ public partial class App : Application
 
     /// <param name="hitsPath">CLI が見つけた結果の置き場所（<see cref="UwView.Core.Cli.CliHandoff"/>）。</param>
     internal static string[] ExtractCliSearch(string[] args, out string? pattern, out string? hitsPath)
+        => ExtractCliSearch(args, out pattern, out hitsPath, out _);
+
+    /// <param name="options">検索の種類（i/E/v の並び）。</param>
+    internal static string[] ExtractCliSearch(string[] args, out string? pattern, out string? hitsPath,
+                                              out string? options)
     {
         pattern = null;
         hitsPath = null;
+        options = null;
         var rest = new System.Collections.Generic.List<string>(args.Length);
         for (int i = 0; i < args.Length; i++)
         {
@@ -62,6 +71,11 @@ public partial class App : Application
             if (args[i] == UwView.Core.Cli.CliHandoff.Argument && i + 1 < args.Length)
             {
                 hitsPath = args[++i];
+                continue;
+            }
+            if (args[i] == UwView.Core.Cli.UvfCli.OptionsArgument && i + 1 < args.Length)
+            {
+                options = args[++i];
                 continue;
             }
             rest.Add(args[i]);
@@ -140,9 +154,10 @@ public partial class App : Application
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             // uvf -open から来た検索パターンを抜く（残りがファイル指定）
-            LaunchFileArgs = ExtractCliSearch(desktop.Args ?? [], out var pattern, out var hitsPath);
+            LaunchFileArgs = ExtractCliSearch(desktop.Args ?? [], out var pattern, out var hitsPath, out var opts);
             PendingCliSearch = pattern;
             PendingCliHits = hitsPath;
+            PendingCliOptions = opts;
             desktop.MainWindow = new MainWindow
             {
                 DataContext = new MainViewModel()

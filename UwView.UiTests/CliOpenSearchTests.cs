@@ -131,4 +131,48 @@ public class CliOpenSearchTests : IDisposable
 
         window.Close();
     }
+
+    [AvaloniaFact]
+    public async Task 索引ができる前でも渡された結果を出せる()
+    {
+        // オーナー指摘 2026-09-18「索引作成の待ちが余計」。
+        // 行番号も渡ってくるので、索引の完成を待たずに結果一覧を出せること
+        string log = WriteLog();
+        var env = new UvfEnvironment
+        {
+            StdOut = new MemoryStream(), StdErr = new StringWriter(), Japanese = false,
+            LaunchGui = (_, _) => true,
+        };
+        Assert.Equal(UvfExit.Found, await UvfCli.RunAsync([log, "ERROR", "-open"], env));
+        var handoff = CliHandoff.TakeFrom(env.HandoffPath!);
+        Assert.NotNull(handoff);
+        Assert.Equal(handoff!.Hits.Length, handoff.Lines.Length);      // 行番号も同じ数だけ来る
+
+        // 索引を作っていないセッションへ取り込む
+        var (window, view, vm) = UiHarness.OpenMainWindow();
+        UiHarness.OpenFile(log);
+        await UiHarness.WaitUntil(() => vm.ActiveTab is not null, "タブが開く");
+        var session = vm.ActiveTab!.Session;
+        session.AdoptSearchResults(handoff.ToOptions(), handoff.Hits, handoff.Truncated, handoff.Lines);
+
+        Assert.Equal(handoff.Hits.Length, session.SearchHits.Count);
+        Assert.NotNull(session.SearchHitLines);
+        Assert.Equal(handoff.Lines, session.SearchHitLines);
+
+        // 索引ができる前でも、結果一覧の行番号が空にならない
+        var results = new UwView.ViewModels.FilterResultsViewModel(_ => { }, maxContext: 1);
+        results.SetSession(session);
+        Assert.NotEmpty(results.Rows);
+        // 渡された行番号がそのまま行に乗る（索引から解き直していない）
+        Assert.Equal(handoff.Lines[0], results.Rows[0].LineIndex);
+        Assert.Equal((handoff.Lines[0] + 1).ToString("N0"), results.Rows[0].LineNumberText);
+        Assert.NotEqual("", results.Rows[0].Text);        // 本文は行頭位置から直接読める
+
+        // 渡された行番号は、索引から解いたものと同じ
+        await UiHarness.WaitIndexed(session);
+        for (int i = 0; i < Math.Min(20, handoff.Hits.Length); i++)
+            Assert.Equal(session.Document.OffsetToLineIndex(handoff.Hits[i]), handoff.Lines[i]);
+
+        window.Close();
+    }
 }

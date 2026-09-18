@@ -78,6 +78,29 @@ public sealed class SparseLineIndex
     }
 
     /// <summary>
+    /// <b>すでに数えてある改行から索引を組み立てる</b>（<c>uvf ファイル 語 -open</c> の受け渡し用）。
+    ///
+    /// CLI は検索でどのみちファイルを通しで読むので、そのついでに N 行ごとの位置を控えておける。
+    /// それを渡してもらえば、画面はもう一度読み直さずに済む（10GB なら丸ごと1回ぶんが浮く。
+    /// オーナー指示 2026-09-18「-open が最後にある場合、検索時に index も同時に作成する」）。
+    /// </summary>
+    /// <param name="checkpoints">先頭（BOM の直後）から <paramref name="blockLines"/> 行ごとの行頭位置。</param>
+    /// <param name="newlineCount">ファイル全体の '\n' の数。</param>
+    /// <param name="lastByte">ファイルの最後のバイト（末尾に改行があるかの判定に使う）。</param>
+    public static SparseLineIndex FromCheckpoints(
+        int bomLength, NewlineStyle newline, int blockLines,
+        IReadOnlyList<long> checkpoints, long newlineCount, byte lastByte, long fileLength)
+    {
+        var index = new SparseLineIndex(blockLines, bomLength, newline);
+        foreach (long at in checkpoints) index._checkpoints.Add(at);   // 先頭の BOM 位置は ctor が入れている
+        index._newlineCount = newlineCount;
+        index._lastByte = lastByte;
+        Volatile.Write(ref index._scannedTo, fileLength);
+        index.UpdateTotals(fileLength, newlineCount, lastByte);
+        return index;
+    }
+
+    /// <summary>
     /// 背景タスクで 1MB ずつ順次読みしながら '\n' を数え、索引を構築する。
     /// 数 GB でも 1 回の順次読みで完了。IProgress と CancellationToken 対応。
     /// I/O は ReadAsync 経由（Desktop=同期の薄いラッパ / WASM=Blob の async 経路）。

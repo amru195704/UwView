@@ -44,6 +44,8 @@ sealed class Program
                 (pattern is not null && file is not null
                     ? new[] { UvfCli.SearchArgument, Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(pattern)) }
                     : Array.Empty<string>())
+                .Concat(env!.SearchOptionLetters is { Length: > 0 } opts
+                    ? new[] { UvfCli.OptionsArgument, opts } : Array.Empty<string>())
                 .Concat(env!.HandoffPath is { } hits ? new[] { CliHandoff.Argument, hits } : Array.Empty<string>())
                 .Concat(file is null ? Array.Empty<string>() : new[] { file })),
         };

@@ -46,6 +46,9 @@ public sealed class LineDocument : IAsyncDisposable
         _blockLines = blockLines;
     }
 
+    /// <summary>すでに出来ている索引をそのまま使う（CLI から渡された索引。読み直さない）。</summary>
+    public void AdoptIndex(SparseLineIndex index) => Index = index;
+
     /// <summary>裏で索引を構築し、完了後 行モードへ昇格可能にする（§3.1-2）。</summary>
     public async Task BuildIndexAsync(IProgress<double>? progress = null, CancellationToken ct = default)
         => Index = await SparseLineIndex.BuildAsync(_src, BomLength, Newline, _blockLines, progress, ct);

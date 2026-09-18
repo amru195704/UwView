@@ -17,14 +17,20 @@ namespace UwView.Core.Cli;
 /// <param name="SourceLength">CLI が見たときのファイルの長さ（変わっていたら使わない）。</param>
 /// <param name="Truncated">上限で打ち切ったか（画面にもその旨を出す）。</param>
 /// <param name="Hits">ヒット行の行頭バイト位置（昇順）。</param>
+/// <param name="Lines">同じ並びの行番号（0 始まり）。これがあると<b>画面は索引の完成を待たずに</b>
+/// 結果一覧を出せる（本文は行頭位置から直接読める。オーナー指摘 2026-09-18「索引待ちが余計」）。</param>
+/// <param name="BlockLines">索引の目印の間隔（0＝索引を渡していない）。</param>
+/// <param name="IndexMarks">その間隔ごとの行頭位置。画面はこれで索引を組み立て、<b>ファイルを読み直さない</b>。</param>
 public sealed record CliHandoff(
-    string Pattern, bool IgnoreCase, bool Regex, bool Invert, long SourceLength, bool Truncated, long[] Hits)
+    string Pattern, bool IgnoreCase, bool Regex, bool Invert, long SourceLength, bool Truncated,
+    long[] Hits, long[] Lines,
+    int BlockLines = 0, long[]? IndexMarks = null, long NewlineCount = 0, byte LastByte = 0)
 {
     /// <summary>画面へ渡すときの引数名。</summary>
     public const string Argument = "--uvf-hits";
 
     private const uint Magic = 0x48465655;   // "UVFH"
-    private const int Version = 1;
+    private const int Version = 2;   // v2: 行番号を追加（2026-09-18）
 
     /// <summary>一時ファイルへ書いて、その場所を返す（書けなければ null＝画面が検索し直す）。</summary>
     public string? WriteTemp()
@@ -43,6 +49,13 @@ public sealed record CliHandoff(
             w.Write(Truncated);
             w.Write(Hits.Length);
             foreach (long offset in Hits) w.Write(offset);
+            foreach (long line in Lines) w.Write(line);
+
+            w.Write(BlockLines);
+            w.Write(IndexMarks?.Length ?? 0);
+            foreach (long at in IndexMarks ?? []) w.Write(at);
+            w.Write(NewlineCount);
+            w.Write(LastByte);
             return path;
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
@@ -68,7 +81,18 @@ public sealed record CliHandoff(
                 if (count < 0) return null;
                 var hits = new long[count];
                 for (int i = 0; i < count; i++) hits[i] = r.ReadInt64();
-                return new CliHandoff(pattern, icase, regex, invert, length, truncated, hits);
+                var lines = new long[count];
+                for (int i = 0; i < count; i++) lines[i] = r.ReadInt64();
+
+                int blockLines = r.ReadInt32();
+                int markCount = r.ReadInt32();
+                if (markCount < 0) return null;
+                var marks = new long[markCount];
+                for (int i = 0; i < markCount; i++) marks[i] = r.ReadInt64();
+                long newlines = r.ReadInt64();
+                byte lastByte = r.ReadByte();
+                return new CliHandoff(pattern, icase, regex, invert, length, truncated, hits, lines,
+                                      blockLines, marks, newlines, lastByte);
             }
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or EndOfStreamException
@@ -87,4 +111,11 @@ public sealed record CliHandoff(
 
     /// <summary>画面の検索条件に直す。</summary>
     public SearchOptions ToOptions() => new(Pattern, Regex, IgnoreCase);
+
+    /// <summary>渡された索引を組み立てる（渡っていなければ null＝画面が自分で作る）。</summary>
+    public SparseLineIndex? BuildIndex(int bomLength, NewlineStyle newline)
+        => BlockLines > 0 && IndexMarks is not null
+            ? SparseLineIndex.FromCheckpoints(bomLength, newline, BlockLines, IndexMarks,
+                                              NewlineCount, LastByte, SourceLength)
+            : null;
 }

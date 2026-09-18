@@ -259,11 +259,14 @@ public sealed partial class FilterResultsViewModel : ObservableObject, IDisposab
         var regex = s.SearchHighlightRegex;
         int n = Math.Clamp(ContextN, 0, MaxContext);
 
+        // CLI から渡された行番号があれば、索引の完成を待たずに行番号を出せる
+        var known = s.SearchHitLines is { } sl && sl.Length == s.SearchHits.Count ? sl : null;
+
         if (n <= 0 || !doc.IsIndexed)
         {
             // ヒット行のみ: ヒット（行頭オフセット列）をそのまま1行=1ヒットで並べる
             CancelLineMapping();
-            Rows = new HitOnlyRowList(doc, s.SearchHits, regex);
+            Rows = new HitOnlyRowList(doc, s.SearchHits, regex, known);
         }
         else if (_hitLines is { } cached && cached.Length == s.SearchHits.Count)
         {
@@ -276,7 +279,7 @@ public sealed partial class FilterResultsViewModel : ObservableObject, IDisposab
             // 写像がまだ: 先にヒット行のみを出しておき、裏で非同期に写像する。
             // 同期 Read で写像すると WASM の未取得チャンクで数え落とし、
             // DataArrived → Rebuild → また未取得… の無限ループになる（タブが固まる）。
-            Rows = new HitOnlyRowList(doc, s.SearchHits, regex);
+            Rows = new HitOnlyRowList(doc, s.SearchHits, regex, known);
             StartLineMapping(s, doc);
         }
 
@@ -324,6 +327,14 @@ public sealed partial class FilterResultsViewModel : ObservableObject, IDisposab
         var hits = session.SearchHits;
         int count = hits.Count;
         if (count == 0) return;
+
+        // CLI（uvf … -open）から行番号が渡っていれば写像は要らない。索引がまだでも出せる
+        if (session.SearchHitLines is { } supplied && supplied.Length == count)
+        {
+            _hitLines = supplied;
+            Rebuild();
+            return;
+        }
 
         var cts = new CancellationTokenSource();
         _mapCts = cts;
@@ -593,7 +604,13 @@ public sealed partial class FilterResultsViewModel : ObservableObject, IDisposab
     }
 
     /// <summary>ヒット行のみ（N=0 / 未索引）: hits[i] をそのまま行にする。</summary>
-    private sealed class HitOnlyRowList(LineDocument doc, IReadOnlyList<long> hits, Regex? regex)
+    /// <param name="lines">
+    /// 分かっている行番号（0 始まり・件数が合うときだけ使う）。CLI（<c>uvf … -open</c>）から
+    /// 渡ってくる場合はこれがあるので、<b>索引ができる前でも行番号を出せる</b>
+    /// （オーナー指摘 2026-09-18「最初は行番号なし、後で行番号が出る」）。
+    /// </param>
+    private sealed class HitOnlyRowList(LineDocument doc, IReadOnlyList<long> hits, Regex? regex,
+                                        IReadOnlyList<long>? lines = null)
         : LazyRowList
     {
         public override int Count => hits.Count;
@@ -604,6 +621,7 @@ public sealed partial class FilterResultsViewModel : ObservableObject, IDisposab
             RowIndex = index,
             IsHit = true,
             Offset = hits[index],
+            LineIndex = lines is not null ? lines[index] : -1,
             ResolveLineFromOffset = doc.IsIndexed,
             HitOrdinal = index + 1,
             HighlightRegex = regex,

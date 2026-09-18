@@ -55,7 +55,7 @@ Only if the file changed in between does the window fall back to searching norma
 
 If your habit is "find it in the terminal, read it in the window", the wait is now half of what it was.
 
-## 🆕 v1.6.3: `uvf` now runs at ripgrep speed
+## 🆕 v1.6.3: the free edition caught up with ripgrep. Pro is 2–5× beyond it
 
 The free edition's CLI, `uvf`, has been rebuilt. It reads the file **once, straight through** — line numbers, matches and line text all come out of the same pass — so it lands within a few percent of ripgrep from 3 GB to 50 GB, in about 50 MB of memory. (Up to v1.6.2 it built a line index first, which is why 50 GB took 205 s.)
 
@@ -69,7 +69,32 @@ The free edition's CLI, `uvf`, has been rebuilt. It reads the file **once, strai
 
 `uvf` also gained **`-i` (ignore case), `-E` (regular expression) and `-v` (non-matching lines)** — up to v1.6.2 it only did plain string search. Those stay in the same band at 50 GB, 51–53 s against ripgrep's 55–58 s, and the output matches ripgrep across 3 sizes × 7 patterns. Where ripgrep still wins is 3 GB with the file in RAM (0.33 s against 0.55 s), and one `-v` case at 10 GB.
 
-When the seconds are the same, what differs is **what happens after the hit**. `uvf file 'FATAL' -open` opens the matching lines in the GUI so you can read around them, which makes `uvf` the more convenient of the two even at 3 GB when "find it, then read it" is one step. For narrowing, tallies and `.uwvz` — 5–8× faster than ripgrep from 10 GB up — there is Pro's `uvp`.
+### So how much faster is Pro (`uvp`)?
+
+The free edition matching ripgrep means it has reached **the read speed of the disk itself** (950 MB/s measured). No amount of software work makes it faster than that.
+
+Pro is faster not because it reads faster, but because **it doesn't read**. It converts the file once into `.uwvz` (about 1/9 the size, with a line index) and never touches the original again.
+
+All three measured under the same conditions (2026-09-17, Mac M4, external USB SSD, `sudo purge` before each cold run and a hot second run, OSM Japan, fixed-string search):
+
+| 10 GB | ripgrep | `uvf` (free) | `uvp` (Pro) |
+|---|---:|---:|---:|
+| 1st run (Pro includes building `.uwvz`) | 11.24 s | 10.37 s | 13.66 s |
+| **2nd run onward** | 11.23 s | 10.24 s | **1.80 s** |
+
+| 50 GB | ripgrep | `uvf` (free) | `uvp` (Pro) |
+|---|---:|---:|---:|
+| 1st run (Pro includes building `.uwvz`) | 55.35 s | 50.74 s | 66.24 s |
+| **2nd run onward** | 56.72 s | 50.77 s | **7.41 s** |
+
+**Pro is the slower one on the first pass** — it is building the index — and **6–7× faster from the second**. Searching the converted file for a *different* word takes 2.2 s at 10 GB and 16 s at 50 GB (5–6× ripgrep), and stays there.
+
+The GUI widens the gap further: **reopening takes 0.01–0.07 s** (the free edition re-reads the whole file every time).
+
+> **There is only one question. Will you look at this file once, or come back to it?**
+> Once — the free edition is enough (it opens 250 GB). Again and again — that is Pro.
+
+When the seconds are the same, what differs is also **what happens after the hit**. `uvf file 'FATAL' -open` opens the matching lines in the GUI so you can read around them, which makes `uvf` the more convenient of the two even at 3 GB when "find it, then read it" is one step. For narrowing, tallies and `.uwvz`, there is Pro's `uvp`.
 
 ### v1.6.0: the `uvf` command, and opening gzip directly
 
@@ -272,6 +297,29 @@ dotnet run --project UwView.Desktop -c Debug
 ```
 
 After launch, click **Open…** to choose a text file.
+
+### Building what we ship, and checking it yourself
+
+The `dotnet build` above is a **Debug build** and is not the same thing as the binaries on [Releases](https://github.com/amru195704/UwView/releases/latest) (Release, self-contained, single file). This is how the shipped binaries are made:
+
+```bash
+# the .NET SDK is pinned in global.json (10.0.100 series)
+dotnet --version
+
+# same publish as the release (RIDs: win-x64 / win-arm64 / linux-x64 / linux-arm64 / osx-arm64 / osx-x64)
+dotnet publish UwView.Desktop -c Release -r osx-arm64 --self-contained \
+  -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
+
+# hash what you built and compare it against the released SHA256SUMS
+shasum -a 256 <the executable>               # Linux/macOS
+certutil -hashfile <the executable> SHA256   # Windows
+```
+
+For the macOS app bundle (`.app` / DMG), see `UwView.Desktop/macos/build-app.sh`. On Windows and Linux the released binary is the published output above, renamed from `UwView.Desktop` to `UwView`.
+
+> **The hash will not match the released files exactly.** .NET embeds build timestamps and build-machine paths into the executable, so the same source produces different bytes each time. The released binaries are also signed (Windows) and Developer ID signed and notarized (macOS) with our keys, which cannot be reproduced.
+>
+> The point of this procedure is **not** to prove byte-for-byte equality. It is to let you confirm that **the published source really does produce an executable built the same way as the one we ship**. To check that the download itself has not been tampered with, use `dist/SHA256SUMS`, included with each release.
 
 - **Jump**: a line number in line mode, or a ratio like `50%` in page mode.
 - **Encoding**: auto-detect / manual switch from the toolbar dropdown.

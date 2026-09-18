@@ -375,11 +375,35 @@ public partial class MainView : UserControl
     /// uvf の stdout 出力と同じ答えになるよう、<b>普通の検索・大小区別</b>で行う
     /// （画面のチェック状態は使わない）。結果の出し方は画面で検索したときと同じ。
     /// </summary>
-    internal async Task SearchFromCliAsync(string pattern, string? hitsPath = null)
+    internal async Task SearchFromCliAsync(string pattern, string? hitsPath = null, string? options = null)
     {
         if (_vm?.ActiveTab is not { } tab) return;
 
-        // 結果一覧は行番号を使うので、索引ができるまで待つ
+        // CLI がすでに探してあれば、その結果をそのまま使う（同じ検索をやり直さない）。
+        // 行番号も渡ってくるので<b>索引の完成を待たない</b>——本文は行頭位置から直接読める
+        //（オーナー指摘 2026-09-18「索引作成の待ちが余計」）。索引は裏で作られ続ける
+        if (hitsPath is not null && UwView.Core.Cli.CliHandoff.TakeFrom(hitsPath) is { } handoff
+            && handoff.Matches(tab.Session.Source.Length))
+        {
+            // CLI が検索のついでに作った索引があれば、それを使う（ファイルを読み直さない）
+            if (handoff.BuildIndex(tab.Session.Document.BomLength, tab.Session.Newline) is { } cliIndex)
+                tab.Session.AdoptIndex(cliIndex);
+
+            _vm.SearchIsRegex = handoff.Regex;
+            _vm.SearchIgnoreCase = handoff.IgnoreCase;
+            _vm.SearchText = handoff.Pattern;
+            PushSearchHistory(handoff.Pattern);
+            // 進捗ダイアログは出していないので、完了時の自動ポップアップはここで直接行う
+            _autoPopupPending = false;
+            tab.Session.AdoptSearchResults(handoff.ToOptions(), handoff.Hits, handoff.Truncated, handoff.Lines);
+            UpdateSearchInfo();
+            Minimap.InvalidateVisual();
+            TextView.Refresh();
+            if (handoff.Hits.Length > 0) OpenFilterResults();
+            return;
+        }
+
+        // ここから先は画面で検索し直す道。結果一覧が行番号を出せるよう、索引の完成を待つ
         if (!tab.Session.IsIndexed)
         {
             var done = new TaskCompletionSource();
@@ -389,26 +413,19 @@ public partial class MainView : UserControl
             tab.Session.IndexCompleted -= OnDone;
         }
 
-        // CLI がすでに探してあれば、その結果をそのまま使う（同じ検索をやり直さない）
-        if (hitsPath is not null && UwView.Core.Cli.CliHandoff.TakeFrom(hitsPath) is { } handoff
-            && handoff.Matches(tab.Session.Source.Length))
+        // 受け渡しが使えなかったとき（ファイルが変わった・壊れていた）は画面で検索し直す。
+        // ただし -v は画面に受け口が無いので、勝手に「含む行」を出すのではなく理由を伝えて止める
+        if (options?.Contains('v') == true)
         {
-            _vm.SearchIsRegex = handoff.Regex;
-            _vm.SearchIgnoreCase = handoff.IgnoreCase;
-            _vm.SearchText = handoff.Pattern;
-            PushSearchHistory(handoff.Pattern);
-            // 進捗ダイアログは出していないので、完了時の自動ポップアップはここで直接行う
-            _autoPopupPending = false;
-            tab.Session.AdoptSearchResults(handoff.ToOptions(), handoff.Hits, handoff.Truncated);
-            UpdateSearchInfo();
-            Minimap.InvalidateVisual();
-            TextView.Refresh();
-            if (handoff.Hits.Length > 0) OpenFilterResults();
+            SetTransientStatus(Ja
+                ? "-v の結果を受け取れませんでした（ファイルが変わった可能性）。uvf をもう一度実行してください"
+                : "The -v results could not be handed over (the file may have changed). Run uvf again.");
+            _vm.SearchText = pattern;
             return;
         }
 
-        _vm.SearchIsRegex = false;
-        _vm.SearchIgnoreCase = false;
+        _vm.SearchIsRegex = options?.Contains('E') == true;
+        _vm.SearchIgnoreCase = options?.Contains('i') == true;
         _vm.SearchText = pattern;
         StartSearch();
     }
@@ -1071,8 +1088,10 @@ public partial class MainView : UserControl
             {
                 UwView.App.PendingCliSearch = null;
                 string? hits = UwView.App.PendingCliHits;
+                string? opts = UwView.App.PendingCliOptions;
                 UwView.App.PendingCliHits = null;
-                await SearchFromCliAsync(pattern, hits);
+                UwView.App.PendingCliOptions = null;
+                await SearchFromCliAsync(pattern, hits, opts);
             }
             return;
         }

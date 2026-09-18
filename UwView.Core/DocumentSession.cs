@@ -96,6 +96,25 @@ public sealed class DocumentSession : IAsyncDisposable
 
     public void CancelIndex() => _cts?.Cancel();
 
+    /// <summary>
+    /// CLI が検索のついでに作った索引をそのまま使う（<c>uvf ファイル 語 -open</c>）。
+    /// 画面はファイルを読み直さずに行モードへ上がれる（オーナー指示 2026-09-18）。
+    /// すでに索引があるときは何もしない。
+    /// </summary>
+    public bool AdoptIndex(SparseLineIndex index)
+    {
+        if (IsIndexed) return false;
+        CancelIndex();
+        Document.AdoptIndex(index);
+        TopLine = Document.OffsetToLineIndex(TopByteOffset);
+        Mode = ViewMode.Line;
+        IsIndexing = false;
+        IndexProgress = 1;
+        RaiseProgress();
+        IndexCompleted?.Invoke(this, EventArgs.Empty);
+        return true;
+    }
+
     /// <summary>手動の文字コード切替（索引再構築なし §4.6）。</summary>
     public void SetEncoding(Encoding encoding) => Document.Encoding = encoding;
 
@@ -108,6 +127,9 @@ public sealed class DocumentSession : IAsyncDisposable
 
     /// <summary>ヒット行の行頭バイトオフセット（昇順）。</summary>
     public IReadOnlyList<long> SearchHits => _searchHits;
+
+    /// <summary>CLI から渡された行番号（無ければ null＝索引から解決する）。</summary>
+    public long[]? SearchHitLines { get; private set; }
     public SearchOptions? ActiveSearch { get; private set; }
     /// <summary>可視行ハイライト用（TextView が使う）。検索中でなければ null。</summary>
     public Regex? SearchHighlightRegex { get; private set; }
@@ -125,11 +147,15 @@ public sealed class DocumentSession : IAsyncDisposable
     /// （50GB なら丸ごと1回読み直す時間が浮く。オーナー指示 2026-09-18）。
     /// 条件の表示・強調表示は普通の検索と同じに整える。
     /// </summary>
-    public void AdoptSearchResults(SearchOptions options, IReadOnlyList<long> hits, bool truncated)
+    /// <param name="hitLines">ヒット行の行番号（0 始まり・件数が合うときだけ使う）。
+    /// これがあると結果一覧は索引の完成を待たずに行番号を出せる。</param>
+    public void AdoptSearchResults(SearchOptions options, IReadOnlyList<long> hits, bool truncated,
+                                   IReadOnlyList<long>? hitLines = null)
     {
         CancelSearch();
         _searchHits.Clear();
         _searchHits.AddRange(hits);
+        SearchHitLines = hitLines is not null && hitLines.Count == hits.Count ? [.. hitLines] : null;
         ActiveSearch = options;
         SearchTruncated = truncated;
         SearchProgress = 1;
@@ -147,6 +173,7 @@ public sealed class DocumentSession : IAsyncDisposable
         var ct = _searchCts.Token;
 
         _searchHits.Clear();
+        SearchHitLines = null;
         ActiveSearch = options;
         SearchTruncated = false;
         SearchProgress = 0;

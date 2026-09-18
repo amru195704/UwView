@@ -37,9 +37,14 @@ public static class RawGrep
     public delegate void LineSink(long lineIndex, long lineStart, ReadOnlySpan<byte> line);
 
     /// <param name="invert">当てはまら<b>ない</b>行を出す（grep -v / uvf -v）。</param>
+    /// <param name="index">
+    /// これを渡すと、検索のついでに<b>索引の目印も集める</b>（N 行ごとの行頭位置）。
+    /// どのみち全部読んでいるので、画面がもう一度読み直さずに済む
+    /// （オーナー指示 2026-09-18「-open が最後にある場合、検索時に index も同時に作成する」）。
+    /// </param>
     public static async Task<RawGrepOutcome> RunAsync(
         IByteSource src, int bomLength, Encoding encoding, SearchOptions options, bool invert,
-        LineSink sink, CancellationToken ct = default)
+        LineSink sink, CancellationToken ct = default, IndexMarks? index = null)
     {
         // 判定の道具立て（素の文字列は SearchService と同じ選び方）
         bool bytePath = options is { UseRegex: false, IgnoreCase: false } && options.Pattern.Length > 0;
@@ -109,6 +114,7 @@ public static class RawGrep
                         if (++hits >= limit) { truncated = true; break; }
                     }
                     bufBase = pos = end + 1;
+                    index?.Skip(lineNo, end + 1);   // 読み飛ばした長大行の次の行頭
                     lineNo++;                       // 読み飛ばした長大行ぶん
                     carry = 0;
                     if (pos >= fileLength) break;
@@ -116,6 +122,7 @@ public static class RawGrep
                 }
                 else { carry = filled; continue; }  // もう少し読めば行が完結する
 
+                index?.Take(span[..region], bufBase, lineNo);
                 lineNo = Scan(span[..region], bufBase, lineNo);
                 if (truncated) break;
 
@@ -126,11 +133,13 @@ public static class RawGrep
                 if (isEof && carry == 0) break;
                 if (isEof && carry > 0)
                 {
+                    index?.Take(buf.AsSpan(0, carry), bufBase, lineNo);
                     lineNo = Scan(buf.AsSpan(0, carry), bufBase, lineNo);  // 末尾に改行がない最終行
                     break;
                 }
             }
 
+            index?.Finish(fileLength, lineNo);
             return new RawGrepOutcome(hits, truncated);
 
             // region は行頭から始まる完結行の集まり。改行を数えながら出すべき行を出し、次の行番号を返す
@@ -350,5 +359,51 @@ public static class RawGrep
         var text = line.AsSpan(0, (int)got);
         if (text.Length > 0 && text[^1] == (byte)'\r') text = text[..^1];
         sink(lineIndex, start, text);
+    }
+
+    /// <summary>
+    /// 検索のついでに集める索引の目印（<paramref name="blockLines"/> 行ごとの行頭位置）。
+    /// 数え方は <see cref="SparseLineIndex"/> と同じ——'\n' を数え、その本数が区切りに達した位置を控える。
+    /// </summary>
+    public sealed class IndexMarks(int blockLines)
+    {
+        private readonly List<long> _marks = [];
+
+        /// <summary>控えた位置（先頭の BOM 位置は含まない。索引側が入れる）。</summary>
+        public IReadOnlyList<long> Marks => _marks;
+
+        /// <summary>ファイル全体の '\n' の数。</summary>
+        public long NewlineCount { get; private set; }
+
+        /// <summary>ファイルの最後のバイト（末尾に改行があるかの判定に使う）。</summary>
+        public byte LastByte { get; private set; }
+
+        internal void Take(ReadOnlySpan<byte> region, long regionBase, long firstLine)
+        {
+            long line = firstLine;
+            for (int i = 0; i < region.Length; )
+            {
+                int nl = region[i..].IndexOf((byte)'\n');
+                if (nl < 0) break;
+                i += nl + 1;
+                line++;
+                NewlineCount++;
+                if (line % blockLines == 0) _marks.Add(regionBase + i);
+            }
+            if (region.Length > 0) LastByte = region[^1];
+        }
+
+        /// <summary>バッファに収まらない長大行を読み飛ばしたとき（その行の改行1本を数える）。</summary>
+        internal void Skip(long lineOfSkipped, long nextLineStart)
+        {
+            NewlineCount++;
+            LastByte = (byte)'\n';
+            if ((lineOfSkipped + 1) % blockLines == 0) _marks.Add(nextLineStart);
+        }
+
+        internal void Finish(long fileLength, long totalLines) { FileLength = fileLength; TotalLines = totalLines; }
+
+        public long FileLength { get; private set; }
+        public long TotalLines { get; private set; }
     }
 }
