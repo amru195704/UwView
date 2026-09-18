@@ -6,7 +6,9 @@
 
 📥 **Download: [GitHub Releases](https://github.com/amru195704/UwView/releases/latest)** (Windows / macOS / Linux archives, with `SHA256SUMS`)
 
-**A memory-thrifty, high-speed viewer for text files of 258.68 GB and 4.5 billion lines.**
+**258.68 GB and 4.5 billion lines — find it in the terminal, read it in the window.**
+
+A tool for **investigating** huge text files. Search with `uvf` in the terminal, add `-open`, and the lines it found appear in the window — **the window does not search again** (v1.6.4+). The same engine is looking at the same single file.
 
 | Largest tested so far | |
 |---|---|
@@ -114,14 +116,20 @@ Options (spelled the same as in `uvp`):
 | `-i` | ignore case (v1.6.3+) |
 | `-E` | treat the pattern as a regular expression (v1.6.3+) |
 | `-v` | print the lines that do **not** match (v1.6.3+) |
-| `-open` | show the results in the app instead of stdout (cannot be combined with `-i`/`-E`/`-v`; Pro's `uvp -open` can) |
+| `-open` | show the results in the app instead of stdout (can be combined with `-i`/`-E`/`-v` from v1.6.5) |
 
 - Output is **`line<TAB>text`**. Lines are printed in full (the 8,192-character display cut-off does not apply)
 - **Exit codes are grep's**: `0` found / `1` not found / `2` error. `if uvf app.log 'FATAL'; then …` works as written
 - If the hit limit (unlimited by default) cuts the output short, `uvf` returns `2`, so a script cannot mistake truncated output for success
 - With `-open`, the results found by the CLI are **handed straight to the window** (v1.6.4+), so the app does not repeat the search — even a 50 GB file is read once, not twice. Only if the file changed in between does the app search again
 - `uvf` is a tiny launcher that starts the app with `--uvf` (no second copy of .NET, so the download barely grows). **To call it by name, register it from Help → "Command line setup…"**
-- Compressed files (`.gz`) are not accepted by the `uvf` search. Use `uvf -open file.gz` to open them in the app
+- Compressed files (`.gz`): **search does not accept them, but `-open` does open them**
+
+| Form | What happens |
+|---|---|
+| `uvf file.gz term` | **Not accepted** — returns `2` and points you at `uvf -open file.gz` |
+| `uvf -open file.gz term` | The app opens (the "expand and open" route) |
+| `uvf file.gz term -open` | The app opens (**the v1.6.4 handoff does not apply**) |
 
 Narrowing (two terms), context lines (`-C`), frequency counts (`-uniq`), ordered search (`-seq`), `-out .gz`, reading and writing `.uwvz`, and `-extract` belong to **Pro's `uvp`** ([uvp measured against ripgrep](https://uvp.y42u.net/en/blog/uvp-cli-release-vs-ripgrep-en/)).
 
@@ -136,9 +144,9 @@ Open a `.gz` and the app asks how. **"Expand and open"** writes the decompressed
 
 ![UwView — a 51 GB / 892-million-line OSM Japan file in line mode](press-kit/screenshots/line-mode.png)
 
-UwView is a rebuild (in [Avalonia UI](https://avaloniaui.net/)) of a large-text viewer originally published on the Japanese "Vector" archive. Ordinary editors choke around a million lines; UwView never loads the whole file into memory and **renders only the lines currently on screen**, so it opens huge line-count files — the kind produced by RDB or XML dumps — instantly. The largest file tested so far is **4,509,830,821 lines / 258.68 GB** (the whole United States OpenStreetMap extract, expanded to XML). The timings were measured with UwView Pro ([details](#real-data--openstreetmap-usa-25868-gb--45-billion-lines-uwview-pro)), but **the free edition has been confirmed to open and search the same 258.68 GB file** (2026-09-11). Until recently the largest confirmed was 892 million lines / ~51 GB (OSM Japan); that ceiling has now moved about 5× higher. If anyone finds the real limit, please let me know.
+UwView is a rebuild (in [Avalonia UI](https://avaloniaui.net/)) of a large-text viewer originally published on the Japanese "Vector" archive. **It is no longer only a viewer**: the window and the command line now investigate the same file together. Ordinary editors choke around a million lines; UwView never loads the whole file into memory and **renders only the lines currently on screen**, so it opens huge line-count files — the kind produced by RDB or XML dumps — instantly. The largest file tested so far is **4,509,830,821 lines / 258.68 GB** (the whole United States OpenStreetMap extract, expanded to XML). The timings were measured with UwView Pro ([details](#real-data--openstreetmap-usa-25868-gb--45-billion-lines-uwview-pro)), but **the free edition has been confirmed to open and search the same 258.68 GB file** (2026-09-11). Until recently the largest confirmed was 892 million lines / ~51 GB (OSM Japan); that ceiling has now moved about 5× higher. If anyone finds the real limit, please let me know.
 
-It is a **viewer**, not an editor (read-only).
+The free edition **never writes to your files** (editing is Pro's Edit Upgrade).
 
 ## 📣 Announcement: UwView Pro is now available (Windows, macOS & Linux)
 
@@ -175,7 +183,7 @@ Measured against the well-known large-log viewer **[klogg](https://klogg.filimon
 
 ## Highlights
 
-*Current stable version: **v1.6.4** — `-open` now hands the CLI's hits to the window, so the file is read once instead of twice. v1.6.3 rebuilt `uvf` as a single pass (50 GB: 205 s → 51 s) and added `-i`/`-E`/`-v`. v1.6.0 added the `uvf` command and direct opening of gzip files.* (v1.5.1 was the previous feature release.) (v1.3.0 and v1.4.0 aligned the version number with UwView Pro and were functionally identical to v1.2.2, apart from one fix in v1.4.0: in line mode the status bar always showed 0% for the scroll position. **v1.5.1 is a feature release for the free edition** — opening files from Finder/Explorer, a search progress dialog and a record of elapsed times, more options when saving search results, and a first-launch notice in the browser build. **On macOS it is now a signed, notarized DMG.**)
+*Current stable version: **v1.6.5** — `-open` can now be combined with `-i`/`-E`/`-v`. v1.6.4 made `-open` hand the CLI's hits to the window, so the file is read once instead of twice. v1.6.3 rebuilt `uvf` as a single pass (50 GB: 205 s → 51 s), added `-i`/`-E`/`-v`, and brought the free edition the unlimited-by-default search limit introduced in v1.6.2. v1.6.0 added the `uvf` command and direct opening of gzip files.* (v1.5.1 was the previous feature release.) (v1.3.0 and v1.4.0 aligned the version number with UwView Pro and were functionally identical to v1.2.2, apart from one fix in v1.4.0: in line mode the status bar always showed 0% for the scroll position. **v1.5.1 is a feature release for the free edition** — opening files from Finder/Explorer, a search progress dialog and a record of elapsed times, more options when saving search results, and a first-launch notice in the browser build. **On macOS it is now a signed, notarized DMG.**)
 
 - 🚀 **Instant display of gigantic files** — billions of lines with a tiny memory footprint (largest measured: 258.68 GB / 4,509,830,821 lines — **reached by the free edition too**). The file body is never resident; the index is ~6 MB at 200 M lines.
 - 📖 **Progressive open** — shows content the instant you open it (page mode) → builds the index in the background → promotes to line mode when done.
@@ -356,7 +364,7 @@ Self-contained archives (no .NET install required) are available from **[GitHub 
 | `UwView-<version>-linux-aarch64.tar.gz` | Linux (ARM64) |
 | `UwView-<version>-linux-x86_64.tar.gz` | Linux (x86_64) |
 
-> About version numbers: v1.6.4 is a free-edition feature release (the `-open` handoff). v1.6.3 is also a free-edition feature release (the `uvf` rebuild); v1.6.1 and v1.6.2 were not distributed for the free edition. v1.6.0 ships for both the free edition and Pro (the free edition gains `uvf` and gzip support). There is no free-edition v1.5.0 — it was a Pro-only release, so the free edition goes from v1.4.0 to v1.5.1. v1.3.0 and v1.4.0 unified version numbering with [UwView Pro](https://uvp.y42u.net/pro/) and **were functionally identical to v1.2.2** (v1.4.0 adds one bug fix).
+> About version numbers: v1.6.5 is a free-edition feature release (`-open` combined with `-i`/`-E`/`-v`). v1.6.4 is also one (the `-open` handoff), as is v1.6.3 (the `uvf` rebuild); v1.6.1 and v1.6.2 were not distributed for the free edition, so the unlimited-by-default search limit made in v1.6.2 first reached the free edition in v1.6.3. v1.6.0 ships for both the free edition and Pro (the free edition gains `uvf` and gzip support). There is no free-edition v1.5.0 — it was a Pro-only release, so the free edition goes from v1.4.0 to v1.5.1. v1.3.0 and v1.4.0 unified version numbering with [UwView Pro](https://uvp.y42u.net/pro/) and **were functionally identical to v1.2.2** (v1.4.0 adds one bug fix).
 
 macOS: open the DMG and drag `UwView.app` to Applications. Windows / Linux: unpack and run the bundled executable (`UwView.exe` / `UwView`).
 

@@ -21,7 +21,7 @@ Last updated: 2026-07 ・ Maintainer: **y4u (amru195704)**
 | 項目 | 内容 |
 |------|------|
 | 名称 / Name | UwView |
-| 種別 / Category | 大容量テキストビューア（閲覧専用）/ Large-text viewer (read-only) |
+| 種別 / Category | 巨大テキストの調査ツール（画面＋コマンドライン・無料版は書き換えなし）/ Huge-text investigation tool (GUI + CLI; the free edition does not write) |
 | 対応OS / Platforms | Windows, macOS, Linux (desktop) ＋ Browser (WASM) |
 | 技術 / Tech | .NET 10, Avalonia UI 12 (custom Skia rendering) |
 | 言語 / UI languages | 日本語 / English（実行時切替）|
@@ -98,7 +98,7 @@ Synthetic 200 M lines / 5.1 GB: index build 9.7 s, random GetLine avg 0.005 ms, 
 
 > **EN:** UwView is a cross-platform, memory-thrifty viewer for gigantic text files, verified to open a 258.68 GB / 4.5-billion-line file. Free for personal and internal business use under the PolyForm Internal Use License. Windows / macOS / Linux and a browser build. https://github.com/amru195704/UwView
 
-> **JA:** UwView は、258.68GB・45億行のファイルを開けることを実証した、省メモリな巨大テキストビューア。PolyForm Internal Use License のもと個人・社内業務利用は無料。Windows / macOS / Linux とブラウザ版。https://github.com/amru195704/UwView
+> **JA:** UwView は、258.68GB・45億行のファイルを**端末で探して、画面で読む**ための道具。CLI `uvf` が探した結果をそのまま画面へ渡すので、同じファイルを2度読みません。PolyForm Internal Use License のもと個人・社内業務利用は無料。Windows / macOS / Linux とブラウザ版。https://github.com/amru195704/UwView
 
 ---
 
