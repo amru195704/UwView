@@ -119,6 +119,27 @@ public sealed class DocumentSession : IAsyncDisposable
     public event EventHandler? SearchUpdated;
     public event EventHandler? SearchCompleted;
 
+    /// <summary>
+    /// <b>すでに分かっている検索結果をそのまま受け取る</b>（<c>uvf ファイル 語 -open</c> の受け渡し）。
+    /// CLI がファイルを通しで読んで見つけた行頭位置を渡してくるので、画面は同じ検索をやり直さない
+    /// （50GB なら丸ごと1回読み直す時間が浮く。オーナー指示 2026-09-18）。
+    /// 条件の表示・強調表示は普通の検索と同じに整える。
+    /// </summary>
+    public void AdoptSearchResults(SearchOptions options, IReadOnlyList<long> hits, bool truncated)
+    {
+        CancelSearch();
+        _searchHits.Clear();
+        _searchHits.AddRange(hits);
+        ActiveSearch = options;
+        SearchTruncated = truncated;
+        SearchProgress = 1;
+        IsSearching = false;
+        try { SearchHighlightRegex = SearchService.BuildRegex(options); }
+        catch (ArgumentException) { SearchHighlightRegex = null; }
+        SearchUpdated?.Invoke(this, EventArgs.Empty);
+        SearchCompleted?.Invoke(this, EventArgs.Empty);
+    }
+
     public async Task StartSearchAsync(SearchOptions options)
     {
         CancelSearch();

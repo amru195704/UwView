@@ -82,7 +82,7 @@ Options (spelled the same as in `uvp`):
 - Output is **`line<TAB>text`**. Lines are printed in full (the 8,192-character display cut-off does not apply)
 - **Exit codes are grep's**: `0` found / `1` not found / `2` error. `if uvf app.log 'FATAL'; then …` works as written
 - If the hit limit (unlimited by default) cuts the output short, `uvf` returns `2`, so a script cannot mistake truncated output for success
-- Handing over with `-open` re-runs the same search in the window, so the results match
+- With `-open`, the results found by the CLI are **handed straight to the window** (v1.6.4+), so the app does not repeat the search — even a 50 GB file is read once, not twice. Only if the file changed in between does the app search again
 - `uvf` is a tiny launcher that starts the app with `--uvf` (no second copy of .NET, so the download barely grows). **To call it by name, register it from Help → "Command line setup…"**
 - Compressed files (`.gz`) are not accepted by the `uvf` search. Use `uvf -open file.gz` to open them in the app
 

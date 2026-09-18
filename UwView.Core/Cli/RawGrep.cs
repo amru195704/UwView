@@ -33,7 +33,8 @@ public static class RawGrep
     private const int MaxLineMatchBytes = 64 * 1024; // 長大行はこの範囲でマッチ判定（SearchService と同じ）
 
     /// <summary>ヒット行を受け取る係（行は 0 始まり・末尾の改行は取り除いてある）。</summary>
-    public delegate void LineSink(long lineIndex, ReadOnlySpan<byte> line);
+    /// <param name="lineStart">その行の行頭バイト位置（-open で画面へ渡すときに使う）。</param>
+    public delegate void LineSink(long lineIndex, long lineStart, ReadOnlySpan<byte> line);
 
     /// <param name="invert">当てはまら<b>ない</b>行を出す（grep -v / uvf -v）。</param>
     public static async Task<RawGrepOutcome> RunAsync(
@@ -104,7 +105,7 @@ public static class RawGrep
                     long end = await LineEndAsync(src, bufBase + filled, fileLength, ct);
                     if (hit)
                     {
-                        await EmitLongLineAsync(src, bufBase, end, lineNo, sink, ct);
+                        await EmitLongLineAsync(src, bufBase, end, lineNo, sink, ct);   // 行頭＝bufBase
                         if (++hits >= limit) { truncated = true; break; }
                     }
                     bufBase = pos = end + 1;
@@ -138,9 +139,11 @@ public static class RawGrep
             // 手がかりの無い区間は改行をまとめて数えるだけで済み、行の切り出しもデコードもしない。
             // -v は全行を出す判断が要るので、1行ずつ見る道（ScanLines）へ回す。
             long Scan(ReadOnlySpan<byte> region, long regionBase, long firstLine)
-                => !invert && (literal || hasClue) ? ScanByClue(region, firstLine) : ScanLines(region, firstLine);
+                => !invert && (literal || hasClue)
+                    ? ScanByClue(region, regionBase, firstLine)
+                    : ScanLines(region, regionBase, firstLine);
 
-            long ScanByClue(ReadOnlySpan<byte> region, long firstLine)
+            long ScanByClue(ReadOnlySpan<byte> region, long regionBase, long firstLine)
             {
                 prefilter?.Reset();
                 int cursor = 0;            // まだ見ていない範囲の先頭（必ず行頭）
@@ -167,7 +170,7 @@ public static class RawGrep
                     // 素の文字列なら手がかり＝一致そのもの。正規表現はこの行に当ててみる
                     if (literal || Matches(text))
                     {
-                        Emit(line, text, stripped: true);
+                        Emit(line, regionBase + lineStart, text, stripped: true);
                         if (truncated) return line + 1;
                     }
 
@@ -197,7 +200,7 @@ public static class RawGrep
             }
 
             // -v・手がかりの無い正規表現: 1行ずつ見る
-            long ScanLines(ReadOnlySpan<byte> region, long firstLine)
+            long ScanLines(ReadOnlySpan<byte> region, long regionBase, long firstLine)
             {
                 prefilter?.Reset();
                 int candidate = prefilter is null ? -1 : prefilter.IndexOf(region, 0);
@@ -222,7 +225,7 @@ public static class RawGrep
 
                     if ((maybe && Matches(text)) != invert)
                     {
-                        Emit(line, text, stripped: true);
+                        Emit(line, regionBase + start, text, stripped: true);
                         if (truncated) return line + 1;
                     }
 
@@ -234,10 +237,10 @@ public static class RawGrep
                 return line;
             }
 
-            void Emit(long line, ReadOnlySpan<byte> text, bool stripped = false)
+            void Emit(long line, long lineStart, ReadOnlySpan<byte> text, bool stripped = false)
             {
                 if (!stripped && text.Length > 0 && text[^1] == (byte)'\r') text = text[..^1];
-                sink(line, text);
+                sink(line, lineStart, text);
                 if (++hits >= limit) truncated = true;
             }
 
@@ -346,6 +349,6 @@ public static class RawGrep
         }
         var text = line.AsSpan(0, (int)got);
         if (text.Length > 0 && text[^1] == (byte)'\r') text = text[..^1];
-        sink(lineIndex, text);
+        sink(lineIndex, start, text);
     }
 }

@@ -408,4 +408,89 @@ public class RawGrepTests : IDisposable
         Assert.Equal("3\t3 other\n", output);
         Assert.Equal(Reference(P("iv.log"), "highway", icase: true, regex: false, invert: true), output);
     }
+
+    // ── -open の受け渡し（オーナー指示 2026-09-18）────────────────
+
+    [Fact]
+    public async Task openでは検索してから結果を画面へ渡す()
+    {
+        var sb = new StringBuilder();
+        for (int i = 0; i < 2_000; i++) sb.Append($"{i} {(i % 7 == 0 ? "ERROR" : "info")} x\n");
+        File.WriteAllText(P("open.log"), sb.ToString());
+
+        string? handoff = null;
+        var env = new UvfEnvironment
+        {
+            StdOut = new MemoryStream(), StdErr = new StringWriter(), Japanese = false,
+            LaunchGui = (_, _) => true,
+        };
+        // LaunchGui が呼ばれた時点で受け渡し先が入っていること（順序が逆だと画面へ渡らない）
+        var withCapture = new UvfEnvironment
+        {
+            StdOut = env.StdOut, StdErr = env.StdErr, Japanese = false,
+            LaunchGui = (_, _) => { handoff = null; return true; },
+        };
+        Assert.Equal(UvfExit.Found, await UvfCli.RunAsync([P("open.log"), "ERROR", "-open"], withCapture));
+        handoff = withCapture.HandoffPath;
+
+        Assert.NotNull(handoff);
+        var taken = CliHandoff.TakeFrom(handoff!);
+        Assert.NotNull(taken);
+        Assert.False(File.Exists(handoff!));                       // 一度きり（読んだら消える）
+        Assert.Equal("ERROR", taken!.Pattern);
+        Assert.True(taken.Matches(new FileInfo(P("open.log")).Length));
+        Assert.False(taken.Truncated);
+
+        // 渡したのは行頭の位置。stdout に出る行番号と同じ行を指していること
+        var (_, output) = await Search(P("open.log"), "ERROR");
+        Assert.Equal(output.TrimEnd('\n').Split('\n').Length, taken.Hits.Length);
+
+        var text = File.ReadAllBytes(P("open.log"));
+        foreach (long at in taken.Hits)
+        {
+            Assert.True(at == 0 || text[at - 1] == (byte)'\n');    // 行頭を指している
+            Assert.Contains("ERROR", Encoding.UTF8.GetString(text, (int)at, 20));
+        }
+    }
+
+    [Fact]
+    public async Task 中身が変わっていたら渡された結果は使わない()
+    {
+        File.WriteAllText(P("chg.log"), "1 ERROR\n2 info\n");
+        var env = new UvfEnvironment
+        {
+            StdOut = new MemoryStream(), StdErr = new StringWriter(), Japanese = false,
+            LaunchGui = (_, _) => true,
+        };
+        await UvfCli.RunAsync([P("chg.log"), "ERROR", "-open"], env);
+
+        File.AppendAllText(P("chg.log"), "3 ERROR\n");             // 渡したあとに増えた
+        var taken = CliHandoff.TakeFrom(env.HandoffPath!);
+        Assert.NotNull(taken);
+        Assert.False(taken!.Matches(new FileInfo(P("chg.log")).Length));
+    }
+
+    [Fact]
+    public async Task 壊れた受け渡しは黙って捨てる()
+    {
+        File.WriteAllText(P("broken.uvfh"), "これは受け渡しファイルではない");
+        Assert.Null(CliHandoff.TakeFrom(P("broken.uvfh")));
+        Assert.False(File.Exists(P("broken.uvfh")));               // 消えている
+        Assert.Null(CliHandoff.TakeFrom(P("no-such-file.uvfh")));
+        await Task.CompletedTask;
+    }
+
+    [Fact]
+    public async Task openでも_i_や_v_は受け付けない()
+    {
+        // -open は素の検索だけ（画面側に受け口が無い）。ここが崩れると受け渡しの条件も合わなくなる
+        File.WriteAllText(P("o2.log"), "1 ERROR\n");
+        var env = new UvfEnvironment
+        {
+            StdOut = new MemoryStream(), StdErr = new StringWriter(), Japanese = false,
+            LaunchGui = (_, _) => true,
+        };
+        Assert.Equal(UvfExit.Error, await UvfCli.RunAsync([P("o2.log"), "ERROR", "-i", "-open"], env));
+        Assert.Null(env.HandoffPath);
+    }
 }

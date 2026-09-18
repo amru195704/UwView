@@ -375,7 +375,7 @@ public partial class MainView : UserControl
     /// uvf の stdout 出力と同じ答えになるよう、<b>普通の検索・大小区別</b>で行う
     /// （画面のチェック状態は使わない）。結果の出し方は画面で検索したときと同じ。
     /// </summary>
-    internal async Task SearchFromCliAsync(string pattern)
+    internal async Task SearchFromCliAsync(string pattern, string? hitsPath = null)
     {
         if (_vm?.ActiveTab is not { } tab) return;
 
@@ -387,6 +387,24 @@ public partial class MainView : UserControl
             tab.Session.IndexCompleted += OnDone;
             if (!tab.Session.IsIndexed) await done.Task;
             tab.Session.IndexCompleted -= OnDone;
+        }
+
+        // CLI がすでに探してあれば、その結果をそのまま使う（同じ検索をやり直さない）
+        if (hitsPath is not null && UwView.Core.Cli.CliHandoff.TakeFrom(hitsPath) is { } handoff
+            && handoff.Matches(tab.Session.Source.Length))
+        {
+            _vm.SearchIsRegex = handoff.Regex;
+            _vm.SearchIgnoreCase = handoff.IgnoreCase;
+            _vm.SearchText = handoff.Pattern;
+            PushSearchHistory(handoff.Pattern);
+            // 進捗ダイアログは出していないので、完了時の自動ポップアップはここで直接行う
+            _autoPopupPending = false;
+            tab.Session.AdoptSearchResults(handoff.ToOptions(), handoff.Hits, handoff.Truncated);
+            UpdateSearchInfo();
+            Minimap.InvalidateVisual();
+            TextView.Refresh();
+            if (handoff.Hits.Length > 0) OpenFilterResults();
+            return;
         }
 
         _vm.SearchIsRegex = false;
@@ -1052,7 +1070,9 @@ public partial class MainView : UserControl
             if (UwView.App.PendingCliSearch is { } pattern)
             {
                 UwView.App.PendingCliSearch = null;
-                await SearchFromCliAsync(pattern);
+                string? hits = UwView.App.PendingCliHits;
+                UwView.App.PendingCliHits = null;
+                await SearchFromCliAsync(pattern, hits);
             }
             return;
         }

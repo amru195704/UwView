@@ -84,4 +84,51 @@ public class CliOpenSearchTests : IDisposable
         Assert.Equal(["/tmp/b.log"], rest2);
         Assert.Null(bad);
     }
+
+    [AvaloniaFact]
+    public async Task CLIが渡した結果をそのまま使い検索し直さない()
+    {
+        string log = WriteLog();
+
+        // CLI と同じ手順で受け渡しファイルを作る
+        var env = new UvfEnvironment
+        {
+            StdOut = new MemoryStream(), StdErr = new StringWriter(), Japanese = false,
+            LaunchGui = (_, _) => true,
+        };
+        Assert.Equal(UvfExit.Found, await UvfCli.RunAsync([log, "ERROR", "-open"], env));
+        Assert.NotNull(env.HandoffPath);
+
+        // 画面側: 渡された結果を取り込む（同じ検索はしない）
+        var (window, view, vm) = UiHarness.OpenMainWindow();
+        var args = UwView.App.ExtractCliSearch(
+            [UvfCli.SearchArgument, Convert.ToBase64String(Encoding.UTF8.GetBytes("ERROR")),
+             CliHandoff.Argument, env.HandoffPath!, log], out var pattern, out var hits);
+        Assert.Equal(env.HandoffPath, hits);
+        UwView.App.PendingCliSearch = pattern;
+        UwView.App.PendingCliHits = hits;
+        view.RunStartup(args);
+
+        await UiHarness.WaitUntil(() => vm.ActiveTab is not null, "タブが開く");
+        await UiHarness.WaitUntil(() => vm.ActiveTab!.Session.SearchHits.Count > 0, "結果の取り込み");
+        await UiHarness.Pump();
+
+        var session = vm.ActiveTab!.Session;
+        Assert.False(session.IsSearching);
+        Assert.Equal("ERROR", session.ActiveSearch!.Pattern);
+        Assert.False(File.Exists(env.HandoffPath!));           // 使ったら消える
+
+        // CLI の stdout と同じ件数・同じ行
+        using var stdout = new MemoryStream();
+        await UvfCli.RunAsync([log, "ERROR"], new UvfEnvironment
+        {
+            StdOut = stdout, StdErr = new StringWriter(), Japanese = false,
+        });
+        var lines = Encoding.UTF8.GetString(stdout.ToArray()).Split('\n', StringSplitOptions.RemoveEmptyEntries);
+        Assert.Equal(lines.Length, session.SearchHits.Count);
+        Assert.Equal(long.Parse(lines[0].Split('\t')[0]),
+                     session.Document.OffsetToLineIndex(session.SearchHits[0]) + 1);
+
+        window.Close();
+    }
 }

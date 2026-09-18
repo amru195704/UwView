@@ -38,6 +38,13 @@ public sealed class UvfEnvironment
     /// <summary>GUI を起動する（ファイル・検索パターンはどちらも省略可）。起動できなければ false。</summary>
     public Func<string?, string?, bool>? LaunchGui { get; init; }
 
+    /// <summary>
+    /// -open のとき、CLI が見つけた結果を書いたファイル（<see cref="CliHandoff"/>）。
+    /// <see cref="LaunchGui"/> はこれが入っていれば GUI へ一緒に渡す（画面が検索し直さずに済む）。
+    /// UwView Pro の uvp は自前の受け渡しを持っているので、こちらは見ない。
+    /// </summary>
+    public string? HandoffPath { get; set; }
+
     public bool Japanese { get; init; } = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ja";
 
     /// <summary>
@@ -185,8 +192,19 @@ public static class UvfCli
         if (inv.Mode is UvfMode.OpenGui or UvfMode.SearchInGui)
         {
             string? file = inv.File is null ? null : Path.GetFullPath(inv.File);
+
+            // 検索まで頼まれているなら、ここで探してから渡す（画面が同じ検索をやり直さずに済む。
+            // 50GB なら丸ごと読み直す時間がそのまま浮く。オーナー指示 2026-09-18）
+            if (inv.Mode == UvfMode.SearchInGui && file is not null && inv.Pattern is { Length: > 0 })
+            {
+                var check = CompressedInput.Probe(file);
+                if (!check.IsCompressed && !check.IsRejected)
+                    env.HandoffPath = await CollectForGuiAsync(file, inv, ct);
+            }
+
             if (env.LaunchGui is null || !env.LaunchGui(file, inv.Pattern))
             {
+                if (env.HandoffPath is { } stale) { try { File.Delete(stale); } catch (IOException) { } }
                 Err(T("UwView（GUI）が見つかりません。インストールされているか確認してください",
                       "UwView (the app) was not found. Check that it is installed."));
                 return UvfExit.Error;
@@ -221,6 +239,31 @@ public static class UvfCli
     }
 
     /// <summary>
+    /// -open のときに、CLI 側で検索して結果を画面へ渡せる形にする（見つからなければ null＝画面が検索する）。
+    /// 出すのは行頭の位置だけなので、50GB でも数MB にしかならない。
+    /// </summary>
+    private static async Task<string?> CollectForGuiAsync(string path, UvfInvocation inv, CancellationToken ct)
+    {
+        try
+        {
+            await using var src = new SequentialFileByteSource(path);
+            var detected = EncodingDetector.Detect(src);
+            var options = new SearchOptions(inv.Pattern!, UseRegex: inv.Regex, IgnoreCase: inv.IgnoreCase);
+
+            var hits = new List<long>();
+            var outcome = await RawGrep.RunAsync(src, detected.BomLength, detected.Encoding, options, inv.Invert,
+                                                 (_, lineStart, _) => hits.Add(lineStart), ct);
+            return new CliHandoff(inv.Pattern!, inv.IgnoreCase, inv.Regex, inv.Invert,
+                                  src.Length, outcome.Truncated, [.. hits]).WriteTemp();
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidDataException
+                                       or OperationCanceledException)
+        {
+            return null;   // 渡せなくても困らない（画面が普通に検索する）
+        }
+    }
+
+    /// <summary>
     /// 1回読みの検索（指示書 2026-09-17）。索引を作らず、通しで読みながら
     /// 行番号・一致・本文をまとめて出す。読みは <see cref="SequentialFileByteSource"/>（pread）。
     /// 50GB の実測で 203 秒 → 60 秒台（媒体の帯域に近い）。
@@ -242,7 +285,7 @@ public static class UvfCli
             var writer = w;
             outcome = await RawGrep.RunAsync(src, detected.BomLength, encoding, options, inv.Invert, Write, ct);
 
-            void Write(long line, ReadOnlySpan<byte> text)
+            void Write(long line, long _, ReadOnlySpan<byte> text)
             {
                 writer.Write((line + 1).ToString(CultureInfo.InvariantCulture));
                 writer.Write('\t');

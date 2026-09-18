@@ -32,18 +32,22 @@ sealed class Program
         using var cts = new System.Threading.CancellationTokenSource();
         Console.CancelKeyPress += (_, e) => { e.Cancel = true; cts.Cancel(); };
 
-        return UvfCli.RunAsync(args, new UvfEnvironment
+        UvfEnvironment? env = null;
+        env = new UvfEnvironment
         {
             StdOut = Console.OpenStandardOutput(),
             StdErr = Console.Error,
             Japanese = CliLanguage.IsJapanese(CliLanguage.FreeSettingsFolder),   // アプリの設定で選んだ言語
-            // -open: 自分自身を GUI として起動し直す（検索パターンとファイルを渡す）
+            // -open: 自分自身を GUI として起動し直す（検索パターンとファイルを渡す）。
+            // CLI が先に探して結果を持っていれば、その置き場所も渡す（画面は検索し直さない）
             LaunchGui = (file, pattern) => CliHost.LaunchSelfAsGui(
                 (pattern is not null && file is not null
                     ? new[] { UvfCli.SearchArgument, Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(pattern)) }
                     : Array.Empty<string>())
+                .Concat(env!.HandoffPath is { } hits ? new[] { CliHandoff.Argument, hits } : Array.Empty<string>())
                 .Concat(file is null ? Array.Empty<string>() : new[] { file })),
-        }, cts.Token).GetAwaiter().GetResult();
+        };
+        return UvfCli.RunAsync(args, env, cts.Token).GetAwaiter().GetResult();
     }
 
     // Avalonia configuration, don't remove; also used by visual designer.

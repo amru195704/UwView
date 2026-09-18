@@ -32,6 +32,9 @@ public partial class App : Application
     /// </summary>
     public static string? PendingCliSearch { get; internal set; }
 
+    /// <summary>uvf -open が渡してきた検索結果の置き場所（一度使ったら消える）。</summary>
+    public static string? PendingCliHits { get; internal set; }
+
     /// <summary>uvf が GUI を起動するときに付ける引数名（uvf 側と同じ）。</summary>
     public const string CliSearchArgument = "--uvf-search";
 
@@ -40,8 +43,13 @@ public partial class App : Application
     /// 壊れていたら検索だけ諦める（ファイルは普通に開く。起動は止めない）。
     /// </summary>
     internal static string[] ExtractCliSearch(string[] args, out string? pattern)
+        => ExtractCliSearch(args, out pattern, out _);
+
+    /// <param name="hitsPath">CLI が見つけた結果の置き場所（<see cref="UwView.Core.Cli.CliHandoff"/>）。</param>
+    internal static string[] ExtractCliSearch(string[] args, out string? pattern, out string? hitsPath)
     {
         pattern = null;
+        hitsPath = null;
         var rest = new System.Collections.Generic.List<string>(args.Length);
         for (int i = 0; i < args.Length; i++)
         {
@@ -49,6 +57,11 @@ public partial class App : Application
             {
                 try { pattern = System.Text.Encoding.UTF8.GetString(System.Convert.FromBase64String(args[++i])); }
                 catch (System.FormatException) { pattern = null; }
+                continue;
+            }
+            if (args[i] == UwView.Core.Cli.CliHandoff.Argument && i + 1 < args.Length)
+            {
+                hitsPath = args[++i];
                 continue;
             }
             rest.Add(args[i]);
@@ -127,8 +140,9 @@ public partial class App : Application
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             // uvf -open から来た検索パターンを抜く（残りがファイル指定）
-            LaunchFileArgs = ExtractCliSearch(desktop.Args ?? [], out var pattern);
+            LaunchFileArgs = ExtractCliSearch(desktop.Args ?? [], out var pattern, out var hitsPath);
             PendingCliSearch = pattern;
+            PendingCliHits = hitsPath;
             desktop.MainWindow = new MainWindow
             {
                 DataContext = new MainViewModel()
