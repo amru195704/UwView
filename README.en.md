@@ -43,6 +43,18 @@
 
 > **One-time $129 / $9 per month** (Edit Upgrade +$120 / +$8). A **14-day free trial** includes the editing features → [product page](https://uvp.y42u.net/en/pro-en/)
 
+## 🆕 v1.6.4: `-open` hands the hits straight to the window
+
+With `uvf file 'pattern' -open`, the lines the CLI found are now **handed directly to the GUI**. The window does not search again.
+
+| | up to v1.6.3 | v1.6.4 |
+|---|---|---|
+| `uvf 50GB 'pattern' -open` | CLI once + window once = **the file is read twice** | **once** |
+
+Only if the file changed in between does the window fall back to searching normally. Pro's `uvp -open` behaves the same way.
+
+If your habit is "find it in the terminal, read it in the window", the wait is now half of what it was.
+
 ## 🆕 v1.6.3: `uvf` now runs at ripgrep speed
 
 The free edition's CLI, `uvf`, has been rebuilt. It reads the file **once, straight through** — line numbers, matches and line text all come out of the same pass — so it lands within a few percent of ripgrep from 3 GB to 50 GB, in about 50 MB of memory. (Up to v1.6.2 it built a line index first, which is why 50 GB took 205 s.)
@@ -138,7 +150,7 @@ Measured against the well-known large-log viewer **[klogg](https://klogg.filimon
 
 ## Highlights
 
-*Current stable version: **v1.6.3** — `uvf` rebuilt as a single pass (50 GB: 205 s → 51 s) with `-i`/`-E`/`-v` added. v1.6.0 added the `uvf` command and direct opening of gzip files.* (v1.5.1 was the previous feature release.) (v1.3.0 and v1.4.0 aligned the version number with UwView Pro and were functionally identical to v1.2.2, apart from one fix in v1.4.0: in line mode the status bar always showed 0% for the scroll position. **v1.5.1 is a feature release for the free edition** — opening files from Finder/Explorer, a search progress dialog and a record of elapsed times, more options when saving search results, and a first-launch notice in the browser build. **On macOS it is now a signed, notarized DMG.**)
+*Current stable version: **v1.6.4** — `-open` now hands the CLI's hits to the window, so the file is read once instead of twice. v1.6.3 rebuilt `uvf` as a single pass (50 GB: 205 s → 51 s) and added `-i`/`-E`/`-v`. v1.6.0 added the `uvf` command and direct opening of gzip files.* (v1.5.1 was the previous feature release.) (v1.3.0 and v1.4.0 aligned the version number with UwView Pro and were functionally identical to v1.2.2, apart from one fix in v1.4.0: in line mode the status bar always showed 0% for the scroll position. **v1.5.1 is a feature release for the free edition** — opening files from Finder/Explorer, a search progress dialog and a record of elapsed times, more options when saving search results, and a first-launch notice in the browser build. **On macOS it is now a signed, notarized DMG.**)
 
 - 🚀 **Instant display of gigantic files** — billions of lines with a tiny memory footprint (largest measured: 258.68 GB / 4,509,830,821 lines — **reached by the free edition too**). The file body is never resident; the index is ~6 MB at 200 M lines.
 - 📖 **Progressive open** — shows content the instant you open it (page mode) → builds the index in the background → promotes to line mode when done.
@@ -152,7 +164,7 @@ Measured against the well-known large-log viewer **[klogg](https://klogg.filimon
 - ↔️ **Horizontal scrolling** (v1.2.2+) — read long lines (OSM XML, JSON logs, single-line CSV) all the way to the end. Horizontal scrollbar, trackpad swipe, Shift+wheel and `←`/`→` keys (`Home` returns to the start of the line; `Cmd/Ctrl+Home` goes to the top of the file). **Line numbers stay pinned on the left** while only the text moves. The search-results popup scrolls horizontally too.
 - ⭐ **Bookmarks** — toggle any line, jump prev/next. Kept by byte offset, so they survive encoding switches. Shown in the minimap.
 - 📡 **Real-time tail** — detects appends, re-maps mmap, extends the index incrementally, and auto-scrolls to the end. Opens logs that are still being written (FileShare.ReadWrite).
-- 🧰 **The `uvf` command** (v1.6.0+, rebuilt in v1.6.3 to ripgrep speed) — search from the terminal, output `line<TAB>text`, grep-compatible exit codes (0/1/2), `-i`/`-E`/`-v`, and `-open` to hand results to the GUI ([details](#-v163-uvf-now-runs-at-ripgrep-speed)).
+- 🧰 **The `uvf` command** (v1.6.0+, rebuilt in v1.6.3 to ripgrep speed) — search from the terminal, output `line<TAB>text`, grep-compatible exit codes (0/1/2), `-i`/`-E`/`-v`, and `-open` to hand results to the GUI (from v1.6.4 the window no longer re-searches; [details](#-v164--open-hands-the-hits-straight-to-the-window)).
 - 🗜 **Opens gzip directly** (v1.6.0+) — a `.gz` is expanded into the same folder and opened. Truncated, doubly-compressed and tar files are refused with a reason. `.zip` comes in a later version.
 - 🌐 **Bilingual UI** — Japanese / English, switchable at runtime (persisted).
 - 🖥 **Identical rendering on every OS** — Avalonia's own Skia rendering makes Windows / macOS / Linux look the same. A browser (WASM) build ships a bundled Japanese font.
@@ -296,7 +308,7 @@ Self-contained archives (no .NET install required) are available from **[GitHub 
 | `UwView-<version>-linux-aarch64.tar.gz` | Linux (ARM64) |
 | `UwView-<version>-linux-x86_64.tar.gz` | Linux (x86_64) |
 
-> About version numbers: v1.6.3 is a free-edition feature release (the `uvf` rebuild); v1.6.1 and v1.6.2 were not distributed for the free edition. v1.6.0 ships for both the free edition and Pro (the free edition gains `uvf` and gzip support). There is no free-edition v1.5.0 — it was a Pro-only release, so the free edition goes from v1.4.0 to v1.5.1. v1.3.0 and v1.4.0 unified version numbering with [UwView Pro](https://uvp.y42u.net/pro/) and **were functionally identical to v1.2.2** (v1.4.0 adds one bug fix).
+> About version numbers: v1.6.4 is a free-edition feature release (the `-open` handoff). v1.6.3 is also a free-edition feature release (the `uvf` rebuild); v1.6.1 and v1.6.2 were not distributed for the free edition. v1.6.0 ships for both the free edition and Pro (the free edition gains `uvf` and gzip support). There is no free-edition v1.5.0 — it was a Pro-only release, so the free edition goes from v1.4.0 to v1.5.1. v1.3.0 and v1.4.0 unified version numbering with [UwView Pro](https://uvp.y42u.net/pro/) and **were functionally identical to v1.2.2** (v1.4.0 adds one bug fix).
 
 macOS: open the DMG and drag `UwView.app` to Applications. Windows / Linux: unpack and run the bundled executable (`UwView.exe` / `UwView`).
 

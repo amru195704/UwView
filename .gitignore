@@ -456,16 +456,12 @@ $RECYCLE.BIN/
 # ローカル検証用の生成テストデータ（巨大なため追跡しない）
 3-test/data/
 
-# 配布アーカイブ（生成物）※ただし配布物そのものは追跡対象にする
-# macOS は署名・公証のため .dmg で配布する（2026-09-12〜。それ以前は .zip）
-dist/*
-!dist/*.zip
-!dist/*.tar.gz
-!dist/*.dmg
-!dist/SHA256SUMS*
+# 配布アーカイブ（生成物）— 2026-09-18 から一切追跡しない
+# 以前は dist/ の .dmg / .zip / .tar.gz / SHA256SUMS を例外的に追跡していたが、
+#   ・clone が 300MB 超になり、版を重ねるごとに履歴へ積み上がる
+#   ・clone で持って行かれたぶんは Releases の download_count に入らず、配布数が測れない
+# の2点から、配布は GitHub Releases に一本化した。
+dist/
 
 # 内部向けドキュメント（企画・販売戦略・価格・ライセンス方針など）は非公開
 0-claude/
-
-# サイト用の版数なしの複製（dist の6点と同じ中身。二重にコミットしない）
-dist/latest/
