@@ -175,4 +175,5 @@ public class SearchProgressTests
         }
         finally { File.Delete(path); }
     }
+
 }

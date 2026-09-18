@@ -636,4 +636,31 @@ public class RawGrepTests : IDisposable
         Assert.Equal(0, completed);                            // 作り直していない
         Assert.Equal(2, session.SearchHits.Count);
     }
+
+    [Fact]
+    public async Task 索引と同時の検索は呼び出し元のスレッドを塞がない()
+    {
+        // オーナー報告 2026-09-19「索引作成中の検索でハングした」。
+        // 統合パスが呼び出し元（画面では UI スレッド）でそのまま回っていたのが原因。
+        // ヒットの通知が<b>別スレッド</b>から来ることで、背景へ逃がせていることを確かめる
+        var sb = new StringBuilder();
+        for (int i = 0; i < 50_000; i++) sb.Append($"{i:D6} {(i % 10 == 0 ? "ERROR" : "info")} x\n");
+        File.WriteAllText(P("thread.log"), sb.ToString());
+
+        await using var session = DocumentSession.Open(P("thread.log"));
+        Assert.False(session.IsIndexed);                     // 統合パスへ入る条件
+
+        int caller = Environment.CurrentManagedThreadId;
+        int scanThread = caller;
+        session.SearchUpdated += (_, _) =>
+        {
+            if (session.SearchHits.Count > 0) scanThread = Environment.CurrentManagedThreadId;
+        };
+
+        await session.StartSearchAsync(new SearchOptions("ERROR"));
+
+        Assert.NotEqual(caller, scanThread);                 // 呼び出し元で回していない
+        Assert.True(session.IsIndexed);
+        Assert.Equal(5_000, session.SearchHits.Count);
+    }
 }

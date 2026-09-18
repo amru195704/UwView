@@ -136,7 +136,7 @@ public sealed class SparseLineIndex
         byte lastByte = _lastByte;
         long contentBytes = targetLength - BomLength;
 
-        const int BufSize = 1 << 20; // 1MB
+        const int BufSize = 4 << 20; // 4MB（1MB より 1 割ほど速い。pread の実測 889→966 MB/s）
         byte[] buf = ArrayPool<byte>.Shared.Rent(BufSize);
         try
         {
@@ -148,14 +148,17 @@ public sealed class SparseLineIndex
                 int got = await src.ReadAsync(pos, buf.AsMemory(0, want), ct);
                 if (got <= 0) break;
 
-                for (int i = 0; i < got; i++)
+                // 改行は1バイトずつ比べず、SIMD の IndexOf で跳ぶ。
+                // 258GB の実測で索引作成だけ 696MB/s と、検索（880MB/s）や媒体（942MB/s）に負けていた
+                //（1バイトずつ＝約1GB/s が頭打ち。IndexOf なら 3.4GB/s 出る。オーナー計測 2026-09-18）
+                var span = buf.AsSpan(0, got);
+                for (int i = 0; i < span.Length; )
                 {
-                    if (buf[i] == (byte)'\n')
-                    {
-                        lineNo++;
-                        if (lineNo % BlockLines == 0)
-                            _checkpoints.Add(pos + i + 1);
-                    }
+                    int nl = span[i..].IndexOf((byte)'\n');
+                    if (nl < 0) break;
+                    i += nl + 1;
+                    lineNo++;
+                    if (lineNo % BlockLines == 0) _checkpoints.Add(pos + i);
                 }
                 lastByte = buf[got - 1];
                 pos += got;

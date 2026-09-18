@@ -257,7 +257,9 @@ public sealed class DocumentSession : IAsyncDisposable
         long fileLength = Math.Max(1, ScanSource.Length - Document.BomLength);
         long reported = 0;
 
-        var outcome = await Cli.RawGrep.RunAsync(
+        // 走査は必ず背景スレッドへ逃がす（SearchService と同じ）。
+        // pread は同期で返るので、UI スレッドのまま回すと画面が固まる（オーナー報告 2026-09-19）
+        var outcome = await Task.Run(() => Cli.RawGrep.RunAsync(
             ScanSource, Document.BomLength, Document.Encoding, options, invert: false,
             (_, lineStart, _) =>
             {
@@ -268,7 +270,7 @@ public sealed class DocumentSession : IAsyncDisposable
                 if (lineStart - reported < (16 << 20)) return;
                 reported = lineStart;
                 progress.Report((double)(lineStart - Document.BomLength) / fileLength);
-            }, ct, marks);
+            }, ct, marks), ct);
 
         if (batch.Count > 0) batches([.. batch]);
         progress.Report(1.0);
