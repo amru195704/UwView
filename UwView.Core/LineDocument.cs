@@ -50,8 +50,10 @@ public sealed class LineDocument : IAsyncDisposable
     public void AdoptIndex(SparseLineIndex index) => Index = index;
 
     /// <summary>裏で索引を構築し、完了後 行モードへ昇格可能にする（§3.1-2）。</summary>
-    public async Task BuildIndexAsync(IProgress<double>? progress = null, CancellationToken ct = default)
-        => Index = await SparseLineIndex.BuildAsync(_src, BomLength, Newline, _blockLines, progress, ct);
+    /// <param name="scanSource">通し読み用の読み取り元（省略時は表示と同じもの）。</param>
+    public async Task BuildIndexAsync(IProgress<double>? progress = null, CancellationToken ct = default,
+                                      IByteSource? scanSource = null)
+        => Index = await SparseLineIndex.BuildAsync(scanSource ?? _src, BomLength, Newline, _blockLines, progress, ct);
 
     // ── 行モード ─────────────────────────────────────────────
 

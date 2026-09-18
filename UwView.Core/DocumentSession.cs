@@ -37,6 +37,26 @@ public sealed class DocumentSession : IAsyncDisposable
 
     private CancellationTokenSource? _cts;
     private bool _disposed;
+    private IByteSource? _scanSource;
+
+    /// <summary>
+    /// <b>通しで読む用</b>の読み取り元（索引作成・全文検索）。表示は <see cref="Source"/>（mmap）のまま。
+    ///
+    /// mmap は好きな位置をすぐ覗けるが、頭から順に読むと帯域の6割しか引けない
+    /// （実測 575MB/s 対 pread 966MB/s。258GB なら 459秒 対 273秒）。
+    /// そこで通し読みだけ pread に替える（オーナー指示 2026-09-18）。
+    /// 実ファイルでなければ（ブラウザ等）これまでどおり <see cref="Source"/> を使う。
+    /// </summary>
+    internal IByteSource ScanSource
+    {
+        get
+        {
+            if (_scanSource is not null) return _scanSource;
+            if (Source is not MmapByteSource || !File.Exists(FilePath)) return Source;
+            try { return _scanSource = new SequentialFileByteSource(FilePath); }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException) { return Source; }
+        }
+    }
 
     private DocumentSession(string path, IByteSource source, DetectedEncoding enc,
         NewlineStyle newline, LineDocument doc)
@@ -82,7 +102,7 @@ public sealed class DocumentSession : IAsyncDisposable
         var progress = new Progress<double>(p => { IndexProgress = p; RaiseProgress(); });
         try
         {
-            await Document.BuildIndexAsync(progress, ct);
+            await Document.BuildIndexAsync(progress, ct, ScanSource);
             if (!ct.IsCancellationRequested)
             {
                 TopLine = Document.OffsetToLineIndex(TopByteOffset); // 位置継続
@@ -202,9 +222,19 @@ public sealed class DocumentSession : IAsyncDisposable
 
         try
         {
-            var outcome = await SearchService.SearchAsync(
-                Source, Document.BomLength, Document.Encoding, options, batches, progress, ct);
-            SearchTruncated = outcome.Truncated;
+            // 索引がまだなら、検索のついでに索引も作る（1回読みで両方。オーナー指示 2026-09-18 B-1）。
+            // 別々に読むと 258GB で 459秒 × 2 になる。走行中の索引作成は止めて、こちらへ相乗りさせる
+            if (!IsIndexed && Cli.RawGrep.CanCombineWithIndex(options))
+            {
+                CancelIndex();
+                SearchTruncated = await SearchAndIndexAsync(options, batches, progress, ct);
+            }
+            else
+            {
+                var outcome = await SearchService.SearchAsync(
+                    ScanSource, Document.BomLength, Document.Encoding, options, batches, progress, ct);
+                SearchTruncated = outcome.Truncated;
+            }
         }
         catch (OperationCanceledException) { /* 中断: それまでのヒットは有効 */ }
         finally
@@ -213,6 +243,42 @@ public sealed class DocumentSession : IAsyncDisposable
             SearchUpdated?.Invoke(this, EventArgs.Empty);
             SearchCompleted?.Invoke(this, EventArgs.Empty);
         }
+    }
+
+    /// <summary>
+    /// 検索しながら索引も作る（1回読み）。終わったら索引を採用して行モードへ上げる。
+    /// 判定の規則は <see cref="SearchService"/> と同じ（<see cref="Cli.RawGrep"/> が合わせてある）。
+    /// </summary>
+    private async Task<bool> SearchAndIndexAsync(SearchOptions options, Action<IReadOnlyList<long>> batches,
+                                                 IProgress<double> progress, CancellationToken ct)
+    {
+        var marks = new Cli.RawGrep.IndexMarks(Document.BlockLines);
+        var batch = new List<long>(256);
+        long fileLength = Math.Max(1, ScanSource.Length - Document.BomLength);
+        long reported = 0;
+
+        var outcome = await Cli.RawGrep.RunAsync(
+            ScanSource, Document.BomLength, Document.Encoding, options, invert: false,
+            (_, lineStart, _) =>
+            {
+                batch.Add(lineStart);
+                if (batch.Count < 256) return;
+                batches([.. batch]);
+                batch.Clear();
+                if (lineStart - reported < (16 << 20)) return;
+                reported = lineStart;
+                progress.Report((double)(lineStart - Document.BomLength) / fileLength);
+            }, ct, marks);
+
+        if (batch.Count > 0) batches([.. batch]);
+        progress.Report(1.0);
+
+        // 索引はファイルを最後まで読み切ったときだけ採る（上限で打ち切ったら不完全）
+        if (!outcome.Truncated && !ct.IsCancellationRequested)
+            AdoptIndex(SparseLineIndex.FromCheckpoints(Document.BomLength, Newline, Document.BlockLines,
+                                                       marks.Marks, marks.NewlineCount, marks.LastByte,
+                                                       ScanSource.Length));
+        return outcome.Truncated;
     }
 
     public void CancelSearch() => _searchCts?.Cancel();
@@ -372,6 +438,7 @@ public sealed class DocumentSession : IAsyncDisposable
         _cts?.Cancel();
         _searchCts?.Cancel();
         _tailCts?.Cancel();
+        if (_scanSource is { } scan) { _scanSource = null; await scan.DisposeAsync(); }   // 通し読み用の pread
         await Document.DisposeAsync(); // Source も解放（mmap アンマップ＝ファイルロック解除）
     }
 }

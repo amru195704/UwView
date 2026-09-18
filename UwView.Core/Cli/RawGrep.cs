@@ -32,6 +32,12 @@ public static class RawGrep
     private const int BufSize = 4 << 20;              // 4MB ブロック（1MB より 1 割ほど速い）
     private const int MaxLineMatchBytes = 64 * 1024; // 長大行はこの範囲でマッチ判定（SearchService と同じ）
 
+    /// <summary>
+    /// 検索と索引作成を1回読みにまとめてよい条件か。
+    /// <c>-v</c>（当てはまらない行）は画面の検索に無いので対象外。
+    /// </summary>
+    public static bool CanCombineWithIndex(SearchOptions options) => options.Pattern.Length > 0;
+
     /// <summary>ヒット行を受け取る係（行は 0 始まり・末尾の改行は取り除いてある）。</summary>
     /// <param name="lineStart">その行の行頭バイト位置（-open で画面へ渡すときに使う）。</param>
     public delegate void LineSink(long lineIndex, long lineStart, ReadOnlySpan<byte> line);

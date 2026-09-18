@@ -569,4 +569,71 @@ public class RawGrepTests : IDisposable
         Assert.Equal(session.Document.Index!.TotalLines, mine.TotalLines);
         Assert.Equal(3, mine.TotalLines);
     }
+
+    // ── 画面の検索が索引も同時に作る（オーナー指示 2026-09-18 A・B-1）────
+
+    [Fact]
+    public async Task 索引が無いまま検索すると検索と同時に索引もできる()
+    {
+        var sb = new StringBuilder();
+        for (int i = 0; i < 20_000; i++) sb.Append($"{i:D6} {(i % 11 == 0 ? "ERROR" : "info")} x\n");
+        File.WriteAllText(P("both.log"), sb.ToString());
+
+        await using var session = DocumentSession.Open(P("both.log"));
+        Assert.False(session.IsIndexed);                       // 索引はまだ
+
+        bool indexed = false;
+        session.IndexCompleted += (_, _) => indexed = true;
+        await session.StartSearchAsync(new SearchOptions("ERROR"));
+
+        Assert.True(session.IsIndexed, "検索だけで終わり、索引ができていない");
+        Assert.True(indexed, "行モードへの昇格が知らされていない");
+
+        // 索引を別に作ったときと同じ結果になる
+        await using var plain = DocumentSession.Open(P("both.log"));
+        await plain.BuildIndexAsync();
+        Assert.Equal(plain.Document.TotalLines, session.Document.TotalLines);
+        for (long line = 0; line < 500; line += 43)
+            Assert.Equal(plain.Document.LineStartOffset(line), session.Document.LineStartOffset(line));
+
+        // ヒットも従来の検索と同じ
+        await plain.StartSearchAsync(new SearchOptions("ERROR"));
+        Assert.Equal(plain.SearchHits, session.SearchHits);
+        Assert.Equal(20_000 / 11 + 1, session.SearchHits.Count);
+    }
+
+    [Fact]
+    public async Task 上限で打ち切ったときは索引を採らない()
+    {
+        File.WriteAllText(P("cut.log"), string.Concat(Enumerable.Range(0, 200).Select(i => $"ERROR {i}\n")));
+
+        int saved = SearchService.DefaultMaxHits;
+        try
+        {
+            SearchService.DefaultMaxHits = 10;
+            await using var session = DocumentSession.Open(P("cut.log"));
+            await session.StartSearchAsync(new SearchOptions("ERROR"));
+
+            Assert.True(session.SearchTruncated);
+            Assert.False(session.IsIndexed, "最後まで読んでいないのに索引を採っている");
+            Assert.Equal(10, session.SearchHits.Count);
+        }
+        finally { SearchService.DefaultMaxHits = saved; }
+    }
+
+    [Fact]
+    public async Task 索引ができたあとの検索は索引を作り直さない()
+    {
+        File.WriteAllText(P("again.log"), "1 ERROR a\n2 info b\n3 ERROR c\n");
+        await using var session = DocumentSession.Open(P("again.log"));
+        await session.BuildIndexAsync();
+        Assert.True(session.IsIndexed);
+
+        int completed = 0;
+        session.IndexCompleted += (_, _) => completed++;
+        await session.StartSearchAsync(new SearchOptions("ERROR"));
+
+        Assert.Equal(0, completed);                            // 作り直していない
+        Assert.Equal(2, session.SearchHits.Count);
+    }
 }
