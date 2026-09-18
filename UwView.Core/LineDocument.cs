@@ -37,6 +37,13 @@ public sealed class LineDocument : IAsyncDisposable
         }
     }
 
+    /// <summary>
+    /// 行の区切り（文字コードと改行種別から決まる）。UTF-16 の改行は <c>0A 00</c> のように
+    /// <b>文字1個ぶんの幅</b>を持つので、1バイトの <c>0x0A</c> だけを見ると行境界も文字境界もずれる
+    /// （ソースレビュー 2026-09-19 の指摘2）。索引・行頭探索・本文切り出しで同じものを使う。
+    /// </summary>
+    private LineSeparator Separator => LineSeparator.For(_encoding, Newline);
+
     public LineDocument(IByteSource src, DetectedEncoding enc, NewlineStyle newline, int blockLines = 256)
     {
         _src = src;
@@ -53,7 +60,8 @@ public sealed class LineDocument : IAsyncDisposable
     /// <param name="scanSource">通し読み用の読み取り元（省略時は表示と同じもの）。</param>
     public async Task BuildIndexAsync(IProgress<double>? progress = null, CancellationToken ct = default,
                                       IByteSource? scanSource = null)
-        => Index = await SparseLineIndex.BuildAsync(scanSource ?? _src, BomLength, Newline, _blockLines, progress, ct);
+        => Index = await SparseLineIndex.BuildAsync(scanSource ?? _src, BomLength, Newline, _blockLines, progress, ct,
+                                                   LineSeparator.For(Encoding, Newline));
 
     // ── 行モード ─────────────────────────────────────────────
 
@@ -137,10 +145,11 @@ public sealed class LineDocument : IAsyncDisposable
         {
             ct.ThrowIfCancellationRequested();
             int want = (int)Math.Min(buf.Length, to - pos);
-            int got = await _src.ReadAsync(pos, buf.AsMemory(0, want), ct);
+            int got = TrimToUnits(pos, await _src.ReadAsync(pos, buf.AsMemory(0, want), ct));
             if (got <= 0) break;
+            var span = buf.AsSpan(0, got);
             for (int i = 0; i < got; i++)
-                if (buf[i] == (byte)'\n') count++;
+                if (IsSeparatorAt(span, i, pos)) count++;
             pos += got;
         }
         return count;
@@ -175,6 +184,91 @@ public sealed class LineDocument : IAsyncDisposable
         return list;
     }
 
+    /// <summary>
+    /// 行の本文を<b>データの到着を待って</b>読む（保存・コピー用。読めなければ null）。
+    ///
+    /// ブラウザー版の読み取り元は、同期 <c>Read</c> では未取得のチャンクを 0 バイトとして返す。
+    /// 画面は後から描き直せばよいが、保存は<b>そのとき書いた内容が最終結果</b>なので、
+    /// 未取得のまま書くと本文が空行になってしまう（ソースレビュー 2026-09-19 の指摘4）。
+    /// ファイル版は最初の同期読みで必ず完結するので、余計な読み直しは起きない。
+    /// </summary>
+    public async ValueTask<string?> GetLineAtOffsetAsync(long lineStart, CancellationToken ct = default)
+    {
+        long key = -lineStart - 1;
+        if (_cache.TryGet(key, out var cached)) return cached;
+
+        var sep = Separator;
+        long limit = Math.Min(Length, lineStart + MaxLineScanBytes);
+        int want = (int)(limit - lineStart);
+        if (want <= 0) return "";
+
+        byte[] bytes = new byte[want];
+        int filled = await ReadAtAsync(lineStart, bytes, ct);
+        if (filled < want) return null;   // 取得できなかった。空行として保存しない
+
+        int end = filled;
+        bool foundSep = false;
+        for (int i = 0; i < filled; i++)
+            if (IsSeparatorAt(bytes, i, lineStart)) { end = i - sep.ByteInUnit; foundSep = true; break; }
+
+        bool truncated = !foundSep && limit < Length;
+        string text = DecodeBytes(bytes.AsSpan(0, Math.Max(end, 0)), truncated);
+        _cache.Set(key, text);
+        return text;
+    }
+
+    /// <summary>行番号指定の同上（保存・コピー用。読めなければ null）。</summary>
+    public async ValueTask<string?> GetLineAsync(long lineIndex, CancellationToken ct = default)
+    {
+        var index = Index ?? throw new InvalidOperationException("索引未構築です。");
+        if (lineIndex < 0 || lineIndex >= index.TotalLines)
+            throw new ArgumentOutOfRangeException(nameof(lineIndex));
+        if (_cache.TryGet(lineIndex, out var cached)) return cached;
+
+        long lineStart = await ScanForwardNewlinesAsync(
+            index.GetCheckpoint((int)(lineIndex / _blockLines)), (int)(lineIndex % _blockLines), ct);
+        if (lineStart < 0) return null;
+
+        string? text = await GetLineAtOffsetAsync(lineStart, ct);
+        if (text is not null) _cache.Set(lineIndex, text);
+        return text;
+    }
+
+    /// <summary>非同期で buffer を埋める（読めた実バイト数を返す）。</summary>
+    private async ValueTask<int> ReadAtAsync(long start, Memory<byte> buffer, CancellationToken ct)
+    {
+        int total = 0;
+        while (total < buffer.Length)
+        {
+            int got = await _src.ReadAsync(start + total, buffer[total..], ct);
+            if (got <= 0) break;
+            total += got;
+        }
+        return total;
+    }
+
+    /// <summary><see cref="ScanForwardNewlines"/> の非同期版（取得できなければ -1）。</summary>
+    private async ValueTask<long> ScanForwardNewlinesAsync(long from, int count, CancellationToken ct)
+    {
+        if (count <= 0) return from;
+        var sep = Separator;
+        long pos = from;
+        int remaining = count;
+        byte[] buf = new byte[8192];
+        while (pos < Length)
+        {
+            int want = (int)Math.Min(buf.Length, Length - pos);
+            int got = TrimToUnits(pos, await ReadAtAsync(pos, buf.AsMemory(0, want), ct));
+            if (got <= 0) return -1;
+            var span = buf.AsSpan(0, got);
+            for (int i = 0; i < got; i++)
+                if (IsSeparatorAt(span, i, pos) && --remaining == 0)
+                    return pos + i - sep.ByteInUnit + sep.UnitSize;
+            pos += got;
+        }
+        return Length;
+    }
+
     /// <summary>行頭オフセット指定で 1 行取得（索引不要・フィルタ表示 §11-⑤ 用）。</summary>
     public string GetLineAtOffset(long lineStart)
     {
@@ -190,14 +284,17 @@ public sealed class LineDocument : IAsyncDisposable
     /// <summary>Tail（§11-③）: ソースが伸びた後に呼ぶ。末尾行の内容が変わりうるため LRU を破棄。</summary>
     public void OnSourceExtended() => _cache.Clear();
 
-    /// <summary>指定オフセットを行頭に揃える。行の途中なら次の '\n' の直後まで飛ばす。</summary>
+    /// <summary>指定オフセットを行頭に揃える。行の途中なら次の区切りの直後まで飛ばす。</summary>
     public long AlignToLineStart(long byteOffset)
     {
         if (byteOffset <= BomLength) return BomLength;
         if (byteOffset >= Length) return Length;
 
-        Span<byte> one = stackalloc byte[1];
-        if (ReadAt(byteOffset - 1, one) == 1 && one[0] == (byte)'\n')
+        var sep = Separator;
+        long unitStart = byteOffset - sep.UnitSize;             // 直前の1文字
+        Span<byte> unit = stackalloc byte[sep.UnitSize];
+        if (unitStart >= BomLength && ReadAt(unitStart, unit) == sep.UnitSize
+            && IsSeparatorAt(unit, sep.ByteInUnit, unitStart))
             return byteOffset; // 既に行頭
 
         return ScanForwardNewlines(byteOffset, 1);
@@ -211,16 +308,18 @@ public sealed class LineDocument : IAsyncDisposable
     {
         if (lineStart <= BomLength) return BomLength;
 
-        long i = lineStart - 2; // lineStart-1 は前行を終端する '\n' 想定。その手前から遡る
+        var sep = Separator;
+        long i = lineStart - sep.UnitSize - 1; // 直前の1文字は前行を終端する区切り。その手前から遡る
         Span<byte> buf = stackalloc byte[8192];
         while (i >= BomLength)
         {
             int chunk = (int)Math.Min(buf.Length, i - BomLength + 1);
             long from = i - chunk + 1;
             int got = ReadAt(from, buf[..chunk]);
+            var span = buf[..got];
             for (int j = got - 1; j >= 0; j--)
-                if (buf[j] == (byte)'\n')
-                    return from + j + 1;
+                if (IsSeparatorAt(span, j, from))
+                    return from + j - sep.ByteInUnit + sep.UnitSize;
             i = from - 1;
         }
         return BomLength;
@@ -243,7 +342,7 @@ public sealed class LineDocument : IAsyncDisposable
         _dataMissing |= missingBefore || missingHere;
 
         if (foundNl)
-            nextStart = contentEnd + 1;
+            nextStart = contentEnd + Separator.UnitSize;
         else if (truncated)
             nextStart = ScanForwardNewlines(contentEnd, 1); // 長大行の残りを飛ばす
         else
@@ -260,11 +359,16 @@ public sealed class LineDocument : IAsyncDisposable
 
         byte[] bytes = new byte[len];
         int filled = FillRange(start, bytes);
-        var span = bytes.AsSpan(0, filled);
+        return DecodeBytes(bytes.AsSpan(0, filled), truncated);
+    }
 
-        // CRLF / 混在対策: 末尾 '\r' を除去
-        if (span.Length > 0 && span[^1] == (byte)'\r')
-            span = span[..^1];
+    /// <summary>読み終えた1行ぶんのバイトを、末尾の '\r' を落として文字列にする。</summary>
+    private string DecodeBytes(ReadOnlySpan<byte> span, bool truncated)
+    {
+        // CRLF / 混在対策: 末尾の '\r' を1文字ぶん除去（UTF-16 なら 0D 00 の2バイト）
+        var sep = Separator;
+        if (span.Length >= sep.UnitSize && span[span.Length - sep.UnitSize + sep.ByteInUnit] == (byte)'\r')
+            span = span[..^sep.UnitSize];
 
         string s = _encoding.GetString(span);
 
@@ -276,42 +380,71 @@ public sealed class LineDocument : IAsyncDisposable
         return truncated ? s + Ellipsis : s;
     }
 
-    /// <summary>from から count 個の '\n' を飛ばし、その直後のオフセットを返す。EOF で Length。</summary>
+    /// <summary>
+    /// 絶対位置 <paramref name="abs"/> のバイトが、行の区切りとして数えてよいものか。
+    /// UTF-16/32 では文字の一部にも同じ値が現れるので、文字の境界に乗っているかまで見る。
+    /// </summary>
+    private bool IsSeparatorAt(ReadOnlySpan<byte> buf, int i, long bufBase)
+    {
+        var sep = Separator;
+        if (buf[i] != sep.Value) return false;
+        if (sep.UnitSize == 1) return true;
+        long rel = bufBase + i - BomLength - sep.ByteInUnit;
+        if (rel < 0 || rel % sep.UnitSize != 0) return false;
+        // 文字の境界に 0A があっても改行とは限らない（UTF-16LE の Ċ は 0A 01）。
+        // 文字ぜんぶを見て決める（再レビュー 2026-09-19 の指摘B）
+        return sep.IsSeparatorUnit(buf, i - sep.ByteInUnit);
+    }
+
+    /// <summary>読んだバイト数を、文字の切れ目までに丸める（文字の途中で切って誤判定しないため）。</summary>
+    private int TrimToUnits(long bufBase, int got)
+    {
+        int u = Separator.UnitSize;
+        if (u == 1 || got <= 0) return got;
+        int phase = (int)(((bufBase - BomLength) % u + u) % u);
+        return Math.Max(0, got - (got + phase) % u);
+    }
+
+    /// <summary>from から count 個の区切りを飛ばし、その直後のオフセットを返す。EOF で Length。</summary>
     private long ScanForwardNewlines(long from, int count)
     {
         if (count <= 0) return from;
+        var sep = Separator;
         long pos = from;
         int remaining = count;
         Span<byte> buf = stackalloc byte[8192];
         while (pos < Length)
         {
             int want = (int)Math.Min(buf.Length, Length - pos);
-            int got = ReadAt(pos, buf[..want]);
+            int got = TrimToUnits(pos, ReadAt(pos, buf[..want]));
             if (got <= 0) break;
+            var span = buf[..got];
             for (int i = 0; i < got; i++)
             {
-                if (buf[i] == (byte)'\n' && --remaining == 0)
-                    return pos + i + 1;
+                if (IsSeparatorAt(span, i, pos) && --remaining == 0)
+                    return pos + i - sep.ByteInUnit + sep.UnitSize;
             }
             pos += got;
         }
         return Length;
     }
 
-    /// <summary>from から maxBytes まで '\n' を探す。見つかれば (その位置, true)、なければ (打ち切り位置, false)。</summary>
+    /// <summary>from から maxBytes まで区切りを探す。見つかれば (本文の終わり, true)、なければ (打ち切り位置, false)。</summary>
     private (long end, bool foundNl) FindLineContentEnd(long from, int maxBytes)
     {
+        var sep = Separator;
         long limit = Math.Min(Length, from + maxBytes);
         long pos = from;
         Span<byte> buf = stackalloc byte[8192];
         while (pos < limit)
         {
             int want = (int)Math.Min(buf.Length, limit - pos);
-            int got = ReadAt(pos, buf[..want]);
+            int got = TrimToUnits(pos, ReadAt(pos, buf[..want]));
             if (got <= 0) break;
+            var span = buf[..got];
             for (int i = 0; i < got; i++)
-                if (buf[i] == (byte)'\n')
-                    return (pos + i, true);
+                if (IsSeparatorAt(span, i, pos))
+                    return (pos + i - sep.ByteInUnit, true);
             pos += got;
         }
         return (limit, false);
@@ -324,10 +457,11 @@ public sealed class LineDocument : IAsyncDisposable
         while (pos < to)
         {
             int want = (int)Math.Min(buf.Length, to - pos);
-            int got = ReadAt(pos, buf[..want]);
+            int got = TrimToUnits(pos, ReadAt(pos, buf[..want]));
             if (got <= 0) break;
+            var span = buf[..got];
             for (int i = 0; i < got; i++)
-                if (buf[i] == (byte)'\n') count++;
+                if (IsSeparatorAt(span, i, pos)) count++;
             pos += got;
         }
         return count;

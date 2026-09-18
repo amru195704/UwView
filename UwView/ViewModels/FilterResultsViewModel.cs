@@ -107,6 +107,30 @@ public sealed class FilterRow
         }
     }
 
+    /// <summary>
+    /// 保存・コピー用の本文（読めなければ null）。表示用の <see cref="Text"/> と違い、
+    /// ブラウザー版で未取得のチャンクがあれば<b>取得を待つ</b>。
+    /// 保存は書いた内容がそのまま残るので、未取得を空行として書いてはいけない
+    ///（ソースレビュー 2026-09-19 の指摘4）。
+    /// </summary>
+    public async ValueTask<string?> GetTextForSaveAsync(CancellationToken ct = default)
+    {
+        if (_text is not null) return _text;
+        if (IsSeparator || _doc is null) return Text;
+        try
+        {
+            string? t = Offset >= 0 ? await _doc.GetLineAtOffsetAsync(Offset, ct)
+                      : LineIndex >= 0 ? await _doc.GetLineAsync(LineIndex, ct)
+                      : "";
+            if (t is not null) _text = t;
+            return t;
+        }
+        catch (Exception e) when (e is IOException or ObjectDisposedException or InvalidOperationException)
+        {
+            return null;
+        }
+    }
+
     /// <summary>ジャンプ先オフセット（行番号しか持たない文脈行は行頭へ解決）。</summary>
     public long ResolveJumpOffset()
     {
@@ -486,9 +510,16 @@ public sealed partial class FilterResultsViewModel : ObservableObject, IDisposab
                 }
                 else
                 {
+                    // 本文は取得を待って読む。未取得のまま空行を書くと、その空行が保存結果として残る
+                    //（ソースレビュー 2026-09-19 の指摘4）
+                    string text = await row.GetTextForSaveAsync(ct)
+                        ?? throw new IOException(Localizer.Instance.Culture.TwoLetterISOLanguageName == "ja"
+                            ? $"{row.LineNumberText} 行目の本文を取得できませんでした。保存を中止します。"
+                            : $"Could not read line {row.LineNumberText}. Save aborted.");
+
                     string prefix = IncludeLineNumbersOnSave && row.LineNumberText.Length > 0
                         ? row.LineNumberText + "\t" : "";
-                    await writer.WriteLineAsync(prefix + row.Text);
+                    await writer.WriteLineAsync(prefix + text);
                 }
 
                 if ((i & 1023) == 0)

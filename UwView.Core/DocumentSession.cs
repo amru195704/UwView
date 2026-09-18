@@ -51,6 +51,8 @@ public sealed class DocumentSession : IAsyncDisposable
     {
         get
         {
+            // 走査を始めるたびに長さを取り直す（Tail の追記ぶんを取りこぼさない）
+            if (_scanSource is SequentialFileByteSource seq) { seq.Refresh(); return seq; }
             if (_scanSource is not null) return _scanSource;
             if (Source is not MmapByteSource || !File.Exists(FilePath)) return Source;
             try { return _scanSource = new SequentialFileByteSource(FilePath); }
@@ -143,6 +145,7 @@ public sealed class DocumentSession : IAsyncDisposable
     // ── 検索（§11-①。結果はバイトオフセットでセッションが保持 §4.7）──────
 
     private readonly List<long> _searchHits = [];
+    private readonly Lock _hitsLock = new();
     private CancellationTokenSource? _searchCts;
 
     /// <summary>ヒット行の行頭バイトオフセット（昇順）。</summary>
@@ -156,6 +159,9 @@ public sealed class DocumentSession : IAsyncDisposable
     public bool IsSearching { get; private set; }
     public double SearchProgress { get; private set; }
     public bool SearchTruncated { get; private set; }
+
+    /// <summary>直前の検索が「正規表現の書き間違い」で始められなかったか（画面が理由を出すために見る）。</summary>
+    public bool SearchInvalid { get; private set; }
 
     /// <summary>ヒット追加・進捗更新のたびに UI スレッドで発火。</summary>
     public event EventHandler? SearchUpdated;
@@ -197,25 +203,64 @@ public sealed class DocumentSession : IAsyncDisposable
         ActiveSearch = options;
         SearchTruncated = false;
         SearchProgress = 0;
+        // 不正な正規表現。ここで黙って戻ると、画面は進捗を出したまま「実行中」で固まる。
+        // 検索は始めないが、始まって終わったことは必ず知らせる（ソースレビュー 2026-09-19 の指摘8）
         try { SearchHighlightRegex = SearchService.BuildRegex(options); }
-        catch (ArgumentException) { SearchHighlightRegex = null; ActiveSearch = null; return; } // 不正な正規表現
+        catch (ArgumentException)
+        {
+            SearchHighlightRegex = null;
+            ActiveSearch = null;
+            SearchInvalid = true;
+            IsSearching = false;
+            SearchProgress = 1;
+            SearchUpdated?.Invoke(this, EventArgs.Empty);
+            SearchCompleted?.Invoke(this, EventArgs.Empty);
+            return;
+        }
+        SearchInvalid = false;
         IsSearching = true;
         SearchUpdated?.Invoke(this, EventArgs.Empty);
 
-        // バッチは背景スレッドから同期的に届く。UI コンテキストがあれば Post、なければ即時反映
-        //（Progress<T> は post 完了を待たないため、await 後の一貫性が保てない）
+        // バッチは背景スレッドから同期的に届く。UI コンテキストがあれば Post、なければ即時反映。
+        // Post は後から実行されるので、**いまの検索のものか**を必ず確かめてから反映する
+        //（確かめないと、クリアしたあとに古い結果が復活する。ソースレビュー 2026-09-19 の指摘3）
         var syncCtx = SynchronizationContext.Current;
+        var mine = _searchCts;
         void ApplyBatch(IReadOnlyList<long> b)
         {
-            _searchHits.AddRange(b);
+            if (!ReferenceEquals(_searchCts, mine) || ct.IsCancellationRequested) return;  // 前の検索の積み残し
+            // 画面（Avalonia）の Post は1本ずつ順に実行されるが、そうでない文脈もある。
+            // 取りこぼしを仕組みで防ぐ（List への追加は同時に行うと壊れる）
+            lock (_hitsLock) _searchHits.AddRange(b);
             SearchUpdated?.Invoke(this, EventArgs.Empty);
         }
+        // 反映し終わるのを待てるよう、積んだ数を数えておく。
+        // Post の実行順は文脈によって保証されないので、順番ではなく「残り0」で判断する
+        int pending = 0, finished = 0;
+        var drained = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        void SignalIfDone()
+        {
+            if (Volatile.Read(ref finished) != 0 && Volatile.Read(ref pending) == 0) drained.TrySetResult();
+        }
+
         Action<IReadOnlyList<long>> batches = syncCtx is null
             ? ApplyBatch
-            : b => syncCtx.Post(_ => ApplyBatch(b), null);
+            : b =>
+            {
+                Interlocked.Increment(ref pending);
+                syncCtx.Post(_ =>
+                {
+                    try { ApplyBatch(b); }
+                    finally { Interlocked.Decrement(ref pending); SignalIfDone(); }
+                }, null);
+            };
 
         var progress = new Progress<double>(p =>
         {
+            // 進捗も「いまの検索か」を確かめてから書く。Progress<T> の通知は後から届くので、
+            // クリアした後や次の検索が始まった後に、古い進捗が現在の表示を上書きしていた
+            //（再レビュー 2026-09-19 の指摘G）
+            if (!ReferenceEquals(_searchCts, mine) || ct.IsCancellationRequested) return;
             SearchProgress = p;
             SearchUpdated?.Invoke(this, EventArgs.Empty);
         });
@@ -224,24 +269,38 @@ public sealed class DocumentSession : IAsyncDisposable
         {
             // 索引がまだなら、検索のついでに索引も作る（1回読みで両方。オーナー指示 2026-09-18 B-1）。
             // 別々に読むと 258GB で 459秒 × 2 になる。走行中の索引作成は止めて、こちらへ相乗りさせる
-            if (!IsIndexed && Cli.RawGrep.CanCombineWithIndex(options))
+            var separator = LineSeparator.For(Document.Encoding, Document.Newline);
+            if (!IsIndexed && Cli.RawGrep.CanCombineWithIndex(options, separator))
             {
                 CancelIndex();
                 SearchTruncated = await SearchAndIndexAsync(options, batches, progress, ct);
             }
             else
             {
+                // 1回読みの相乗り（RawGrep）が使えない文字コード・改行では、索引は別に作る。
+                // 作らないと行番号が出ないまま結果だけ並ぶ（再レビュー 2026-09-19 の指摘A）
+                if (!IsIndexed && !IsIndexing) await BuildIndexAsync();
+
                 var outcome = await SearchService.SearchAsync(
-                    ScanSource, Document.BomLength, Document.Encoding, options, batches, progress, ct);
+                    ScanSource, Document.BomLength, Document.Encoding, options, batches, progress, ct, separator);
                 SearchTruncated = outcome.Truncated;
             }
         }
         catch (OperationCanceledException) { /* 中断: それまでのヒットは有効 */ }
         finally
         {
-            IsSearching = false;
-            SearchUpdated?.Invoke(this, EventArgs.Empty);
-            SearchCompleted?.Invoke(this, EventArgs.Empty);
+            // 積んだ Post がすべて片付くのを待ってから「完了」にする。
+            // 待たないと、完了した時点の件数が本当の件数より少なくなる（同 指摘3）
+            Volatile.Write(ref finished, 1);
+            SignalIfDone();
+            if (syncCtx is not null) await drained.Task;
+
+            if (ReferenceEquals(_searchCts, mine))   // すでに次の検索が始まっていたら触らない
+            {
+                IsSearching = false;
+                SearchUpdated?.Invoke(this, EventArgs.Empty);
+                SearchCompleted?.Invoke(this, EventArgs.Empty);
+            }
         }
     }
 

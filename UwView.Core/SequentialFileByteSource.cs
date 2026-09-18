@@ -28,10 +28,30 @@ internal sealed class SequentialFileByteSource : IByteSource
         // 書き込み中のファイルでも開けるよう mmap 版と同じ共有指定にする
         _handle = File.OpenHandle(path, FileMode.Open, FileAccess.Read,
                                   FileShare.ReadWrite | FileShare.Delete, FileOptions.SequentialScan);
-        Length = RandomAccess.GetLength(_handle);
+        _length = RandomAccess.GetLength(_handle);
     }
 
-    public long Length { get; }
+    private long _length;
+
+    /// <summary>
+    /// いま見えているファイルの長さ。<see cref="Refresh"/> を呼ぶまで変わらない
+    /// （走査の途中で伸びると範囲の辻褄が合わなくなるため、読みの最中は固定する）。
+    /// </summary>
+    public long Length => Volatile.Read(ref _length);
+
+    /// <summary>
+    /// 長さを取り直す（<b>走査を始める前に呼ぶ</b>）。
+    /// Tail で追記されたぶんは、これを呼ばないと検索・索引の対象に入らない
+    /// （表示用 mmap は <see cref="MmapByteSource.TryExpand"/> で伸びるので、見えるのに探せない状態になる。
+    /// ソースレビュー 2026-09-19 の指摘1）。
+    /// </summary>
+    public long Refresh()
+    {
+        if (_handle.IsClosed) return Length;
+        try { Volatile.Write(ref _length, RandomAccess.GetLength(_handle)); }
+        catch (Exception e) when (e is IOException or ObjectDisposedException) { /* 取れなければ前の値のまま */ }
+        return Length;
+    }
 
     public int Read(long offset, Span<byte> buffer)
     {

@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace UwView.Core.Cli;
 
@@ -200,6 +201,22 @@ public static class UvfCli
             return UvfExit.Error;
         }
 
+        // 正規表現の書き間違いは、探し始める前にここで伝える。
+        // -open の結果集めは下の try の外で走るので、そちらでは例外が素通りしていた
+        //（再レビュー 2026-09-19 の指摘F。画面も起動しないまま終了コード2で返す）
+        if (inv.Regex && inv.Pattern is { Length: > 0 } pattern)
+        {
+            try
+            {
+                _ = SearchService.BuildRegex(new SearchOptions(pattern, UseRegex: true, IgnoreCase: inv.IgnoreCase));
+            }
+            catch (Exception e) when (e is RegexParseException or ArgumentException)
+            {
+                Err(T($"正規表現が正しくありません: {e.Message}", $"Invalid regular expression: {e.Message}"));
+                return UvfExit.Error;
+            }
+        }
+
         if (inv.Mode is UvfMode.OpenGui or UvfMode.SearchInGui)
         {
             string? file = inv.File is null ? null : Path.GetFullPath(inv.File);
@@ -244,6 +261,19 @@ public static class UvfCli
             Err(T("中止しました", "Cancelled"));
             return UvfExit.Error;
         }
+        catch (RegexParseException e)
+        {
+            // 正規表現の書き間違い。異常終了ではなく、書き方の誤りとして伝える
+            //（ソースレビュー 2026-09-19 の指摘8）
+            Err(T($"正規表現が正しくありません: {e.Message}", $"Invalid regular expression: {e.Message}"));
+            return UvfExit.Error;
+        }
+        catch (RegexMatchTimeoutException)
+        {
+            Err(T("正規表現の処理に時間がかかりすぎました（式を見直してください）",
+                  "The regular expression took too long (try a simpler pattern)"));
+            return UvfExit.Error;
+        }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidDataException)
         {
             Err(e.Message);
@@ -265,14 +295,19 @@ public static class UvfCli
 
             var hits = new List<long>();
             var lines = new List<long>();
-            // 検索のついでに索引の目印も集める（画面がファイルを読み直さずに済む）
-            var marks = new RawGrep.IndexMarks(IndexBlockLines);
+            // 検索のついでに索引の目印も集める（画面がファイルを読み直さずに済む）。
+            // ただし走査は 0x0A を区切りとするので、それで正しい文字コード・改行のときだけ渡す
+            //（UTF-16 や CR 単独は画面側で作らせる。ソースレビュー 2026-09-19 の指摘2）
+            var sep = LineSeparator.For(detected.Encoding, EncodingDetector.DetectNewline(src));
+            bool canHandOverIndex = sep is { UnitSize: 1, Value: (byte)'\n' };
+            var marks = canHandOverIndex ? new RawGrep.IndexMarks(IndexBlockLines) : null;
             var outcome = await RawGrep.RunAsync(src, detected.BomLength, detected.Encoding, options, inv.Invert,
                                                  (line, lineStart, _) => { hits.Add(lineStart); lines.Add(line); },
                                                  ct, marks);
             return new CliHandoff(inv.Pattern!, inv.IgnoreCase, inv.Regex, inv.Invert,
                                   src.Length, outcome.Truncated, [.. hits], [.. lines],
-                                  IndexBlockLines, [.. marks.Marks], marks.NewlineCount, marks.LastByte).WriteTemp();
+                                  marks is null ? 0 : IndexBlockLines, marks is null ? null : [.. marks.Marks],
+                                  marks?.NewlineCount ?? 0, marks?.LastByte ?? 0).WriteTemp();
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidDataException
                                        or OperationCanceledException)

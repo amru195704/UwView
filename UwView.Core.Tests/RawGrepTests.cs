@@ -143,14 +143,17 @@ public class RawGrepTests : IDisposable
     }
 
     [Fact]
-    public async Task 長大行の64KBより後ろの一致は見つけない_従来と同じ()
+    public async Task 長大行の64KBより後ろの一致も見つける_索引の有無で変わらない()
     {
-        // SearchService のバイト高速パスと同じ約束（長大行は先頭 64KB だけで判定する）
+        // 以前は先頭 64KB だけを見ていたため、索引あり（SearchService・1MB バッファ）と
+        // 索引なし（RawGrep・4MB バッファ）で同じファイルの答えが変わっていた
+        //（ソースレビュー 2026-09-19 の指摘7）。いまはどちらも読んだ範囲すべてを見る。
         string huge = new string('w', 100 * 1024) + "HIT" + new string('w', 6 << 20);
         File.WriteAllText(P("far.log"), $"{huge}\nafter HIT\n");
 
         var (_, output) = await Search(P("far.log"), "HIT");
-        Assert.Equal("2\tafter HIT\n", output);
+        string[] lineNumbers = output.TrimEnd('\n').Split('\n').Select(l => l.Split('\t')[0]).ToArray();
+        Assert.Equal(["1", "2"], lineNumbers);
     }
 
     [Fact]
@@ -650,15 +653,20 @@ public class RawGrepTests : IDisposable
         await using var session = DocumentSession.Open(P("thread.log"));
         Assert.False(session.IsIndexed);                     // 統合パスへ入る条件
 
+        // 最初にヒットが届いたときのスレッドだけを見る。
+        // 完了通知（finally）は待っている側のスレッドで上がるので、最後の1回で上書きすると
+        // 走査スレッドの判定にならない（レビュー 2026-09-19 でこのテストの不安定さを指摘された）
         int caller = Environment.CurrentManagedThreadId;
-        int scanThread = caller;
+        int scanThread = 0;
         session.SearchUpdated += (_, _) =>
         {
-            if (session.SearchHits.Count > 0) scanThread = Environment.CurrentManagedThreadId;
+            if (scanThread == 0 && session.SearchHits.Count > 0)
+                scanThread = Environment.CurrentManagedThreadId;
         };
 
         await session.StartSearchAsync(new SearchOptions("ERROR"));
 
+        Assert.NotEqual(0, scanThread);                      // ヒットの通知が来ている
         Assert.NotEqual(caller, scanThread);                 // 呼び出し元で回していない
         Assert.True(session.IsIndexed);
         Assert.Equal(5_000, session.SearchHits.Count);

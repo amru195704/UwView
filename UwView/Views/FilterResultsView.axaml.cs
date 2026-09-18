@@ -166,20 +166,31 @@ public partial class FilterResultsView : UserControl
     /// <summary>
     /// 選択行の copy/save の1行分。ツールバーの「行番号を含める」に従う
     /// （一覧全体の保存・矩形選択の copy/save と同じ扱いに統一）。
+    ///
+    /// 本文は<b>取得を待って</b>読む。表示用の同期 API はブラウザー版で未取得のチャンクを
+    /// 空文字として返すので、そのまま書くと保存・コピーの結果が空行になる
+    /// （再レビュー 2026-09-19 の指摘D。一覧全体の保存は先に直してあった）。
     /// </summary>
-    private string FormatRow(FilterRow row) =>
-        _vm.IncludeLineNumbersOnSave ? FormatRowWithLineNumber(row) : (row.IsSeparator ? "⋯" : row.Text);
-
-    private static string FormatRowWithLineNumber(FilterRow row) =>
-        row.IsSeparator ? "⋯"
-        : (row.LineNumberText.Length > 0 ? row.LineNumberText + "\t" : "") + row.Text;
+    private async System.Threading.Tasks.Task<string?> FormatRowAsync(
+        FilterRow row, System.Threading.CancellationToken ct = default)
+    {
+        if (row.IsSeparator) return "⋯";
+        if (await row.GetTextForSaveAsync(ct) is not { } text) return null;
+        return _vm.IncludeLineNumbersOnSave && row.LineNumberText.Length > 0
+            ? row.LineNumberText + "\t" + text
+            : text;
+    }
 
     private async System.Threading.Tasks.Task CopySelectedAsync()
     {
         var rows = SelectedRowsInOrder();
         if (rows.Count == 0) return;
         var sb = new StringBuilder();
-        foreach (var row in rows) sb.AppendLine(FormatRow(row));
+        foreach (var row in rows)
+        {
+            if (await FormatRowAsync(row) is not { } line) return;   // 読めなければコピーしない
+            sb.AppendLine(line);
+        }
         if (TopLevel.GetTopLevel(this)?.Clipboard is { } clipboard)
             await clipboard.SetTextAsync(sb.ToString());
     }
@@ -204,11 +215,17 @@ public partial class FilterResultsView : UserControl
             await using var writer = new StreamWriter(stream, new UTF8Encoding(false), bufferSize: 1 << 16);
             for (int i = 0; i < rows.Count; i++)
             {
-                await writer.WriteLineAsync(FormatRow(rows[i]));
+                string line = await FormatRowAsync(rows[i])
+                    ?? throw new IOException("選択行の本文を取得できませんでした。保存を中止します。");
+                await writer.WriteLineAsync(line);
                 if ((i & 1023) == 1023) await System.Threading.Tasks.Task.Yield();
             }
         }
-        catch (IOException) { /* 書き込み失敗は黙って中断 */ }
+        catch (IOException failure)
+        {
+            // 本文を取得できなかった場合もここへ来る（空行を書いて済ませない。指摘D）
+            UwView.Services.OperationLog.Record("選択行の保存（失敗）", TimeSpan.Zero, failure.Message);
+        }
     }
 
     private async void OnSaveClick(object? sender, RoutedEventArgs e)
@@ -240,6 +257,11 @@ public partial class FilterResultsView : UserControl
                 ja ? $"{rows:N0} 行" : $"{rows:N0} lines");
         }
         catch (OperationCanceledException) { /* キャンセル: 途中までのファイルが残る */ }
-        catch (IOException) { /* 書き込み失敗は黙って中断（v1） */ }
+        catch (IOException failure)
+        {
+            // 本文を取得できなかった場合もここへ来る（空行を書いて済ませない。指摘4）
+            UwView.Services.OperationLog.Record(ja ? "抽出保存（失敗）" : "Save extract (failed)",
+                                                watch.Elapsed, failure.Message);
+        }
     }
 }

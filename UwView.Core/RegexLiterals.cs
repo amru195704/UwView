@@ -265,6 +265,16 @@ public static class RegexLiterals
                     int end = p.IndexOf(":]", _i + 2, StringComparison.Ordinal);
                     if (end > 0) _i = end + 1;
                 }
+                // .NET の文字クラス減算 [a-z-[aeiou]]。内側のクラスごと飛ばさないと、
+                // 内側の ] でクラスが終わったと誤解し、余った ] を必須文字列として拾ってしまう
+                //（ソースレビュー 2026-09-19 の指摘6。絞り込みで一致する行を捨てていた）
+                else if (p[_i] == '-' && _i + 1 < p.Length && p[_i + 1] == '[')
+                {
+                    _i++;
+                    SkipClass();
+                    if (Failed) return;
+                    continue;
+                }
                 _i++;
             }
             if (_i >= p.Length) { Failed = true; return; }

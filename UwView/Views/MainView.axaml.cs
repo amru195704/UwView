@@ -745,6 +745,16 @@ public partial class MainView : UserControl
         UpdateSearchInfo();
         Minimap.InvalidateVisual();
 
+        // 正規表現の書き間違いで始められなかったとき: 進捗を閉じて理由を出す
+        //（閉じないと「実行中」のまま残り、×でも消せない。ソースレビュー 2026-09-19 の指摘8）
+        if (_autoPopupPending && _vm?.ActiveTab?.Session is { IsSearching: false, SearchInvalid: true })
+        {
+            _autoPopupPending = false;
+            EndTaskProgress(null);
+            SetTransientStatus(Ja ? "正規表現が正しくありません" : "Invalid regular expression");
+            return;
+        }
+
         // 検索完了 → 所要時間を残し、ヒットありなら結果一覧を自動ポップアップ
         if (_autoPopupPending && _vm?.ActiveTab?.Session is { IsSearching: false } s
             && s.ActiveSearch is not null)

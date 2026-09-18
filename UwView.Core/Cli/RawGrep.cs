@@ -36,7 +36,11 @@ public static class RawGrep
     /// 検索と索引作成を1回読みにまとめてよい条件か。
     /// <c>-v</c>（当てはまらない行）は画面の検索に無いので対象外。
     /// </summary>
-    public static bool CanCombineWithIndex(SearchOptions options) => options.Pattern.Length > 0;
+    /// <param name="separator">行の区切り。<b>1バイトの LF のときだけ</b>この経路に乗せる。
+    /// ここの走査は 0x0A を1バイトで数えるので、UTF-16 や CR 単独では行も索引も誤る
+    /// （再レビュー 2026-09-19 の指摘A。それ以外は SearchService＋通常の索引作成へ回す）。</param>
+    public static bool CanCombineWithIndex(SearchOptions options, LineSeparator separator)
+        => options.Pattern.Length > 0 && separator.IsSingleByteLf;
 
     /// <summary>ヒット行を受け取る係（行は 0 始まり・末尾の改行は取り除いてある）。</summary>
     /// <param name="lineStart">その行の行頭バイト位置（-open で画面へ渡すときに使う）。</param>
@@ -53,7 +57,9 @@ public static class RawGrep
         LineSink sink, CancellationToken ct = default, IndexMarks? index = null)
     {
         // 判定の道具立て（素の文字列は SearchService と同じ選び方）
-        bool bytePath = options is { UseRegex: false, IgnoreCase: false } && options.Pattern.Length > 0;
+        // バイト列のまま探せる文字コードに限る（同 指摘5）
+        bool bytePath = options is { UseRegex: false, IgnoreCase: false } && options.Pattern.Length > 0
+                        && AsciiCaseFold.IsAsciiCompatible(encoding);
         byte[] needle = bytePath ? encoding.GetBytes(options.Pattern) : [];
         if (bytePath && needle.Length == 0) bytePath = false;
 
@@ -111,8 +117,9 @@ public static class RawGrep
                 else if (isEof) region = filled;
                 else if (filled >= BufSize)
                 {
-                    // 1 ブロック内に改行がない長大行: 先頭 64KB だけで判定し、次の改行まで読み飛ばす
-                    bool hit = Matches(span[..Math.Min(filled, MaxLineMatchBytes)]) != invert;
+                    // 1 ブロック内に改行が無い長大行: 次の改行まで読み飛ばす。
+                    // 判定に使う範囲は SearchService と同じ規則（素の文字列は全部・正規表現は先頭 64KB）
+                    bool hit = Matches(span[..(literal ? filled : Math.Min(filled, MaxLineMatchBytes))]) != invert;
                     long end = await LineEndAsync(src, bufBase + filled, fileLength, ct);
                     if (hit)
                     {
@@ -262,8 +269,9 @@ public static class RawGrep
             // 1行が当てはまるか（長大行は先頭 64KB だけで見る＝SearchService と同じ約束）
             bool Matches(ReadOnlySpan<byte> line)
             {
+                // 素の文字列はバイトを見るだけなので切らない。デコードが要る経路だけ先頭 64KB に切る
+                if (literal) return FindFrom(line) >= 0;
                 var probe = line.Length > MaxLineMatchBytes ? line[..MaxLineMatchBytes] : line;
-                if (literal) return FindFrom(probe) >= 0;
 
                 // 前チェック: 当たるなら必ず入っている手がかりが無ければ、デコードせずに外す
                 // （-v はここを通る。手がかりで飛ぶ道が使えないため）

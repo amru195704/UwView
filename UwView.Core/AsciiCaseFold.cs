@@ -19,7 +19,14 @@ namespace UwView.Core;
 /// </summary>
 public static class AsciiCaseFold
 {
-    /// <summary>バイトと文字が1対1に対応し、ASCII 部分がそのまま現れる文字コードか。</summary>
+    /// <summary>
+    /// バイトと文字が1対1に対応し、ASCII 部分がそのまま現れる文字コードか。
+    ///
+    /// <b>バイト列のまま探してよいかの判定にも使う。</b>Shift-JIS や EUC-JP では ASCII の値が
+    /// 2バイト文字の<b>後半</b>にも現れる（`ソ` は 83 5C なので `\` の検索に当たってしまう）。
+    /// UTF-16/32 は1文字が複数バイトで、そもそもバイト単位の一致が文字の一致にならない。
+    /// そういう文字コードでは、デコードしてから判定する経路へ回す（ソースレビュー 2026-09-19 の指摘5）。
+    /// </summary>
     public static bool IsAsciiCompatible(Encoding encoding) =>
         encoding.CodePage is 65001 or 20127 or 28591;   // UTF-8 / US-ASCII / Latin-1
 
