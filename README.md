@@ -4,7 +4,7 @@
 
 🌐 **[公式サイト](https://uvp.y42u.net/)**（[概要](https://uvp.y42u.net/about/)・[ヘルプ](https://uvp.y42u.net/help/)・[お問い合わせ](https://uvp.y42u.net/support/)）・ **[ブラウザで試す（WASMデモ）](https://amru195704.github.io/UwView/)** ・ 📰 [プレスキット](press-kit/PRESSKIT.md)
 
-📥 **ダウンロード: [GitHub Releases](https://github.com/amru195704/UwView/releases/latest)**（Windows / macOS / Linux 各版。同じアーカイブを [`dist/`](dist/) にも同梱）
+📥 **ダウンロード: [GitHub Releases](https://github.com/amru195704/UwView/releases/latest)**（Windows / macOS / Linux 各版・`SHA256SUMS` 添付）
 
 **258.68GB・45億行のテキストファイルを、省メモリ・高速に閲覧できるテキストビューア。**
 
@@ -359,10 +359,9 @@ dotnet run --project UwView.Browser
 
 ## ダウンロード（配布物）
 
-ビルド済みアーカイブ（.NET のインストール不要・自己完結型）は次の2か所から入手できます。
+ビルド済みアーカイブ（.NET のインストール不要・自己完結型）は **[GitHub Releases](https://github.com/amru195704/UwView/releases/latest)** から入手できます。各リリースにOS別アーカイブと `SHA256SUMS` を添付しています。
 
-1. **[GitHub Releases](https://github.com/amru195704/UwView/releases/latest)**（推奨）— 各リリースにOS別アーカイブと `SHA256SUMS` を添付しています。
-2. **[`dist/`](dist/)** — リポジトリにも同じアーカイブを追跡対象として同梱しています（clone するだけで一式揃います。ビルド生成物ですが例外的に `.gitignore` 対象外）。
+> 以前はリポジトリの `dist/` にも同じアーカイブを同梱していましたが、配布は Releases に一本化しました（clone を軽くし、配布数を数えられるようにするため）。
 
 | ファイル | 対象 |
 | --- | --- |

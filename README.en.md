@@ -4,7 +4,7 @@
 
 🌐 **[Official site](https://uvp.y42u.net/en/)** ([About](https://uvp.y42u.net/en/about-en/) · [Help](https://uvp.y42u.net/en/help-en/) · [Contact](https://uvp.y42u.net/en/support-en/)) · **[Try it in your browser (WASM demo)](https://amru195704.github.io/UwView/)** · 📰 [Press kit](press-kit/PRESSKIT.md)
 
-📥 **Download: [GitHub Releases](https://github.com/amru195704/UwView/releases/latest)** (Windows / macOS / Linux archives; the same files are also tracked under [`dist/`](dist/))
+📥 **Download: [GitHub Releases](https://github.com/amru195704/UwView/releases/latest)** (Windows / macOS / Linux archives, with `SHA256SUMS`)
 
 **A memory-thrifty, high-speed viewer for text files of 258.68 GB and 4.5 billion lines.**
 
@@ -283,10 +283,9 @@ Same UI and same core as desktop.
 
 ## Download (prebuilt binaries)
 
-Self-contained archives (no .NET install required) are available from two places:
+Self-contained archives (no .NET install required) are available from **[GitHub Releases](https://github.com/amru195704/UwView/releases/latest)** — each release carries per-OS archives plus `SHA256SUMS`.
 
-1. **[GitHub Releases](https://github.com/amru195704/UwView/releases/latest)** (recommended) — each release carries per-OS archives plus `SHA256SUMS`.
-2. **[`dist/`](dist/)** — the same archives are also tracked in the repository, so a plain clone gets everything.
+> The repository used to track the same archives under `dist/`. Distribution is now Releases-only, which keeps a clone small and makes download counts meaningful.
 
 | File | Target |
 | --- | --- |
