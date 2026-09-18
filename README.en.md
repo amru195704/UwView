@@ -45,6 +45,27 @@ A tool for **investigating** huge text files. Search with `uvf` in the terminal,
 
 > **One-time $129 / $9 per month** (Edit Upgrade +$120 / +$8). A **14-day free trial** includes the editing features → [product page](https://uvp.y42u.net/en/pro-en/)
 
+## 🆕 v1.6.5: `-open` no longer waits for the index either
+
+Here is what `uvf file 'pattern' -open` has cost you across three releases.
+
+| | up to v1.6.3 | v1.6.4 | **v1.6.5** |
+|---|---|---|---|
+| Passes over the file | CLI once + window once = **twice** | **once** | **once** |
+| Waiting for the index | yes | yes | **no** |
+| Line numbers in the results list | after the index | after the index | **immediately** |
+
+v1.6.4 made the CLI hand the positions of its matches to the window. The window still **waited for the index to finish** before it could show line numbers in the results list — on a 50 GB file, that is a second wait after the search has already succeeded.
+
+v1.6.5 has the **CLI collect the index markers (a line-start offset every N lines) and the line number of each match while it is searching**, and pass those along too. It is reading the whole file anyway, so counting one more thing costs almost nothing. The window **assembles** the index from what it received instead of re-reading the file, and because the line numbers travel with it, **the results list has line numbers from the first frame.**
+
+**`-open` can also be combined with `-i` / `-E` / `-v`** now — up to v1.6.4 the window had no way to receive the flags, so it was refused. The CLI resolves the flags itself before handing over the result and says which kind of search it was, so even when the handoff cannot be used **the window will not search with different conditions.**
+
+```bash
+uvf app.log 'FATAL|PANIC' -E -open      # a regex result, straight into the window
+uvf app.log 'debug' -i -v -open         # case-insensitive "not matching", straight into the window
+```
+
 ## 🆕 v1.6.4: `-open` hands the hits straight to the window
 
 With `uvf file 'pattern' -open`, the lines the CLI found are now **handed directly to the GUI**. The window does not search again.
@@ -197,7 +218,7 @@ Measured against the well-known large-log viewer **[klogg](https://klogg.filimon
 - ↔️ **Horizontal scrolling** (v1.2.2+) — read long lines (OSM XML, JSON logs, single-line CSV) all the way to the end. Horizontal scrollbar, trackpad swipe, Shift+wheel and `←`/`→` keys (`Home` returns to the start of the line; `Cmd/Ctrl+Home` goes to the top of the file). **Line numbers stay pinned on the left** while only the text moves. The search-results popup scrolls horizontally too.
 - ⭐ **Bookmarks** — toggle any line, jump prev/next. Kept by byte offset, so they survive encoding switches. Shown in the minimap.
 - 📡 **Real-time tail** — detects appends, re-maps mmap, extends the index incrementally, and auto-scrolls to the end. Opens logs that are still being written (FileShare.ReadWrite).
-- 🧰 **The `uvf` command** (v1.6.0+, rebuilt in v1.6.3 to ripgrep speed) — search from the terminal, output `line<TAB>text`, grep-compatible exit codes (0/1/2), `-i`/`-E`/`-v`, and `-open` to hand results to the GUI (from v1.6.4 the window no longer re-searches; [details](#-v164--open-hands-the-hits-straight-to-the-window)).
+- 🧰 **The `uvf` command** (v1.6.0+, rebuilt in v1.6.3 to ripgrep speed) — search from the terminal, output `line<TAB>text`, grep-compatible exit codes (0/1/2), `-i`/`-E`/`-v`, and `-open` to hand results to the GUI (from v1.6.4 the window no longer re-searches, and from v1.6.5 it no longer waits for the index either; combinable with `-i`/`-E`/`-v`. [details](#-v165--open-no-longer-waits-for-the-index-either)).
 - 🗜 **Opens gzip directly** (v1.6.0+) — a `.gz` is expanded into the same folder and opened. Truncated, doubly-compressed and tar files are refused with a reason. `.zip` comes in a later version.
 - 🌐 **Bilingual UI** — Japanese / English, switchable at runtime (persisted).
 - 🖥 **Identical rendering on every OS** — Avalonia's own Skia rendering makes Windows / macOS / Linux look the same. A browser (WASM) build ships a bundled Japanese font.
