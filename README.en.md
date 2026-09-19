@@ -8,9 +8,9 @@
 
 ---
 
-## UwView is as fast as ripgrep and as fast as klogg. It does both in one pass, so end to end it is about 2× quicker.
+## UwView is on par with ripgrep and on par with klogg. It does both in one pass, so end to end it is about 2× quicker.
 
-**Searching is as fast as `ripgrep`. Opening is as fast as `klogg`.** Compared one at a time, it is a tie.
+**Searching is on par with `ripgrep`. Opening is on par with `klogg`.** Compared one at a time, it is a tie.
 
 But what you actually want is to **find it and read the place it hit**. Search with `rg`, find the hit, then reopen the
 file in a viewer to read around it — **and the file has now been read twice.**
