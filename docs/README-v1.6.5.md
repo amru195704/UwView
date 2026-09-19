@@ -1,14 +1,14 @@
 # UwView
 
 > **【保管版】これは v1.6.5 時点の README です（2026年9月にアーカイブ）。**
-> 最新の性能・位置づけは **[現在の README](../../README.md)** を見てください。
+> 最新の性能・位置づけは **[現在の README](../README.md)** を見てください。
 > このページは、**機能の詳細・アーキテクチャ・ビルド手順・テストの流し方**の参照用に残しています。
 > 秒数や比較の記述は **v1.6.5 当時のもの**で、v1.6.6 では「開く」も「探して画面に出すまで」も速くなっています。
 
 
-*日本語 ｜ [English](README.en-v1.6.5-2026-09.md)*
+*日本語 ｜ [English](README.en-v1.6.5.md)*
 
-🌐 **[公式サイト](https://uvp.y42u.net/)**（[概要](https://uvp.y42u.net/about/)・[ヘルプ](https://uvp.y42u.net/help/)・[お問い合わせ](https://uvp.y42u.net/support/)）・ **[ブラウザで試す（WASMデモ）](https://amru195704.github.io/UwView/)** ・ 📰 [プレスキット](../../press-kit/PRESSKIT.md)
+🌐 **[公式サイト](https://uvp.y42u.net/)**（[概要](https://uvp.y42u.net/about/)・[ヘルプ](https://uvp.y42u.net/help/)・[お問い合わせ](https://uvp.y42u.net/support/)）・ **[ブラウザで試す（WASMデモ）](https://amru195704.github.io/UwView/)** ・ 📰 [プレスキット](../press-kit/PRESSKIT.md)
 
 📥 **ダウンロード: [GitHub Releases](https://github.com/amru195704/UwView/releases/latest)**（Windows / macOS / Linux 各版・`SHA256SUMS` 添付）
 
@@ -171,7 +171,7 @@ uvf ファイル 検索語 [オプション]      # 検索して結果を出す
 
 
 
-![UwView — OSM日本 51GB・8.9億行を行モードで表示](../../press-kit/screenshots/line-mode.png)
+![UwView — OSM日本 51GB・8.9億行を行モードで表示](../press-kit/screenshots/line-mode.png)
 
 かつて Vector で公開していた大容量テキストビューア UwView を、[Avalonia UI](https://avaloniaui.net/) で作り直したものです。**いまは閲覧だけの道具ではなく、画面とコマンドラインの両方から巨大テキストを調べる道具**になりました。通常のエディタは100万行程度で開けなくなりますが、UwView はファイル全体をメモリに載せず、**見えている行だけを描画**することで巨大ファイルを実用的に閲覧できます。RDB/XML ダンプ等で発生する巨大行数ファイルを「とにかく速く見る」ことに特化しています。現在の最大行数テストは**45億行**（＝OpenStreetMapのアメリカ全土の地図ソースを XML 展開した 258.68GB のファイル）。秒数を計測したのは UwView Pro ですが（[詳細](#実データ検証osm-アメリカ全土25868gb45億行uwview-pro)）、**無料版でも同じ258.68GBを開いて検索できることを確認しています**（2026-09-11）。以前は8.9億行（OSM日本・51GB）までしか確認できていませんでしたが、その約5倍まで到達しました。誰か限界を調査したら教えてください（できるものなら。私は怖くてできません）。
 
@@ -503,13 +503,13 @@ UwView と同じ作者（y4u）が開発している、測量士・土地家屋�
 
 ## ライセンス
 
-UwView は [PolyForm Internal Use License 1.0.0](../../LICENSE) で提供されます。
+UwView は [PolyForm Internal Use License 1.0.0](../LICENSE) で提供されます。
 
 - 個人利用、および企業の**社内業務利用は無料**です。
 - 本ソフトの**再配布・製品/サービスへの組込み・転売・第三者への提供**はできません。これらを行う場合は別途「商用（再配布）ライセンス」が必要です。
 - 商用ライセンスのお問い合わせ: [GitHub Issues](https://github.com/amru195704/UwView/issues)
 
-> 日本語の参考訳: [LICENSEjp.txt](../../LICENSEjp.txt)（法的効力を持つ正文は英語版 [LICENSE](../../LICENSE)）。
+> 日本語の参考訳: [LICENSEjp.txt](../LICENSEjp.txt)（法的効力を持つ正文は英語版 [LICENSE](../LICENSE)）。
 
 ## 注意
 

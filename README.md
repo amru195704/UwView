@@ -115,7 +115,7 @@ uvf japan-latest.osm '東京' -open
 | 📖 **同じ50GBを3つの土俵で測った** | [記事](https://uvp.y42u.net/blog/uvp-three-arenas-50gb/) |
 | 📖 **画面がコマンドに追いついた話** | [記事](https://uvp.y42u.net/blog/uvp-gui-catches-up-v166/) |
 | 📖 **ripgrep の `--no-mmap`** | [記事](https://uvp.y42u.net/blog/uvp-rg-no-mmap-50gb/) |
-| 🔧 **機能の詳細・アーキテクチャ・ビルド手順・テスト** | [以前の README（v1.6.5 時点）](2-doc/archive/README-v1.6.5-2026-09.md) |
+| 🔧 **機能の詳細・アーキテクチャ・ビルド手順・テスト** | [以前の README（v1.6.5 時点）](docs/README-v1.6.5.md) |
 | 📰 **プレスキット** | [PRESSKIT.md](press-kit/PRESSKIT.md) |
 
 > **版について:** 上の「開く 50.44秒」は **v1.6.6（近日公開）**の実測です。`uvf … -open` の 53.69秒と CLI の

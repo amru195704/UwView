@@ -119,7 +119,7 @@ session restore / identical rendering on every OS
 | 📖 **One 50 GB file, three arenas** | [Article](https://uvp.y42u.net/en/blog/uvp-three-arenas-50gb-en/) |
 | 📖 **The window catching up with the command** | [Article](https://uvp.y42u.net/en/blog/uvp-gui-catches-up-v166-en/) |
 | 📖 **ripgrep's `--no-mmap`** | [Article](https://uvp.y42u.net/en/blog/uvp-rg-no-mmap-50gb-en/) |
-| 🔧 **Full feature list, architecture, build and test instructions** | [Previous README (as of v1.6.5)](2-doc/archive/README.en-v1.6.5-2026-09.md) |
+| 🔧 **Full feature list, architecture, build and test instructions** | [Previous README (as of v1.6.5)](docs/README.en-v1.6.5.md) |
 | 📰 **Press kit** | [PRESSKIT.md](press-kit/PRESSKIT.md) |
 
 > **On versions:** the "open, 50.44 s" figure above is measured on **v1.6.6 (coming shortly)**. `uvf … -open`'s 53.69 s

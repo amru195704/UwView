@@ -1,14 +1,14 @@
 # UwView
 
 > **[Archived]** This is the README as of v1.6.5, kept from September 2026.
-> For current performance and positioning, see the **[current README](../../README.en.md)**.
+> For current performance and positioning, see the **[current README](../README.en.md)**.
 > It is kept here for the **full feature list, architecture, build instructions and test recipes**.
 > All timings and comparisons below are **as of v1.6.5**; v1.6.6 is faster both at opening and at getting hits on screen.
 
 
-*[日本語](README-v1.6.5-2026-09.md) ｜ English*
+*[日本語](README-v1.6.5.md) ｜ English*
 
-🌐 **[Official site](https://uvp.y42u.net/en/)** ([About](https://uvp.y42u.net/en/about-en/) · [Help](https://uvp.y42u.net/en/help-en/) · [Contact](https://uvp.y42u.net/en/support-en/)) · **[Try it in your browser (WASM demo)](https://amru195704.github.io/UwView/)** · 📰 [Press kit](../../press-kit/PRESSKIT.md)
+🌐 **[Official site](https://uvp.y42u.net/en/)** ([About](https://uvp.y42u.net/en/about-en/) · [Help](https://uvp.y42u.net/en/help-en/) · [Contact](https://uvp.y42u.net/en/support-en/)) · **[Try it in your browser (WASM demo)](https://amru195704.github.io/UwView/)** · 📰 [Press kit](../press-kit/PRESSKIT.md)
 
 📥 **Download: [GitHub Releases](https://github.com/amru195704/UwView/releases/latest)** (Windows / macOS / Linux archives, with `SHA256SUMS`)
 
@@ -169,7 +169,7 @@ Open a `.gz` and the app asks how. **"Expand and open"** writes the decompressed
 - **`.zip` cannot be opened yet** (entry selection comes in a later version). Extract it first for now
 
 
-![UwView — a 51 GB / 892-million-line OSM Japan file in line mode](../../press-kit/screenshots/line-mode.png)
+![UwView — a 51 GB / 892-million-line OSM Japan file in line mode](../press-kit/screenshots/line-mode.png)
 
 UwView is a rebuild (in [Avalonia UI](https://avaloniaui.net/)) of a large-text viewer originally published on the Japanese "Vector" archive. **It is no longer only a viewer**: the window and the command line now investigate the same file together. Ordinary editors choke around a million lines; UwView never loads the whole file into memory and **renders only the lines currently on screen**, so it opens huge line-count files — the kind produced by RDB or XML dumps — instantly. The largest file tested so far is **4,509,830,821 lines / 258.68 GB** (the whole United States OpenStreetMap extract, expanded to XML). The timings were measured with UwView Pro ([details](#real-data--openstreetmap-usa-25868-gb--45-billion-lines-uwview-pro)), but **the free edition has been confirmed to open and search the same 258.68 GB file** (2026-09-11). Until recently the largest confirmed was 892 million lines / ~51 GB (OSM Japan); that ceiling has now moved about 5× higher. If anyone finds the real limit, please let me know.
 
@@ -412,7 +412,7 @@ macOS: open the DMG and drag `UwView.app` to Applications. Windows / Linux: unpa
 
 ## License
 
-UwView is provided under the [PolyForm Internal Use License 1.0.0](../../LICENSE).
+UwView is provided under the [PolyForm Internal Use License 1.0.0](../LICENSE).
 
 - **Free** for personal use and for the **internal business operations** of you and your company.
 - You may **not redistribute** the software, embed it in a product/service, resell it, or provide it to third parties. A separate commercial (redistribution) license is required for those uses.
