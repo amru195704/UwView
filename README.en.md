@@ -16,7 +16,7 @@
 |---|---|---:|---:|:---:|
 | **Search** (CLI, one term) | ripgrep 15.2.0 | 55.54 s | **`uvf` 52.87 s** | level |
 | **Open** (GUI) | klogg 24.11.0 | 52.55 s | **50.44 s** | level |
-| **Search, then read the hit** | `rg` + klogg | 108.1 s | **`uvf … -open` 53.69 s** | **2.01×** |
+| **Search, then read the hit** | `rg` + klogg | 108.1 s | **`uvf … -open` 50.74 s** | **2.13×** |
 
 **Searching is level with ripgrep; opening is level with klogg. The gap appears when you join the two.**
 
@@ -25,7 +25,8 @@
 `rg` then reopening in a viewer **reads the file twice.** `uvf … -open` reads it **once.**
 
 > The 108.1 s for `rg` + klogg is two measured figures added (55.54 s + 52.55 s). klogg alone (open + search) is also 108.14 s.
-> Term: `東京` (94,979 hits). **[Conditions and full data →](https://uvp.y42u.net/en/benchmarks-en/)**
+> Term: `東京` (94,979 hits). `uvf … -open`'s 50.74 s is 51.25 GB ÷ 50.74 s = **963 MB/s** — exactly one pass over the file.
+> **[Conditions and full data →](https://uvp.y42u.net/en/benchmarks-en/)**
 
 ### By size
 
@@ -54,7 +55,7 @@ uvf japan-latest.osm 'pattern' -open
 ```
 
 **The window opens the moment the search finishes, with a line-numbered list of hits. It does not search again.**
-**From the command finishing to the list being on screen: 0.18 s** (measured at 50 GB) — the window only has to lay out
+**From the command finishing to the list being on screen: 0.08–0.18 s** (measured at 50 GB) — the window only has to lay out
 the positions it was handed.
 From there: read the lines around a hit, jump from the list, colour several keywords at once, change the pattern and
 look again. Investigation is made of that back and forth.
