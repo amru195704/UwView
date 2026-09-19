@@ -36,8 +36,13 @@
 | klogg 24.11.0 (open) | 3.65 s | 10.98 s | 52.55 s |
 | **UwView CLI (`uvf`, search)** | **3.26 s** | 11.41 s | **52.87 s** |
 | **UwView GUI (open)** | **2.99 s** | **10.13 s** | **50.44 s** |
+| **UwView end to end (`uvf … -open`)** | **3.31 s** | **10.48 s** | **50.74 s** |
 
 **Every row is one pass over the file.** None of these tools keeps an index, so the disk's read speed is the limit.
+
+**Compare the last row with the one above it.** The difference between "just opening" and "search plus hits on screen"
+is **+0.31 s / +0.35 s / +0.30 s** — **the file grows 17×, and searching still adds only 0.3 s.**
+The search happens during the read, so it needs no pass of its own.
 
 **Ask the same file twice and ripgrep wins at 3 GB** — that size fits in RAM, so its second run comes from cache.
 Running seven searches twice each totals 32.30 s for rg against 33.31 s for `uvf` at 3 GB, 158.69 s against
@@ -55,7 +60,7 @@ uvf japan-latest.osm 'pattern' -open
 ```
 
 **The window opens the moment the search finishes, with a line-numbered list of hits. It does not search again.**
-**From the command finishing to the list being on screen: 0.08–0.18 s** (measured at 50 GB) — the window only has to lay out
+**From the command finishing to the list being on screen: 0.03–0.08 s** (0.03 s at 3 GB and 10 GB, 0.08 s at 50 GB) — the window only has to lay out
 the positions it was handed.
 From there: read the lines around a hit, jump from the list, colour several keywords at once, change the pattern and
 look again. Investigation is made of that back and forth.
