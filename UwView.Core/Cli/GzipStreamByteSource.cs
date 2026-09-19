@@ -15,6 +15,7 @@ namespace UwView.Core.Cli;
 /// （<see cref="CompressedInput.VerifyGzipOutput"/>）。
 ///
 /// 展開と CRC は別スレッドで先回りして進め、検索と重ねる（3GB の gz で 2.2 秒 → 1.9 秒。gzip -dc | rg は 1.2 秒）。
+/// 展開は <see cref="GzipDecoder"/>（macOS は OS 標準の zlib）。
 /// </summary>
 internal sealed class GzipStreamByteSource : IByteSource
 {
@@ -48,8 +49,7 @@ internal sealed class GzipStreamByteSource : IByteSource
         var ct = _stop.Token;
         try
         {
-            using (file)
-            using (var gz = new GZipStream(file, CompressionMode.Decompress))
+            using (var gz = GzipDecoder.Open(file, out bool verified))
             {
                 while (true)
                 {
@@ -62,11 +62,12 @@ internal sealed class GzipStreamByteSource : IByteSource
                         got += n;
                     }
                     if (got == 0) { ArrayPool<byte>.Shared.Return(buf); break; }
-                    _crc = Crc32.Update(_crc, buf.AsSpan(0, got));
+                    if (!verified) _crc = Crc32.Update(_crc, buf.AsSpan(0, got));
                     _produced += got;
                     _ready.Add((buf, got, null), ct);
                 }
-                if (_trailer is { } trailer)
+                // OS の zlib は読みの中で末尾を照らしている（切れていれば例外）。.NET の展開だけ自分で照らす
+                if (!verified && _trailer is { } trailer)
                     CompressedInput.VerifyGzipOutput(trailer, _produced, Crc32.Finish(_crc), SuffixCrc);
             }
             _ready.Add((null, 0, null), ct);

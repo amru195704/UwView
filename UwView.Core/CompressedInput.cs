@@ -275,7 +275,7 @@ public static class CompressedInput
                              FileShare.ReadWrite | FileShare.Delete, BufferSize, FileOptions.SequentialScan))
             {
                 long total = src.Length;
-                await using var gz = new GZipStream(src, CompressionMode.Decompress);
+                await using var gz = GzipDecoder.Open(src, out _);
                 await using var dst = new FileStream(tmp, FileMode.CreateNew, FileAccess.Write,
                     FileShare.None, BufferSize, FileOptions.SequentialScan);
 
