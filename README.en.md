@@ -17,9 +17,10 @@
 | **Search** (CLI) | ripgrep 15.2.0 | 55.38 s | **`uvf` 50.82 s** | level |
 | **Open** (GUI) | klogg 24.11.0 | 52.55 s | **50.44 s** | level |
 | **Search, then read the hit** | `rg` + klogg | 107.9 s | **`uvf … -open` 53.69 s** | **2.01×** |
-| **A second question on the same file** | klogg | 108.14 s | **`uvp` 6.41 s** | **16.9×** |
 
 **Searching is level with ripgrep; opening is level with klogg. The gap appears when you join the two.**
+
+**All of that is the free edition.**
 
 `rg` then reopening in a viewer **reads the file twice.** `uvf … -open` reads it **once.**
 
