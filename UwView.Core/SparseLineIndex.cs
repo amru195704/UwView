@@ -46,6 +46,20 @@ public readonly record struct LineSeparator(byte Value, int UnitSize, int ByteIn
         return true;
     }
 
+    /// <summary>
+    /// 行末が CR 1文字で終わっているか（CRLF の CR を落とすため）。<b>文字ぜんぶ</b>で比べる。
+    /// UTF-16LE の <c>č</c>（U+010D）は <c>0D 01</c> で、CR の <c>0D 00</c> とは別の文字
+    ///（再々レビュー 2026-09-19 の指摘4。1バイトだけ見ていたため、行末の č を消していた）。
+    /// </summary>
+    public bool EndsWithCarriageReturn(ReadOnlySpan<byte> line)
+    {
+        if (line.Length < UnitSize) return false;
+        int start = line.Length - UnitSize;
+        for (int k = 0; k < UnitSize; k++)
+            if (line[start + k] != (k == ByteInUnit ? (byte)'\r' : (byte)0)) return false;
+        return true;
+    }
+
     /// <summary>1バイトの LF 区切りか（＝これまでどおりの単純なバイト走査でよいか）。</summary>
     public bool IsSingleByteLf => UnitSize == 1 && Value == (byte)'\n';
 
@@ -262,6 +276,15 @@ public sealed class SparseLineIndex
                 int want = (int)Math.Min(BufSize, targetLength - pos);
                 int got = await src.ReadAsync(pos, buf.AsMemory(0, want), ct);
                 if (got <= 0) break;
+
+                // 文字の途中で読みが切れたら、その半端は次回に回す（数え終わった位置を進めない）。
+                // Tail で UTF-16 の改行 0A 00 が2回の追記に割れると、前半だけ見て「改行ではない」と
+                // 判断したまま先へ進み、後半が来ても二度と見直さなかった（再々レビュー 2026-09-19 の指摘5）
+                if (Separator.UnitSize > 1)
+                {
+                    got -= (int)((pos + got - BomLength) % Separator.UnitSize);
+                    if (got <= 0) break;   // まだ1文字ぶんも揃っていない。追記を待つ
+                }
 
                 // 改行は1バイトずつ比べず、SIMD の IndexOf で跳ぶ。
                 // 258GB の実測で索引作成だけ 696MB/s と、検索（880MB/s）や媒体（942MB/s）に負けていた

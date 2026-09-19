@@ -119,8 +119,27 @@ public static class RawGrep
                 {
                     // 1 ブロック内に改行が無い長大行: 次の改行まで読み飛ばす。
                     // 判定に使う範囲は SearchService と同じ規則（素の文字列は全部・正規表現は先頭 64KB）
-                    bool hit = Matches(span[..(literal ? filled : Math.Min(filled, MaxLineMatchBytes))]) != invert;
-                    long end = await LineEndAsync(src, bufBase + filled, fileLength, ct);
+                    bool hit;
+                    long end;
+                    if (literal)
+                    {
+                        // 素の文字列は行の最後まで探す（先頭の1回ぶんで諦めると、後ろの一致を見落とす。
+                        // 再々レビュー 2026-09-19 の指摘6）。読みの境目をまたぐ一致も拾う
+                        bool found = FindFrom(span[..filled]) >= 0;
+                        int overlap = Math.Min(filled, (bytePath ? needle.Length : folded.Length) - 1);
+                        var (contentEnd, foundRest) = await LongLine.ScanRestAsync(
+                            src, bufBase + filled, fileLength, (byte)'\n',
+                            found ? ReadOnlyMemory<byte>.Empty : buf.AsMemory(filled - overlap, overlap),
+                            found ? null : FindFrom, null, ct);
+                        hit = (found || foundRest) != invert;
+                        end = contentEnd;
+                    }
+                    else
+                    {
+                        // 正規表現は1行をデコードする都合で先頭 64KB まで
+                        hit = Matches(span[..Math.Min(filled, MaxLineMatchBytes)]) != invert;
+                        end = await LineEndAsync(src, bufBase + filled, fileLength, ct);
+                    }
                     if (hit)
                     {
                         await EmitLongLineAsync(src, bufBase, end, lineNo, sink, ct);   // 行頭＝bufBase

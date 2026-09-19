@@ -118,6 +118,7 @@ public static class SearchService
         var foldAnchor = byteIcase ? AsciiCaseFold.Anchor(folded, out foldAt) : null;
 
         bool literal = bytePath || byteIcase;
+        int literalLength = bytePath ? needle.Length : folded.Length;
         Regex? regex = literal ? null : BuildScanRegex(options);
         Decoder? decoder = literal ? null : encoding.GetDecoder();
         LiteralFinder? prefilter = CreatePrefilter(options, encoding);
@@ -158,9 +159,26 @@ public static class SearchService
                     // 1ブロック内に改行が無い長大行: 次の '\n' まで読み飛ばす。
                     // 判定に使う範囲は、素の文字列なら<b>読んだぶん全部</b>（バイトを見るだけなので切る理由がない）、
                     // 正規表現・大小無視は1行をデコードする都合で先頭 64KB まで（同 指摘7）
-                    int probe = literal ? filled : Math.Min(filled, MaxLineMatchBytes);
-                    ProcessRegion(buf.AsSpan(0, probe), bufBase, oversized: true);
-                    long skipped = await SkipToNextLineAsync(src, bufBase + filled, fileLength, ct, sep);
+                    long skipped;
+                    if (literal && sep.UnitSize == 1)
+                    {
+                        // 素の文字列は行の最後まで探す（先頭の1回ぶんで諦めると、後ろの一致を見落とす。
+                        // 再々レビュー 2026-09-19 の指摘6）。読みの境目をまたぐ一致も拾う
+                        bool found = FindLiteral(buf.AsSpan(0, filled)) >= 0;
+                        int overlap = Math.Min(filled, literalLength - 1);
+                        var (contentEnd, foundRest) = await LongLine.ScanRestAsync(
+                            src, bufBase + filled, fileLength, sep.Value,
+                            found ? ReadOnlyMemory<byte>.Empty : buf.AsMemory(filled - overlap, overlap),
+                            found ? null : FindLiteral, null, ct);
+                        if (found || foundRest) AddHit(bufBase);
+                        skipped = contentEnd < fileLength ? contentEnd + 1 : fileLength;
+                    }
+                    else
+                    {
+                        // 正規表現は1行をデコードする都合で先頭 64KB まで（同 指摘7）
+                        ProcessRegion(buf.AsSpan(0, Math.Min(filled, MaxLineMatchBytes)), bufBase, oversized: true);
+                        skipped = await SkipToNextLineAsync(src, bufBase + filled, fileLength, ct, sep);
+                    }
                     bufBase = skipped; pos = skipped; carry = 0;
                     if (truncated || pos >= fileLength) break;
                     continue;
@@ -289,8 +307,12 @@ public static class SearchService
 
         /// <summary>CRLF 対策: 末尾の '\r' を1文字ぶん落とす（UTF-16 なら 0D 00 の2バイト）。</summary>
         ReadOnlySpan<byte> TrimCr(ReadOnlySpan<byte> line)
-            => line.Length >= sep.UnitSize && line[line.Length - sep.UnitSize + sep.ByteInUnit] == (byte)'\r'
-               ? line[..^sep.UnitSize] : line;
+            => sep.EndsWithCarriageReturn(line) ? line[..^sep.UnitSize] : line;
+
+        // 素の文字列を探す（大小を区別する／ASCII の大小を畳む）。長大行の残りを読むときにも使う
+        int FindLiteral(ReadOnlySpan<byte> hay) => bytePath
+            ? hay.IndexOf(needle)
+            : AsciiCaseFold.IndexOf(hay, folded, foldAnchor!, foldAt);
 
         bool AddHit(long lineOffset)
         {

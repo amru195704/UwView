@@ -218,6 +218,82 @@ public class SourceReview0919Tests
         finally { File.Delete(path); }
     }
 
+    // ── 再々レビュー: 指摘4（行末の č を CR として消さない）──────────
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task 再々4_UTF16の行末のčをCRとして消さない(bool bigEndian)
+    {
+        Encoding enc = bigEndian ? Encoding.BigEndianUnicode : Encoding.Unicode;
+        byte[] data = [.. enc.GetPreamble(), .. enc.GetBytes("A\u010D\nbeta\n")];   // č は 0D 01 / 01 0D
+        string path = await WriteTempAsync(data);
+        try
+        {
+            await using var session = DocumentSession.Open(path);
+            await session.BuildIndexAsync();
+            Assert.Equal("A\u010D", session.Document.GetLine(0));
+
+            await session.StartSearchAsync(new SearchOptions("^A\u010D$", UseRegex: true));
+            Assert.Equal([2L], session.SearchHits);
+        }
+        finally { File.Delete(path); }
+    }
+
+    // ── 再々レビュー: 指摘5（Tail で 1文字が2回の追記に割れても数え落とさない）──
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task 再々5_UTF16の改行が2回の追記に割れても行を数え落とさない(bool bigEndian)
+    {
+        Encoding enc = bigEndian ? Encoding.BigEndianUnicode : Encoding.Unicode;
+        string path = await WriteTempAsync([.. enc.GetPreamble(), .. enc.GetBytes("alpha\n")]);
+        try
+        {
+            await using var session = DocumentSession.Open(path);
+            await session.BuildIndexAsync();
+
+            byte[] lf = enc.GetBytes("\n");
+            foreach (byte[] piece in new[] { enc.GetBytes("beta"), [lf[0]], [lf[1]], enc.GetBytes("gamma\n") })
+            {
+                await using (var fs = new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.ReadWrite))
+                    await fs.WriteAsync(piece);
+                await session.PollTailAsync();
+            }
+
+            Assert.Equal(3, session.Document.TotalLines);
+            Assert.Equal("gamma", session.Document.GetLine(2));
+        }
+        finally { File.Delete(path); }
+    }
+
+    // ── 再々レビュー: 指摘6（長い行の後ろにある固定文字列も見つける）──
+
+    // 位置: 最初の読み（4MB）の先／最初の読みと続きの境目をまたぐ／続きの読み（1MB ずつ）同士の境目をまたぐ
+    [Theory]
+    [InlineData(false, false, 6_000_000)]
+    [InlineData(true, false, 6_000_000)]
+    [InlineData(false, true, 6_000_000)]
+    [InlineData(true, true, 6_000_000)]
+    [InlineData(false, false, (4 << 20) - 3)]
+    [InlineData(true, false, (4 << 20) - 3)]
+    [InlineData(false, false, (5 << 20) - 3)]
+    [InlineData(true, true, (5 << 20) - 3)]
+    public async Task 再々6_4MBより後ろの固定文字列も見つける(bool indexed, bool ignoreCase, int at)
+    {
+        byte[] data = Encoding.UTF8.GetBytes(new string('a', at) + "TARGET" + new string('a', 3_000_000) + "\nnext\n");
+        string path = await WriteTempAsync(data);
+        try
+        {
+            await using var session = DocumentSession.Open(path);
+            if (indexed) await session.BuildIndexAsync();
+            await session.StartSearchAsync(new SearchOptions(ignoreCase ? "target" : "TARGET", IgnoreCase: ignoreCase));
+            Assert.Equal([0L], session.SearchHits);
+        }
+        finally { File.Delete(path); }
+    }
+
     // ── 指摘6: 文字クラス減算で候補行を捨てない ────────────────
 
     [Fact]

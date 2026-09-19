@@ -367,8 +367,7 @@ public sealed class LineDocument : IAsyncDisposable
     {
         // CRLF / 混在対策: 末尾の '\r' を1文字ぶん除去（UTF-16 なら 0D 00 の2バイト）
         var sep = Separator;
-        if (span.Length >= sep.UnitSize && span[span.Length - sep.UnitSize + sep.ByteInUnit] == (byte)'\r')
-            span = span[..^sep.UnitSize];
+        if (sep.EndsWithCarriageReturn(span)) span = span[..^sep.UnitSize];
 
         string s = _encoding.GetString(span);
 
