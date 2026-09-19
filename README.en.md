@@ -14,9 +14,9 @@
 
 | Task | Against | Theirs | **UwView** | |
 |---|---|---:|---:|:---:|
-| **Search** (CLI) | ripgrep 15.2.0 | 55.38 s | **`uvf` 50.82 s** | level |
+| **Search** (CLI, one term) | ripgrep 15.2.0 | 55.54 s | **`uvf` 52.87 s** | level |
 | **Open** (GUI) | klogg 24.11.0 | 52.55 s | **50.44 s** | level |
-| **Search, then read the hit** | `rg` + klogg | 107.9 s | **`uvf … -open` 53.69 s** | **2.01×** |
+| **Search, then read the hit** | `rg` + klogg | 108.1 s | **`uvf … -open` 53.69 s** | **2.01×** |
 
 **Searching is level with ripgrep; opening is level with klogg. The gap appears when you join the two.**
 
@@ -24,20 +24,23 @@
 
 `rg` then reopening in a viewer **reads the file twice.** `uvf … -open` reads it **once.**
 
-> The 107.9 s for `rg` + klogg is two measured figures added (55.38 s + 52.55 s). klogg alone (open + search) is 108.14 s.
+> The 108.1 s for `rg` + klogg is two measured figures added (55.54 s + 52.55 s). klogg alone (open + search) is also 108.14 s.
 > Term: `東京` (94,979 hits). **[Conditions and full data →](https://uvp.y42u.net/en/benchmarks-en/)**
 
 ### By size
 
 | | 3 GB | 10 GB | 50 GB |
 |---|---:|---:|---:|
-| ripgrep 15.2.0 (search, seven searches total) | **32.30 s** | 158.69 s | 806.22 s |
+| ripgrep 15.2.0 (search, one term) | 3.29 s | **11.38 s** | 55.54 s |
 | klogg 24.11.0 (open) | 3.65 s | 10.98 s | 52.55 s |
-| **UwView CLI (`uvf`, search)** | 33.31 s | **147.01 s** | **735.97 s** |
+| **UwView CLI (`uvf`, search)** | **3.26 s** | 11.41 s | **52.87 s** |
 | **UwView GUI (open)** | **2.99 s** | **10.13 s** | **50.44 s** |
 
-**We lose to ripgrep at 3 GB** — that size fits in RAM, so its second run comes from cache.
-Past 10 GB, `uvf` edges ahead by 8–10%. **Both are limited by how fast the disk reads.**
+**Every row is one pass over the file.** None of these tools keeps an index, so the disk's read speed is the limit.
+
+**Ask the same file twice and ripgrep wins at 3 GB** — that size fits in RAM, so its second run comes from cache.
+Running seven searches twice each totals 32.30 s for rg against 33.31 s for `uvf` at 3 GB, 158.69 s against
+**147.01 s** at 10 GB, and 806.22 s against **735.97 s** at 50 GB.
 
 > **If you run `rg` on Windows:** at 50 GB, adding `--no-mmap` makes it **2.89× faster**
 > → **[the write-up](https://uvp.y42u.net/en/blog/uvp-rg-no-mmap-50gb-en/)**
@@ -51,6 +54,8 @@ uvf japan-latest.osm 'pattern' -open
 ```
 
 **The window opens the moment the search finishes, with a line-numbered list of hits. It does not search again.**
+**From the command finishing to the list being on screen: 0.18 s** (measured at 50 GB) — the window only has to lay out
+the positions it was handed.
 From there: read the lines around a hit, jump from the list, colour several keywords at once, change the pattern and
 look again. Investigation is made of that back and forth.
 
