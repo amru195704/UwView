@@ -103,12 +103,12 @@ UwView は「巨大なファイルを速く見る」ことに全振りした道�
 チェックサムは `SHA256SUMS-1.6.6.txt` にあります。
 
 ```
-1391ccccb34aa900eeceb1c8f5d0f492bc132cabce4e0b7b51d1dfe989759e66  UwView-1.6.6-linux-aarch64.tar.gz
-d56910cd34003d5fc20ded1ecccc4463e55706e2ab6269ee43a988bfa0619c28  UwView-1.6.6-linux-x86_64.tar.gz
-b9055c1bd6458c9459d43d476ad292e53f5b552385acf52f6ed5df3d04958911  UwView-1.6.6-mac-arm64.dmg
-2c15b220d1945db7b3bf697d2810d6db3615860278fd0ba04bb46765741198be  UwView-1.6.6-mac-x64.dmg
-bb408b94d513d3f28fb4fc4b29dd446477eb015dc481b7fdbcf0996170ccad4d  UwView-1.6.6-win-arm64.zip
-e44581877557e0bbaa1fbb5586e92e390c804f94ec0c303a43afd88b69257939  UwView-1.6.6-win-x64.zip
+7181d8c0d92a1b471af97aba86288c7aeec5d9bb9431687b012d36029a5732d4  UwView-1.6.6-linux-aarch64.tar.gz
+fbf68f13526519dbdd7e7ab24efce9da2f5a66f86f56c707aa1487307b99c03f  UwView-1.6.6-linux-x86_64.tar.gz
+94f841a1004d3711d419188bbe1186ee70026aaa3501d432a6f72ffaa2c53a50  UwView-1.6.6-mac-arm64.dmg
+a93b030da32a8190991cd3735c3d88f0b706948cb716e160de0c1fba4d5cd47f  UwView-1.6.6-mac-x64.dmg
+d764b74bf11afb5aae9b4309f15c154d483b3864e56362834fce52708972153f  UwView-1.6.6-win-arm64.zip
+9130b8173e01d5eb280c917beb06219bee356fb07b1ea8f457f2f9cb8b9b02ea  UwView-1.6.6-win-x64.zip
 ```
 
 > **配布は GitHub Releases のみ**です（v1.6.4 で一本化しました）。
@@ -224,12 +224,12 @@ The full test set at 3 GB, 10 GB and 50 GB (seven searches, cold plus hot) was c
 Checksums are in `SHA256SUMS-1.6.6.txt`.
 
 ```
-1391ccccb34aa900eeceb1c8f5d0f492bc132cabce4e0b7b51d1dfe989759e66  UwView-1.6.6-linux-aarch64.tar.gz
-d56910cd34003d5fc20ded1ecccc4463e55706e2ab6269ee43a988bfa0619c28  UwView-1.6.6-linux-x86_64.tar.gz
-b9055c1bd6458c9459d43d476ad292e53f5b552385acf52f6ed5df3d04958911  UwView-1.6.6-mac-arm64.dmg
-2c15b220d1945db7b3bf697d2810d6db3615860278fd0ba04bb46765741198be  UwView-1.6.6-mac-x64.dmg
-bb408b94d513d3f28fb4fc4b29dd446477eb015dc481b7fdbcf0996170ccad4d  UwView-1.6.6-win-arm64.zip
-e44581877557e0bbaa1fbb5586e92e390c804f94ec0c303a43afd88b69257939  UwView-1.6.6-win-x64.zip
+7181d8c0d92a1b471af97aba86288c7aeec5d9bb9431687b012d36029a5732d4  UwView-1.6.6-linux-aarch64.tar.gz
+fbf68f13526519dbdd7e7ab24efce9da2f5a66f86f56c707aa1487307b99c03f  UwView-1.6.6-linux-x86_64.tar.gz
+94f841a1004d3711d419188bbe1186ee70026aaa3501d432a6f72ffaa2c53a50  UwView-1.6.6-mac-arm64.dmg
+a93b030da32a8190991cd3735c3d88f0b706948cb716e160de0c1fba4d5cd47f  UwView-1.6.6-mac-x64.dmg
+d764b74bf11afb5aae9b4309f15c154d483b3864e56362834fce52708972153f  UwView-1.6.6-win-arm64.zip
+9130b8173e01d5eb280c917beb06219bee356fb07b1ea8f457f2f9cb8b9b02ea  UwView-1.6.6-win-x64.zip
 ```
 
 > **Distribution is GitHub Releases only** (consolidated in v1.6.4).

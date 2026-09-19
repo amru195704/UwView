@@ -82,12 +82,41 @@ look again. Investigation is made of that back and forth.
 |---|---|
 | Just searching, no window needed | **`uvf`** (free) |
 | **Search, then read the hit** | **`uvf … -open`** (free) — **the shortest path** |
-| You just want to open it and look | **the UwView window** (free) |
+| You just want to open it and look | **the UwView window** (free) — **scroll to the end the moment it opens** (below) |
 | **Coming back to the same file / keeping it compressed** | **[UwView Pro](https://uvp.y42u.net/en/pro-en/)** |
 | **Editing** a huge file | **UwView Pro + Edit Upgrade** |
 | Up to 3 GB, nothing installed | **[browser build](https://amru195704.github.io/UwView/)** |
 
 **Both `uvf` and the GUI are in the free build.** Single executables, no installer, same on Windows, macOS and Linux.
+
+### Even at 258 GB, you can look at the end the moment it opens
+
+`klogg` **cannot scroll to the end until its index is built** — **4 min 18 s at 258 GB**,
+and until then you only see the top of the file.
+
+UwView makes the whole file navigable **first** and builds the index in the background.
+"Just show me the tail" and "let me skim the middle" involve **no waiting at all**.
+
+| 258.68 GB, 4.5 billion lines | Until you can reach the end | How you move |
+|---|---|---|
+| klogg 24.11.0 | **4 min 18 s** (258 s) | only after the index is built |
+| **UwView (free)** | **no wait** | **page mode** — jump by ratio, e.g. `50%` |
+| **UwView Pro, 1st open** | **no wait** | **page mode** — same as the free edition |
+| **UwView Pro, 2nd open onward** | **no wait** (opens in 0.01–0.07 s) | **line mode** — jump by line number |
+
+**The first open is the same in both editions.** Either way the whole file is navigable in page mode
+the moment it opens. Moving by *line number* needs the index, so that part waits for the background
+build to finish (about 4.5 minutes at 258 GB — much the same as klogg).
+
+**The difference starts at the second open.** Pro keeps the index in its `.uwvz`, so it is
+**in line mode from the moment it opens** — type a line number and go. The free edition starts
+in page mode every time.
+
+- `Cmd/Ctrl+End` for the end, `Cmd/Ctrl+Home` for the start
+- The jump feels instant regardless of size (0.003 ms at 892 million lines, measured)
+
+> **What is fast here is not the index — it is the order.** Build the index and then let people use
+> the file, or let them move around first and build the index behind them. That is the whole difference.
 
 ### UwView Pro — the order of magnitude changes at the second question
 
