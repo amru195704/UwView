@@ -8,7 +8,15 @@
 
 ---
 
-## Level with ripgrep. Level with klogg. About 2× when you join them.
+## UwView is as fast as ripgrep and as fast as klogg. It does both in one pass, so end to end it is about 2× quicker.
+
+**Searching is as fast as `ripgrep`. Opening is as fast as `klogg`.** Compared one at a time, it is a tie.
+
+But what you actually want is to **find it and read the place it hit**. Search with `rg`, find the hit, then reopen the
+file in a viewer to read around it — **and the file has now been read twice.**
+With UwView you type `uvf <file> '<pattern>' -open`, and **a single read searches the file and puts the hits on screen.**
+
+**That is where the 2× comes from** — not a cleverer algorithm, but **two passes over the file becoming one.**
 
 **One 51.25 GB file** (Mac M4, external USB SSD, every run cold with the cache dropped)
 
@@ -20,11 +28,8 @@
 
 **Rows 1 and 3 are the same command, the same single run.** Searching, and searching plus putting the hits on screen,
 take the same time.
-**Searching is level with ripgrep; opening is level with klogg. The gap appears when you join the two.**
 
 **All of that is the free edition.**
-
-`rg` then reopening in a viewer **reads the file twice.** `uvf … -open` reads it **once.**
 
 > The 108.1 s for `rg` + klogg is two measured figures added (55.54 s + 52.55 s). klogg alone (open + search) is also 108.14 s.
 > Term: `東京` (94,979 hits). `uvf … -open`'s 50.74 s is 51.25 GB ÷ 50.74 s = **963 MB/s** — exactly one pass over the file.
