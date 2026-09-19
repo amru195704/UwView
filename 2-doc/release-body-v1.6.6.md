@@ -52,6 +52,41 @@ v1.6.5 の公開時、私たちは「**開くのは klogg に負けています*
 **測れないものに数字を付けたら、それは実測ではなく作文です。** なので書きません。
 言えるのはここまでです——**開く処理と検索処理が同時に走る。3GB では、探し始める前に開き終わっている。**
 
+### 🗜 `.gz` をそのまま検索できるようになりました（無料版）— **`zgrep` より速い**
+
+これまで `uvf ファイル.gz '語'` は受け付けず、`-open` で画面に渡すしかありませんでした。
+**v1.6.6 から、コマンドでそのまま検索できます。**
+
+```bash
+uvf app.log.gz 'ERROR'          # パイプを書かずに済む
+uvf app.log.gz 'ERROR' -open    # 当たりをそのまま画面へ
+```
+
+あわせて**展開処理を OS 標準の zlib に載せ替え**ました。**2.0〜2.1倍**速くなり、
+`gzip -dc | rg`（＝`zgrep` 相当）を**追い抜きました**。
+
+| `.gz` を検索（Mac・コールド／ホット） | `gzip -dc \| rg` | **`uvf`** | 倍率 |
+|---|---:|---:|---:|
+| 3GB 相当（301MB の gz） | 1.18秒 / 1.16秒 | **1.16秒 / 1.00秒** | **1.02／1.16倍** |
+| 10GB 相当（1.12GB の gz） | 4.38秒 / 4.29秒 | **3.66秒 / 3.38秒** | **1.20／1.27倍** |
+| 50GB 相当（5.75GB の gz） | 22.06秒 / 21.71秒 | **17.20秒 / 17.04秒** | **1.28／1.27倍** |
+
+**`gzip` コマンドそのものより速い**のは、プロセス間のパイプを経由せず、
+展開と照合を同じプロセスの中で重ねられるからです。
+
+> **`.gz` は「展開が律速」です。** コールドとホットがほぼ同じ秒数なのがその証拠で、
+> ディスクではなく CPU（展開）で決まっています。だから展開を速くした分がそのまま効きました。
+
+### ⚠️ 既知の制限：圧縮ファイル内の極端に長い行
+
+`.gz` の中に **1行が 64MiB（ASCII で約6,700万文字）を超える行**があり、その行が検索に一致した場合、
+「ファイルが壊れている」という趣旨のエラーになることがあります。**ファイル自体は壊れていません。**
+
+**対応予定はありません。** ログや XML ダンプで1行が 64MiB を超えることは通常なく、
+一方でこの制限を外すには行の長さに上限を置かない作りが必要で、**通常のファイルの処理まで遅くなります。**
+UwView は「巨大なファイルを速く見る」ことに全振りした道具なので、速度を優先します。
+該当するファイルは `gunzip` で展開してから開いてください。
+
 ### 🔧 CLI（`uvf`）に退行はありません
 
 3GB・10GB・50GB の全テスト（検索7種・コールド＋hot）を v1.6.3 と比べ、**全項目が ±6% 以内**であることを確認しました。
@@ -138,6 +173,40 @@ The "wait, then search" step is gone, so there is no waiting left to time.
 
 **Putting a number on something you cannot measure is not a measurement, it is a sentence.** So we are not doing it.
 What we can say is this: **opening and searching run at the same time, and at 3 GB the file is open before you start looking.**
+
+### 🗜 You can now search a `.gz` directly (free edition) — **faster than `zgrep`**
+
+Until now `uvf file.gz 'term'` was refused; you had to hand it to the window with `-open`.
+**From v1.6.6 the command searches it directly.**
+
+```bash
+uvf app.log.gz 'ERROR'          # no pipe to write
+uvf app.log.gz 'ERROR' -open    # hand the hits straight to the window
+```
+
+The decompressor was also moved onto the OS's own zlib. That made it **2.0–2.1× faster**
+and pushed it **past `gzip -dc | rg`** (i.e. `zgrep`).
+
+| Searching a `.gz` (Mac, cold / hot) | `gzip -dc \| rg` | **`uvf`** | Ratio |
+|---|---:|---:|---:|
+| 3 GB of text (301 MB gz) | 1.18 s / 1.16 s | **1.16 s / 1.00 s** | **1.02× / 1.16×** |
+| 10 GB of text (1.12 GB gz) | 4.38 s / 4.29 s | **3.66 s / 3.38 s** | **1.20× / 1.27×** |
+| 50 GB of text (5.75 GB gz) | 22.06 s / 21.71 s | **17.20 s / 17.04 s** | **1.28× / 1.27×** |
+
+Beating the `gzip` command itself comes from not going through a pipe between processes:
+decompression and matching overlap inside one process.
+
+> **`.gz` is decompression-bound.** Cold and hot land on nearly the same seconds, which shows the
+> limit is CPU, not the disk. That is why making decompression faster showed up one-for-one.
+
+### ⚠️ Known limitation: extremely long lines inside a compressed file
+
+If a `.gz` contains **a single line longer than 64 MiB** (roughly 67 million ASCII characters) and a search
+matches that line, you may get an error saying the file is damaged. **The file is not actually damaged.**
+
+**This will not be fixed.** Logs and XML dumps essentially never contain a 64 MiB line, and removing the limit
+would require a design with no bound on line length — which slows down every ordinary file as well.
+UwView exists to look at huge files fast, so speed wins. If you have such a file, `gunzip` it first.
 
 ### 🔧 No regression in the CLI (`uvf`)
 

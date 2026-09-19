@@ -120,12 +120,29 @@ costs the same as the first**. Only `uvp` **earns back what the first pass cost.
 ## What it does
 
 **Largest measured: 258.68 GB, 4.5 billion lines** (on the free edition) / the `uvf` command (`-i`, `-E`, `-v`,
-grep-compatible exit codes, `-open`) / hit-list window (original line numbers, jump, surrounding context, save) /
-multi-keyword colouring (32 colour-blind-safe colours, 7 presets, `.uwvhl`) / automatic encoding detection
-(UTF-8, Shift-JIS, EUC-JP, UTF-16) / real-time tail / opens gzip directly / tabs, bookmarks, horizontal scrolling,
-session restore / identical rendering on every OS
+grep-compatible exit codes, `-open`) / **searches `.gz` directly** (v1.6.6+, below) / hit-list window
+(original line numbers, jump, surrounding context, save) / multi-keyword colouring (32 colour-blind-safe colours,
+7 presets, `.uwvhl`) / automatic encoding detection (UTF-8, Shift-JIS, EUC-JP, UTF-16) / real-time tail /
+opens gzip directly / tabs, bookmarks, horizontal scrolling, session restore / identical rendering on every OS
 
 **Requirements**: .NET 10 / Avalonia UI 12.x / Windows, macOS, Linux
+
+### 🗜 Searching a `.gz` is faster than `zgrep` (v1.6.6+)
+
+```bash
+uvf app.log.gz 'ERROR'          # no pipe to write
+uvf app.log.gz 'ERROR' -open    # hand the hits straight to the window
+```
+
+The decompressor now runs on the OS's own zlib, which pushed it **past `gzip -dc | rg`** (i.e. `zgrep`).
+
+| Searching a `.gz` (cold / hot) | `gzip -dc \| rg` | **`uvf`** | Ratio |
+|---|---:|---:|---:|
+| 3 GB of text (301 MB gz) | 1.18 s / 1.16 s | **1.16 s / 1.00 s** | 1.02× / 1.16× |
+| 10 GB of text (1.12 GB gz) | 4.38 s / 4.29 s | **3.66 s / 3.38 s** | 1.20× / 1.27× |
+| 50 GB of text (5.75 GB gz) | 22.06 s / 21.71 s | **17.20 s / 17.04 s** | **1.28× / 1.27×** |
+
+Beating the `gzip` command itself comes from **not going through a pipe between processes**.
 
 ### Known limitation: extremely long lines inside a compressed file
 
