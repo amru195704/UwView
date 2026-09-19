@@ -97,22 +97,24 @@ and until then you only see the top of the file.
 UwView makes the whole file navigable **first** and builds the index in the background.
 "Just show me the tail" and "let me skim the middle" involve **no waiting at all**.
 
-| 258.68 GB, 4.5 billion lines | Until you can reach the end | How you move |
+| 258.68 GB, 4.5 billion lines | Until you can reach the end | What is on screen |
 |---|---|---|
-| klogg 24.11.0 | **4 min 18 s** (258 s) | only after the index is built |
-| **UwView (free)** | **no wait** | **page mode** — jump by ratio, e.g. `50%` |
-| **UwView Pro, 1st open** | **no wait** | **page mode** — same as the free edition |
-| **UwView Pro, 2nd open onward** | **no wait** (opens in 0.01–0.07 s) | **line mode** — jump by line number |
+| klogg 24.11.0 | **4 min 18 s** (258 s) | only the top of the file until the index is built |
+| **UwView (free)** | **no wait** | the text (**line numbers once the index is built**) |
+| **UwView Pro, 1st open** | **no wait** | same as the free edition |
+| **UwView Pro, 2nd open onward** | **no wait** (opens in 0.01–0.07 s) | the text **and line numbers**, from the start |
 
-**The first open is the same in both editions.** Either way the whole file is navigable in page mode
-the moment it opens. Moving by *line number* needs the index, so that part waits for the background
-build to finish (about 4.5 minutes at 258 GB — much the same as klogg).
+**You simply scroll.** Mouse wheel, dragging the scrollbar, `Cmd/Ctrl+End` — you can reach the end
+of the file the moment it opens. **You do not have to type a ratio**; `50%` and the like are just a
+shortcut when you want to jump somewhere in one move.
 
-**The difference starts at the second open.** Pro keeps the index in its `.uwvz`, so it is
-**in line mode from the moment it opens** — type a line number and go. The free edition starts
-in page mode every time.
+**The first open is the same in both editions.** The only difference is **when line numbers appear**:
+they show up once the index is built (about 4.5 minutes at 258 GB — much the same as klogg).
+**Scrolling works normally the whole time.**
 
-- `Cmd/Ctrl+End` for the end, `Cmd/Ctrl+Home` for the start
+**The difference starts at the second open.** Pro keeps the index in its `.uwvz`, so line numbers are
+there **from the moment it opens** — type a line number and go.
+
 - The jump feels instant regardless of size (0.003 ms at 892 million lines, measured)
 
 > **What is fast here is not the index — it is the order.** Build the index and then let people use
@@ -198,7 +200,7 @@ If you have such a file, `gunzip` it first and open the plain text.
 | 🔧 **Full feature list, architecture, build and test instructions** | [Previous README (as of v1.6.5)](docs/README.en-v1.6.5.md) |
 | 📰 **Press kit** | [PRESSKIT.md](press-kit/PRESSKIT.md) |
 
-> **On versions:** the timings on this page are measured on **v1.6.6 (coming shortly)**. On **v1.6.5**, which is what
+> **On versions:** the timings on this page are measured on **v1.6.6 "First Light" (coming shortly)**. On **v1.6.5**, which is what
 > Releases currently serves, `uvf … -open` took 53.69 s and opening in the window took 100.6 s.
 > → [what changed in v1.6.6](2-doc/release-body-v1.6.6.md)
 

@@ -1,10 +1,13 @@
 *日本語 ｜ [English](#uwview-v166-english)*
 
-## UwView V1.6.6
+## UwView v1.6.6 — First Light
 
 **画面が、コマンドに追いつきました。**
 GUI が**索引の完成を待たずに検索を始められる**ようになり、**開くのも klogg より速く**なりました。
 （前回の無料版は v1.6.5 です）
+
+> **First Light（ファーストライト）** — 新しい望遠鏡が初めて星の光を捉えた瞬間を、天文学ではそう呼びます。
+> v1.6.6 は、UwView が目指した形——**巨大なファイルを、待たずに見る**——が一通りそろった版です。
 
 ### ⚡ 50GB の「開いて、探して、画面に出す」が 189.5秒 → 53.7秒
 
@@ -122,11 +125,14 @@ v1.6.6 で速くなったのは**無料版の1問目**です。**同じファイ
 
 ---
 
-## UwView v1.6.6 (English)
+## UwView v1.6.6 — First Light (English)
 
 **The window caught up with the command.**
 The GUI can now **start searching without waiting for the index to finish**, and it **opens faster than klogg**.
 (The previous free release was v1.6.5.)
+
+> **First Light** is what astronomers call the moment a new telescope first catches starlight.
+> v1.6.6 is the release where what UwView set out to do — **look at a huge file without waiting** — is finally all there.
 
 ### ⚡ 50 GB, open → search → hits on screen: 189.5 s → 53.7 s
 
