@@ -108,7 +108,8 @@ public static class RawGrep
                 pos += got;
                 int filled = carry + got;
                 if (filled == 0) break;
-                bool isEof = pos >= fileLength;
+                // 長さが先に分からない入力（gz を展開しながら読む）は、読めなくなったところで終わり
+                bool isEof = pos >= fileLength || (want > 0 && got == 0);
 
                 var span = buf.AsSpan(0, filled);
                 int lastNl = span.LastIndexOf((byte)'\n');
@@ -370,7 +371,7 @@ public static class RawGrep
                 if (nl >= 0) return pos + nl;
                 pos += got;
             }
-            return fileLength;
+            return pos;
         }
         finally { ArrayPool<byte>.Shared.Return(buf); }
     }

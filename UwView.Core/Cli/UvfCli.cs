@@ -242,10 +242,11 @@ public static class UvfCli
             return UvfExit.Found;
         }
 
-        // 圧縮ファイルはここでは検索しない（中身を展開せずに探しても当たらない）。
-        // GUI なら「テキストに展開して開く」を選べるので、そちらへ案内する
+        // gz は展開しながら探す（gzip -dc | grep と同じ。オーナー指示 2026-09-19）。
+        // zip・壊れた gz は GUI の「テキストに展開して開く」へ案内する
         var probe = CompressedInput.Probe(inv.File!);
-        if (probe.IsCompressed || probe.IsRejected)
+        bool gzip = probe is { Kind: CompressedKind.Gzip, IsRejected: false };
+        if (!gzip && (probe.IsCompressed || probe.IsRejected))
         {
             Err(T($"{Path.GetFileName(inv.File)} は圧縮ファイルです。{tool} -open {inv.File} で GUI から開いてください",
                   $"{Path.GetFileName(inv.File)} is compressed. Open it in the app with: {tool} -open {inv.File}"));
@@ -254,7 +255,7 @@ public static class UvfCli
 
         try
         {
-            return await SearchToStdoutAsync(inv.File!, inv, env, T, Err, ct);
+            return await SearchToStdoutAsync(inv.File!, gzip, inv, env, T, Err, ct);
         }
         catch (OperationCanceledException)
         {
@@ -323,12 +324,12 @@ public static class UvfCli
     /// -i / -E / -v も同じ1回読みで扱う。
     /// </summary>
     private static async Task<int> SearchToStdoutAsync(
-        string path, UvfInvocation inv, UvfEnvironment env,
+        string path, bool gzip, UvfInvocation inv, UvfEnvironment env,
         Func<string, string, string> t, Action<string> err, CancellationToken ct)
     {
         var options = new SearchOptions(inv.Pattern!, UseRegex: inv.Regex, IgnoreCase: inv.IgnoreCase);
         var watch = Stopwatch.StartNew();
-        await using var src = new SequentialFileByteSource(path);
+        await using IByteSource src = gzip ? new GzipStreamByteSource(path) : new SequentialFileByteSource(path);
         var detected = EncodingDetector.Detect(src);
         var encoding = detected.Encoding;
 
@@ -336,7 +337,17 @@ public static class UvfCli
         await using (var w = new StreamWriter(env.StdOut, new UTF8Encoding(false), 1 << 16, leaveOpen: true) { NewLine = "\n" })
         {
             var writer = w;
-            outcome = await RawGrep.RunAsync(src, detected.BomLength, encoding, options, inv.Invert, Write, ct);
+            try
+            {
+                outcome = await RawGrep.RunAsync(src, detected.BomLength, encoding, options, inv.Invert, Write, ct);
+            }
+            catch (InvalidDataException e) when (gzip)
+            {
+                await w.FlushAsync(ct);
+                err(t($"{Path.GetFileName(path)} は壊れているか途中で切れています。ここまでの出力は不完全です（{e.Message}）",
+                      $"{Path.GetFileName(path)} is corrupted or truncated. The output so far is incomplete ({e.Message})"));
+                return UvfExit.Error;
+            }
 
             void Write(long line, long _, ReadOnlySpan<byte> text)
             {

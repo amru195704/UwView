@@ -299,6 +299,25 @@ public class CompressedInputTests : IDisposable
         Assert.Equal(0u, Crc32.Compute([]));
     }
 
+    [Fact]
+    public void CRC32の速い計算は1バイトずつの計算と一致する()
+    {
+        // 長さの端数（8の倍数±）と、途中で区切って持ち回す場合も確かめる
+        var rnd = new Random(7);
+        foreach (int len in new[] { 0, 1, 7, 8, 9, 15, 16, 17, 1000, 65_537 })
+        {
+            byte[] data = new byte[len];
+            rnd.NextBytes(data);
+            uint expected = Crc32.UpdateBytewise(Crc32.Initial, data);
+            Assert.Equal(expected, Crc32.Update(Crc32.Initial, data));
+            Assert.Equal(expected, Crc32.UpdateSliced(Crc32.Initial, data));
+            int cut = len / 3;
+            Assert.Equal(expected, Crc32.Update(Crc32.Update(Crc32.Initial, data.AsSpan(0, cut)), data.AsSpan(cut)));
+            Assert.Equal(expected, Crc32.UpdateSliced(Crc32.UpdateSliced(Crc32.Initial, data.AsSpan(0, cut)), data.AsSpan(cut)));
+        }
+        Assert.Equal(0xCBF43926u, Crc32.Finish(Crc32.UpdateSliced(Crc32.Initial, "123456789"u8)));
+    }
+
     // ── 補助 ────────────────────────────────────────────────
 
     /// <summary>だいたい <paramref name="bytes"/> バイトの、圧縮の効くテキスト。</summary>

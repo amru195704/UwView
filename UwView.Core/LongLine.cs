@@ -28,7 +28,7 @@ public static class LongLine
     /// 読みの境目をまたいだ一致を拾うために使う。探さないときは空でよい。
     /// </param>
     /// <param name="finder">探す係（null なら行の終わりだけ求める）。</param>
-    /// <returns>(区切りの位置＝行の本文の終わり（無ければ <paramref name="end"/>）, 見つかったか)</returns>
+    /// <returns>(区切りの位置＝行の本文の終わり（無ければ読めた終わり＝ふつうは <paramref name="end"/>）, 見つかったか)</returns>
     public static async Task<(long ContentEnd, bool Found)> ScanRestAsync(
         IByteSource src, long from, long end, byte separator,
         ReadOnlyMemory<byte> head, Finder? finder, Observer? observer, CancellationToken ct)
@@ -62,7 +62,7 @@ public static class LongLine
                 keep = k;
                 pos += got;
             }
-            return (end, found);
+            return (pos, found);   // 途中で読めなくなったら（長さが先に分からない入力）、そこが終わり
         }
         finally { ArrayPool<byte>.Shared.Return(buf); }
     }

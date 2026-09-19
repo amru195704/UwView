@@ -179,15 +179,115 @@ public class UvfCliTests : IDisposable
         Assert.Contains("UwView Pro", r.Err);
     }
 
-    [Fact]
-    public async Task 圧縮ファイルはGUIで開くよう案内する()
+    // ── gz は展開しながら検索する（オーナー指示 2026-09-19）────────────
+
+    private string Gzip(string plainPath, string? name = null)
     {
-        string gz = P("app.log.gz");
-        await using (var fs = File.Create(gz))
-        await using (var z = new GZipStream(fs, CompressionLevel.Fastest))
-            await z.WriteAsync("ERROR here\n"u8.ToArray());
+        string gz = P(name ?? Path.GetFileName(plainPath) + ".gz");
+        using var fs = File.Create(gz);
+        using var z = new GZipStream(fs, CompressionLevel.Fastest);
+        z.Write(File.ReadAllBytes(plainPath));
+        return gz;
+    }
+
+    [Theory]
+    [InlineData("ERROR")]
+    [InlineData("東京")]
+    public async Task gzは平文と同じ結果を出す(string pattern)
+    {
+        string log = WriteLog();
+        string gz = Gzip(log);
+
+        var plain = await Uvf(log, pattern);
+        var fromGz = await Uvf(gz, pattern);
+        Assert.Equal(UvfExit.Found, fromGz.Exit);
+        Assert.Equal(Reference(log, pattern), fromGz.Out);
+        Assert.Equal(plain.Out, fromGz.Out);
+        Assert.False(File.Exists(P("app.log.gz.uwvz")) || File.Exists(P("app.log.uwvz")), "uvf はファイルを作らない");
+    }
+
+    [Theory]
+    [InlineData("-i")]
+    [InlineData("-E")]
+    [InlineData("-v")]
+    public async Task gzでもオプション付きの結果が平文と同じ(string option)
+    {
+        string log = WriteLog();
+        string gz = Gzip(log);
+        string pattern = option == "-E" ? "dev[12] 東京" : "error";
+
+        var plain = await Uvf(log, pattern, option);
+        var fromGz = await Uvf(gz, pattern, option);
+        Assert.Equal(plain.Exit, fromGz.Exit);
+        Assert.Equal(plain.Out, fromGz.Out);
+    }
+
+    [Fact]
+    public async Task gzで手元に残す範囲を越える大きさでも平文と同じ()
+    {
+        // 展開したものは直近 64MB だけ手元に残す。それを何度も越える大きさで確かめる
+        string log = WriteLog("big.log", 2_000_000);   // 約 90MB
+        string gz = Gzip(log);
+
+        var plain = await Uvf(log, "seq=1999999");
+        var fromGz = await Uvf(gz, "seq=1999999");
+        Assert.Equal(UvfExit.Found, fromGz.Exit);
+        Assert.Equal(plain.Out, fromGz.Out);
+
+        var countPlain = await Uvf(log, "ERROR");
+        var countGz = await Uvf(gz, "ERROR");
+        Assert.Equal(countPlain.Out, countGz.Out);
+    }
+
+    [Fact]
+    public async Task gzの長い行と改行の無い最終行も平文と同じ()
+    {
+        string log = P("long.log");
+        File.WriteAllText(log, "head\n" + new string('x', 6_000_000) + "TARGET" + new string('y', 100) + "\nmid TARGET\ntail TARGET");
+        string gz = Gzip(log);
+
+        var plain = await Uvf(log, "TARGET");
+        var fromGz = await Uvf(gz, "TARGET");
+        Assert.Equal(UvfExit.Found, fromGz.Exit);
+        Assert.Equal(plain.Out, fromGz.Out);
+        Assert.Equal(3, fromGz.Out.Count(c => c == '\n'));
+    }
+
+    [Fact]
+    public async Task 連結したgzも全部探す()
+    {
+        string a = WriteLog("a.log", 3_000);
+        string b = P("b.log");
+        File.WriteAllText(b, "second member ERROR\n");
+        string gz = P("cat.log.gz");
+        await File.WriteAllBytesAsync(gz, [.. File.ReadAllBytes(Gzip(a)), .. File.ReadAllBytes(Gzip(b))]);
 
         var r = await Uvf(gz, "ERROR");
+        Assert.Equal(UvfExit.Found, r.Exit);
+        Assert.EndsWith("3001\tsecond member ERROR\n", r.Out);
+    }
+
+    [Fact]
+    public async Task 途中で切れたgzはexit2で知らせる()
+    {
+        string gz = Gzip(WriteLog());
+        byte[] whole = await File.ReadAllBytesAsync(gz);
+        await File.WriteAllBytesAsync(gz, whole[..(whole.Length * 2 / 3)]);
+
+        var r = await Uvf(gz, "ERROR");
+        Assert.Equal(UvfExit.Error, r.Exit);
+        Assert.Contains("truncated", r.Err);
+    }
+
+    [Fact]
+    public async Task zipはGUIで開くよう案内する()
+    {
+        string zip = P("app.zip");
+        using (var archive = ZipFile.Open(zip, ZipArchiveMode.Create))
+        using (var entry = new StreamWriter(archive.CreateEntry("app.log").Open()))
+            entry.Write("ERROR here\n");
+
+        var r = await Uvf(zip, "ERROR");
         Assert.Equal(UvfExit.Error, r.Exit);
         Assert.Contains("-open", r.Err);
         Assert.Equal("", r.Out);
