@@ -150,6 +150,13 @@ Development is funded mainly by sales of [UwView Pro](https://uvp.y42u.net/en/pr
 require a separate commercial (redistribution) license → [Issues](https://github.com/amru195704/UwView/issues).
 Japanese reference translation: [LICENSEjp.txt](LICENSEjp.txt) (the English text is binding).
 
+> **On package-manager submissions (clarification)**
+> **A Homebrew, Scoop or winget manifest that points at the official download
+> ([GitHub Releases](https://github.com/amru195704/UwView/releases/latest)) is not redistribution** — the user's own
+> machine fetches the file from the official source. **Submissions and pull requests of that kind are welcome.**
+> For the hash in the manifest, use the `SHA256SUMS` attached to each release.
+> Hosting a copy of the file anywhere other than the official source is the case that needs to be discussed first, as above.
+
 ## Other products by the same author
 
 iOS apps for surveyors and land investigators by the same author (y4u), independent of UwView:
