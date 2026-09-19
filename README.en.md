@@ -14,10 +14,12 @@
 
 | Task | Against | Theirs | **UwView** | |
 |---|---|---:|---:|:---:|
-| **Search** (CLI, one term) | ripgrep 15.2.0 | 55.54 s | **`uvf` 52.87 s** | level |
+| **Search** (CLI, one term) | ripgrep 15.2.0 | 55.54 s | **`uvf … -open` 50.74 s** | level |
 | **Open** (GUI) | klogg 24.11.0 | 52.55 s | **50.44 s** | level |
 | **Search, then read the hit** | `rg` + klogg | 108.1 s | **`uvf … -open` 50.74 s** | **2.13×** |
 
+**Rows 1 and 3 are the same command, the same single run.** Searching, and searching plus putting the hits on screen,
+take the same time.
 **Searching is level with ripgrep; opening is level with klogg. The gap appears when you join the two.**
 
 **All of that is the free edition.**
@@ -34,15 +36,14 @@
 |---|---:|---:|---:|
 | ripgrep 15.2.0 (search, one term) | 3.29 s | **11.38 s** | 55.54 s |
 | klogg 24.11.0 (open) | 3.65 s | 10.98 s | 52.55 s |
-| **UwView CLI (`uvf`, search)** | **3.26 s** | 11.41 s | **52.87 s** |
-| **UwView GUI (open)** | **2.99 s** | **10.13 s** | **50.44 s** |
-| **UwView end to end (`uvf … -open`)** | **3.31 s** | **10.48 s** | **50.74 s** |
+| **UwView CLI (`uvf … -open`, search and hand to the window)** | **3.31 s** | **10.48 s** | **50.74 s** |
+| **UwView GUI (open only)** | **2.99 s** | **10.13 s** | **50.44 s** |
 
 **Every row is one pass over the file.** None of these tools keeps an index, so the disk's read speed is the limit.
 
-**Compare the last row with the one above it.** The difference between "just opening" and "search plus hits on screen"
-is **+0.31 s / +0.35 s / +0.30 s** — **the file grows 17×, and searching still adds only 0.3 s.**
-The search happens during the read, so it needs no pass of its own.
+**Compare the last two rows.** Opening in the window and nothing else takes 50.44 s; searching from the command line and
+putting the hits on screen takes 50.74 s. The difference is **+0.32 s / +0.35 s / +0.30 s** — **the file grows 17×, and
+searching still adds only 0.3 s.** The search happens during the read, so it needs no pass of its own.
 
 **Ask the same file twice and ripgrep wins at 3 GB** — that size fits in RAM, so its second run comes from cache.
 Running seven searches twice each totals 32.30 s for rg against 33.31 s for `uvf` at 3 GB, 158.69 s against
