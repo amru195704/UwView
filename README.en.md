@@ -31,10 +31,10 @@
 
 | | 3 GB | 10 GB | 50 GB |
 |---|---:|---:|---:|
-| **Search** ripgrep (seven searches, total) | **32.30 s** | 158.69 s | 806.22 s |
-| **Search** `uvf` | 33.31 s | **147.01 s** | **735.97 s** |
-| **Open** klogg | 3.65 s | 10.98 s | 52.55 s |
-| **Open** UwView | **2.99 s** | **10.13 s** | **50.44 s** |
+| ripgrep 15.2.0 (search, seven searches total) | **32.30 s** | 158.69 s | 806.22 s |
+| klogg 24.11.0 (open) | 3.65 s | 10.98 s | 52.55 s |
+| **UwView CLI (`uvf`, search)** | 33.31 s | **147.01 s** | **735.97 s** |
+| **UwView GUI (open)** | **2.99 s** | **10.13 s** | **50.44 s** |
 
 **We lose to ripgrep at 3 GB** — that size fits in RAM, so its second run comes from cache.
 Past 10 GB, `uvf` edges ahead by 8–10%. **Both are limited by how fast the disk reads.**
