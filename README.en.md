@@ -127,6 +127,17 @@ session restore / identical rendering on every OS
 
 **Requirements**: .NET 10 / Avalonia UI 12.x / Windows, macOS, Linux
 
+### Known limitation: extremely long lines inside a compressed file
+
+If a `.gz` contains **a single line longer than 64 MiB** (roughly 67 million ASCII characters) and a search
+matches that line, you may get an error saying the file is damaged. **The file is not actually damaged.**
+
+**This will not be fixed.** Logs and XML dumps essentially never contain a 64 MiB line, and removing the limit
+would require a design with no bound on line length — which **slows down every ordinary file as well**.
+UwView exists to look at huge files fast, so **speed wins**.
+
+If you have such a file, `gunzip` it first and open the plain text.
+
 ---
 
 ## More detail

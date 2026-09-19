@@ -5,6 +5,9 @@
     See https://docs.avaloniaui.net/docs/guides/platforms/platform-specific-code/dotnet for more details.-->
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
+    <!-- ループを持つ関数は最初から最適化してコンパイルする。既定（最初は最適化の弱いコード→途中で差し替え）だと、
+         短い検索ほど遅いコードで走る割合が大きい（3GB の .uwvz 検索 0.46→0.28 秒。性能調査 2026-09-19） -->
+    <TieredCompilationQuickJitForLoops>false</TieredCompilationQuickJitForLoops>
   </PropertyGroup>
 
   <PropertyGroup>
