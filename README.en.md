@@ -91,9 +91,23 @@ look again. Investigation is made of that back and forth.
 
 ### UwView Pro — the order of magnitude changes at the second question
 
-`uvp` builds a `.uwvz` on the first run (about one ninth of the original, with a line index) and **never touches the
-original again.** Searching 50 GB takes **6.34 s**; opening it a second time takes **0.01–0.07 s**.
-**It stays searchable with the original deleted, and `-extract` puts it back.**
+On the first question klogg, `uvf` and `uvp` all have to read the whole file once. That is physics; there is no way
+around it. What differs is **what is left behind.** `uvp` builds a `.uwvz` on the first run (about one ninth of the
+original, with a line index) and **never touches the original again.**
+
+**Asking a second question of the same 51.25 GB file**
+
+| | Open | Search | Total | |
+|---|---:|---:|---:|:---:|
+| klogg 24.11.0 | 52.55 s (rebuilt every time) | 55.59 s | 108.14 s | |
+| **`uvf … -open`** (free) | — | — | **50.74 s** | 2.13× |
+| **`uvp`** (with `.uwvz`) | **0.01–0.07 s** | **6.34 s** | **6.41 s** | **16.9×** |
+
+**16.9× klogg, and 7.9× our own free `uvf`.** This is where the order of magnitude changes.
+klogg keeps no index, so it **rebuilds one every time you open the file**; `uvf` builds none, so **the second question
+costs the same as the first**. Only `uvp` **earns back what the first pass cost.**
+
+**It stays searchable with the original deleted, and `-extract` puts it back.** 51.25 GB becomes about 5.7 GB.
 
 **On the first question the free `uvf` is level with ripgrep, while `uvp` is 15–20% slower because it builds its `.uwvz`.**
 **`uvp` pays off past 10 GB, when you ask the same file more than one question.**
@@ -127,8 +141,8 @@ session restore / identical rendering on every OS
 | 🔧 **Full feature list, architecture, build and test instructions** | [Previous README (as of v1.6.5)](docs/README.en-v1.6.5.md) |
 | 📰 **Press kit** | [PRESSKIT.md](press-kit/PRESSKIT.md) |
 
-> **On versions:** the "open, 50.44 s" figure above is measured on **v1.6.6 (coming shortly)**. `uvf … -open`'s 53.69 s
-> and the CLI search speeds are what the currently shipping **v1.6.5** already does.
+> **On versions:** the timings on this page are measured on **v1.6.6 (coming shortly)**. On **v1.6.5**, which is what
+> Releases currently serves, `uvf … -open` took 53.69 s and opening in the window took 100.6 s.
 > → [what changed in v1.6.6](2-doc/release-body-v1.6.6.md)
 
 ---
