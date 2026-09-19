@@ -2,416 +2,250 @@
 
 *[日本語](README.md) ｜ English*
 
-🌐 **[Official site](https://uvp.y42u.net/en/)** ([About](https://uvp.y42u.net/en/about-en/) · [Help](https://uvp.y42u.net/en/help-en/) · [Contact](https://uvp.y42u.net/en/support-en/)) · **[Try it in your browser (WASM demo)](https://amru195704.github.io/UwView/)** · 📰 [Press kit](press-kit/PRESSKIT.md)
+🌐 **[Official site](https://uvp.y42u.net/en/)** · 📊 **[Benchmarks](https://uvp.y42u.net/en/benchmarks-en/)** · 🧪 **[Try it in your browser](https://amru195704.github.io/UwView/)**
 
-📥 **Download: [GitHub Releases](https://github.com/amru195704/UwView/releases/latest)** (Windows / macOS / Linux archives, with `SHA256SUMS`)
+📥 **Download: [GitHub Releases](https://github.com/amru195704/UwView/releases/latest)** (Windows / macOS / Linux, with `SHA256SUMS`, free)
 
-**258.68 GB and 4.5 billion lines — find it in the terminal, read it in the window.**
+> **⚠️ About versions (as of 2026-09-19)**
+> The **GUI "opening" figures (§2 below) and the 53.7 s end-to-end run from the window are measured on v1.6.6.**
+> **v1.6.6 is coming shortly**; what Releases currently serves is **v1.6.5**.
+> **`uvf … -open`'s 53.69 s (§3) and the CLI search speeds (§1) are what v1.6.5 already does.**
+> What v1.6.6 changes is the wait **when you open from the window.**
 
-A tool for **investigating** huge text files. Search with `uvf` in the terminal, add `-open`, and the lines it found appear in the window — **the window does not search again** (v1.6.4+). The same engine is looking at the same single file.
+---
 
-| Largest tested so far | |
-|---|---|
-| File size | **258,679,440,228 bytes (258.68 GB)** |
-| Total lines | **4,509,830,821 lines (4.5 billion)** |
-| Content | The whole United States OpenStreetMap extract expanded to XML — one single, unsplit file |
-| **UwView (free edition)** | **Open 8 min 52.6 s / search ~7 min 30 s** (measured 2026-09-11) |
-| UwView Pro | First open **5 min 28 s** / search **34.8 s** / instant from the second open on (measured 2026-07-26 — [details](#real-data--openstreetmap-usa-25868-gb--45-billion-lines-uwview-pro)) |
+## If you search with ripgrep and then open in klogg
 
-**The line-count ceiling has not come into view yet.** In theory about 9.2 quintillion lines are addressable; nobody is going to get there. With the current settings the practical ceiling is around 550 billion lines (raise it in settings if you like — there is no point), and **in practice your filesystem's size limit arrives first.**
+**This tool collapses that round trip into a single pass over the file.**
 
-📊 **Measured against other tools → [Benchmarks](https://uvp.y42u.net/en/benchmarks-en/)** (EmEditor, klogg, 010 Editor, UltraEdit, Log Viewer, grep, ripgrep, amber and BSD grep, from 3 GB to 250 GB. **The numbers where UwView loses are published as measured.**)
+When you investigate a huge log, the usual shape is: run `rg`, find the hit, then reopen the file in a viewer
+to read around it. **That reads the file twice.**
 
-## Which one should I use?
+`uvf` searches and hands the result to the window **in one read**.
 
-**It is decided less by size than by how many times you will open the file and how many times you will search it.**
+| One 51.25 GB file, from searching to reading the hit on screen | Time |
+|---|---:|
+| `rg` to search (55.38 s) + klogg to open (52.55 s) | **107.9 s** — two measured figures added |
+| klogg alone (open + search) | 108.14 s |
+| **`uvf … -open`** | **53.69 s** |
 
-| File size | What you want | Use |
-|---|---|---|
-| **up to 3 GB / 100 M lines** | view, search | **[Browser version](https://amru195704.github.io/UwView/)** — no install, no sign-up, free |
-| **up to 50 GB / 1 B lines** | view, search | **UwView (free edition)** — [download](https://github.com/amru195704/UwView/releases/latest) |
-| **up to 250 GB / 4.5 B lines** | look **once** | **UwView (free edition)** |
-| **up to 250 GB / 4.5 B lines** | open it **again and again** | **[UwView Pro](https://uvp.y42u.net/en/pro-en/)** |
-| any size | **edit it** | **UwView Pro + Edit Upgrade** |
-| any size | **search it from a script** (v1.6.0+) | **`uvf`** (free — [below](#-v163-uvf-now-runs-at-ripgrep-speed)) / `uvp` (Pro — narrowing, counts, `.uwvz`) |
+**About 2.01×.** Not because of a cleverer algorithm, but because **the file is read once instead of twice.**
+51.25 GB ÷ 53.69 s = 910 MB/s, and inside those 53.69 seconds it **searches, builds the index and puts the hits on screen.**
 
-**Where the free edition is enough is clear-cut.**
+> Mac M4 / 32 GB / external USB SSD (raw read 950–970 MB/s). Term: `東京` (94,979 hits).
+> **Every run cold, after `sudo purge`.** Full conditions and data: [benchmarks](https://uvp.y42u.net/en/benchmarks-en/).
 
-- **At 3 GB the browser version is plenty** — index 10.4 s, search 5.8 s. Nothing to install, nothing to register.
-- **Up to 50 GB the free edition holds** (open 1 min 46.8 s / ~88 s per search term). **At 3 GB its search is actually faster than Pro's** (0.485 s vs 1.555 s) — at that size the file fits in memory, so scanning it raw beats consulting an index.
-- **250 GB opens in the free edition too** (open 8 min 52.6 s / ~7 min 30 s per search term). **For a one-off investigation, that is all you need.**
+---
 
-**Pro earns its keep when you keep coming back to the same file.** The free edition holds no index, so **it re-reads the whole file every time you open it and every time you search** (a steady ~480 MB/s to open and ~580 MB/s to search, regardless of size). Pro stores an index and a compressed cache, so **re-opening takes 0.02–0.07 s** and **searching 250 GB takes 32.4 s** (against roughly 7 min 30 s for the free edition). You can also **delete the original, keep about 1/9 of the size, and read that directly.**
+## 1. Searching is level with ripgrep
 
-> **One-time $129 / $9 per month** (Edit Upgrade +$120 / +$8). A **14-day free trial** includes the editing features → [product page](https://uvp.y42u.net/en/pro-en/)
+`uvf` builds no index. It reads the file sequentially, once, and searches — **the same arena ripgrep plays in.**
 
-## 🆕 v1.6.5: `-open` no longer waits for the index either
+| Seven searches, cold + the warm run right after | ripgrep 15.2.0 | **`uvf`** | Ratio |
+|---|---:|---:|---:|
+| 3 GB | **32.30 s** | 33.31 s | 1/1.03 (**ripgrep wins**) |
+| 10 GB | 158.69 s | **147.01 s** | 1.08× |
+| 50 GB | 806.22 s | **735.97 s** | 1.10× |
 
-Here is what `uvf file 'pattern' -open` has cost you across three releases.
+**We lose at 3 GB.** That size fits in RAM, so ripgrep's second run comes entirely from cache.
+Past 10 GB it does not fit, and `uvf` edges ahead by 8–10%. **Both are limited by how fast the disk reads**, so this is
+exactly what should happen.
 
-| | up to v1.6.3 | v1.6.4 | **v1.6.5** |
-|---|---|---|---|
-| Passes over the file | CLI once + window once = **twice** | **once** | **once** |
-| Waiting for the index | yes | yes | **no** |
-| Line numbers in the results list | after the index | after the index | **immediately** |
+**Windows is a different story.**
 
-v1.6.4 made the CLI hand the positions of its matches to the window. The window still **waited for the index to finish** before it could show line numbers in the results list — on a 50 GB file, that is a second wait after the search has already succeeded.
-
-v1.6.5 has the **CLI collect the index markers (a line-start offset every N lines) and the line number of each match while it is searching**, and pass those along too. It is reading the whole file anyway, so counting one more thing costs almost nothing. The window **assembles** the index from what it received instead of re-reading the file, and because the line numbers travel with it, **the results list has line numbers from the first frame.**
-
-**`-open` can also be combined with `-i` / `-E` / `-v`** now — up to v1.6.4 the window had no way to receive the flags, so it was refused. The CLI resolves the flags itself before handing over the result and says which kind of search it was, so even when the handoff cannot be used **the window will not search with different conditions.**
-
-```bash
-uvf app.log 'FATAL|PANIC' -E -open      # a regex result, straight into the window
-uvf app.log 'debug' -i -v -open         # case-insensitive "not matching", straight into the window
-```
-
-## 🆕 v1.6.4: `-open` hands the hits straight to the window
-
-With `uvf file 'pattern' -open`, the lines the CLI found are now **handed directly to the GUI**. The window does not search again.
-
-| | up to v1.6.3 | v1.6.4 |
-|---|---|---|
-| `uvf 50GB 'pattern' -open` | CLI once + window once = **the file is read twice** | **once** |
-
-Only if the file changed in between does the window fall back to searching normally. Pro's `uvp -open` behaves the same way.
-
-If your habit is "find it in the terminal, read it in the window", the wait is now half of what it was.
-
-## 🆕 v1.6.3: the free edition caught up with ripgrep. Pro is 2–5× beyond it
-
-The free edition's CLI, `uvf`, has been rebuilt. It reads the file **once, straight through** — line numbers, matches and line text all come out of the same pass — so it lands within a few percent of ripgrep from 3 GB to 50 GB, in about 50 MB of memory. (Up to v1.6.2 it built a line index first, which is why 50 GB took 205 s.)
-
-**Speed** (Mac M4, external USB SSD, `sudo purge` before each cold run and a hot second run, OSM Japan, fixed-string search, output identical to ripgrep):
-
-| | ripgrep 15.2.0 cold / hot | `uvf` cold / hot |
+| Windows laptop, 16 GB, 50 GB file | ripgrep | **`uvf`** |
 |---|---:|---:|
-| 3 GB | 3.26 s / 0.33 s | 3.32 s / 0.55 s |
-| 10 GB | 10.96 s / 10.89 s | **10.48 s / 10.25 s** |
-| 50 GB | 54.76 s / 55.15 s | **50.82 s / 50.63 s** |
+| Seven searches, total | 1,780.77 s | **693.84 s** |
 
-`uvf` also gained **`-i` (ignore case), `-E` (regular expression) and `-v` (non-matching lines)** — up to v1.6.2 it only did plain string search. Those stay in the same band at 50 GB, 51–53 s against ripgrep's 55–58 s, and the output matches ripgrep across 3 sizes × 7 patterns. Where ripgrep still wins is 3 GB with the file in RAM (0.33 s against 0.55 s), and one `-v` case at 10 GB.
+**2.57×** — and that is not `uvf` being fast, it is **ripgrep's default memory-mapped read backfiring at 50 GB**.
+Adding `--no-mmap` makes ripgrep 2.89× faster ([the write-up](https://uvp.y42u.net/en/blog/uvp-rg-no-mmap-50gb-en/)).
+`uvf` does not memory-map, so it never falls into that hole. **If you run `rg` over huge files on Windows, try `--no-mmap` first.**
 
-### So how much faster is Pro (`uvp`)?
+---
 
-The free edition matching ripgrep means it has reached **the read speed of the disk itself** (950 MB/s measured). No amount of software work makes it faster than that.
+## 2. Opening is now slightly faster than klogg (v1.6.6, coming shortly)
 
-Pro is faster not because it reads faster, but because **it doesn't read**. It converts the file once into `.uwvz` (about 1/9 the size, with a line index) and never touches the original again.
+klogg is an excellent viewer. **It opens at 930 MB/s — saturating the medium.**
+Through v1.6.5 we ran at 486 MB/s, half of that. **v1.6.6 closed the gap.**
 
-All three measured under the same conditions (2026-09-17, Mac M4, external USB SSD, `sudo purge` before each cold run and a hot second run, OSM Japan, fixed-string search):
-
-| 10 GB | ripgrep | `uvf` (free) | `uvp` (Pro) |
+| Just opening (cold) | 3 GB | 10 GB | 50 GB |
 |---|---:|---:|---:|
-| 1st run (Pro includes building `.uwvz`) | 11.24 s | 10.37 s | 13.66 s |
-| **2nd run onward** | 11.23 s | 10.24 s | **1.80 s** |
+| klogg 24.11.0 | 3.65 s | 10.98 s | 52.55 s |
+| UwView free GUI, **v1.6.5** | 5.27 s | 19.62 s | 100.6 s |
+| **UwView free GUI, v1.6.6** | **2.99 s** | **10.13 s** | **50.44 s** |
+| **Against klogg** | **1.22×** | **1.08×** | **1.04×** |
 
-| 50 GB | ripgrep | `uvf` (free) | `uvp` (Pro) |
+That is **967 / 966 / 969 MB/s** — **the same figure at all three sizes**, which is the speed of the medium itself
+(3 GB fits in RAM and still reads at 967, so this is not a cached number).
+
+**The bigger the file, the smaller the margin.** At 50 GB it is 1.04× — **level, in honest terms.**
+**The gap opens up afterwards, when you search.**
+
+---
+
+## 3. The CLI and the window are the same engine on the same file
+
+This is what `uvf` actually is.
+
+```bash
+uvf japan-latest.osm '東京' -open
+```
+
+**The UwView window opens the moment the search finishes, with a line-numbered list of hits.**
+**The window does not search again** — the CLI hands over the byte offsets of the matching lines, the index
+checkpoints and each hit's line number.
+
+| | Passes over the file | Line numbers in the hit list |
+|---|---|---|
+| `rg`, then reopen in a viewer | **2** | after the viewer builds its index |
+| klogg (open, then search) | **2** | after the index is done |
+| **`uvf … -open`** | **1** | **from the start** |
+
+From there it is the GUI's job: **read the lines around a hit, jump from the result list, colour several keywords at
+once, drop bookmarks, change the pattern and look again.** Investigation is made of that back and forth.
+
+**258.68 GB and 4.5 billion lines behaved the same way.** `uvf … -open` took **265.21 s**.
+**klogg needs 258 s merely to finish opening that file** — so in about the time klogg takes just to open it, we have
+already searched it and put the hits on screen (7 s apart, 2.8%).
+
+> **The same holds if you open the window directly.** From v1.6.6 **the search starts without waiting for the index**,
+> so open → search → hits on screen at 50 GB takes **53.7 s**, matching `uvf … -open`'s 53.69 s.
+> **Know the term, start from the CLI; don't know it yet, start from the window. The wait is the same either way.**
+
+---
+
+## 4. All of the above is the free edition
+
+Both `uvf` and the GUI are in the **free** build on [GitHub Releases](https://github.com/amru195704/UwView/releases/latest).
+Single executables — no installer, no sign-up. Windows, macOS and Linux behave the same.
+
+**Up to about 3 GB you don't even need the download** → [browser build](https://amru195704.github.io/UwView/)
+(10.4 s to index, 5.8 s to search)
+
+---
+
+## 5. Coming back to the same file — UwView Pro
+
+The boundary is not file size. It is **the second question.**
+
+For the first question klogg and `uvf` both have to read the whole file once. That is physics; there is no way around
+it. What differs is **what is left behind.**
+
+- **klogg** — nothing is kept. **It rebuilds its index every time you open the file**
+- **`uvf` (free)** — builds no index. **The second question costs the same as the first**
+- **`uvp` (Pro)** — builds a `.uwvz` on the first run (about one ninth of the original, with a line index) and
+  **never touches the original again**
+
+| 50 GB, second question | Open | Search | Total |
 |---|---:|---:|---:|
-| 1st run (Pro includes building `.uwvz`) | 55.35 s | 50.74 s | 66.24 s |
-| **2nd run onward** | 56.72 s | 50.77 s | **7.41 s** |
+| klogg | 52.55 s (every time) | 55.59 s | 108.14 s |
+| `uvf … -open` (free) | — | — | 53.69 s |
+| **`uvp` (with `.uwvz`)** | **0.01–0.07 s** | **6.34 s** | **6.41 s** |
 
-**Pro is the slower one on the first pass** — it is building the index — and **6–7× faster from the second**. Searching the converted file for a *different* word takes 2.2 s at 10 GB and 16 s at 50 GB (5–6× ripgrep), and stays there.
+**16.9× klogg, and 8.4× our own free `uvf`.** This is where the order of magnitude changes.
 
-The GUI widens the gap further: **reopening takes 0.01–0.07 s** (the free edition re-reads the whole file every time).
+**Stated honestly: on the first question the free `uvf` is level with ripgrep, while `uvp` is 15–20% slower because it
+builds its `.uwvz` (a compressed cache plus index).** On a 3 GB file that fits in RAM, ripgrep stays ahead on the second
+question too. **`uvp` pays off past 10 GB, when you ask the same file more than one question.**
 
-> **There is only one question. Will you look at this file once, or come back to it?**
-> Once — the free edition is enough (it opens 250 GB). Again and again — that is Pro.
+A `.uwvz` is **searchable with the original deleted, and `-extract` puts it back**. 50 GB becomes about 5.7 GB.
+Add **Edit Upgrade** and you can **edit without rewriting the original** — it keeps only the diff, so saving does not
+depend on file size (at 48 GB, "save so you can stop for the day" takes 0 s).
 
-When the seconds are the same, what differs is also **what happens after the hit**. `uvf file 'FATAL' -open` opens the matching lines in the GUI so you can read around them, which makes `uvf` the more convenient of the two even at 3 GB when "find it, then read it" is one step. For narrowing, tallies and `.uwvz`, there is Pro's `uvp`.
+> **$129 one-time / $9 per month** (Edit Upgrade +$120 / +$8), with a **14-day free trial**
+> → **[UwView Pro](https://uvp.y42u.net/en/pro-en/)**
 
-### v1.6.0: the `uvf` command, and opening gzip directly
+---
 
-### `uvf` — search from the terminal, hand a hit to the GUI
+## Which one
 
-The free edition now ships **`uvf`**, callable from the terminal. It accepts **only two forms**:
-
-```bash
-uvf -open [file] [pattern]     # launch the app; open the file and search if given
-uvf file pattern [options]     # search and print the results
-```
-
-Options (spelled the same as in `uvp`):
-
-| | Meaning |
+| Situation | Use |
 |---|---|
-| `-i` | ignore case (v1.6.3+) |
-| `-E` | treat the pattern as a regular expression (v1.6.3+) |
-| `-v` | print the lines that do **not** match (v1.6.3+) |
-| `-open` | show the results in the app instead of stdout (can be combined with `-i`/`-E`/`-v` from v1.6.5) |
+| Just searching, no window needed | **`uvf`** (free). Level with ripgrep |
+| **Search, then read the hit** | **`uvf … -open`** (free). **The shortest path** |
+| You don't know the term yet, you just want to open and look | **the UwView free GUI**. klogg is excellent too |
+| **Coming back to the same file / keeping it compressed** | **[UwView Pro](https://uvp.y42u.net/en/pro-en/)** |
+| **Editing** a huge file | **UwView Pro + Edit Upgrade** |
+| Up to 3 GB, nothing installed | **[browser build](https://amru195704.github.io/UwView/)** |
 
-- Output is **`line<TAB>text`**. Lines are printed in full (the 8,192-character display cut-off does not apply)
-- **Exit codes are grep's**: `0` found / `1` not found / `2` error. `if uvf app.log 'FATAL'; then …` works as written
-- If the hit limit (unlimited by default) cuts the output short, `uvf` returns `2`, so a script cannot mistake truncated output for success
-- With `-open`, the results found by the CLI are **handed straight to the window** (v1.6.4+), so the app does not repeat the search — even a 50 GB file is read once, not twice. Only if the file changed in between does the app search again
-- `uvf` is a tiny launcher that starts the app with `--uvf` (no second copy of .NET, so the download barely grows). **To call it by name, register it from Help → "Command line setup…"**
-- Compressed files (`.gz`): **search does not accept them, but `-open` does open them**
+---
 
-| Form | What happens |
-|---|---|
-| `uvf file.gz term` | **Not accepted** — returns `2` and points you at `uvf -open file.gz` |
-| `uvf -open file.gz term` | The app opens (the "expand and open" route) |
-| `uvf file.gz term -open` | The app opens (**the v1.6.4 handoff does not apply**) |
+## What it does
 
-Narrowing (two terms), context lines (`-C`), frequency counts (`-uniq`), ordered search (`-seq`), `-out .gz`, reading and writing `.uwvz`, and `-extract` belong to **Pro's `uvp`** ([uvp measured against ripgrep](https://uvp.y42u.net/en/blog/uvp-cli-release-vs-ripgrep-en/)).
+- **Huge-file viewing** — largest measured: **258.68 GB, 4,509,830,821 lines** (reached on the free edition). The file is never held in memory
+- **The `uvf` command** — `-i` (ignore case), `-E` (regex), `-v` (non-matching lines), grep-compatible exit codes (0/1/2), `-open` to hand over to the GUI
+- **Hit list window** — matching lines only, with their original line numbers. Double-click to jump, see the lines around a hit, save the list to a file
+- **Multi-keyword colouring** — 32 colour-blind-safe colours, named sets, `.uwvhl` export, 7 presets (syslog, HTTP access, JSON, NMEA, GeoJSON, KML and more)
+- **Automatic encoding detection** — BOM + UTF-8 / Shift-JIS / EUC-JP / UTF-16, switchable without rebuilding the index
+- **Real-time tail** — opens logs that another process is still writing to
+- **Opens gzip directly**
+- **Tabs, bookmarks, horizontal scrolling, session restore**
+- **Identical rendering on every OS** — Avalonia with custom Skia drawing
 
-### Opening gzip directly
+**Requirements**: .NET 10 / Avalonia UI 12.x / Windows, macOS, Linux (plus the browser build)
 
-Open a `.gz` and the app asks how. **"Expand and open"** writes the decompressed file into the same folder and opens it (the same result as `gunzip` first). With Pro installed you can also choose "Convert to `.uwvz`".
+📄 **Full feature list, architecture, build instructions and test recipes are in the
+[previous README (as of v1.6.5)](2-doc/archive/README.en-v1.6.5-2026-09.md).**
 
-- After expanding, the gzip trailer (CRC) is verified: **a truncated file is reported as damaged, and no partial file is left behind**
-- `.tar.gz` / `.tgz` (a tar inside), doubly gzipped files, and files that are only `.gz` by extension are refused with a reason
-- **`.zip` cannot be opened yet** (entry selection comes in a later version). Extract it first for now
+---
 
+## About the measurements
 
-![UwView — a 51 GB / 892-million-line OSM Japan file in line mode](press-kit/screenshots/line-mode.png)
+Every figure here is **the same machine, the same file, and every run cold with the cache dropped.**
+**Do not compare seconds across machines.** Only the ratios inside one machine mean anything.
 
-UwView is a rebuild (in [Avalonia UI](https://avaloniaui.net/)) of a large-text viewer originally published on the Japanese "Vector" archive. **It is no longer only a viewer**: the window and the command line now investigate the same file together. Ordinary editors choke around a million lines; UwView never loads the whole file into memory and **renders only the lines currently on screen**, so it opens huge line-count files — the kind produced by RDB or XML dumps — instantly. The largest file tested so far is **4,509,830,821 lines / 258.68 GB** (the whole United States OpenStreetMap extract, expanded to XML). The timings were measured with UwView Pro ([details](#real-data--openstreetmap-usa-25868-gb--45-billion-lines-uwview-pro)), but **the free edition has been confirmed to open and search the same 258.68 GB file** (2026-09-11). Until recently the largest confirmed was 892 million lines / ~51 GB (OSM Japan); that ceiling has now moved about 5× higher. If anyone finds the real limit, please let me know.
+📊 **Conditions and full data** → [benchmarks](https://uvp.y42u.net/en/benchmarks-en/)
+(EmEditor, klogg, 010 Editor, UltraEdit, Log Viewer, grep, ripgrep, amber and BSD grep, from 3 GB to 250 GB.
+**The numbers where UwView loses are published as they are.**)
 
-The free edition **never writes to your files** (editing is Pro's Edit Upgrade).
+Related: [an honest re-measurement against klogg](https://uvp.y42u.net/en/blog/uvp-klogg-open-lose-flow-win-en/)
+· [the window catching up with the command (v1.6.6)](https://uvp.y42u.net/en/blog/uvp-gui-catches-up-v166-en/)
+· [one 50 GB file, three arenas](https://uvp.y42u.net/en/blog/uvp-three-arenas-50gb-en/)
+· [ripgrep's `--no-mmap`](https://uvp.y42u.net/en/blog/uvp-rg-no-mmap-50gb-en/)
 
-## 📣 Announcement: UwView Pro is now available (Windows, macOS & Linux)
+---
 
-**Buy / details → [UwView Pro product page](https://uvp.y42u.net/pro/)** (one-time **$129** / **$9**/month) ・ 📥 **[Download Pro](https://uvp.y42u.net/en/download-en/)** (free 14-day trial key available). Windows 10/11, macOS 11+ (Apple Silicon / Intel) and Linux (x86_64) — one license, every OS. (Windows build is currently unsigned: SmartScreen → More info → Run anyway.)
+## Supporting the project
 
-**UwView Pro** is now available for Windows, macOS and Linux. It pushes large-file performance further: on top of parallel index construction, a **compressed sidecar cache** (a single `.uwvz` file with the line index built in, checksum-protected) delivers instant re-open from the second time on, plus dramatically faster full-text search.
+**The free edition of UwView will stay free.**
 
-**V1.3 adds a two-mode search upgrade** (Pro-only — [announcement](https://uvp.y42u.net/en/blog/uvp-drilldown-search-en/)):
+Free for personal use and for internal use inside a company. If it earns its place in your work and you would like it
+to keep going, you can support it through [GitHub Sponsors](https://github.com/sponsors/amru195704). **Entirely optional.**
 
-- **Drill-down Search** — refine results with another term, then another (the GUI version of `grep -C N w1 | grep w2 | grep w3`). **Up to 8 stages, ±N context set independently per stage**; stages after the first are instant. Measured: on a 51 GB / 892-million-line file, two refinements took "Tokyo 94,979 hits → Nerima 184 → Saitama 54".
-- **Sequence Search** — find only the flows where "w1 → w2 → w3 appear **in that order**" (the desktop, local-file equivalent of Elastic EQL `sequence` / Splunk `transaction`). Right-click a result and open **History (refinement path)** to jump straight to each line that formed the flow.
-- Where klogg's Boolean search works within a single line (and/or), these search **co-occurrence across nearby lines, and order**.
+**What helps most is not money** —
 
-**v1.6.0 adds a CLI, `uvp`, to Pro as well** ([measured article](https://uvp.y42u.net/en/blog/uvp-cli-release-vs-ripgrep-en/)). It prints the same lines as ripgrep, verified across 30 combinations. At 10 GB and 50 GB it is **6–8× faster than ripgrep from the second question on**; at 3 GB it loses. The `.uwvz` is the size of gzip, **searchable on its own with the original deleted, and `-extract` restores the original for free** ([article](https://uvp.y42u.net/en/blog/uwvz-compressed-archive-search-extract-en/)).
+- **Telling us when it did not work** (which file, what went wrong) → [Issues](https://github.com/amru195704/UwView/issues)
+- **Numbers from your own huge files** — measurements where we lose are especially welcome
+- **"This file won't open"**, with as much detail as you can give
 
-Measured against the well-known large-log viewer **[klogg](https://klogg.filimonov.dev/)** (same file, same patterns, across **three storage types**):
+Development is funded mainly by sales of [UwView Pro](https://uvp.y42u.net/en/pro-en/).
+**Buying Pro is the most direct support there is.**
 
-> Conditions: OpenStreetMap Japan `japan-latest.osm`, 47.73 GB / 892,239,125 lines. MacBook Air / Apple M4 (10 cores) / 32 GB RAM. Measured storage bandwidth (dd): USB HDD 0.10 GB/s ・ USB SSD 0.41 GB/s ・ internal SSD 3.29 GB/s. klogg 24.11.0. Hit counts matched exactly across klogg, UwView Pro, and direct raw-file search for every row (cross-verified that the searches are semantically identical).
-
-| Metric | klogg (24.11.0) | **UwView Pro** | Pro ÷ klogg |
-|---|---|---|---|
-| First open | HDD ~9 min ・ USB SSD ~110 s ・ internal SSD ~15 s (**every time**; only the top is visible until done) | HDD 10.6 min ・ USB SSD 138.5 s ・ internal SSD 23.3 s (**once only**; whole file navigable immediately; includes building the compressed cache) | slightly slower once (see payoff below) |
-| **Re-open (2nd time on)** | same as first open (re-indexes every time) | **0.01–0.07 s** | **~1,250–50,000×** |
-| Search literal `"Tokyo"` | ~585 s ・ 120–135 s ・ 15–20 s | **74.8 s ・ 14.3 s ・ 5.1 s** | **~7.8× ・ ~9× ・ 3–4×** |
-| Search regex `"Tok[yi]o"` | ≈ literal (I/O-bound, pattern-independent) | USB SSD **29.8 s** ・ internal SSD **11.0 s** | ~4.4× ・ ~1.5× |
-| Disk footprint (archive mode) | 48 GB (original required) | **5.3 GB** (original can be deleted; checksum-protected) | **1/9** |
-
-- **klogg shows only the top of the file while it indexes** (you can't jump to the middle or end). UwView displays by byte position, so you can move anywhere the moment it opens.
-- **The slower your disk, the bigger the win** (Pro reads 1/9 the bytes): on an HDD, a search drops from ~10 minutes to 75 seconds.
-- At everyday working sizes (3 GB / 100 M lines) both tools search within seconds; Pro's value there is **operational** — no re-indexing on every re-open (klogg: 47 s / 8 s / 2 s vs. Pro: a few ms), and archives at 1/9–1/13 the size that open directly.
-- The first open is slightly slower than klogg because it also builds the compressed cache — that one-time cost buys millisecond re-opens, seconds-level searches, and 1/9 storage thereafter.
-
-> **UwView Pro is available now.** See the [product page](https://uvp.y42u.net/pro/) to buy or learn more (one-time $129 / $9 per month; Windows, macOS & Linux — one license, every OS). You can read and search the whole file the moment it opens; the first open's read speed matches the free version and other tools — Pro's edge is the instant 2nd open with line numbers, faster search, and 1/9 archiving.
-
-## Highlights
-
-*Current stable version: **v1.6.5** — `-open` can now be combined with `-i`/`-E`/`-v`. v1.6.4 made `-open` hand the CLI's hits to the window, so the file is read once instead of twice. v1.6.3 rebuilt `uvf` as a single pass (50 GB: 205 s → 51 s), added `-i`/`-E`/`-v`, and brought the free edition the unlimited-by-default search limit introduced in v1.6.2. v1.6.0 added the `uvf` command and direct opening of gzip files.* (v1.5.1 was the previous feature release.) (v1.3.0 and v1.4.0 aligned the version number with UwView Pro and were functionally identical to v1.2.2, apart from one fix in v1.4.0: in line mode the status bar always showed 0% for the scroll position. **v1.5.1 is a feature release for the free edition** — opening files from Finder/Explorer, a search progress dialog and a record of elapsed times, more options when saving search results, and a first-launch notice in the browser build. **On macOS it is now a signed, notarized DMG.**)
-
-- 🚀 **Instant display of gigantic files** — billions of lines with a tiny memory footprint (largest measured: 258.68 GB / 4,509,830,821 lines — **reached by the free edition too**). The file body is never resident; the index is ~6 MB at 200 M lines.
-- 📖 **Progressive open** — shows content the instant you open it (page mode) → builds the index in the background → promotes to line mode when done.
-- 🈁 **Automatic encoding detection** — BOM + UTF-8 / Shift-JIS / EUC-JP / UTF-16, with manual override (no re-indexing).
-- 🗂 **Multi-file tabs** — switch files as tabs (state preserved, per-tab background indexing). Add via drag & drop or multi-select.
-- 🔎 **Search & regular expressions** — background scan independent of the index. Literal search uses SIMD byte-scanning (3.4 s over 200 M lines); regex decodes per line (12.7 s). Hits are byte-offset based, so they stay valid in page mode and after an encoding switch. Match highlighting + a minimap of hit distribution (click to jump).
-- 🧵 **Search-results popup** — auto-shown when a search finishes with hits. Matching lines are listed in a separate window (original file untouched, virtual view, original line numbers). Double-click / Enter jumps to the line in the main view; **±1 line of context**; results can be **saved to a file** (with or without line numbers). The Pro edition offers ±1000 lines of context and per-tab windows.
-- 🎨 **Multi-keyword color highlighter** (v1.1+) — colorize multiple registered patterns continuously, independent of search (equivalent to klogg's Highlighter). Supports regex, case-insensitive, whole-line / match-only, and coloring only the regex capture. A **color-blind-friendly 32-color palette**, named sets, and export/import via `.uwvhl`. **7 bundled presets** (generic log levels / syslog・Linux / Web access (HTTP) / JSON log / GNSS NMEA / GeoJSON / KML). The yellow search highlight always stays on top, and coloring re-evaluates only the visible lines so it stays fast on huge files. Each tab keeps its own highlighter.
-- 🖱 **Right-click colorize of the selected word (quick color label)** (v1.1.1+) — select a word and right-click to colorize it instantly (the same menu also has Copy, Clear, and Manage dialog…). Double-clicking cycles through three stages (shortest word → sensible token → clear) to pick the range. Colorized rules also appear in the manage dialog and can be recolored, saved as a set, and exported to `.uwvhl`.
-- 🕘 **Search history & predefined filters** (v1.1+) — the search box autocompletes from input history (up to 50). Save frequent searches with “★” and run them from a dropdown. Next/previous and go-to-line center the target line and highlight the whole line.
-- ↔️ **Horizontal scrolling** (v1.2.2+) — read long lines (OSM XML, JSON logs, single-line CSV) all the way to the end. Horizontal scrollbar, trackpad swipe, Shift+wheel and `←`/`→` keys (`Home` returns to the start of the line; `Cmd/Ctrl+Home` goes to the top of the file). **Line numbers stay pinned on the left** while only the text moves. The search-results popup scrolls horizontally too.
-- ⭐ **Bookmarks** — toggle any line, jump prev/next. Kept by byte offset, so they survive encoding switches. Shown in the minimap.
-- 📡 **Real-time tail** — detects appends, re-maps mmap, extends the index incrementally, and auto-scrolls to the end. Opens logs that are still being written (FileShare.ReadWrite).
-- 🧰 **The `uvf` command** (v1.6.0+, rebuilt in v1.6.3 to ripgrep speed) — search from the terminal, output `line<TAB>text`, grep-compatible exit codes (0/1/2), `-i`/`-E`/`-v`, and `-open` to hand results to the GUI (from v1.6.4 the window no longer re-searches, and from v1.6.5 it no longer waits for the index either; combinable with `-i`/`-E`/`-v`. [details](#-v165--open-no-longer-waits-for-the-index-either)).
-- 🗜 **Opens gzip directly** (v1.6.0+) — a `.gz` is expanded into the same folder and opened. Truncated, doubly-compressed and tar files are refused with a reason. `.zip` comes in a later version.
-- 🌐 **Bilingual UI** — Japanese / English, switchable at runtime (persisted).
-- 🖥 **Identical rendering on every OS** — Avalonia's own Skia rendering makes Windows / macOS / Linux look the same. A browser (WASM) build ships a bundled Japanese font.
-- 💾 **Session restore, recent files & favorites** (v1.1.1+) — on a normal launch, a confirmation dialog offers to restore the previous files (n), reopening the previous tabs near their last scroll position. Recent files (up to 15) and favorites (★ toggle) are available from the start screen shown when no file is open. When launched with a specific file (double-click / drag & drop / CLI argument), it opens just that file without asking.
-
-## Requirements
-
-- .NET 10 (`global.json`: `10.0.100`, rollForward `latestFeature`)
-- Avalonia UI 12.x
-- Primary OS: Windows / macOS / Linux (desktop)
-- Bonus: browser (WASM). Building/running it needs the `wasm-tools` workload (`sudo dotnet workload install wasm-tools`).
-
-## Architecture
-
-The golden rule for huge files — *never load the whole file into memory, never put every line into the UI* — is realized in four layers.
-
-```
-UI layer (TextView: custom-drawn virtual text surface)  … draws only visible lines in Render
-      ↓ GetPageAt(byteOffset) / GetLine(lineIndex)
-Document layer (LineDocument)                            … on-demand fetch + LRU cache
-      ↓
-Index layer (SparseLineIndex)                           … one checkpoint every N lines (default 256)
-      ↓ Read(offset, length)
-I/O abstraction (IByteSource)                            … Desktop: mmap / Browser: Blob.slice
-```
-
-- **Sparse line index**: storing every line's offset would cost ~1.6 GB at 200 M lines, so UwView records one checkpoint every 256 lines (~6 MB) and re-counts newlines from the nearest checkpoint for any line.
-- **`IByteSource`**: a thin abstraction of just `Length` and `Read(offset, buffer)` (plus `ReadAsync` for WASM). Upper layers don't know whether I/O is Desktop mmap or Browser `blob.slice` (async path + a 256 KB × 64 = 16 MB chunk cache).
-
-## Benchmarks
-
-Measured on an Apple Silicon Mac (external SSD) with `UwView.Bench`.
-
-### Synthetic — 200 M lines / 5.1 GB (UTF-8)
-
-| Metric | Result |
-|--------|--------|
-| open + encoding detection | 10 ms |
-| page-mode display | 0 ms (no index needed) |
-| index build (single sequential read) | 9.7 s (538 MB/s) |
-| total lines | 200,000,000 (exact) |
-| index size | 6.0 MB (781,251 checkpoints) |
-| managed-heap growth | 9.3 MB |
-| GetLine, 1000 random | avg 0.005 ms / p99 0.007 ms |
-| jump to last (200 Mth) line | 0.003 ms |
-| literal search | 3.4 s (1,521 MB/s) |
-| regex search | 12.7 s (414 MB/s) |
-
-### Real data — OpenStreetMap Japan, 51 GB / 892 M lines (UTF-8)
-
-Verification well beyond 200 M lines, using the full OSM Japan extract converted to XML with `osmium`.
-
-| Metric | Result |
-|--------|--------|
-| size | 51,254,526,392 bytes (~48 GiB) |
-| open + encoding detection | 12 ms |
-| page-mode display | 3 ms (no index needed) |
-| index build | 172.8 s (283 MB/s, storage-bound) |
-| total lines | **892,239,125** (matches `wc -l` exactly) |
-| index size | 3,485,310 checkpoints ≈ 26.6 MB |
-| managed-heap growth | 33.3 MB |
-| GetLine, 1000 random | avg 1.28 ms / p99 3.0 ms |
-| jump to last (892 Mth) line | 0.006 ms |
-
-- Line numbers use `long`. At 892 M they would still have fit in an `int` (≈ 2.1 B), but the 4.5-billion-line test below exceeds that limit and proves the `long` design was necessary.
-- GetLine is slower than on synthetic data (0.005 → 1.28 ms) because of external-SSD random reads, uneven real-XML line lengths, and 51 GB not fitting in cache — still millisecond-class and practical.
-- Resident memory is only the ~26.6 MB index + ~33 MB heap; the file body stays non-resident. In practice storage capacity matters before line count does.
-
-> Note: the reported WorkingSet looks large because it includes mmap file pages, which the OS reclaims on demand — it is not memory the app allocates.
-
-### Real data — OpenStreetMap USA, 258.68 GB / 4.5 billion lines (UwView Pro)
-
-The largest test to date — about **5× the 892 M-line file above** (measured 2026-07-26). The whole-US OpenStreetMap PBF (11 GB) was expanded into a single XML file, `us-260726.osm` (UTF-8), with `osmium cat`, then opened in **UwView Pro**.
-
-| Metric | Result |
-|--------|--------|
-| size | 258,679,440,228 bytes (258.68 GB = 240.9 GiB) |
-| first open (incl. index build) | 5 min 28 s (328 s) ≈ 789 MB/s |
-| second open onward | instant (restored from the `.uwvz` sidecar) |
-| total lines | **4,509,830,821** (4.5 billion) |
-| search "New York" | 34.8 s (100,492 hits) |
-| search "Boston" | ~34 s |
-| `.uwvz` sidecar | 28,608,409,551 bytes (28.61 GB ≈ 11% of the original) |
-
-- **4.5 billion lines holds up.** Both line count and size are roughly 5× the OSM Japan file (892 M lines / 51 GB).
-- **This is where the `long` line-number design pays off.** 4,509,830,821 exceeds the `int` limit of 2,147,483,647, so a viewer that keeps line numbers in an `int` cannot address this file correctly.
-- **Search takes ~34 s regardless of the term or hit count** — it is full-scan-bound, so the time is predictable. (258.68 GB ÷ 34 s ≈ 7.6 GB/s is a derived figure; what is actually read is the 28.61 GB compressed cache, i.e. an effective ~0.84 GB/s.)
-- **The 5 min 28 s first open cannot be shortened** — it is a physical full scan plus compressed-cache generation. The payoff is "instant, with line numbers, from the second open on", which is the UwView Pro feature.
-- GetLine latency, checkpoint count and managed-heap growth were not measured for this file, and are deliberately left out rather than estimated.
-
-Re-run:
-
-```bash
-dotnet run --project UwView.Bench -c Release -- <a huge text file>
-```
-
-## Build & run
-
-```bash
-# restore + build
-dotnet build
-
-# run the desktop app (macOS example)
-dotnet run --project UwView.Desktop -c Debug
-```
-
-After launch, click **Open…** to choose a text file.
-
-### Building what we ship, and checking it yourself
-
-The `dotnet build` above is a **Debug build** and is not the same thing as the binaries on [Releases](https://github.com/amru195704/UwView/releases/latest) (Release, self-contained, single file). This is how the shipped binaries are made:
-
-```bash
-# the .NET SDK is pinned in global.json (10.0.100 series)
-dotnet --version
-
-# same publish as the release (RIDs: win-x64 / win-arm64 / linux-x64 / linux-arm64 / osx-arm64 / osx-x64)
-dotnet publish UwView.Desktop -c Release -r osx-arm64 --self-contained \
-  -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
-
-# hash what you built and compare it against the released SHA256SUMS
-shasum -a 256 <the executable>               # Linux/macOS
-certutil -hashfile <the executable> SHA256   # Windows
-```
-
-For the macOS app bundle (`.app` / DMG), see `UwView.Desktop/macos/build-app.sh`. On Windows and Linux the released binary is the published output above, renamed from `UwView.Desktop` to `UwView`.
-
-> **The hash will not match the released files exactly.** .NET embeds build timestamps and build-machine paths into the executable, so the same source produces different bytes each time. The released binaries are also signed (Windows) and Developer ID signed and notarized (macOS) with our keys, which cannot be reproduced.
->
-> The point of this procedure is **not** to prove byte-for-byte equality. It is to let you confirm that **the published source really does produce an executable built the same way as the one we ship**. To check that the download itself has not been tampered with, use `dist/SHA256SUMS`, included with each release.
-
-- **Jump**: a line number in line mode, or a ratio like `50%` in page mode.
-- **Encoding**: auto-detect / manual switch from the toolbar dropdown.
-- **Language**: switch Japanese / English from the toolbar dropdown (persisted).
-- **Scroll**: wheel, ↑↓, PageUp/Down, Home/End, vertical scrollbar.
-
-### Browser (WASM, bonus)
-
-```bash
-sudo dotnet workload install wasm-tools   # once (needs admin; relinks Skia natives)
-dotnet run --project UwView.Browser        # Chromium-based browsers recommended
-```
-
-- This hosts the app at `https://localhost:7169` (`http://localhost:5235`) and opens your default browser automatically (`launchBrowser: true` in `launchSettings.json`). If it doesn't open on its own, open that URL manually in a Chromium-based browser.
-- On first run, the browser may warn about the untrusted ASP.NET Core dev certificate. If so, run `dotnet dev-certs https --trust` once in your terminal, then reload the page.
-- Once the page loads, click **Open…** in the toolbar — the same control as the desktop build. This triggers the browser's native file-picker dialog; choose the text file you want to view there (opening a local path directly, drag & drop, and multi-select are not supported — always go through this dialog).
-- After picking a file, you get the same screen and the same operations as desktop (jump, search, highlighting, etc.). I/O is random reads via `blob.slice` (the whole file is never loaded into memory).
-- Stop the dev server with `Ctrl+C` in the terminal.
-
-Same UI and same core as desktop.
-
-## Download (prebuilt binaries)
-
-Self-contained archives (no .NET install required) are available from **[GitHub Releases](https://github.com/amru195704/UwView/releases/latest)** — each release carries per-OS archives plus `SHA256SUMS`.
-
-> The repository used to track the same archives under `dist/`. Distribution is now Releases-only, which keeps a clone small and makes download counts meaningful.
-
-| File | Target |
-| --- | --- |
-| `UwView-<version>-mac-arm64.dmg` | macOS (Apple Silicon) |
-| `UwView-<version>-mac-x64.dmg` | macOS (Intel) |
-| `UwView-<version>-win-arm64.zip` | Windows (ARM64) |
-| `UwView-<version>-win-x64.zip` | Windows (x64) |
-| `UwView-<version>-linux-aarch64.tar.gz` | Linux (ARM64) |
-| `UwView-<version>-linux-x86_64.tar.gz` | Linux (x86_64) |
-
-> About version numbers: v1.6.5 is a free-edition feature release (`-open` combined with `-i`/`-E`/`-v`). v1.6.4 is also one (the `-open` handoff), as is v1.6.3 (the `uvf` rebuild); v1.6.1 and v1.6.2 were not distributed for the free edition, so the unlimited-by-default search limit made in v1.6.2 first reached the free edition in v1.6.3. v1.6.0 ships for both the free edition and Pro (the free edition gains `uvf` and gzip support). There is no free-edition v1.5.0 — it was a Pro-only release, so the free edition goes from v1.4.0 to v1.5.1. v1.3.0 and v1.4.0 unified version numbering with [UwView Pro](https://uvp.y42u.net/pro/) and **were functionally identical to v1.2.2** (v1.4.0 adds one bug fix).
-
-macOS: open the DMG and drag `UwView.app` to Applications. Windows / Linux: unpack and run the bundled executable (`UwView.exe` / `UwView`).
-
-### About code signing
-
-- **macOS**: **signed with a Developer ID and notarized by Apple from v1.5.1 on** (the DMG itself is signed, notarized and stapled), so it opens without any warning. Builds up to v1.5.0 were unsigned zips — recent versions of macOS report those as "damaged", and Chrome may block the download outright. Use v1.5.1 or later.
-- **Windows**: unsigned. If SmartScreen appears, choose **More info → Run anyway**.
-- **Linux**: make it executable (`chmod +x UwView` → `./UwView`).
-
-## Known limitations
-
-- **A single line is displayed up to its first 8,192 characters** (the rest is cut off with `…（省略）`). Horizontal scrolling reaches that limit too. This is a **deliberate speed-first trade-off** that keeps the line-fetch and render hot paths simple.
-- Newlines: LF / CRLF supported. Lone CR (classic Mac) is not fully supported yet.
-- UTF-16 is recognized by BOM, but line splitting is byte-`\n` based, so the primary targets are UTF-8 / Shift-JIS / EUC-JP.
-- mmap is a read-only view; if the file is truncated externally while open, access may crash (acceptable for a viewer). Tail supports appends only (not truncation/rotation).
-- The literal fast byte-path can, rarely, produce a false hit straddling a character boundary in Shift-JIS (never in UTF-8). Use regex mode for strictness (matches after decoding).
-- Browser build: file selection every time (no path open / drag&drop / tail), slower indexing, and unfetched ranges briefly appear blank until the chunk arrives.
+---
 
 ## License
 
-UwView is provided under the [PolyForm Internal Use License 1.0.0](LICENSE).
+UwView is distributed under the [PolyForm Internal Use License 1.0.0](LICENSE).
 
-- **Free** for personal use and for the **internal business operations** of you and your company.
-- You may **not redistribute** the software, embed it in a product/service, resell it, or provide it to third parties. A separate commercial (redistribution) license is required for those uses.
-- Commercial license inquiries: [GitHub Issues](https://github.com/amru195704/UwView/issues)
+- **Free for personal use and for internal business use** inside a company
+- **Redistribution, bundling into a product or service, resale and supply to third parties are not permitted.**
+  Those require a separate commercial (redistribution) license
+- Commercial licensing enquiries: [GitHub Issues](https://github.com/amru195704/UwView/issues)
 
-## Disclaimer
+> Japanese reference translation: [LICENSEjp.txt](LICENSEjp.txt) (the English [LICENSE](LICENSE) is the binding text)
 
-Use at **your own risk**. The author assumes no responsibility for any trouble arising from the use of this software.
+## Other products by the same author
+
+iOS apps for surveyors and land investigators, by the same author (y4u).
+
+| App | What it does | Links |
+| --- | --- | --- |
+| **GeoConverter Pro** | Coordinate conversion (geodetic / plane rectangular systems, semi-dynamic and steady-state corrections) | [App Store](https://apps.apple.com/jp/app/geoconverter-pro/id6761740960) · [Site](https://gcpro.y42u.net/) |
+| **GeoPrism JP** | Visualises datum shifts and the geoid on maps and heatmaps | [App Store](https://apps.apple.com/app/id6780149823) · [Site](https://gmp.y42u.net/) |
+| **GeoDiveExa** | High-precision RTK-GNSS position surveying | [Site](https://y42u.net/tec001/) |
+
+> UwView is an independent utility and does not depend on any of the Geo products above.
+
+---
+
+📰 [Press kit](press-kit/PRESSKIT.md) · 📄 [Previous README (v1.6.5 — feature list and build instructions)](2-doc/archive/README.en-v1.6.5-2026-09.md)
