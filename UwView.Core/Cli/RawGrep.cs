@@ -52,9 +52,14 @@ public static class RawGrep
     /// どのみち全部読んでいるので、画面がもう一度読み直さずに済む
     /// （オーナー指示 2026-09-18「-open が最後にある場合、検索時に index も同時に作成する」）。
     /// </param>
+    /// <param name="observer">
+    /// 読んだバイトを<b>順番どおり・隙間なく</b>受け取る係（Pro の CLI が .uwvz を同時に作るのに使う）。
+    /// 一度渡したところをもう一度渡すことはある（受け手が重なりを捨てる約束。<c>SidecarAppender</c> と同じ規約）。
+    /// </param>
     public static async Task<RawGrepOutcome> RunAsync(
         IByteSource src, int bomLength, Encoding encoding, SearchOptions options, bool invert,
-        LineSink sink, CancellationToken ct = default, IndexMarks? index = null)
+        LineSink sink, CancellationToken ct = default, IndexMarks? index = null,
+        LongLine.Observer? observer = null)
     {
         // 判定の道具立て（素の文字列は SearchService と同じ選び方）
         // バイト列のまま探せる文字コードに限る（同 指摘5）
@@ -105,6 +110,7 @@ public static class RawGrep
                 ct.ThrowIfCancellationRequested();
                 int want = (int)Math.Min(BufSize, fileLength - pos);
                 int got = want <= 0 ? 0 : await src.ReadAsync(pos, buf.AsMemory(carry, want), ct);
+                if (got > 0) observer?.Invoke(pos, buf.AsSpan(carry, got));   // 読んだそばから渡す
                 pos += got;
                 int filled = carry + got;
                 if (filled == 0) break;
@@ -131,7 +137,7 @@ public static class RawGrep
                         var (contentEnd, foundRest) = await LongLine.ScanRestAsync(
                             src, bufBase + filled, fileLength, (byte)'\n',
                             found ? ReadOnlyMemory<byte>.Empty : buf.AsMemory(filled - overlap, overlap),
-                            found ? null : FindFrom, null, ct);
+                            found ? null : FindFrom, observer, ct);
                         hit = (found || foundRest) != invert;
                         end = contentEnd;
                     }
@@ -139,7 +145,7 @@ public static class RawGrep
                     {
                         // 正規表現は1行をデコードする都合で先頭 64KB まで
                         hit = Matches(span[..Math.Min(filled, MaxLineMatchBytes)]) != invert;
-                        end = await LineEndAsync(src, bufBase + filled, fileLength, ct);
+                        end = await LineEndAsync(src, bufBase + filled, fileLength, ct, observer);
                     }
                     if (hit)
                     {
@@ -355,7 +361,8 @@ public static class RawGrep
     private static long CountNewlines(ReadOnlySpan<byte> span) => span.Count((byte)'\n');
 
     /// <summary>from 以降で最初の '\n' の位置（無ければファイル末尾）。</summary>
-    private static async Task<long> LineEndAsync(IByteSource src, long from, long fileLength, CancellationToken ct)
+    private static async Task<long> LineEndAsync(IByteSource src, long from, long fileLength, CancellationToken ct,
+                                                 LongLine.Observer? observer = null)
     {
         byte[] buf = ArrayPool<byte>.Shared.Rent(1 << 16);
         try
@@ -367,6 +374,7 @@ public static class RawGrep
                 int want = (int)Math.Min(buf.Length, fileLength - pos);
                 int got = await src.ReadAsync(pos, buf.AsMemory(0, want), ct);
                 if (got <= 0) break;
+                observer?.Invoke(pos, buf.AsSpan(0, got));
                 int nl = buf.AsSpan(0, got).IndexOf((byte)'\n');
                 if (nl >= 0) return pos + nl;
                 pos += got;

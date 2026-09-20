@@ -71,23 +71,44 @@ public static class CompressedOpenDialog
     private static bool Ja => Localizer.Instance.Culture.TwoLetterISOLanguageName == "ja";
     private static string T(string ja, string en) => Ja ? ja : en;
 
-    /// <summary>受け付けられない理由の説明文（黙って失敗させないため、必ず理由を出す）。</summary>
+    /// <summary>
+    /// 受け付けられない理由の説明文（黙って失敗させないため、必ず理由を出す）。
+    ///
+    /// <b>「壊れています」とは言わない。</b>ここで弾くのはほとんどが「1つのファイルを1回 gzip したもの」
+    /// という想定と形が違うだけで、ファイル自体は正しい（tar.gz・二重 gzip・別形式など）。
+    /// 壊れていると言われた利用者が元のファイルを消してしまう恐れがあるので、
+    /// 「読めません（どう違うか）」と伝え、消さないよう添える（オーナー指示 2026-09-21）。
+    /// </summary>
     public static string RejectMessage(CompressedReject reject, string fileName) => reject switch
     {
-        CompressedReject.NotGzip => T($"{fileName} は gzip ではありません（先頭の目印が違います）。",
-                                      $"{fileName} is not a gzip file (wrong magic bytes)."),
-        CompressedReject.NotZip => T($"{fileName} は zip ではありません（先頭の目印が違います）。",
-                                     $"{fileName} is not a zip file (wrong magic bytes)."),
+        CompressedReject.NotGzip => T(
+            $"{fileName} は gzip として読めません（名前は .gz ですが、中身が gzip の形ではありません）。"
+            + "ファイルが壊れているとは限りません。別の形式かもしれないので、消さずに確かめてください。",
+            $"{fileName} cannot be read as gzip (the name ends with .gz but the contents are not gzip). "
+            + "This does not necessarily mean the file is damaged — it may be another format. Please keep it and check."),
+        CompressedReject.NotZip => T(
+            $"{fileName} は zip として読めません（名前は .zip ですが、中身が zip の形ではありません）。"
+            + "ファイルが壊れているとは限りません。別の形式かもしれないので、消さずに確かめてください。",
+            $"{fileName} cannot be read as zip (the name ends with .zip but the contents are not zip). "
+            + "This does not necessarily mean the file is damaged — it may be another format. Please keep it and check."),
         CompressedReject.TarArchive => T(
-            $"{fileName} は tar アーカイブです。tar は対応していません（先に展開してください）。",
-            $"{fileName} is a tar archive. tar is not supported — please extract it first."),
+            $"{fileName} は複数のファイルをまとめた tar です。このアプリが開けるのは"
+            + "「1つのテキストを gzip したもの」だけです（先に展開してください）。",
+            $"{fileName} is a tar archive holding several files. This app opens a single gzip-compressed text file "
+            + "(please extract it first)."),
         CompressedReject.NestedGzip => T(
-            $"{fileName} は gzip が二重にかかっています。対応していません。",
-            $"{fileName} is gzip-compressed twice, which is not supported."),
-        CompressedReject.Corrupt => T($"{fileName} は壊れています（gzip として読めません）。",
-                                      $"{fileName} is corrupted and cannot be read as gzip."),
-        CompressedReject.Unreadable => T($"{fileName} を読めませんでした。",
-                                         $"{fileName} could not be read."),
+            $"{fileName} は gzip が二重にかかっています。1回だけ gzip したものを開けます"
+            + "（一度 gunzip してから開いてください）。",
+            $"{fileName} is gzip-compressed twice. This app opens a file compressed once "
+            + "(please gunzip it once first)."),
+        CompressedReject.Corrupt => T(
+            $"{fileName} は gzip として読めません（先頭を展開できませんでした）。"
+            + "別の形式か、途中で切れている可能性があります。ファイルは消さずに、"
+            + "`gzip -t` などで確かめてください。",
+            $"{fileName} cannot be read as gzip (the beginning could not be decompressed). "
+            + "It may be another format, or cut short. Please keep the file and check it, e.g. with `gzip -t`."),
+        CompressedReject.Unreadable => T($"{fileName} を読めませんでした（アクセスできないか、使用中かもしれません）。",
+                                         $"{fileName} could not be read (no access, or it may be in use)."),
         _ => "",
     };
 
@@ -101,12 +122,14 @@ public static class CompressedOpenDialog
         $"{fileName} is a zip file. Opening zip files directly is not available yet (coming in a later version). "
         + "Please extract it first.");
 
-    /// <summary>展開が失敗したときの説明（切り詰め・破損）。</summary>
+    /// <summary>展開が最後まで進まなかったときの説明（切り詰め・別形式）。</summary>
     public static string CorruptAfterExpandMessage(string fileName) => T(
-        $"{fileName} は途中で切れているか壊れています（gzip の照合が合いません）。"
-        + "途中までのファイルは残していません。",
-        $"{fileName} is truncated or corrupted (the gzip trailer does not match). "
-        + "No partial file was left behind.");
+        $"{fileName} を最後まで読めませんでした（gzip の末尾の照合が合いません）。"
+        + "途中で切れているか、作り方が想定と違うファイルかもしれません。"
+        + "展開しかけたファイルは残していません。元のファイルは消さないでください。",
+        $"{fileName} could not be read to the end (the gzip trailer does not match). "
+        + "It may be cut short, or made in a way this app does not expect. "
+        + "No half-expanded file was left behind. Please keep the original file.");
 
     /// <summary>空き容量が足りなさそうなときの警告（続行は禁止しない）。</summary>
     public static string LowSpaceMessage(long guessBytes, long freeBytes) => T(

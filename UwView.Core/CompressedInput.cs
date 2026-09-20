@@ -208,7 +208,7 @@ public static class CompressedInput
             return;
 
         throw new InvalidDataException(
-            "gzip truncated or corrupted: trailer does not match the decompressed data "
+            "could not read the gzip to the end: the trailer does not match the decompressed data "
             + $"(written={written}, isize={trailer.ISizeMod32})");
     }
 

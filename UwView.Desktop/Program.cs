@@ -38,6 +38,7 @@ sealed class Program
             StdOut = Console.OpenStandardOutput(),
             StdErr = Console.Error,
             Japanese = CliLanguage.IsJapanese(CliLanguage.FreeSettingsFolder),   // アプリの設定で選んだ言語
+            AppVersion = UwView.App.VersionText(typeof(UwView.App).Assembly),    // --version で出す版数
             // -open: 自分自身を GUI として起動し直す（検索パターンとファイルを渡す）。
             // CLI が先に探して結果を持っていれば、その置き場所も渡す（画面は検索し直さない）
             LaunchGui = (file, pattern) => CliHost.LaunchSelfAsGui(

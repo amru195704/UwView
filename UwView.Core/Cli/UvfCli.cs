@@ -51,6 +51,9 @@ public sealed class UvfEnvironment
 
     public bool Japanese { get; init; } = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ja";
 
+    /// <summary><c>--version</c> で出す版数（本体が渡す。uvp と同じ形で出す）。</summary>
+    public string AppVersion { get; init; } = "";
+
     /// <summary>
     /// 表示に使うコマンド名。UwView Pro の uvp も、ライセンスが無いときはこの2つの形で動く
     /// （画面の未購入時が無料版と同じ動きなのに合わせる）ので、その場合は "uvp" と名乗る。
@@ -104,6 +107,10 @@ public static class UvfCli
             -v        当てはまらない行を出す
             -open     結果を stdout ではなく GUI で表示する（-i/-E/-v と併用できます）
 
+          そのほか:
+            uvf --version   版数を出す
+            uvf --help      この使い方を出す
+
           出力は「行番号<TAB>本文」。終了コード: 0=見つかった 1=見つからない 2=エラー
           """
         : """
@@ -116,6 +123,10 @@ public static class UvfCli
             -E        treat the pattern as a regular expression
             -v        print the lines that do NOT match
             -open     show the results in the app instead of stdout (can be combined with -i/-E/-v)
+
+          Also:
+            uvf --version   print the version
+            uvf --help      print this usage
 
           Output is "line<TAB>text". Exit codes: 0=found 1=not found 2=error
           """).Replace("uvf ", tool + " ");
@@ -174,6 +185,20 @@ public static class UvfCli
         string T(string j, string e) => ja ? j : e;
         string tool = env.ToolName;
         void Err(string m) => env.StdErr.WriteLine(tool + ": " + m);
+
+        // --version / --help（uvp と同じ綴り。無かったので入れた。オーナー指摘 2026-09-21）
+        if (argv.Count == 1)
+        {
+            switch (argv[0])
+            {
+                case "--version" or "-version" or "--Version":
+                    await WriteLineAsync(env.StdOut, $"{tool} {(env.AppVersion.Length > 0 ? env.AppVersion : "?")}", ct);
+                    return UvfExit.Found;
+                case "--help" or "-h" or "-help" or "--Help":
+                    await WriteLineAsync(env.StdOut, Usage(ja, tool), ct);
+                    return UvfExit.Found;
+            }
+        }
 
         var (inv, errJa, errEn) = Parse(argv);
         if (inv is null)
@@ -243,19 +268,25 @@ public static class UvfCli
         }
 
         // gz は展開しながら探す（gzip -dc | grep と同じ。オーナー指示 2026-09-19）。
-        // zip・壊れた gz は GUI の「テキストに展開して開く」へ案内する
+        // 読めない gz・zip は、理由を添えて断る（「圧縮ファイルです」だけだと、
+        // 中身が gzip でない .gz にも同じ文が出て分からない。オーナー指示 2026-09-21）
         var probe = CompressedInput.Probe(inv.File!);
         bool gzip = probe is { Kind: CompressedKind.Gzip, IsRejected: false };
         if (!gzip && (probe.IsCompressed || probe.IsRejected))
         {
-            Err(T($"{Path.GetFileName(inv.File)} は圧縮ファイルです。{tool} -open {inv.File} で GUI から開いてください",
-                  $"{Path.GetFileName(inv.File)} is compressed. Open it in the app with: {tool} -open {inv.File}"));
+            Err(RejectText(probe.Reject, inv.File!, tool, T));
             return UvfExit.Error;
         }
 
         try
         {
             return await SearchToStdoutAsync(inv.File!, gzip, inv, env, T, Err, ct);
+        }
+        catch (InvalidDataException) when (gzip)
+        {
+            // 文字コードの判定など、検索を始める前に読めなくなった場合
+            Err(GzNotReadable(inv.File!, T, partialOutput: false));
+            return UvfExit.Error;
         }
         catch (OperationCanceledException)
         {
@@ -280,6 +311,80 @@ public static class UvfCli
             Err(e.Message);
             return UvfExit.Error;
         }
+    }
+
+    private static async Task WriteLineAsync(Stream stdout, string text, CancellationToken ct)
+    {
+        await using var w = new StreamWriter(stdout, new UTF8Encoding(false), 1 << 12, leaveOpen: true) { NewLine = "\n" };
+        await w.WriteLineAsync(text.AsMemory(), ct);
+    }
+
+    /// <summary>
+    /// 受け付けられない入力の案内（理由ごと）。<b>「壊れています」とは言わない</b>
+    ///（別形式・作り方の違いのことが多く、元のファイルを消されかねない。オーナー指示 2026-09-21）。
+    /// </summary>
+    private static string RejectText(CompressedReject reject, string path, string tool,
+                                     Func<string, string, string> t)
+    {
+        string name = Path.GetFileName(path);
+        return reject switch
+        {
+            CompressedReject.NotGzip => t(
+                $"{name} は gzip として読めません（名前は .gz ですが、中身が gzip の形ではありません）。"
+                + "別の形式かもしれません。元のファイルは消さないでください。",
+                $"{name} cannot be read as gzip (the name ends with .gz but the contents are not gzip). "
+                + "It may be another format. Please keep the original file."),
+            CompressedReject.NotZip => t(
+                $"{name} は zip として読めません（名前は .zip ですが、中身が zip の形ではありません）。"
+                + "別の形式かもしれません。元のファイルは消さないでください。",
+                $"{name} cannot be read as zip (the name ends with .zip but the contents are not zip). "
+                + "It may be another format. Please keep the original file."),
+            CompressedReject.TarArchive => t(
+                $"{name} は複数のファイルをまとめた tar です。扱えるのは「1つのテキストを gzip したもの」だけです"
+                + "（先に展開してください）。",
+                $"{name} is a tar archive holding several files. This tool handles a single gzip-compressed text file "
+                + "(please extract it first)."),
+            CompressedReject.NestedGzip => t(
+                $"{name} は gzip が二重にかかっています。1回だけ gzip したものを扱えます"
+                + "（一度 gunzip してから試してください）。",
+                $"{name} is gzip-compressed twice. This tool handles a file compressed once "
+                + "(please gunzip it once first)."),
+            CompressedReject.Corrupt => t(
+                $"{name} は gzip として読めません（先頭を展開できませんでした）。"
+                + "別の形式か、途中で切れている可能性があります。元のファイルは消さないでください。",
+                $"{name} cannot be read as gzip (the beginning could not be decompressed). "
+                + "It may be another format, or cut short. Please keep the original file."),
+            CompressedReject.Unreadable => t(
+                $"{name} を読めませんでした（アクセスできないか、使用中かもしれません）。",
+                $"{name} could not be read (no access, or the file is in use)."),
+            // 理由が無い＝形としては正しい圧縮ファイル（いまは zip）。画面へ案内する
+            _ => t($"{name} は zip です。いまは直接検索できません。{tool} -open {path} で画面から開いてください",
+                   $"{name} is a zip file. Searching it directly is not supported yet. "
+                   + $"Open it in the app with: {tool} -open {path}"),
+        };
+    }
+
+    /// <summary>
+    /// gz を最後まで読めなかったときの案内。
+    ///
+    /// <b>「壊れています」とは言わない。</b>ここに来るのは「途中で切れている」か
+    /// 「1つのファイルを1回 gzip したもの、という想定と違う作り方」がほとんどで、
+    /// ファイル自体は正しいことが多い。壊れていると言われた利用者が元のファイルを
+    /// 消してしまう恐れがあるので、そう言い切らず、消さないよう添える（オーナー指示 2026-09-21）。
+    /// </summary>
+    private static string GzNotReadable(string path, Func<string, string, string> t, bool partialOutput)
+    {
+        string name = Path.GetFileName(path);
+        string ja = $"{name} を最後まで読めませんでした（gzip として読み切れません）。"
+                    + "途中で切れているか、作り方が想定と違うファイルかもしれません。";
+        string en = $"{name} could not be read to the end (it could not be read through as gzip). "
+                    + "It may be cut short, or made in a way this tool does not expect.";
+        if (partialOutput)
+        {
+            ja += "ここまでの出力は不完全です。";
+            en += " The output so far is incomplete.";
+        }
+        return t(ja + "元のファイルは消さないでください。", en + " Please keep the original file.");
     }
 
     /// <summary>
@@ -344,8 +449,7 @@ public static class UvfCli
             catch (InvalidDataException e) when (gzip)
             {
                 await w.FlushAsync(ct);
-                err(t($"{Path.GetFileName(path)} は壊れているか途中で切れています。ここまでの出力は不完全です（{e.Message}）",
-                      $"{Path.GetFileName(path)} is corrupted or truncated. The output so far is incomplete ({e.Message})"));
+                err(GzNotReadable(path, t, partialOutput: true));
                 return UvfExit.Error;
             }
 

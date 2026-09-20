@@ -4,9 +4,19 @@ using UwView.Core;
 // フェーズ3 実測ハーネス（§8 パフォーマンス目標・受入基準の検証用）
 // 使い方: dotnet run --project UwView.Bench -c Release -- <ファイルパス>
 
+// 読み出し帯域・改行数えの計測モード（宣伝部の記事の数字を追試できるようにする。指示書 2026-09-20）
+//   dotnet run --project UwView.Bench -c Release -- --read-mmap  <file> [--block 1m|4m|16m]
+//   dotnet run --project UwView.Bench -c Release -- --read-pread <file> [--block 1m|4m|16m]
+//   dotnet run --project UwView.Bench -c Release -- --count-newlines <file> [--mode byte|indexof|vector] [--memory]
+// 比較対象の素の帯域は dd（dd if=<file> of=/dev/null bs=1m）で測る。
+if (args.Length >= 2 && args[0].StartsWith("--"))
+    return Modes.Run(args);
+
 if (args.Length < 1 || !File.Exists(args[0]))
 {
     Console.Error.WriteLine("使い方: UwView.Bench <テキストファイル>");
+    Console.Error.WriteLine("        UwView.Bench --read-mmap|--read-pread <file> [--block 1m|4m|16m]");
+    Console.Error.WriteLine("        UwView.Bench --count-newlines <file> [--mode byte|indexof|vector] [--memory]");
     return 1;
 }
 string path = args[0];

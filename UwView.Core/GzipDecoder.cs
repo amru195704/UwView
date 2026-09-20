@@ -22,7 +22,16 @@ public static class GzipDecoder
     /// </param>
     public static Stream Open(Stream compressed, out bool verifiesTrailer)
     {
-        if (OperatingSystem.IsMacOS() && SystemZlibStream.TryCreate(compressed) is { } fast)
+        // 既定は macOS だけ OS の zlib。Linux も同じやり方で呼べるが、.NET 付属（zlib-ng）と
+        // どちらが速いかは環境次第なので既定では使わない。
+        // 計測用に UWVIEW_SYSTEM_ZLIB=1（必ず使う）／=0（必ず使わない）で上書きできる（調査4・2026-09-20）
+        bool useSystem = Environment.GetEnvironmentVariable("UWVIEW_SYSTEM_ZLIB") switch
+        {
+            "1" => true,
+            "0" => false,
+            _ => OperatingSystem.IsMacOS(),
+        };
+        if (useSystem && SystemZlibStream.TryCreate(compressed) is { } fast)
         {
             verifiesTrailer = true;
             return fast;
@@ -35,7 +44,8 @@ public static class GzipDecoder
 /// <summary>OS 標準の zlib で gz を展開する読み取り専用ストリーム（連結 gz も続けて読む）。</summary>
 internal sealed unsafe class SystemZlibStream : Stream
 {
-    private const string Lib = "/usr/lib/libz.dylib";
+    // macOS は OS の zlib（必ずある）。Linux は libz.so.1（ほぼ必ずあるが、無ければ呼び出しで例外→.NET 側へ）
+    private const string Lib = "libz";
     private const int InputSize = 1 << 20;
     private const int ZOk = 0, ZStreamEnd = 1, ZBufError = -5;
 
@@ -54,6 +64,7 @@ internal sealed unsafe class SystemZlibStream : Stream
 
     public static SystemZlibStream? TryCreate(Stream input)
     {
+        EnsureResolver();
         var z = (ZStream*)NativeMemory.AllocZeroed((nuint)sizeof(ZStream));
         try
         {
@@ -99,7 +110,7 @@ internal sealed unsafe class SystemZlibStream : Stream
                 else if (rc == ZBufError && _z->avail_in == 0 && _inputEnded && _z->total_in == 0)
                     _finished = true;   // 0 バイトのファイル（.NET は空の中身をこう書く）。GZipStream と同じく空とする
                 else if (rc == ZBufError && _z->avail_in == 0 && _inputEnded)
-                    throw new InvalidDataException("gzip truncated: the compressed data ended before the gzip trailer");
+                    throw new InvalidDataException("the gzip data ended before its trailer (the file may be cut short)");
                 else if (rc != ZOk && rc != ZBufError)
                     throw Corrupt(_z->msg == 0 ? $"inflate error {rc}" : Marshal.PtrToStringAnsi(_z->msg)!);
 
@@ -119,7 +130,32 @@ internal sealed unsafe class SystemZlibStream : Stream
         return true;
     }
 
-    private static InvalidDataException Corrupt(string detail) => new($"gzip corrupted: {detail}");
+    // 「壊れている」と断定しない（別形式・作り方の違いのこともある。オーナー指示 2026-09-21）
+    private static InvalidDataException Corrupt(string detail) => new($"could not read as gzip: {detail}");
+
+    private static nint _resolved;
+    private static int _resolverSet;
+
+    /// <summary>zlib の探し方を1回だけ登録する（2回目は「既に設定済み」で例外になる）。</summary>
+    private static void EnsureResolver()
+    {
+        if (Interlocked.Exchange(ref _resolverSet, 1) != 0) return;
+        try { NativeLibrary.SetDllImportResolver(typeof(SystemZlibStream).Assembly, Resolve); }
+        catch (InvalidOperationException) { /* ほかの経路で登録済み */ }
+    }
+
+    /// <summary>OS ごとの zlib を開く（macOS: libz.dylib ／ Linux: libz.so.1）。</summary>
+    private static nint Resolve(string name, System.Reflection.Assembly assembly, DllImportSearchPath? path)
+    {
+        if (name != Lib) return 0;
+        if (_resolved != 0) return _resolved;
+        string[] candidates = OperatingSystem.IsMacOS()
+            ? ["/usr/lib/libz.dylib", "libz.dylib"]
+            : ["libz.so.1", "libz.so"];
+        foreach (string candidate in candidates)
+            if (NativeLibrary.TryLoad(candidate, out nint handle)) { _resolved = handle; return handle; }
+        return 0;
+    }
 
     protected override void Dispose(bool disposing)
     {

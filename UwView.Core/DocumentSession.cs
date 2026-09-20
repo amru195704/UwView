@@ -226,12 +226,23 @@ public sealed class DocumentSession : IAsyncDisposable
         //（確かめないと、クリアしたあとに古い結果が復活する。ソースレビュー 2026-09-19 の指摘3）
         var syncCtx = SynchronizationContext.Current;
         var mine = _searchCts;
-        void ApplyBatch(IReadOnlyList<long> b)
+        // 画面（Avalonia）の Post は1本ずつ順に実行されるが、そうでない文脈もある。
+        // 取りこぼしだけでなく**順序**も仕組みで守る: バッチに発行順の番号を付け、その順に並べる
+        //（順不同のまま足すと、ヒットの並びがファイル順でなくなる。2026-09-21 の不安定テストの原因）
+        var waiting = new Dictionary<int, IReadOnlyList<long>>();
+        int nextToApply = 0;
+        void ApplyBatch(int seq, IReadOnlyList<long> b)
         {
             if (!ReferenceEquals(_searchCts, mine) || ct.IsCancellationRequested) return;  // 前の検索の積み残し
-            // 画面（Avalonia）の Post は1本ずつ順に実行されるが、そうでない文脈もある。
-            // 取りこぼしを仕組みで防ぐ（List への追加は同時に行うと壊れる）
-            lock (_hitsLock) _searchHits.AddRange(b);
+            lock (_hitsLock)
+            {
+                waiting[seq] = b;
+                while (waiting.Remove(nextToApply, out var inOrder))
+                {
+                    _searchHits.AddRange(inOrder);
+                    nextToApply++;
+                }
+            }
             SearchUpdated?.Invoke(this, EventArgs.Empty);
         }
         // 反映し終わるのを待てるよう、積んだ数を数えておく。
@@ -243,14 +254,16 @@ public sealed class DocumentSession : IAsyncDisposable
             if (Volatile.Read(ref finished) != 0 && Volatile.Read(ref pending) == 0) drained.TrySetResult();
         }
 
+        int posted = 0;   // 発行順（背景スレッドで採番する）
         Action<IReadOnlyList<long>> batches = syncCtx is null
-            ? ApplyBatch
+            ? b => ApplyBatch(posted++, b)
             : b =>
             {
+                int seq = posted++;
                 Interlocked.Increment(ref pending);
                 syncCtx.Post(_ =>
                 {
-                    try { ApplyBatch(b); }
+                    try { ApplyBatch(seq, b); }
                     finally { Interlocked.Decrement(ref pending); SignalIfDone(); }
                 }, null);
             };

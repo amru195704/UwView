@@ -936,7 +936,7 @@ public partial class MainView : UserControl
         }
         catch (InvalidDataException)
         {
-            EndTaskProgress(Ja ? "壊れています" : "Corrupted");
+            EndTaskProgress(Ja ? "最後まで読めませんでした" : "Could not read to the end");
             await NoticeAsync(CompressedOpenDialog.CorruptAfterExpandMessage(name));
             return null;
         }

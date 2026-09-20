@@ -179,6 +179,38 @@ public class UvfCliTests : IDisposable
         Assert.Contains("UwView Pro", r.Err);
     }
 
+    // ── --version / --help（uvp と同じ綴り。オーナー指摘 2026-09-21）────
+
+    [Theory]
+    [InlineData("--version")]
+    [InlineData("-version")]
+    public async Task 版数を聞かれたら出す(string flag)
+    {
+        var r = await Uvf(flag);
+        Assert.Equal(UvfExit.Found, r.Exit);
+        Assert.Equal("", r.Err);
+        Assert.StartsWith("uvf ", r.Out);
+        Assert.EndsWith("\n", r.Out);
+    }
+
+    [Theory]
+    [InlineData("--help")]
+    [InlineData("-h")]
+    public async Task 使い方を聞かれたら標準出力に出す(string flag)
+    {
+        var r = await Uvf(flag);
+        Assert.Equal(UvfExit.Found, r.Exit);
+        Assert.Contains("-open", r.Out);        // stdout に出す（エラーではない）
+        Assert.Equal("", r.Err);
+    }
+
+    [Fact]
+    public async Task 版数の指定と一緒に他の引数があれば従来どおり断る()
+    {
+        var r = await Uvf("--version", "extra");
+        Assert.Equal(UvfExit.Error, r.Exit);
+    }
+
     // ── gz は展開しながら検索する（オーナー指示 2026-09-19）────────────
 
     private string Gzip(string plainPath, string? name = null)
@@ -276,7 +308,10 @@ public class UvfCliTests : IDisposable
 
         var r = await Uvf(gz, "ERROR");
         Assert.Equal(UvfExit.Error, r.Exit);
-        Assert.Contains("truncated", r.Err);
+        // 「壊れている」とは言わない（元のファイルを消されかねない。オーナー指示 2026-09-21）
+        Assert.Contains("could not be read to the end", r.Err);
+        Assert.Contains("Please keep the original file", r.Err);
+        Assert.DoesNotContain("corrupt", r.Err, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

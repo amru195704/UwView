@@ -606,6 +606,74 @@ public class RawGrepTests : IDisposable
     }
 
     [Fact]
+    public async Task 反映の順番が入れ替わってもヒットはファイル順に並ぶ()
+    {
+        // 画面（Avalonia）の Post は順番どおりだが、そうでない文脈もある。
+        // 順不同で届いてもヒットの並びが崩れないこと（2026-09-21 の不安定テストの原因）
+        var sb = new StringBuilder();
+        for (int i = 0; i < 20_000; i++) sb.Append($"{i:D6} {(i % 11 == 0 ? "ERROR" : "info")} x\n");
+        File.WriteAllText(P("shuffled.log"), sb.ToString());
+
+        var previous = SynchronizationContext.Current;
+        using var shuffling = new ShufflingSyncContext();
+        SynchronizationContext.SetSynchronizationContext(shuffling);
+        try
+        {
+            await using var session = DocumentSession.Open(P("shuffled.log"));
+            await session.StartSearchAsync(new SearchOptions("ERROR"));
+            var hits = session.SearchHits;
+            Assert.Equal(20_000 / 11 + 1, hits.Count);
+            for (int i = 1; i < hits.Count; i++)
+                Assert.True(hits[i - 1] < hits[i], $"{i} 件目でファイル順が崩れている");
+        }
+        finally { SynchronizationContext.SetSynchronizationContext(previous); }
+    }
+
+    /// <summary>
+    /// 届いた順に実行しない同期コンテキスト（順序が保証されない文脈の再現）。
+    /// 専用スレッドで回し、2件たまっていたら後の方から実行する。
+    /// </summary>
+    private sealed class ShufflingSyncContext : SynchronizationContext, IDisposable
+    {
+        private readonly Queue<(SendOrPostCallback Callback, object? State)> _queue = new();
+        private readonly SemaphoreSlim _arrived = new(0);
+        private readonly CancellationTokenSource _stop = new();
+        private readonly Thread _pump;
+
+        public ShufflingSyncContext()
+        {
+            _pump = new Thread(Pump) { IsBackground = true };
+            _pump.Start();
+        }
+
+        public override void Post(SendOrPostCallback d, object? state)
+        {
+            lock (_queue) _queue.Enqueue((d, state));
+            _arrived.Release();
+        }
+
+        private void Pump()
+        {
+            while (!_stop.IsCancellationRequested)
+            {
+                try { _arrived.Wait(_stop.Token); }
+                catch (OperationCanceledException) { return; }
+
+                var take = new List<(SendOrPostCallback Callback, object? State)>();
+                lock (_queue)
+                {
+                    while (_queue.Count > 0 && take.Count < 2) take.Add(_queue.Dequeue());
+                }
+                if (take.Count == 2) _arrived.Wait(0);      // 2件取ったので合図も1つ消費
+                for (int i = take.Count - 1; i >= 0; i--)   // 後の方から実行する
+                    take[i].Callback(take[i].State);
+            }
+        }
+
+        public void Dispose() { _stop.Cancel(); _pump.Join(TimeSpan.FromSeconds(5)); _stop.Dispose(); }
+    }
+
+    [Fact]
     public async Task 上限で打ち切ったときは索引を採らない()
     {
         File.WriteAllText(P("cut.log"), string.Concat(Enumerable.Range(0, 200).Select(i => $"ERROR {i}\n")));
