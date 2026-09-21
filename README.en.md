@@ -22,9 +22,9 @@ With UwView you type `uvf <file> '<pattern>' -open`, and **a single read searche
 
 | Task | Against | Theirs | **UwView** | |
 |---|---|---:|---:|:---:|
-| **Search** (CLI, one term) | ripgrep 15.2.0 | 55.54 s | **`uvf … -open` 50.74 s** | level |
+| **Search** (CLI, one term) | ripgrep 15.2.0 | 55.54 s | **`uvf … -open` 50.76 s** | level |
 | **Open** (GUI) | klogg 24.11.0 | 52.55 s | **50.44 s** | level |
-| **Search, then read the hit** | `rg` + klogg | 108.1 s | **`uvf … -open` 50.74 s** | **2.13×** |
+| **Search, then read the hit** | `rg` + klogg | 108.1 s | **`uvf … -open` 50.76 s** | **2.13×** |
 
 **Rows 1 and 3 are the same command, the same single run.** Searching, and searching plus putting the hits on screen,
 take the same time.
@@ -32,7 +32,7 @@ take the same time.
 **All of that is the free edition.**
 
 > The 108.1 s for `rg` + klogg is two measured figures added (55.54 s + 52.55 s). klogg alone (open + search) is also 108.14 s.
-> Term: `東京` (94,979 hits). `uvf … -open`'s 50.74 s is 51.25 GB ÷ 50.74 s = **963 MB/s** — exactly one pass over the file.
+> Term: `東京` (94,979 hits). `uvf … -open`'s 50.76 s is 51.25 GB ÷ 50.76 s = **963 MB/s** — exactly one pass over the file.
 > **[Conditions and full data →](https://uvp.y42u.net/en/benchmarks-en/)**
 
 ### By size
@@ -41,14 +41,14 @@ take the same time.
 |---|---:|---:|---:|
 | ripgrep 15.2.0 (search, one term) | 3.29 s | **11.38 s** | 55.54 s |
 | klogg 24.11.0 (open) | 3.65 s | 10.98 s | 52.55 s |
-| **UwView CLI (`uvf … -open`, search and hand to the window)** | **3.31 s** | **10.48 s** | **50.74 s** |
+| **UwView CLI (`uvf … -open`, search and hand to the window)** | **3.40 s** | **10.42 s** | **50.76 s** |
 | **UwView GUI (open only)** | **2.99 s** | **10.13 s** | **50.44 s** |
 
 **Every row is one pass over the file.** None of these tools keeps an index, so the disk's read speed is the limit.
 
 **Compare the last two rows.** Opening in the window and nothing else takes 50.44 s; searching from the command line and
-putting the hits on screen takes 50.74 s. The difference is **+0.32 s / +0.35 s / +0.30 s** — **the file grows 17×, and
-searching still adds only 0.3 s.** The search happens during the read, so it needs no pass of its own.
+putting the hits on screen takes 50.76 s. The difference is **+0.41 s / +0.29 s / +0.32 s** — **the file grows 17×, and
+searching still adds only 0.3–0.4 s.** The search happens during the read, so it needs no pass of its own.
 
 **Ask the same file twice and ripgrep wins at 3 GB** — that size fits in RAM, so its second run comes from cache.
 Running seven searches twice each totals 32.30 s for rg against 33.31 s for `uvf` at 3 GB, 158.69 s against
@@ -131,7 +131,7 @@ original, with a line index) and **never touches the original again.**
 | | Open | Search | Total | |
 |---|---:|---:|---:|:---:|
 | klogg 24.11.0 | 52.55 s (rebuilt every time) | 55.59 s | 108.14 s | |
-| **`uvf … -open`** (free) | — | — | **50.74 s** | 2.13× |
+| **`uvf … -open`** (free) | — | — | **50.76 s** | 2.13× |
 | **`uvp`** (with `.uwvz`) | **0.01–0.07 s** | **6.34 s** | **6.41 s** | **16.9×** |
 
 **16.9× klogg, and 7.9× our own free `uvf`.** This is where the order of magnitude changes.
@@ -178,7 +178,7 @@ Beating the `gzip` command itself comes from **not going through a pipe between 
 ### Known limitation: extremely long lines inside a compressed file
 
 If a `.gz` contains **a single line longer than 64 MiB** (roughly 67 million ASCII characters) and a search
-matches that line, you may get an error saying the file is damaged. **The file is not actually damaged.**
+matches that line, the search may stop with a message that the file "could not be read to the end". **The file is not actually damaged.**
 
 **This will not be fixed.** Logs and XML dumps essentially never contain a 64 MiB line, and removing the limit
 would require a design with no bound on line length — which **slows down every ordinary file as well**.
@@ -200,8 +200,8 @@ If you have such a file, `gunzip` it first and open the plain text.
 | 🔧 **Full feature list, architecture, build and test instructions** | [Previous README (as of v1.6.5)](docs/README.en-v1.6.5.md) |
 | 📰 **Press kit** | [PRESSKIT.md](press-kit/PRESSKIT.md) |
 
-> **On versions:** the timings on this page are measured on **v1.6.6 "First Light" (coming shortly)**. On **v1.6.5**, which is what
-> Releases currently serves, `uvf … -open` took 53.69 s and opening in the window took 100.6 s.
+> **On versions:** the timings on this page are measured on **v1.6.6.1** (the window and `uvf` are unchanged from v1.6.6;
+> v1.6.6.1 changes the `uvp` command's first question to "search while building").
 > → [what changed in v1.6.6](2-doc/release-body-v1.6.6.md)
 
 ---
