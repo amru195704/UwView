@@ -19,7 +19,7 @@ cd "$(dirname "$0")/.."
 APP_PROJ="UwView.Desktop/UwView.Desktop.csproj"
 VER=$(grep -oE '<Version>[^<]+' UwView/UwView.csproj | sed 's/<Version>//' | head -1)
 : "${VER:=0.0.0}"
-OUT="dist"
+OUT="${OUT:-dist}"   # 試験用に別フォルダへ出せる（例: OUT=distWideField ./build/publish.sh）
 EXE="UwView.Desktop"   # 単一ファイル実行体名（プロジェクト名由来）
 RIDS=("$@"); [ ${#RIDS[@]} -eq 0 ] && RIDS=(osx-arm64 osx-x64 win-x64 win-arm64 linux-x64 linux-arm64)
 
