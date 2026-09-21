@@ -140,7 +140,7 @@ costs the same as the first**. Only `uvp` **earns back what the first pass cost.
 
 **It stays searchable with the original deleted, and `-extract` puts it back.** 51.25 GB becomes about 5.7 GB.
 
-**On the first question the free `uvf` is level with ripgrep, while `uvp` is 15–20% slower because it builds its `.uwvz`.**
+**On the first question the free `uvf` is level with ripgrep, while `uvp` is 6–7% slower because it builds its `.uwvz`** (v1.6.6.1, 50 GB: 59.0 s vs 54.9–55.8 s).
 **`uvp` pays off past 10 GB, when you ask the same file more than one question.**
 
 > **$129** one-time / **$9** per month (Edit Upgrade +$120 / +$8), with a **14-day free trial**
@@ -151,7 +151,7 @@ costs the same as the first**. Only `uvp` **earns back what the first pass cost.
 ## What it does
 
 **Largest measured: 258.68 GB, 4.5 billion lines** (on the free edition) / the `uvf` command (`-i`, `-E`, `-v`,
-grep-compatible exit codes, `-open`) / **searches `.gz` directly** (v1.6.6+, below) / hit-list window
+exit codes 0 / 1 / 2 (match / no match / error), `-open`) / **searches `.gz` directly** (v1.6.6+, below) / hit-list window
 (original line numbers, jump, surrounding context, save) / multi-keyword colouring (32 colour-blind-safe colours,
 7 presets, `.uwvhl`) / automatic encoding detection (UTF-8, Shift-JIS, EUC-JP, UTF-16) / real-time tail /
 opens gzip directly / tabs, bookmarks, horizontal scrolling, session restore / identical rendering on every OS
