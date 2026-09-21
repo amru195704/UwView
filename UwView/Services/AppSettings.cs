@@ -134,6 +134,13 @@ public sealed class AppSettings
     public int SearchMaxHits { get; set; }
 
     /// <summary>
+    /// 検索に使うスレッド数（0＝既定の <see cref="UwView.Core.ThreadBudget.Default"/>）。
+    /// 環境変数（UVF_MAX_THREADS／UVP_MAX_THREADS）の方が優先される。`--tune --apply` がここへ書く
+    /// （Wide Field v1.7.0 段階1-a）。
+    /// </summary>
+    public int MaxThreads { get; set; }
+
+    /// <summary>
     /// 設定フォルダ名（%AppData%/&lt;この名前&gt;/settings.json）。
     /// 既定は "UwView"（UVF）。UVP は起動時に "UwViewPro" へ変更し、UVF と設定・ライセンスを分離する。
     /// </summary>

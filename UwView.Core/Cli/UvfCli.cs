@@ -54,6 +54,21 @@ public sealed class UvfEnvironment
     /// <summary><c>--version</c> で出す版数（本体が渡す。uvp と同じ形で出す）。</summary>
     public string AppVersion { get; init; } = "";
 
+    /// <summary>設定ファイルの置き場（<c>--tune --apply</c> の保存先）。uvp は自分のフォルダを渡す。</summary>
+    public string SettingsFolder { get; init; } = CliLanguage.FreeSettingsFolder;
+
+    /// <summary>
+    /// <c>--tune</c> が1回ぶんの走査に使う処理（null なら平文の走査＝無料版の経路）。
+    /// uvp は <c>.uwvz</c> の検索を渡す（本番と同じ経路で測らないと勧める本数がずれる）。
+    /// </summary>
+    public TuneRunner.Scan? TuneScan { get; init; }
+
+    /// <summary><c>--tune</c> で測った経路の呼び名（表示用）。</summary>
+    public string TuneScanName { get; init; } = "";
+
+    /// <summary>媒体から読む量に対する走査量の倍率（<c>.uwvz</c> は約9倍。平文は 1）。</summary>
+    public double TuneMediumRatio { get; init; } = 1;
+
     /// <summary>
     /// 表示に使うコマンド名。UwView Pro の uvp も、ライセンスが無いときはこの2つの形で動く
     /// （画面の未購入時が無料版と同じ動きなのに合わせる）ので、その場合は "uvp" と名乗る。
@@ -186,6 +201,10 @@ public static class UvfCli
         string tool = env.ToolName;
         void Err(string m) => env.StdErr.WriteLine(tool + ": " + m);
 
+        // --tune: この機械で何スレッドが良いかを測る（Wide Field v1.7.0 段階1-b）
+        if (argv.Count > 0 && argv[0] == "--tune")
+            return await TuneAsync(argv, env, T, Err, ct);
+
         // --version / --help（uvp と同じ綴り。無かったので入れた。オーナー指摘 2026-09-21）
         if (argv.Count == 1)
         {
@@ -311,6 +330,57 @@ public static class UvfCli
             Err(e.Message);
             return UvfExit.Error;
         }
+    }
+
+    /// <summary>
+    /// <c>--tune [ファイル] [--apply]</c>: 実測して勧める本数を出す。
+    /// <c>--apply</c> なら設定に保存する（表を読んで画面に打ち込む手順を挟むとやらない人が出るため）。
+    /// </summary>
+    public static async Task<int> TuneAsync(IReadOnlyList<string> argv, UvfEnvironment env,
+                                              Func<string, string, string> t, Action<string> err,
+                                              CancellationToken ct)
+    {
+        bool apply = argv.Contains("--apply");
+        string? target = argv.Skip(1).FirstOrDefault(a => !a.StartsWith("--"));
+        if (target is not null && !File.Exists(target))
+        {
+            err(t($"ファイルが見つかりません: {target}", $"File not found: {target}"));
+            return UvfExit.Error;
+        }
+
+        int logical = ThreadBudget.LogicalProcessors;
+        env.StdErr.WriteLine(t($"{env.ToolName}: 測っています（管理者権限は要りません。ほかの処理は止めてください）",
+                               $"{env.ToolName}: measuring (no administrator rights needed; please leave the machine idle)"));
+        TuneRunner.Result result;
+        try
+        {
+            result = await Task.Run(
+                () => TuneRunner.Run(target, logical, m => env.StdErr.WriteLine("  " + m), ct,
+                                     env.TuneScan, env.TuneMediumRatio), ct);
+        }
+        catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
+        {
+            err(e.Message);
+            return UvfExit.Error;
+        }
+
+        string what = env.TuneScanName.Length > 0 ? env.TuneScanName : t("平文の走査", "plain scan");
+        await WriteLineAsync(env.StdOut, TuneRunner.Format(result, env.Japanese,
+                                                           target ?? t("一時ファイル", "a temporary file"), logical, what), ct);
+        if (!apply)
+        {
+            await WriteLineAsync(env.StdOut, t($"  --apply を付けると設定（{ThreadBudget.SettingsKey}）に保存します",
+                                               $"  Add --apply to save this into the settings ({ThreadBudget.SettingsKey})"), ct);
+            return UvfExit.Found;
+        }
+
+        string folder = env.SettingsFolder;
+        bool saved = CliSettings.WriteInt(folder, ThreadBudget.SettingsKey, result.Recommended);
+        await WriteLineAsync(env.StdOut, saved
+            ? t($"  設定に保存しました（{ThreadBudget.SettingsKey} = {result.Recommended}）",
+                $"  Saved to the settings ({ThreadBudget.SettingsKey} = {result.Recommended})")
+            : t("  設定に保存できませんでした", "  Could not save the settings"), ct);
+        return saved ? UvfExit.Found : UvfExit.Error;
     }
 
     private static async Task WriteLineAsync(Stream stdout, string text, CancellationToken ct)
@@ -446,7 +516,7 @@ public static class UvfCli
             {
                 outcome = await RawGrep.RunAsync(src, detected.BomLength, encoding, options, inv.Invert, Write, ct);
             }
-            catch (InvalidDataException e) when (gzip)
+            catch (InvalidDataException) when (gzip)
             {
                 await w.FlushAsync(ct);
                 err(GzNotReadable(path, t, partialOutput: true));
