@@ -25,7 +25,7 @@ v1.6.6.1 のいちばん大きな変更は、有償版の `uvp` コマンドで�
 | `uvp` v1.6.6 | 65.7秒 |
 | **`uvp` v1.6.6.1** | **59.04秒** |
 
-ripgrep と比べた1問目の遅れは **約6%** まで縮みました。残っているのは `.uwvz` を書く分です。
+ripgrep と比べた1問目の遅れは **6〜7%** まで縮みました。残っているのは `.uwvz` を書く分です。
 **2問目からは 50GB を 6.6秒で探します**（ripgrep の 8.4倍。この値は変わりません）。
 → [UwView Pro](https://uvp.y42u.net/pro/)（買い切り $129 ／ 月額 $9・**14日間の無料試用**つき）
 
@@ -79,7 +79,7 @@ Its first question used to take two steps — build the `.uwvz`, then read that 
 | `uvp` v1.6.6 | 65.7 s |
 | **`uvp` v1.6.6.1** | **59.04 s** |
 
-The first question's gap to ripgrep is down to **about 6%**; what remains is writing the `.uwvz`.
+The first question's gap to ripgrep is down to **6–7%**; what remains is writing the `.uwvz`.
 **From the second question on it searches 50 GB in 6.6 s** (8.4× ripgrep — unchanged).
 → [UwView Pro](https://uvp.y42u.net/en/pro-en/) ($129 one-time or $9/month, with a **14-day free trial**)
 
