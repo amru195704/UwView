@@ -19,8 +19,16 @@ public enum UvfMode
 /// <param name="IgnoreCase">-i … 大文字小文字を区別しない。</param>
 /// <param name="Regex">-E … パターンを正規表現として扱う。</param>
 /// <param name="Invert">-v … 当てはまら<b>ない</b>行を出す。</param>
+/// <param name="Json">結果を JSON Lines で出す（<c>--json</c>。Wide Field v1.7.0 段階2）。</param>
+/// <param name="File">
+/// 指定文字列 (A)。1つのファイル名か、空白・カンマ区切り・ワイルドカードを含む<b>1つの文字列</b>
+/// （段階3。引用符で囲むこと。<see cref="FileSet"/>）。
+/// </param>
+/// <param name="FileNames">各行にファイル名を前置するか（null＝複数ファイルのときだけ。grep と同じ）。</param>
+/// <param name="ListFiles">検索せず、(A) が何に広がるかだけを出す（<c>--files</c>）。</param>
 public sealed record UvfInvocation(UvfMode Mode, string? File, string? Pattern,
-                                   bool IgnoreCase = false, bool Regex = false, bool Invert = false);
+                                   bool IgnoreCase = false, bool Regex = false, bool Invert = false,
+                                   bool Json = false, bool? FileNames = null, bool ListFiles = false);
 
 /// <summary>終了コード（grep 互換。UwView Pro の uvp と同じ）。</summary>
 public static class UvfExit
@@ -120,6 +128,15 @@ public static class UvfCli
             -i        大文字小文字を区別しない
             -E        パターンを正規表現として扱う
             -v        当てはまらない行を出す
+            --json    1行に1つの JSON で出す（{"n":行番号,"line":"本文"}）
+            -H / -h   ファイル名を必ず付ける／付けない（既定は複数ファイルのときだけ付ける）
+            --files   検索せず、指定が何に広がるかだけを出す
+
+          複数ファイル（引用符で囲むこと。シェルに展開させない）:
+            uvf '*.log' ERROR              ワイルドカード
+            uvf 'a.log b.log' ERROR        空白区切り
+            uvf 'logs/*.log,err/*.log' 語  カンマ区切り（名前に空白を含むパスはこちら）
+            出力は「ファイル名:行番号<TAB>本文」。並びは指定した順です
             -open     結果を stdout ではなく GUI で表示する（-i/-E/-v と併用できます）
 
           そのほか:
@@ -137,6 +154,15 @@ public static class UvfCli
             -i        ignore case
             -E        treat the pattern as a regular expression
             -v        print the lines that do NOT match
+            --json    print one JSON object per line ({"n":<line>,"line":"<text>"})
+            -H / -h   always / never prefix the file name (default: only with several files)
+            --files   list what the specification expands to, without searching
+
+          Several files (quote them; do not let the shell expand them):
+            uvf '*.log' ERROR              wildcard
+            uvf 'a.log b.log' ERROR        separated by spaces
+            uvf 'logs/*.log,err/*.log' p   separated by commas (use commas for paths with spaces)
+            Output is "file:line<TAB>text", in the order you wrote them.
             -open     show the results in the app instead of stdout (can be combined with -i/-E/-v)
 
           Also:
@@ -173,7 +199,8 @@ public static class UvfCli
             return (null, "-open は先頭か末尾に書いてください", "Put -open at the start or at the end");
 
         // 検索の指定（uvp と同じ綴り）。同じものを2回書いても害はないので黙って受ける
-        bool icase = false, regex = false, invert = false;
+        bool icase = false, regex = false, invert = false, json = false, listFiles = false;
+        bool? fileNames = null;
         for (int i = args.Count - 1; i >= 0; i--)
         {
             switch (args[i])
@@ -181,17 +208,39 @@ public static class UvfCli
                 case "-i": icase = true; break;
                 case "-E": regex = true; break;
                 case "-v": invert = true; break;
+                case "--json": json = true; break;
+                case "-H": fileNames = true; break;    // 常にファイル名を付ける（grep と同じ）
+                case "-h": fileNames = false; break;   // 常に付けない（同上）
+                case "--files": listFiles = true; break;
                 default: continue;
             }
             args.RemoveAt(i);
         }
 
+        // --files は「(A) が何に広がるか」を見るだけなので、検索語は要らない
+        if (listFiles && args.Count == 1)
+            return (new UvfInvocation(UvfMode.Search, args[0], null, ListFiles: true), null, null);
+
+        // シェルが展開してしまった形（uvf a.log b.log c.log 語）。黙って受けると .uwvz の名前が決まらない
+        //（指示書 §2.2b）。引用符で囲むよう促す
+        if (args.Count > 2 && args.Take(args.Count - 1).All(File.Exists))
+            return (null,
+                "複数のファイルが直接渡されました（シェルが展開した可能性があります）。"
+                + $"引用符で囲んでください: uvf '{string.Join(' ', args.Take(args.Count - 1))}' {args[^1]}",
+                "Several files were passed directly (your shell may have expanded them). "
+                + $"Quote them: uvf '{string.Join(' ', args.Take(args.Count - 1))}' {args[^1]}");
+
         if (args.Count != 2)
             return (null, "ファイルと検索パターンを1つずつ指定してください",
                           "Specify exactly one file and one search pattern");
 
+        if (json && open)
+            return (null, "--json と -open は一緒に使えません（--json は画面ではなく標準出力の形です）",
+                          "--json cannot be combined with -open (--json is a stdout format)");
+
+
         return (new UvfInvocation(open ? UvfMode.SearchInGui : UvfMode.Search, args[0], args[1],
-                                  icase, regex, invert), null, null);
+                                  icase, regex, invert, json, fileNames, listFiles), null, null);
     }
 
     public static async Task<int> RunAsync(IReadOnlyList<string> argv, UvfEnvironment env, CancellationToken ct = default)
@@ -227,12 +276,48 @@ public static class UvfCli
             return UvfExit.Error;
         }
 
-        if (inv.File is not null && !File.Exists(inv.File))
+        // 複数ファイルの指定（空白・カンマ・ワイルドカード）は、ここで一覧に広げる。
+        // 単一ファイルのときは従来どおり素通りさせる（出力を1バイトも変えないため。§2.6）
+        IReadOnlyList<string>? many = null;
+        if (inv.File is { Length: > 0 } specification
+            && (FileSet.IsMultiple(specification) || inv.FileNames == true || inv.ListFiles))
+        {
+            var found = FileSet.Expand(specification);
+            foreach (string miss in found.Missing)
+                env.StdErr.WriteLine(T($"{tool}: 1件も当たりません: {miss}", $"{tool}: nothing matched: {miss}"));
+            if (found.Files.Count == 0)
+            {
+                // 空白で割れた結果すべて外れた＝名前に空白を含むパスの可能性（§2.2b）
+                if (!specification.Contains(',') && specification.Contains(' '))
+                    Err(T("空白を含むパスは、カンマで区切ってください: uvf 'C:/Program Files/app/*.log,D:/logs/*.log' 語",
+                          "For paths containing spaces, separate them with commas: "
+                          + "uvf 'C:/Program Files/app/*.log,D:/logs/*.log' pattern"));
+                return UvfExit.Error;
+            }
+            if (found.Files.Count > ManyFilesLimit())
+                env.StdErr.WriteLine(T(
+                    $"{tool}: {found.Files.Count:N0} 件が対象です（続けます。{FileSet.ManyFilesEnvironmentVariable} で目安を変えられます）",
+                    $"{tool}: {found.Files.Count:N0} files matched (continuing; change the hint with {FileSet.ManyFilesEnvironmentVariable})"));
+            many = found.Files;
+        }
+
+        if (inv.ListFiles)
+        {
+            // 検索せず、(A) が何に広がるかだけ見せる（番号と実ファイル名の対応表）
+            var list = many ?? (inv.File is { Length: > 0 } one && File.Exists(one) ? [one] : []);
+            if (list.Count == 0) { Err(T("1件も当たりません", "Nothing matched")); return UvfExit.Error; }
+            var text = new StringBuilder();
+            for (int i = 0; i < list.Count; i++) text.Append(i + 1).Append('\t').Append(list[i]).Append('\n');
+            await WriteLineAsync(env.StdOut, text.ToString().TrimEnd('\n'), ct);
+            return UvfExit.Found;
+        }
+
+        if (many is null && inv.File is not null && !File.Exists(inv.File))
         {
             Err(T($"ファイルが見つかりません: {inv.File}", $"File not found: {inv.File}"));
             return UvfExit.Error;
         }
-        if (inv.File is not null
+        if (many is null && inv.File is not null
             && inv.File.EndsWith(".uwvz", StringComparison.OrdinalIgnoreCase))
         {
             Err(T(".uwvz は UwView Pro のファイルです（無料版では開けません）",
@@ -288,17 +373,23 @@ public static class UvfCli
 
         // gz は展開しながら探す（gzip -dc | grep と同じ。オーナー指示 2026-09-19）。
         // 読めない gz・zip は、理由を添えて断る（「圧縮ファイルです」だけだと、
-        // 中身が gzip でない .gz にも同じ文が出て分からない。オーナー指示 2026-09-21）
-        var probe = CompressedInput.Probe(inv.File!);
-        bool gzip = probe is { Kind: CompressedKind.Gzip, IsRejected: false };
-        if (!gzip && (probe.IsCompressed || probe.IsRejected))
+        // 中身が gzip でない .gz にも同じ文が出て分からない。オーナー指示 2026-09-21）。
+        // 複数ファイルのときは、この判定を通さない（1ファイル専用の経路）
+        bool gzip = false;
+        if (many is null)
         {
-            Err(RejectText(probe.Reject, inv.File!, tool, T));
-            return UvfExit.Error;
+            var probe = CompressedInput.Probe(inv.File!);
+            gzip = probe is { Kind: CompressedKind.Gzip, IsRejected: false };
+            if (!gzip && (probe.IsCompressed || probe.IsRejected))
+            {
+                Err(RejectText(probe.Reject, inv.File!, tool, T));
+                return UvfExit.Error;
+            }
         }
 
         try
         {
+            if (many is not null) return await SearchManyAsync(many, inv, env, T, ct);
             return await SearchToStdoutAsync(inv.File!, gzip, inv, env, T, Err, ct);
         }
         catch (InvalidDataException) when (gzip)
@@ -387,6 +478,53 @@ public static class UvfCli
     {
         await using var w = new StreamWriter(stdout, new UTF8Encoding(false), 1 << 12, leaveOpen: true) { NewLine = "\n" };
         await w.WriteLineAsync(text.AsMemory(), ct);
+    }
+
+    /// <summary>件数を知らせる目安（環境変数で変えられる。止めることはしない）。</summary>
+    private static int ManyFilesLimit()
+        => int.TryParse(Environment.GetEnvironmentVariable(FileSet.ManyFilesEnvironmentVariable), out int n) && n > 0
+            ? n : FileSet.ManyFiles;
+
+    /// <summary>
+    /// 複数ファイルを検索して出す（Wide Field v1.7.0 段階3）。
+    /// 出力は grep 互換の <c>ファイル名:行番号&lt;TAB&gt;本文</c>。並びは指定順を守る（§2.1・§2.2）。
+    /// </summary>
+    private static async Task<int> SearchManyAsync(IReadOnlyList<string> files, UvfInvocation inv,
+                                                   UvfEnvironment env, Func<string, string, string> t,
+                                                   CancellationToken ct)
+    {
+        var options = new SearchOptions(inv.Pattern!, UseRegex: inv.Regex, IgnoreCase: inv.IgnoreCase);
+        var watch = Stopwatch.StartNew();
+        int threads = ThreadBudget.Resolve(
+            Environment.GetEnvironmentVariable(ThreadBudget.FreeEnvironmentVariable),
+            CliSettings.ReadInt(env.SettingsFolder, ThreadBudget.SettingsKey, 0),
+            m => env.StdErr.WriteLine($"{env.ToolName}: {m}"));
+
+        MultiFileSearch.Result outcome;
+        await using (var w = new StreamWriter(env.StdOut, new UTF8Encoding(false), 1 << 16, leaveOpen: true) { NewLine = "\n" })
+            outcome = await MultiFileSearch.RunAsync(
+                files, options, inv.Invert, inv.Json, lineNumbers: true,
+                withFileName: inv.FileNames ?? files.Count > 1,   // grep と同じ既定
+                threads, w, ct);
+
+        env.StdErr.WriteLine(t(
+            $"{env.ToolName}: {outcome.Hits:N0} 件（{files.Count:N0} ファイル・{watch.Elapsed.TotalSeconds:F2} 秒）",
+            $"{env.ToolName}: {outcome.Hits:N0} results ({files.Count:N0} files, {watch.Elapsed.TotalSeconds:F2}s)"));
+
+        foreach (var (file, reason) in outcome.Failed)
+            env.StdErr.WriteLine(t($"{env.ToolName}: 読めませんでした: {file}（{reason}）",
+                                   $"{env.ToolName}: could not read: {file} ({reason})"));
+
+        if (outcome.Truncated)
+        {
+            env.StdErr.WriteLine(t(
+                $"結果が上限（{SearchService.DefaultMaxHits:N0} 件）で打ち切られました。出力は不完全です",
+                $"Results were cut off at the limit ({SearchService.DefaultMaxHits:N0}). The output is incomplete."));
+            return UvfExit.Error;
+        }
+        // 1つでも読めなければ、読めたぶんは出したうえで exit 2（§2.3）
+        if (outcome.Failed.Count > 0) return UvfExit.Error;
+        return outcome.Hits > 0 ? UvfExit.Found : UvfExit.NotFound;
     }
 
     /// <summary>
@@ -525,6 +663,12 @@ public static class UvfCli
 
             void Write(long line, long _, ReadOnlySpan<byte> text)
             {
+                if (inv.Json)
+                {
+                    // 1行に1つのオブジェクト（§2.4）。単一ファイルなので file は付けない
+                    writer.WriteLine(JsonLines.Hit(null, line + 1, encoding.GetString(text)));
+                    return;
+                }
                 writer.Write((line + 1).ToString(CultureInfo.InvariantCulture));
                 writer.Write('\t');
                 writer.WriteLine(encoding.GetString(text));

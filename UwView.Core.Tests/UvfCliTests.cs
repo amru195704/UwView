@@ -179,6 +179,173 @@ public class UvfCliTests : IDisposable
         Assert.Contains("UwView Pro", r.Err);
     }
 
+    // ── 複数ファイル（Wide Field v1.7.0 段階3）──────────────────────
+
+    /// <summary>a.log / b.log / logs/c.log を作る（中身は行番号が分かる形）。</summary>
+    private void MakeSet()
+    {
+        foreach (string name in new[] { "a.log", "b.log" })
+            File.WriteAllText(P(name), $"1 {name} INFO\n2 {name} ERROR\n3 {name} INFO\n");
+        Directory.CreateDirectory(P("logs"));
+        File.WriteAllText(P("logs/c.log"), "1 c INFO\n2 c ERROR\n");
+    }
+
+    private async Task<Result> InDir(params string[] args)
+    {
+        string saved = Directory.GetCurrentDirectory();
+        Directory.SetCurrentDirectory(_dir);
+        try { return await Uvf(args); }
+        finally { Directory.SetCurrentDirectory(saved); }
+    }
+
+    [Theory]
+    [InlineData("a.log b.log")]
+    [InlineData("a.log,b.log")]
+    [InlineData("*.log")]
+    public async Task 複数ファイルはファイル名を前置して指定順に出す(string specification)
+    {
+        MakeSet();
+        var run = await InDir(specification, "ERROR");
+        Assert.Equal(UvfExit.Found, run.Exit);
+        Assert.Equal("a.log:2\t2 a.log ERROR\nb.log:2\t2 b.log ERROR\n", run.Out);
+    }
+
+    [Fact]
+    public async Task 書いた順を守る()
+    {
+        MakeSet();
+        var run = await InDir("b.log a.log", "ERROR");
+        Assert.StartsWith("b.log:2", run.Out);
+        Assert.Contains("\na.log:2", run.Out);
+    }
+
+    [Fact]
+    public async Task 階層付きのワイルドカードも探せる()
+    {
+        MakeSet();
+        // 1件しか当たらなければ、grep と同じくファイル名は前置しない（付けたいときは -H）
+        var run = await InDir("*/*.log", "ERROR");
+        Assert.Equal("2\t2 c ERROR\n", run.Out);
+        var forced = await InDir("*/*.log", "ERROR", "-H");
+        Assert.Equal("logs/c.log:2\t2 c ERROR\n", forced.Out.Replace('\\', '/'));
+    }
+
+    [Fact]
+    public async Task 単一ファイルの出力は今までどおり()
+    {
+        MakeSet();
+        var run = await InDir("a.log", "ERROR");
+        Assert.Equal("2\t2 a.log ERROR\n", run.Out);      // ファイル名を付けない
+    }
+
+    [Fact]
+    public async Task ファイル名を付けるか付けないかを指定できる()
+    {
+        MakeSet();
+        var always = await InDir("a.log", "ERROR", "-H");
+        Assert.Equal("a.log:2\t2 a.log ERROR\n", always.Out);
+
+        var never = await InDir("a.log b.log", "ERROR", "-h");
+        Assert.Equal("2\t2 a.log ERROR\n2\t2 b.log ERROR\n", never.Out);
+    }
+
+    [Fact]
+    public async Task 何に広がるかだけを出せる()
+    {
+        MakeSet();
+        var run = await InDir("*.log", "--files");
+        Assert.Equal(UvfExit.Found, run.Exit);
+        Assert.Equal("1\ta.log\n2\tb.log\n", run.Out);
+    }
+
+    [Fact]
+    public async Task シェルが展開した形は引用符を促して断る()
+    {
+        MakeSet();
+        var run = await InDir("a.log", "b.log", "ERROR");
+        Assert.Equal(UvfExit.Error, run.Exit);
+        Assert.Contains("Quote them", run.Err);   // テストは英語表示
+        Assert.Equal("", run.Out);
+    }
+
+    [Fact]
+    public async Task 当たらない断片は知らせて残りを探す()
+    {
+        MakeSet();
+        var run = await InDir("a.log nope.log", "ERROR");
+        Assert.Equal(UvfExit.Found, run.Exit);
+        Assert.Contains("nope.log", run.Err);
+        Assert.Equal("2\t2 a.log ERROR\n", run.Out);   // 残ったのが1件なので前置しない
+    }
+
+    [Fact]
+    public async Task どの断片も当たらなければエラーにする()
+    {
+        MakeSet();
+        var run = await InDir("*.none", "ERROR");
+        Assert.Equal(UvfExit.Error, run.Exit);
+    }
+
+    [Fact]
+    public async Task 複数ファイルで見つからなければ1を返す()
+    {
+        MakeSet();
+        var run = await InDir("a.log b.log", "NOSUCHWORD");
+        Assert.Equal(UvfExit.NotFound, run.Exit);
+        Assert.Equal("", run.Out);
+    }
+
+    [Fact]
+    public async Task 複数ファイルのJSONにはファイル名が入る()
+    {
+        MakeSet();
+        var run = await InDir("a.log b.log", "ERROR", "--json");
+        var first = System.Text.Json.JsonDocument.Parse(run.Out.Split('\n')[0]).RootElement;
+        Assert.Equal("a.log", first.GetProperty("file").GetString());
+        Assert.Equal(2, first.GetProperty("n").GetInt64());
+    }
+
+    // ── --json（JSON Lines・Wide Field v1.7.0 段階2）────────────────
+
+    [Theory]
+    [InlineData("ERROR")]
+    [InlineData("error", "-i")]
+    [InlineData("dev[12]", "-E")]
+    [InlineData("ERROR", "-v")]
+    public async Task JSONはテキスト出力と同じ中身になる(string pattern, string? option = null)
+    {
+        string log = WriteLog();
+        string[] args = option is null ? [log, pattern] : [log, pattern, option];
+
+        var text = await Uvf(args);
+        var json = await Uvf([.. args, "--json"]);
+
+        var back = json.Out.Split('\n', StringSplitOptions.RemoveEmptyEntries)
+            .Select(line => System.Text.Json.JsonDocument.Parse(line).RootElement)
+            .Select(o => $"{o.GetProperty("n").GetInt64()}\t{o.GetProperty("line").GetString()}\n");
+        Assert.Equal(text.Out, string.Concat(back));
+    }
+
+    [Fact]
+    public async Task JSONは1行に1つのオブジェクトで日本語はそのまま出す()
+    {
+        string path = P("ja.log");
+        File.WriteAllText(path, "1行目 東京\n2行目 大阪\n");
+
+        var run = await Uvf(path, "東京", "--json");
+        Assert.Equal(UvfExit.Found, run.Exit);
+        Assert.Equal("""{"n":1,"line":"1行目 東京"}""" + "\n", run.Out);
+    }
+
+    [Fact]
+    public async Task JSONと画面表示は一緒に使えない()
+    {
+        string log = WriteLog();
+        var run = await Uvf(log, "ERROR", "--json", "-open");
+        Assert.Equal(UvfExit.Error, run.Exit);
+        Assert.Contains("--json", run.Err);
+    }
+
     // ── --version / --help（uvp と同じ綴り。オーナー指摘 2026-09-21）────
 
     [Theory]
