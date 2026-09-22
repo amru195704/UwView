@@ -53,7 +53,9 @@ esac
 
 [ -d "$DATA" ] || { echo "データのフォルダがありません: $DATA" >&2; exit 2; }
 mkdir -p "$OUT"
-ROOT="$(pwd)"
+# Git for Windows の bash では pwd が /c/… 形になり、Windows の uvp.exe は読めない。
+# pwd -W で C:/… 形を得る（mac / Linux では -W が無いので普通の pwd）
+ROOT="$(pwd -W 2>/dev/null || pwd)"
 OUT="$(cd "$OUT" && pwd)"    # どこを指定されても、作業フォルダから辿れるように絶対パスにする
 WORK="$OUT/work"; rm -rf "$WORK"; mkdir -p "$WORK"
 LOG="$OUT/summary.md"
