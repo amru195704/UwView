@@ -181,6 +181,15 @@ warn_if_small() {  # $1=秒
   awk -v t="$1" -v b="$BOOT" 'BEGIN{ if (t < b*3) printf "  ※ 起動時間（%.3fs）に対して短すぎます。もっと大きなファイルで測ってください\n", b }'
 }
 
+# warm で測るなら、測る前に全部を1回読んでキャッシュに載せる。
+# これをしないと最初の数回は温まっていない状態を測り、回を追って縮んで見える
+#（2026-09-22 Mac: 旧を順に 4.58 → 3.82 → 2.20s）
+if [ "$COLD" = 0 ]; then
+  echo "キャッシュに載せています…"
+  for f in "${FILES[@]}"; do cat "$f" > /dev/null; done
+  echo
+fi
+
 echo "== A) 1ファイル: uvf と uvfWF（どちらも1スレッド。退行が無いかの確認）=="
 a_old=(); a_new=()
 for r in $(seq 1 "$RUNS"); do
@@ -222,7 +231,10 @@ for t in "${TLIST[@]}"; do
   same="一致"
   cmp -s "$WORK/b_old.txt" "$WORK/b_new_$t.txt" || same="★不一致"
   m="$(median "${runs[@]}")"
-  printf "  uvfWF %2s 本                %ss   （旧との結果: %s）\n" "$t" "$m" "$same"
+  note=""
+  # 1ファイルに1本を割り当てるので、ファイル数より多い本数は仕事が無い
+  if [ "$t" -gt "${#FILES[@]}" ]; then note="  ※ ファイル数（${#FILES[@]}）より多い本数は効きません"; fi
+  printf "  uvfWF %2s 本                %ss   （旧との結果: %s）%s\n" "$t" "$m" "$same" "$note"
   warn_if_small "$m"
 done
 
