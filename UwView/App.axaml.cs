@@ -85,6 +85,8 @@ public partial class App : Application
 
     public override void Initialize()
     {
+        // 題名に出す版数（試験用ビルドだけ使う。dist ごとに上がるので取り違えない）
+        UwView.Core.AppEdition.Version = VersionText(typeof(App).Assembly);
         AvaloniaXamlLoader.Load(this);
     }
 

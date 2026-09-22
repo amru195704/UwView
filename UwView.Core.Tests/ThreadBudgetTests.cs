@@ -77,13 +77,27 @@ public class ThreadBudgetTests : IDisposable
     // ── --tune ────────────────────────────────────────────
 
     [Theory]
-    [InlineData(1, new[] { 1 })]
-    [InlineData(2, new[] { 1, 2 })]
-    [InlineData(10, new[] { 1, 2, 4, 8, 10 })]
-    [InlineData(16, new[] { 1, 2, 4, 8, 16 })]
+    // 論理プロセッサ数まで倍々 ＋ その先を4段（本当に頭打ちかを見せるため。オーナー指示 2026-09-22）
+    [InlineData(1, new[] { 1, 2, 4, 8, 16 })]
+    [InlineData(2, new[] { 1, 2, 4, 8, 16, 32 })]
+    [InlineData(10, new[] { 1, 2, 4, 8, 10, 16, 32, 64 })]
+    [InlineData(16, new[] { 1, 2, 4, 8, 16, 32, 64 })]
     [InlineData(64, new[] { 1, 2, 4, 8, 16, 32, 64 })]
-    public void 試す本数は1から倍々と論理プロセッサ数(int logical, int[] expected)
+    public void 試す本数は1から倍々と論理プロセッサ数とその先(int logical, int[] expected)
         => Assert.Equal(expected, TuneRunner.Ladder(logical));
+
+    [Fact]
+    public void 勧める本数は論理プロセッサ数までから選ぶ()
+    {
+        // 超えた段は参考。設定側も論理プロセッサ数で頭打ちにするので、そこから選ばない
+        string path = Path.Combine(_dir, "pick.log");
+        File.WriteAllText(path, string.Concat(Enumerable.Repeat("2026-09-22 INFO dev0 seq=1 x\n", 20_000)));
+
+        var result = TuneRunner.Run(path, logicalProcessors: 2);
+
+        Assert.InRange(result.Recommended, 1, 2);
+        Assert.Contains(result.Rows, r => r.Threads > 2);      // 先まで測っている
+    }
 
     [Fact]
     public void 設定の保存はほかのキーを壊さない()
@@ -115,7 +129,8 @@ public class ThreadBudgetTests : IDisposable
 
         var result = TuneRunner.Run(path, logicalProcessors: 2);
 
-        Assert.Equal([1, 2], result.Rows.Select(r => r.Threads));
+        // 論理プロセッサ数まで ＋ その先4段（本当に頭打ちかを見せるため）
+        Assert.Equal([1, 2, 4, 8, 16, 32], result.Rows.Select(r => r.Threads));
         Assert.All(result.Rows, r => Assert.True(r.GbPerSec > 0));
         Assert.InRange(result.Recommended, 1, 2);
         Assert.Equal(new FileInfo(path).Length, result.MeasuredBytes);
@@ -171,7 +186,7 @@ public class ThreadBudgetTests : IDisposable
     {
         var before = Directory.GetFiles(Path.GetTempPath(), "uwview-tune-*");
         var result = TuneRunner.Run(null, logicalProcessors: 1);
-        Assert.Single(result.Rows);
+        Assert.Equal([1, 2, 4, 8, 16], result.Rows.Select(r => r.Threads));
         // 大きいファイルは前半だけ測る（後ろは媒体の速さの計測用に取っておく）
         Assert.Equal(TuneRunner.GeneratedBytes / 2, result.MeasuredBytes);
         Assert.Equal(before.Length, Directory.GetFiles(Path.GetTempPath(), "uwview-tune-*").Length);
