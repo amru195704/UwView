@@ -88,10 +88,23 @@ public class FileSetTests : IDisposable
     }
 
     [Fact]
+    public void 書いたとおりの区切りで返す()
+    {
+        // Windows で OS の区切り（\）に直して返すと、指定（osm/x）と出力（osm\x）が食い違い、
+        // ほかの道具の出力と突き合わせられない（オーナー報告 2026-09-22・Windows の比較テストで不一致）
+        Make("logs/x.log", "logs/y.log");
+        Assert.All(FileSet.Expand("logs/*.log", _dir).Files, p => Assert.DoesNotContain('\\', p));
+        Assert.Equal(["logs/x.log", "logs/y.log"], FileSet.Expand("logs/*.log", _dir).Files);
+    }
+
+    [Fact]
     public void 区切りがバックスラッシュでも受ける()
     {
         Make("logs/x.log");
         Assert.Equal(["logs/x.log"], Expand(@"logs\x.log"));
+        // 書いた形（\）のまま返すのは Windows だけ（Unix では \ は区切りではないので開けなくなる）
+        Assert.Equal(OperatingSystem.IsWindows() ? [@"logs\x.log"] : ["logs/x.log"],
+                     FileSet.Expand(@"logs\x.log", _dir).Files);
     }
 
     [Fact]
