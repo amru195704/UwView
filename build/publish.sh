@@ -27,6 +27,9 @@ OUT="${OUT:-dist}"   # 試験用に別フォルダへ出せる（例: OUT=distWi
 SUFFIX="${SUFFIX:-}"
 NAME="${NAME:-UwView$SUFFIX}"
 CLI="${CLI:-uvf$SUFFIX}"
+# 画面に出る名前（.app・DMG ボリューム・Info.plist）。配布物のファイル名（$NAME）とは分ける:
+# ファイル名は短く、画面の名前は分かりやすく（例 APP_NAME="UwView (Wide Field)"）
+APP_NAME="${APP_NAME:-$NAME}"
 BUNDLE_ID="${BUNDLE_ID:-net.y42u.uwview$(printf '%s' "${SUFFIX:+.$SUFFIX}" | tr 'A-Z' 'a-z')}"
 EXE="UwView.Desktop"   # 単一ファイル実行体名（プロジェクト名由来）
 RIDS=("$@"); [ ${#RIDS[@]} -eq 0 ] && RIDS=(osx-arm64 osx-x64 win-x64 win-arm64 linux-x64 linux-arm64)
@@ -63,7 +66,7 @@ add_cli() { # $1=rid $2=GUI の発行先
 
 pack_mac() { # $1=rid  $2=arch-label
   local rid="$1" arch="$2" pub; pub=$(publish_one "$rid")
-  local app="$OUT/$NAME.app"
+  local app="$OUT/$APP_NAME.app"
   local macos="$app/Contents/MacOS"
   rm -rf "$app"; mkdir -p "$macos" "$app/Contents/Resources"
   cp -R "$pub/." "$macos/"
@@ -71,8 +74,8 @@ pack_mac() { # $1=rid  $2=arch-label
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
-  <key>CFBundleName</key><string>$NAME</string>
-  <key>CFBundleDisplayName</key><string>$NAME</string>
+  <key>CFBundleName</key><string>$APP_NAME</string>
+  <key>CFBundleDisplayName</key><string>$APP_NAME</string>
   <key>CFBundleIdentifier</key><string>$BUNDLE_ID</string>
   <key>CFBundleExecutable</key><string>$EXE</string>
   <key>CFBundleIconFile</key><string>UwView.icns</string>
@@ -195,7 +198,7 @@ PLIST
   # macOS の App Management 保護に当たって「Operation not permitted」で弾かれる。
   # マウント先は自前の場所を指定する。/Volumes に同名が残っていると（前回の失敗で detach し損ねた等）
   # 別名で mount され、こちらは残骸のほうへ書いてしまう（2026-09-17 に発生）。
-  local vol="$NAME $VER ($arch)"
+  local vol="$APP_NAME $VER ($arch)"
   local rw mnt size
   rw=$(mktemp -u).rw.dmg
   mnt=$(mktemp -d)
@@ -203,7 +206,7 @@ PLIST
   hdiutil create -size "${size}m" -fs HFS+ -volname "$vol" -type UDIF -ov "$rw"
   local dev; dev=$(hdiutil attach "$rw" -nobrowse -noverify -noautoopen -mountpoint "$mnt" \
                    | grep -Eo '^/dev/disk[0-9]+' | head -1)
-  ditto "$app" "$mnt/$NAME.app"
+  ditto "$app" "$mnt/$APP_NAME.app"
   ln -s /Applications "$mnt/Applications"
   sync
   hdiutil detach "$dev" -force

@@ -229,7 +229,7 @@ public partial class App : Application
         string build = BuildNo(typeof(App).Assembly);
         var win = new Avalonia.Controls.Window
         {
-            Title = ja ? "UwView について" : "About UwView",
+            Title = UwView.Core.AppEdition.Decorate(ja ? "UwView について" : "About UwView"),
             Width = 400, SizeToContent = Avalonia.Controls.SizeToContent.Height,
             CanResize = false,
             WindowStartupLocation = Avalonia.Controls.WindowStartupLocation.CenterOwner,
@@ -240,7 +240,7 @@ public partial class App : Application
                 Children =
                 {
                     new Avalonia.Controls.TextBlock
-                    { Text = "UwView", FontSize = 26, FontWeight = Avalonia.Media.FontWeight.Bold },
+                    { Text = UwView.Core.AppEdition.Decorate("UwView"), FontSize = 26, FontWeight = Avalonia.Media.FontWeight.Bold },
                     new Avalonia.Controls.TextBlock
                     { Text = string.IsNullOrEmpty(build) ? $"Version {ver}" : $"Version {ver}  (build {build})" },
                     new Avalonia.Controls.TextBlock

@@ -8,4 +8,10 @@
     <RootNamespace>UwView.Core</RootNamespace>
   </PropertyGroup>
 
+  <!-- 試験用ビルドの呼び名。EDITION="Wide Field" を与えたときだけ焼き込む（AppEdition が読む）。
+       本番ビルドでは何も足さない。UVP もこのプロジェクトを参照しているので、ここ1か所で両製品に効く。 -->
+  <ItemGroup Condition="'$(EDITION)' != ''">
+    <AssemblyMetadata Include="Edition" Value="$(EDITION)" />
+  </ItemGroup>
+
 </Project>
