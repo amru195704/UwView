@@ -1,0 +1,36 @@
+{
+    "version": "1.6.6.1",
+    "description": "巨大なログ・テキストを調べるビューア（GUI本体 + CLIの uvf を同梱）",
+    "homepage": "https://uvp.y42u.net/",
+    "license": "Proprietary",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/amru195704/UwView/releases/download/v1.6.6.1/UwView-1.6.6.1-win-x64.zip",
+            "hash": "846fa8586f6d6f3efcfa6704f121874a5c9bf2ed1f0eb737e0365779e86c6000"
+        },
+        "arm64": {
+            "url": "https://github.com/amru195704/UwView/releases/download/v1.6.6.1/UwView-1.6.6.1-win-arm64.zip",
+            "hash": "493efb94756154618ac8380c1684e42bc4fd24f1406320224cb7bf0a1d285f12"
+        }
+    },
+    "bin": ["uvf.exe", "UwView.Desktop.exe"],
+    "shortcuts": [
+        ["UwView.Desktop.exe", "UwView"]
+    ],
+    "checkver": {
+        "github": "https://github.com/amru195704/UwView"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/amru195704/UwView/releases/download/v$version/UwView-$version-win-x64.zip"
+            },
+            "arm64": {
+                "url": "https://github.com/amru195704/UwView/releases/download/v$version/UwView-$version-win-arm64.zip"
+            }
+        },
+        "hash": {
+            "url": "https://github.com/amru195704/UwView/releases/download/v$version/SHA256SUMS-$version.txt"
+        }
+    }
+}
