@@ -328,20 +328,63 @@ public class UvfCliTests : IDisposable
         finally { Environment.SetEnvironmentVariable(ThreadBudget.FreeEnvironmentVariable, saved); }
     }
 
+    private void WriteGz(string name, string text)
+    {
+        using var gz = new System.IO.Compression.GZipStream(File.Create(P(name)),
+                                                            System.IO.Compression.CompressionLevel.Fastest);
+        gz.Write(Encoding.UTF8.GetBytes(text));
+    }
+
     [Fact]
-    public async Task 圧縮ファイルは黙って素通りさせない()
+    public async Task 平文とgzを混ぜて探せる()
+    {
+        // 段階5（オーナー指示 2026-09-23「uvf でも '*.log,*.gz' を」）
+        MakeSet();
+        WriteGz("c.log.gz", "1 gz INFO\n2 gz ERROR\n");
+
+        var run = await InDir("*.log,*.gz", "ERROR");
+
+        Assert.Equal(UvfExit.Found, run.Exit);
+        Assert.Equal("a.log:2\t2 a.log ERROR\nb.log:2\t2 b.log ERROR\nc.log.gz:2\t2 gz ERROR\n", run.Out);
+    }
+
+    [Fact]
+    public async Task zipは黙って素通りさせない()
     {
         // 平文として走査すると1件も当たらず、「このログにエラーは無い」と誤読させる（2026-09-22）
         MakeSet();
-        using (var gz = new System.IO.Compression.GZipStream(File.Create(P("c.log.gz")),
-                                                             System.IO.Compression.CompressionLevel.Fastest))
-            gz.Write(Encoding.UTF8.GetBytes("1 gz ERROR\n"));
+        using (var zip = System.IO.Compression.ZipFile.Open(P("c.zip"), System.IO.Compression.ZipArchiveMode.Create))
+        using (var w = new StreamWriter(zip.CreateEntry("c.log").Open())) w.Write("1 zip ERROR\n");
 
         var run = await InDir("*", "ERROR");
 
         Assert.Equal(UvfExit.Error, run.Exit);                    // 探せなかったものがある
-        Assert.Contains("c.log.gz", run.Err);
+        Assert.Contains("c.zip", run.Err);
         Assert.Contains("a.log:2\t", run.Out);                    // 平文のぶんは出す
+    }
+
+    [Theory]
+    [InlineData("1")]   // OS の zlib
+    [InlineData("0")]   // .NET の展開（切れていても例外を出さないので、末尾と照らして気づく）
+    public async Task 途中で切れたgzは知らせてexit2(string systemZlib)
+    {
+        MakeSet();
+        var sb = new StringBuilder();
+        for (int i = 0; i < 20_000; i++) sb.Append($"{i} gz ERROR payload=xxxxxxxxxxxxxxxx\n");
+        WriteGz("c.log.gz", sb.ToString());
+        byte[] bytes = File.ReadAllBytes(P("c.log.gz"));
+        File.WriteAllBytes(P("c.log.gz"), bytes[..(bytes.Length * 2 / 3)]);
+
+        string? saved = Environment.GetEnvironmentVariable("UWVIEW_SYSTEM_ZLIB");
+        Environment.SetEnvironmentVariable("UWVIEW_SYSTEM_ZLIB", systemZlib);
+        try
+        {
+            var run = await InDir("*.log,*.gz", "ERROR");
+            Assert.Equal(UvfExit.Error, run.Exit);
+            Assert.Contains("c.log.gz", run.Err);
+            Assert.Contains("a.log:2\t", run.Out);               // 読めたぶんは出す
+        }
+        finally { Environment.SetEnvironmentVariable("UWVIEW_SYSTEM_ZLIB", saved); }
     }
 
     [Fact]

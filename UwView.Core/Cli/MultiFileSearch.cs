@@ -107,7 +107,9 @@ public static class MultiFileSearch
 
         try
         {
-            await using var source = new SequentialFileByteSource(file);
+            // .gz は展開しながら探す（1ファイルのときと同じ読み口。切れていれば読み終えたところで気づく）
+            bool gzip = CompressedInput.Probe(file).Kind == CompressedKind.Gzip;
+            await using IByteSource source = gzip ? new GzipStreamByteSource(file) : new SequentialFileByteSource(file);
             var detected = EncodingDetector.Detect(source);
             var encoding = detected.Encoding;
 
