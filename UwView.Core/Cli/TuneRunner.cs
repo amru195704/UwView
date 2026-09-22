@@ -375,9 +375,23 @@ public static class TuneRunner
                 : "  Note: the measured span did not stay in memory, so this is a *medium-bound* result and more "
                   + "threads cannot help.\n     Measure a file that fits in memory to see how the CPU side scales.");
         if (result.AllSame)
+        {
             sb.AppendLine(ja
                 ? "  この機械では、スレッド数を増やしても変わりません（どれでも同じです）"
                 : "  On this machine the thread count does not matter (any value behaves the same).");
+            // 平らな理由を示す。媒体の速さと比べられないと「媒体で止まっているのか、
+            // CPU・メモリで止まっているのか」が読み手に分からない（2026-09-22 Linux VM の確認より）
+            if (result.DiskGbPerSec is { } flatDisk)
+                sb.AppendLine(ja
+                    ? $"  （媒体は {flatDisk:F2} GB/s・参考。"
+                      + (flatDisk < best * 0.8
+                         ? "走査はそれより速いので、止まっているのは CPU・メモリの側です）"
+                         : "走査は媒体と同じくらいなので、媒体で頭打ちです）")
+                    : $"  (the medium reads at {flatDisk:F2} GB/s — "
+                      + (flatDisk < best * 0.8
+                         ? "the scan is faster than that, so the limit is the CPU/memory side)"
+                         : "the scan matches it, so the medium is the limit)"));
+        }
         else if (result.DiskGbPerSec is { } disk)
             sb.AppendLine(ja
                 ? $"  勧める本数: {result.Recommended}（媒体は {disk:F2} GB/s・参考。"
