@@ -59,6 +59,24 @@ Running seven searches twice each totals 32.30 s for rg against 33.31 s for `uvf
 
 ---
 
+## Install
+
+**Mac (Homebrew)**
+```bash
+brew install --cask amru195704/uwview/uwview
+```
+**Windows (Scoop)**
+```powershell
+scoop bucket add uwview https://github.com/amru195704/scoop-uwview
+scoop install uwview
+```
+**Linux, or by hand:** get the dmg / zip / tar.gz from [GitHub Releases](https://github.com/amru195704/UwView/releases/latest).
+
+Both Homebrew and Scoop download from the official GitHub Releases and check the SHA256. **The `uvf` command is ready to use right away.**
+To update: `brew upgrade --cask uwview` / `scoop update uwview`.
+
+---
+
 ## How it works
 
 ```bash

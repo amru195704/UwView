@@ -58,6 +58,24 @@ UwView は `uvf ファイル '語' -open` と打つだけで、**1回読むあ�
 
 ---
 
+## インストール
+
+**Mac（Homebrew）**
+```bash
+brew install --cask amru195704/uwview/uwview
+```
+**Windows（Scoop）**
+```powershell
+scoop bucket add uwview https://github.com/amru195704/scoop-uwview
+scoop install uwview
+```
+**Linux・手で入れる場合**は [GitHub Releases](https://github.com/amru195704/UwView/releases/latest) から dmg／zip／tar.gz を。
+
+Homebrew と Scoop は、どちらも公式の GitHub Releases から取得して SHA256 を照合します。**`uvf` コマンドもそのまま使えます。**
+更新は `brew upgrade --cask uwview` ／ `scoop update uwview`。
+
+---
+
 ## 使い方
 
 ```bash
