@@ -496,21 +496,24 @@ public static class UvfCli
                                                    UvfEnvironment env, Func<string, string, string> t,
                                                    CancellationToken ct)
     {
-        // 圧縮ファイルは<b>まだ複数ファイル検索の対象外</b>（段階5で対応予定）。
-        // 黙って平文として走査すると、中身を探したつもりで1件も当たらず
-        // 「このログにエラーは無い」と誤読させる（実際 uvf '*' では gz を素通りしていた。2026-09-22）
+        // .gz は展開しながら探す（段階5・オーナー指示 2026-09-23「uvf でも '*.log,*.gz' を」）。
+        // zip（複数エントリは uvp のみ）と、受け付けないもの（tar.gz など）は<b>黙って素通りさせず</b>、
+        // 名指しして外す——平文として走査すると1件も当たらず「エラーは無い」と誤読させる
         var compressed = new List<string>();
         var searchable = new List<string>();
         foreach (string file in files)
         {
             var probe = CompressedInput.Probe(file);
-            if (probe.Kind is CompressedKind.Gzip or CompressedKind.Zip) compressed.Add(file);
+            if (probe.Kind == CompressedKind.Zip || probe.IsRejected)
+            {
+                compressed.Add(file);
+                env.StdErr.WriteLine(probe.Kind == CompressedKind.Zip && !probe.IsRejected
+                    ? t($"{env.ToolName}: zip は検索の対象外です（展開してから検索してください）: {file}",
+                        $"{env.ToolName}: zip files are not searched (extract them first): {file}")
+                    : RejectText(probe.Reject, file, env.ToolName, t));
+            }
             else searchable.Add(file);
         }
-        foreach (string file in compressed)
-            env.StdErr.WriteLine(t(
-                $"{env.ToolName}: 圧縮ファイルは複数ファイル検索の対象外です（1つずつなら検索できます）: {file}",
-                $"{env.ToolName}: compressed files are not part of a multi-file search yet (search them one at a time): {file}"));
         if (searchable.Count == 0)
         {
             env.StdErr.WriteLine(t($"{env.ToolName}: 探せるファイルがありません",
