@@ -126,6 +126,46 @@ public class ThreadBudgetTests : IDisposable
         Assert.Contains("ばらつき", text);
     }
 
+    [Theory]
+    [InlineData(512L << 20, 256L << 20)]      // 空き 512MB → 半分。下限に張り付く
+    [InlineData(8L << 30, 4L << 30)]          // 空き 8GB → 半分は 4GB。上限どおり
+    [InlineData(16L << 30, 4L << 30)]         // 空きが多くても 4GiB で打ち切る（測るのに時間がかかりすぎる）
+    [InlineData(64L << 20, 256L << 20)]       // 極端に少なくても下限は割らない（短すぎて測れないため）
+    public void メモリに載る大きさで測る量を決める(long available, long expected)
+        => Assert.Equal(expected, TuneRunner.MemoryBudget(available));
+
+    [Fact]
+    public void 載らなかったときは媒体律速だと言う()
+    {
+        // オーナー報告 2026-09-22（Linux VM 2 vCPU・50GB）: 1本 2.0GB/s → 2本 2.17GB/s で伸びない。
+        // 原因はメモリに載っていないこと。黙って「どれでも同じ」と言うと、
+        // 本当は CPU 律速で効く場面まで「1本で十分」と読まれてしまう
+        var result = new TuneRunner.Result(
+            [new TuneRunner.Row(1, 2.00, 2), new TuneRunner.Row(2, 2.17, 3)],
+            Recommended: 1, AllSame: true, DiskGbPerSec: null, MeasuredBytes: 4L << 30, Busy: false,
+            OnMemory: false, MemoryBudget: 1L << 30);
+
+        string ja = TuneRunner.Format(result, ja: true, "big.log", logicalProcessors: 2);
+        Assert.Contains("メモリに載りませんでした", ja);
+        Assert.Contains("媒体律速", ja);
+
+        string en = TuneRunner.Format(result, ja: false, "big.log", logicalProcessors: 2);
+        Assert.Contains("did not stay in memory", en);
+    }
+
+    [Fact]
+    public void 載ったときは余計なことを言わない()
+    {
+        var result = new TuneRunner.Result(
+            [new TuneRunner.Row(1, 0.8, 2), new TuneRunner.Row(2, 1.6, 3)],
+            Recommended: 2, AllSame: false, DiskGbPerSec: 0.5, MeasuredBytes: 1L << 30, Busy: false,
+            OnMemory: true, MemoryBudget: 2L << 30);
+
+        string text = TuneRunner.Format(result, ja: true, "fits.log", logicalProcessors: 2);
+        Assert.DoesNotContain("メモリに載りませんでした", text);
+        Assert.Contains("勧める本数: 2", text);
+    }
+
     [Fact]
     public void 対象を指定しなければ一時ファイルで測り後片付けする()
     {

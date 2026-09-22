@@ -29,6 +29,47 @@ public static class TuneRunner
     /// <summary>対象が指定されなかったときに作る一時ファイルの大きさ。</summary>
     public const long GeneratedBytes = 1L << 30;
 
+    /// <summary>測る量の下限（これより小さくすると1回が短すぎて測れない）。</summary>
+    public const long MinBytes = 256L << 20;
+
+    /// <summary>
+    /// この機械で「メモリに載る」と見なせる大きさ。<b>空きメモリの半分</b>（上限 4GiB・下限 256MiB）。
+    ///
+    /// 載らない量を測ると、2回目も媒体から読み直すことになり、
+    /// <b>ホットのつもりで媒体律速を測る</b>。そうなるとスレッドを増やしても伸びず、
+    /// 「この機械は1本で十分」という誤った結論になる
+    /// （オーナー報告 2026-09-22: Linux VM 2 vCPU・50GB で 1本 2.0GB/s → 2本 2.17GB/s）。
+    ///
+    /// 半分にするのは、走査そのもの以外（OS・ほかのアプリ）にも要るため。
+    /// </summary>
+    public static long MemoryBudget(long? availableBytes = null)
+    {
+        long available = availableBytes ?? AvailableMemory();
+        return Math.Clamp(available / 2, MinBytes, MaxBytes);
+    }
+
+    /// <summary>いま使えるメモリ（バイト）。分からなければ控えめな既定値。</summary>
+    private static long AvailableMemory()
+    {
+        // Linux は「いま実際に使える量」を見る（総量だと、ほかで使われている分まで載ると見なしてしまう）
+        if (OperatingSystem.IsLinux())
+        {
+            try
+            {
+                foreach (string line in File.ReadLines("/proc/meminfo"))
+                {
+                    if (!line.StartsWith("MemAvailable:", StringComparison.Ordinal)) continue;
+                    var parts = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                    if (parts.Length >= 2 && long.TryParse(parts[1], out long kb)) return kb * 1024;
+                }
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
+        }
+
+        long total = GC.GetGCMemoryInfo().TotalAvailableMemoryBytes;   // 物理メモリ（コンテナなら上限）
+        return total > 0 ? total : 2L << 30;
+    }
+
     private const int Block = 1 << 20;
     private const int Rounds = 3;
 
@@ -58,8 +99,15 @@ public static class TuneRunner
     /// </param>
     /// <param name="MeasuredBytes">1回あたりに読んだバイト数。</param>
     /// <param name="Busy">測っている間に速さが揺れたか（ほかの処理が走っている疑い）。</param>
+    /// <param name="OnMemory">
+    /// 測った範囲がメモリ（ページキャッシュ）に載っていたか。
+    /// <b>載っていなければ媒体律速の値</b>で、スレッド数を増やしても伸びない——
+    /// その状態の結果を「この機械は1本で十分」と読むと、本当は CPU 律速で効くはずの場面を取り逃がす。
+    /// </param>
+    /// <param name="MemoryBudget">この機械で「載る」と見なした大きさ（測る量の上限に使った値）。</param>
     public sealed record Result(IReadOnlyList<Row> Rows, int Recommended, bool AllSame,
-                                double? DiskGbPerSec, long MeasuredBytes, bool Busy);
+                                double? DiskGbPerSec, long MeasuredBytes, bool Busy,
+                                bool OnMemory = true, long MemoryBudget = 0);
 
     /// <summary>試すスレッド数（1・2・4・… と論理プロセッサ数）。</summary>
     public static int[] Ladder(int logicalProcessors)
@@ -90,14 +138,31 @@ public static class TuneRunner
             long total = new FileInfo(target).Length;
             // 大きいファイルは前半だけ測り、後ろは媒体の速さの計測用に取っておく（まだキャッシュに載っていない）
             long length = total > KeepTailAbove ? Math.Min(MaxBytes, total / 2) : Math.Min(MaxBytes, total);
+            // メモリに載らない量を測ると、ホットのつもりが媒体律速になり「何本でも同じ」に見える
+            //（オーナー報告 2026-09-22: Linux VM・50GB で 1本 2.0GB/s・2本 2.17GB/s＝伸びない）。
+            // 載る大きさまで下げてから測る
+            long budget = MemoryBudget();
+            bool trimmed = length > budget;
+            if (trimmed) length = budget;
             if (length <= 0) throw new InvalidDataException("測る中身がありません（ファイルが空です）");
 
-            // 媒体の速さは、こちらが何も読む前に測る（読んだあとだとキャッシュから返って速く見える）
-            double? disk = MeasureDisk(target, length, status, ct);
+            // 媒体の速さは、こちらが何も読む前に測る（読んだあとだとキャッシュから返って速く見える）。
+            // 一時ファイルは自分で書いた直後で全部載っているため、測っても媒体の値にならない
+            double? disk = generated ? null : MeasureDisk(target, length, status, ct);
 
             status?.Invoke("キャッシュに載せています…");
-            scan(target, length, 1, ct);                      // 1回目はキャッシュに載せるだけ（捨てる）
-            double warmGbPerSec = scan(target, length, 1, ct);   // 混み具合を見る基準
+            double coldGbPerSec = scan(target, length, 1, ct);   // 1回目＝まだ載っていない状態
+            double warmGbPerSec = scan(target, length, 1, ct);   // 2回目＝載ったはずの状態（混み具合の基準でもある）
+            // 載っているかの判定。媒体の速さが測れていれば、それとの比較がいちばん確か
+            //（同じくらいの速さなら、2回目も媒体から読み直している）。
+            // 測れていないときは「2回目が速くなったか」で見る——ただし最初から載っていた場合は
+            // どちらも速いので、比が伸びなくても載っていると見なせる（媒体比較を優先するのはそのため）
+            // 媒体の速さと同じくらいなら、2回目も媒体から読み直している＝載っていない。
+            // 媒体が測れないときは<b>言わない</b>——1回目から載っていることもあり
+            //（書いた直後・前回の実行で載ったまま）、「2回目が速くならない」だけでは決められない
+            double mediumForScan = (disk ?? 0) * mediumRatio;
+            bool onMemory = mediumForScan <= 0 || warmGbPerSec > mediumForScan * 1.3;
+            _ = coldGbPerSec;
 
             var rows = new List<Row>();
             foreach (int threads in Ladder(logicalProcessors))
@@ -121,7 +186,7 @@ public static class TuneRunner
             // 一番速い値の 95% に届く、いちばん少ない本数を勧める（頭打ちの手前を選ぶ）
             int recommended = allSame ? 1 : rows.First(r => r.GbPerSec >= best * 0.95).Threads;
 
-            return new Result(rows, recommended, allSame, disk * mediumRatio, length, busy);
+            return new Result(rows, recommended, allSame, disk * mediumRatio, length, busy, onMemory, budget);
         }
         finally
         {
@@ -204,9 +269,12 @@ public static class TuneRunner
             }
             watch.Stop();
             double gbPerSec = read / 1024.0 / 1024 / 1024 / Math.Max(0.000001, watch.Elapsed.TotalSeconds);
-            // キャッシュを外せない OS で、明らかに媒体では出ない速さが出たら「測れなかった」とする
-            //（載っているところを測った値を媒体の速さとして見せない）
-            return !uncached && gbPerSec > 5 ? null : gbPerSec;
+            // 明らかに媒体では出ない速さが出たら「測れなかった」とする
+            //（F_NOCACHE を付けても、既にキャッシュに載っているページは速く返る）。
+            // 2026-09-22: mac で一時ファイルを測ったら 14.29 GB/s になり、
+            // それを媒体の速さとして見せたうえ「メモリに載っていない」と誤判定した
+            _ = uncached;
+            return gbPerSec > 8 ? null : gbPerSec;
         }
         finally { ArrayPool<byte>.Shared.Return(buffer); }
     }
@@ -240,9 +308,14 @@ public static class TuneRunner
     {
         var sb = new StringBuilder();
         double gib = result.MeasuredBytes / 1024.0 / 1024 / 1024;
+        double budgetGib = result.MemoryBudget / 1024.0 / 1024 / 1024;
         sb.AppendLine(ja
             ? $"  対象: {target} の先頭 {gib:F1} GiB ／ 各{Rounds}回"
-            : $"  Target: the first {gib:F1} GiB of {target} / {Rounds} runs each");
+              + (result.MemoryBudget > 0 && result.MeasuredBytes >= result.MemoryBudget
+                 ? $"（この機械のメモリに載る大きさ {budgetGib:F1} GiB に合わせました）" : "")
+            : $"  Target: the first {gib:F1} GiB of {target} / {Rounds} runs each"
+              + (result.MemoryBudget > 0 && result.MeasuredBytes >= result.MemoryBudget
+                 ? $" (trimmed to {budgetGib:F1} GiB, what fits in this machine's memory)" : ""));
         sb.AppendLine(ja
             ? $"  論理プロセッサ: {logicalProcessors}"
             : $"  Logical processors: {logicalProcessors}");
@@ -263,6 +336,13 @@ public static class TuneRunner
             sb.AppendLine(ja
                 ? "  ※ 測っている間に速さが揺れました。ほかの処理が走っていないときに測り直してください"
                 : "  Note: the speed moved while measuring. Try again when the machine is idle.");
+        // 載っていなければ媒体律速の値。ここを言わないと「1本で十分」と読まれてしまう
+        if (!result.OnMemory)
+            sb.AppendLine(ja
+                ? "  ※ 測った範囲がメモリに載りませんでした。これは<媒体律速>の値で、スレッド数を増やしても伸びません。\n"
+                  + "     メモリに載る大きさのファイルで測り直すと、CPU 側の伸び方が分かります"
+                : "  Note: the measured span did not stay in memory, so this is a *medium-bound* result and more "
+                  + "threads cannot help.\n     Measure a file that fits in memory to see how the CPU side scales.");
         if (result.AllSame)
             sb.AppendLine(ja
                 ? "  この機械では、スレッド数を増やしても変わりません（どれでも同じです）"
