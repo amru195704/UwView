@@ -53,6 +53,8 @@ esac
 
 [ -d "$DATA" ] || { echo "データのフォルダがありません: $DATA" >&2; exit 2; }
 mkdir -p "$OUT"
+ROOT="$(pwd)"
+OUT="$(cd "$OUT" && pwd)"    # どこを指定されても、作業フォルダから辿れるように絶対パスにする
 WORK="$OUT/work"; rm -rf "$WORK"; mkdir -p "$WORK"
 LOG="$OUT/summary.md"
 DETAIL="$OUT/detail"; mkdir -p "$DETAIL"
@@ -192,7 +194,7 @@ else
 fi
 
 if [ "$WITH_UVP" = 1 ]; then
-  ( cd "$WORK" && "$UVP" "../../$ALL" "$PAT" >/dev/null 2>"../../$DETAIL/uvp-mixed.err" ); code=$?
+  ( cd "$WORK" && "$UVP" "$ROOT/$ALL" "$PAT" >/dev/null 2>"$DETAIL/uvp-mixed.err" ); code=$?
   if [ "$code" = 2 ] && grep -qi "compress\|圧縮" "$DETAIL/uvp-mixed.err"; then
     result PASS "uvp: gz が混ざったら束ねずに断る" ""
   else
@@ -230,7 +232,9 @@ else
     "$UVP" "$uwvz" "$PAT" > d3.txt 2>/dev/null
     if cmp -s d1.txt d3.txt; then echo "PASS|名前(B)でも同じ結果|"; else echo "FAIL|名前(B)でも同じ結果|"; fi
 
-    head -50 m1.osm > m3.osm            # ファイルを増やす
+    # ファイルを増やす。**検索語を含む行から作る**（先頭の数十行を切り出すだけだと、
+    # 実データでは語が1件も無く「拾えたか」を確かめられない。2026-09-22 Mac の実データで発生）
+    grep -m 5 -- "$PAT" m1.osm > m3.osm
     "$UVP" '*.osm' "$PAT" > d4.txt 2>d4.err
     if [ "$(wc -l < d4.txt)" -ge "$(wc -l < d1.txt)" ] && grep -q "m3.osm" d4.txt; then
       echo "PASS|増えたファイルの行も拾う|"
