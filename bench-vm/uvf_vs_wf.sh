@@ -17,15 +17,25 @@
 #
 #   B が「1スレッド vs 8スレッド」そのものです。
 #
-# 使い方:
-#   ./uvf_vs_wf.sh -o ./uvf -n ./uvfWF -d /data/logs -g '*.log' -p ERROR
+# 使い方（いつもの実データ osm での例）:
+#   # 何が対象になるかを先に確認する（gz はまだ対象外）
+#   ./uvfWF --files 'japan-dv-a?'
 #
-#   -o  既存の uvf（v1.6.x）へのパス                     既定: ./uvf
+#   # スレッド数の効き方を見る（★合計がメモリに載る大きさで測ること）
+#   for i in 0 1 2 3; do dd if=japan-dv-ac of=part-$i bs=1M skip=$((i*400)) count=400; done
+#   ./uvf_vs_wf.sh -o uvf -n ./uvfWF -d osm -g 'part-*' -p Tokyo -t 1,2,4
+#
+#   # 実運用に近い大きさで測る（メモリに載らないので媒体律速になるはず）
+#   ./uvf_vs_wf.sh -o uvf -n ./uvfWF -d osm -g 'japan-dv-a?' -p Tokyo -t 1,2 -r 2
+#   ※ ヒットが数百万件になる語（"35.6 など）では、測っているのがほぼ出力になる。
+#      検索そのものを見たいときは Tokyo のような当たりの少ない語にする
+#
+#   -o  既存の uvf（v1.6.x）。PATH に入れてあれば名前だけでよい  既定: uvf
 #   -n  試験用の uvfWF へのパス                          既定: ./uvfWF
 #   -d  対象のあるディレクトリ（ここへ cd して測る）      既定: カレント
-#   -g  複数ファイルの指定（uvfWF に渡す形・要引用符）    既定: '*.log'
+#   -g  複数ファイルの指定（uvfWF に渡す形・要引用符）    既定: '*'（フォルダの中身すべて）
 #   -f  1ファイル比較で使うファイル（省略時は -g の先頭）
-#   -p  検索語                                            既定: ERROR
+#   -p  検索語                                            既定: Tokyo
 #   -t  試すスレッド数（カンマ区切り）                    既定: 1,2,4,8
 #   -r  各条件の反復回数                                  既定: 3
 #   -c  CSV の出力先                                      既定: uvf_vs_wf.csv
@@ -37,7 +47,7 @@
 # =============================================================================
 set -uo pipefail
 
-OLD="./uvf"; NEW="./uvfWF"; DIR="."; GLOB='*.log'; ONE=""; PAT="ERROR"
+OLD="uvf"; NEW="./uvfWF"; DIR="."; GLOB='*'; ONE=""; PAT="Tokyo"
 THREADS="1,2,4,8"; RUNS=3; CSV="uvf_vs_wf.csv"; COLD=0
 
 while [ $# -gt 0 ]; do
