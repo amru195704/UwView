@@ -81,7 +81,11 @@ for f in "${FILES[@]}"; do
 done
 
 echo "対象: ${#FILES[@]} ファイル・合計 $((TOTAL_BYTES / 1024 / 1024)) MiB"
-echo "機械: 論理プロセッサ $CPUS ／ メモリ $((MEM_KB / 1024)) MiB"
+if [ "$MEM_KB" -gt 0 ]; then
+  echo "機械: 論理プロセッサ $CPUS ／ メモリ $((MEM_KB / 1024)) MiB"
+else
+  echo "機械: 論理プロセッサ $CPUS"
+fi
 echo "検索語: $PAT"
 [ "$COLD" = 1 ] && echo "測り方: cold（毎回キャッシュを捨てます）" || echo "測り方: warm（2回目以降のキャッシュに載った状態）"
 echo
@@ -130,6 +134,19 @@ record() { # $1=case $2=threads $3=run $4=seconds
 
 median() { printf '%s\n' "$@" | sort -n | awk '{a[NR]=$1} END{print (NR%2)? a[(NR+1)/2] : (a[NR/2]+a[NR/2+1])/2}'; }
 
+# 起動だけにかかる時間（--version を走らせて測る）。
+# **これが測定値に対して大きいと、スレッド数の差は見えない**（起動の時間を比べているだけになる）
+boot=()
+for r in 1 2 3; do boot+=("$(timed /dev/null "$NEW" --version)"); done
+BOOT="$(median "${boot[@]}")"
+echo "起動だけの時間: ${BOOT}s（1回あたり）"
+echo
+
+# 測った時間が起動時間に対して十分大きいか（小さければ、その比較は当てにならない）
+warn_if_small() {  # $1=秒
+  awk -v t="$1" -v b="$BOOT" 'BEGIN{ if (t < b*3) printf "  ※ 起動時間（%.3fs）に対して短すぎます。もっと大きなファイルで測ってください\n", b }'
+}
+
 echo "== A) 1ファイル: uvf と uvfWF（どちらも1スレッド。退行が無いかの確認）=="
 a_old=(); a_new=()
 for r in $(seq 1 "$RUNS"); do
@@ -155,7 +172,9 @@ for r in $(seq 1 "$RUNS"); do
   b_old+=("$t_serial")
   record "many_old_serial" 1 "$r" "$t_serial"
 done
-printf "  uvf を1つずつ順に（1本）  %ss\n" "$(median "${b_old[@]}")"
+serial_median="$(median "${b_old[@]}")"
+printf "  uvf を1つずつ順に（1本）  %ss   （うち起動 %s 回ぶん ≒ %.3fs）\n" \
+  "$serial_median" "${#FILES[@]}" "$(awk -v b="$BOOT" -v n="${#FILES[@]}" 'BEGIN{print b*n}')"
 
 IFS=',' read -r -a TLIST <<< "$THREADS"
 for t in "${TLIST[@]}"; do
@@ -168,7 +187,9 @@ for t in "${TLIST[@]}"; do
   done
   same="一致"
   cmp -s "$WORK/b_old.txt" "$WORK/b_new_$t.txt" || same="★不一致"
-  printf "  uvfWF %2s 本                %ss   （旧との結果: %s）\n" "$t" "$(median "${runs[@]}")" "$same"
+  m="$(median "${runs[@]}")"
+  printf "  uvfWF %2s 本                %ss   （旧との結果: %s）\n" "$t" "$m" "$same"
+  warn_if_small "$m"
 done
 
 echo
