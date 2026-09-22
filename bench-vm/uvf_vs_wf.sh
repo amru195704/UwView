@@ -19,19 +19,19 @@
 #
 # 使い方（いつもの実データ osm での例）:
 #   # 何が対象になるかを先に確認する（gz はまだ対象外）
-#   ./uvfWF --files 'japan-dv-a?'
+#   uvfWF --files 'osm/japan-dv-a?'
 #
 #   # スレッド数の効き方を見る（★合計がメモリに載る大きさで測ること）
 #   for i in 0 1 2 3; do dd if=japan-dv-ac of=part-$i bs=1M skip=$((i*400)) count=400; done
-#   ./uvf_vs_wf.sh -o uvf -n ./uvfWF -d osm -g 'part-*' -p Tokyo -t 1,2,4
+#   ./uvf_vs_wf.sh --prepare
 #
 #   # 実運用に近い大きさで測る（メモリに載らないので媒体律速になるはず）
-#   ./uvf_vs_wf.sh -o uvf -n ./uvfWF -d osm -g 'japan-dv-a?' -p Tokyo -t 1,2 -r 2
+#   ./uvf_vs_wf.sh -g 'osm/japan-dv-a?' -t 1,2 -r 2
 #   ※ ヒットが数百万件になる語（"35.6 など）では、測っているのがほぼ出力になる。
 #      検索そのものを見たいときは Tokyo のような当たりの少ない語にする
 #
 #   -o  既存の uvf（v1.6.x）。PATH に入れてあれば名前だけでよい  既定: uvf
-#   -n  試験用の uvfWF へのパス                          既定: ./uvfWF
+#   -n  試験用の uvfWF（PATH の名前）                    既定: uvfWF
 #   -d  対象のあるディレクトリ（ここへ cd して測る）      既定: カレント
 #   -g  複数ファイルの指定（uvfWF に渡す形・要引用符）    既定: '*'（フォルダの中身すべて）
 #   -f  1ファイル比較で使うファイル（省略時は -g の先頭）
@@ -47,7 +47,7 @@
 # =============================================================================
 set -uo pipefail
 
-OLD="uvf"; NEW="./uvfWF"; DIR="."; GLOB='osm/japan-dv-a?'; ONE=""; PAT="東京"
+OLD="uvf"; NEW="uvfWF"; DIR="."; GLOB='osm/japan-dv-a?'; ONE=""; PAT="東京"
 THREADS="1,2,4,8"; RUNS=3; CSV="uvf_vs_wf.csv"; COLD=0
 
 while [ $# -gt 0 ]; do
@@ -69,27 +69,16 @@ done
 
 # 置き場所を決める。**PATH に入れてあるものも使える**ようにする
 #（/usr/local/bin/uvf のように登録してあるのが普通。オーナー報告 2026-09-22「実行できません」）
-resolve() {  # $1=指定  $2=説明
-  local given="$1" what="$2" found="" try
-  # Windows（Git for Windows の bash）では .exe を補う
-  for try in "$given" "$given.exe"; do
-    case "$try" in
-      */*) if [ -x "$try" ]; then found="$(cd "$(dirname "$try")" && pwd)/$(basename "$try")"; fi ;;
-      *)   found="$(command -v "$try" 2>/dev/null || true)" ;;
-    esac
-    if [ -n "$found" ]; then break; fi
-  done
-  # 相対で書いたものが無ければ、同じ名前を PATH からも探す
-  if [ -z "$found" ]; then found="$(command -v "$(basename "$given")" 2>/dev/null || true)"; fi
-  if [ -z "$found" ] || [ ! -x "$found" ]; then
-    echo "$what が見つかりません: $given" >&2
-    echo "  パスで指定するか（例: -$3 ./uvfWF ／ -$3 /usr/local/bin/uvf）、PATH に入れてください" >&2
+# PATH の名前をそのまま使う（uvf / uvfWF はどの OS でも PATH に登録してある前提）。
+# 無ければ<b>その場で止める</b>（$(...) の中で exit しても止まらず、空のコマンドで全部落ちる）
+need() {
+  if ! command -v "$1" >/dev/null 2>&1; then
+    echo "$2 が見つかりません: $1（PATH に入っているか確かめてください）" >&2
     exit 2
   fi
-  printf '%s' "$found"
 }
-OLD="$(resolve "$OLD" "既存の uvf" o)"
-NEW="$(resolve "$NEW" "試験用の uvfWF" n)"
+need "$OLD" "既存の uvf"
+need "$NEW" "試験用の uvfWF"
 CSV="$(cd "$(dirname "$CSV")" 2>/dev/null || cd .; pwd)/$(basename "$CSV")"
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
