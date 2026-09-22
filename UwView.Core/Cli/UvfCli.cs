@@ -131,15 +131,16 @@ public static class UvfCli
             --json    1行に1つの JSON で出す（{"n":行番号,"line":"本文"}）
             -H / -h   ファイル名を必ず付ける／付けない（既定は複数ファイルのときだけ付ける）
             --files   検索せず、指定が何に広がるかだけを出す
+            -open     結果を stdout ではなく GUI で表示する（-i/-E/-v と併用できます）
 
           複数ファイル（引用符で囲むこと。シェルに展開させない）:
             uvf '*.log' ERROR              ワイルドカード
             uvf 'a.log b.log' ERROR        空白区切り
             uvf 'logs/*.log,err/*.log' 語  カンマ区切り（名前に空白を含むパスはこちら）
             出力は「ファイル名:行番号<TAB>本文」。並びは指定した順です
-            -open     結果を stdout ではなく GUI で表示する（-i/-E/-v と併用できます）
 
           そのほか:
+            uvf --tune [ファイル] [--apply]   この機械に合うスレッド数を実測する（--apply で設定に保存）
             uvf --version   版数を出す
             uvf --help      この使い方を出す
 
@@ -157,15 +158,16 @@ public static class UvfCli
             --json    print one JSON object per line ({"n":<line>,"line":"<text>"})
             -H / -h   always / never prefix the file name (default: only with several files)
             --files   list what the specification expands to, without searching
+            -open     show the results in the app instead of stdout (can be combined with -i/-E/-v)
 
           Several files (quote them; do not let the shell expand them):
             uvf '*.log' ERROR              wildcard
             uvf 'a.log b.log' ERROR        separated by spaces
             uvf 'logs/*.log,err/*.log' p   separated by commas (use commas for paths with spaces)
             Output is "file:line<TAB>text", in the order you wrote them.
-            -open     show the results in the app instead of stdout (can be combined with -i/-E/-v)
 
           Also:
+            uvf --tune [file] [--apply]   measure the best thread count on this machine (--apply saves it)
             uvf --version   print the version
             uvf --help      print this usage
 
