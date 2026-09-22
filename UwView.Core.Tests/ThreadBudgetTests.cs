@@ -200,11 +200,12 @@ public class ThreadBudgetTests : IDisposable
     [Fact]
     public void 対象を指定しなければ一時ファイルで測り後片付けする()
     {
-        var before = Directory.GetFiles(Path.GetTempPath(), "uwview-tune-*");
+        var before = Directory.GetFiles(Path.GetTempPath(), "uwview-tune-*").ToHashSet();
         var result = TuneRunner.Run(null, logicalProcessors: 1);
         Assert.Equal([1, 2, 4, 8, 16], result.Rows.Select(r => r.Threads));
         // 大きいファイルは前半だけ測る（後ろは媒体の速さの計測用に取っておく）
         Assert.Equal(TuneRunner.GeneratedBytes / 2, result.MeasuredBytes);
-        Assert.Equal(before.Length, Directory.GetFiles(Path.GetTempPath(), "uwview-tune-*").Length);
+        // 自分が作ったものが残っていないこと（数で比べると、ほかの実行が残した物で落ちる）
+        Assert.Empty(Directory.GetFiles(Path.GetTempPath(), "uwview-tune-*").Where(f => !before.Contains(f)));
     }
 }
