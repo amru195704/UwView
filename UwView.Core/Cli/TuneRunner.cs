@@ -109,12 +109,29 @@ public static class TuneRunner
                                 double? DiskGbPerSec, long MeasuredBytes, bool Busy,
                                 bool OnMemory = true, long MemoryBudget = 0);
 
-    /// <summary>試すスレッド数（1・2・4・… と論理プロセッサ数）。</summary>
+    /// <summary>論理プロセッサ数を超えて測る段数（オーナー指示 2026-09-22）。</summary>
+    public const int ExtraRungs = 4;
+
+    /// <summary>測る本数の上限（これ以上増やしても見えるものが無い）。</summary>
+    public const int MaxThreadsProbed = 64;
+
+    /// <summary>
+    /// 試すスレッド数（1・2・4・… 論理プロセッサ数 ＋ その先を <see cref="ExtraRungs"/> 段）。
+    ///
+    /// <b>論理プロセッサ数で止めない。</b>そこで止めると「頭打ちに見えるが、本当にそうか分からない」
+    /// （オーナー指摘 2026-09-22: 2 論理プロセッサだと 1・2 の2点しか出ず、平らなのか測れていないのか
+    /// 判断できない）。先まで測って<b>本当に伸びないことを見せる</b>。
+    /// 勧める本数は論理プロセッサ数までから選ぶ（設定もそこで頭打ちにする）。
+    /// </summary>
     public static int[] Ladder(int logicalProcessors)
     {
         var list = new List<int>();
         for (int n = 1; n <= logicalProcessors; n *= 2) list.Add(n);
         if (list.Count == 0 || list[^1] != logicalProcessors) list.Add(logicalProcessors);
+
+        int next = 1;
+        while (next <= list[^1]) next *= 2;                 // 直前の段より大きい2の冪から続ける
+        for (int i = 0; i < ExtraRungs && next <= MaxThreadsProbed; i++, next *= 2) list.Add(next);
         return [.. list];
     }
 
@@ -181,10 +198,13 @@ public static class TuneRunner
             double again = scan(target, length, 1, ct);
             bool busy = warmGbPerSec > 0 && Math.Abs(again - warmGbPerSec) / warmGbPerSec > 0.25;
 
-            double best = rows.Max(r => r.GbPerSec);
-            bool allSame = best > 0 && rows[0].GbPerSec / best > 0.8;   // 1本でも8割出るなら「どれでも同じ」
+            // 勧める本数は論理プロセッサ数までから選ぶ（設定側もそこで頭打ちにするため）。
+            // それより上の段は「本当に頭打ちか」を見せるための参考値
+            var usable = rows.Where(r => r.Threads <= logicalProcessors).ToList();
+            double best = usable.Max(r => r.GbPerSec);
+            bool allSame = best > 0 && usable[0].GbPerSec / best > 0.8;   // 1本でも8割出るなら「どれでも同じ」
             // 一番速い値の 95% に届く、いちばん少ない本数を勧める（頭打ちの手前を選ぶ）
-            int recommended = allSame ? 1 : rows.First(r => r.GbPerSec >= best * 0.95).Threads;
+            int recommended = allSame ? 1 : usable.First(r => r.GbPerSec >= best * 0.95).Threads;
 
             return new Result(rows, recommended, allSame, disk * mediumRatio, length, busy, onMemory, budget);
         }
@@ -311,11 +331,13 @@ public static class TuneRunner
         double budgetGib = result.MemoryBudget / 1024.0 / 1024 / 1024;
         sb.AppendLine(ja
             ? $"  対象: {target} の先頭 {gib:F1} GiB ／ 各{Rounds}回"
-              + (result.MemoryBudget > 0 && result.MeasuredBytes >= result.MemoryBudget
-                 ? $"（この機械のメモリに載る大きさ {budgetGib:F1} GiB に合わせました）" : "")
-            : $"  Target: the first {gib:F1} GiB of {target} / {Rounds} runs each"
-              + (result.MemoryBudget > 0 && result.MeasuredBytes >= result.MemoryBudget
-                 ? $" (trimmed to {budgetGib:F1} GiB, what fits in this machine's memory)" : ""));
+            : $"  Target: the first {gib:F1} GiB of {target} / {Rounds} runs each");
+        if (result.MemoryBudget > 0)
+            sb.AppendLine(ja
+                ? $"  メモリに載ると見た大きさ: {budgetGib:F1} GiB"
+                  + (result.MeasuredBytes >= result.MemoryBudget ? "（測る量をこれに合わせました）" : "")
+                : $"  Assumed to fit in memory: {budgetGib:F1} GiB"
+                  + (result.MeasuredBytes >= result.MemoryBudget ? " (the measured span was trimmed to this)" : ""));
         sb.AppendLine(ja
             ? $"  論理プロセッサ: {logicalProcessors}"
             : $"  Logical processors: {logicalProcessors}");
@@ -323,11 +345,20 @@ public static class TuneRunner
             sb.AppendLine(ja ? $"  測った処理: {scanName}" : $"  Measured: {scanName}");
         sb.AppendLine();
         sb.AppendLine(ja ? "   スレッド   速度        ばらつき" : "   threads    speed       spread");
-        double best = result.Rows.Max(r => r.GbPerSec);
+        double best = result.Rows.Where(r => r.Threads <= logicalProcessors).Max(r => r.GbPerSec);
+        bool notedOversubscribed = false;
         foreach (var row in result.Rows)
         {
+            if (row.Threads > logicalProcessors && !notedOversubscribed)
+            {
+                // 「本当に頭打ちか」を確かめるための段（オーナー指示 2026-09-22）
+                sb.AppendLine(ja ? "  ── ここから先は論理プロセッサ超え（参考・本当に頭打ちかの確認） ──"
+                                 : "  -- beyond the logical processors (reference: is it really flat?) --");
+                notedOversubscribed = true;
+            }
             string mark = row.Threads == result.Recommended ? (ja ? "  ← 勧める本数" : "  <- recommended")
-                        : row.GbPerSec >= best * 0.95 && row.Threads > result.Recommended ? (ja ? "  ← 頭打ち" : "  <- no further gain")
+                        : row.Threads <= logicalProcessors && row.GbPerSec >= best * 0.95 && row.Threads > result.Recommended
+                          ? (ja ? "  ← 頭打ち" : "  <- no further gain")
                         : "";
             sb.AppendLine($"   {row.Threads,7}  {row.GbPerSec,6:F2} GB/s   ±{row.SpreadPercent,2:F0}%{mark}");
         }

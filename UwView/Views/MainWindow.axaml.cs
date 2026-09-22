@@ -11,7 +11,7 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         // 試験用ビルドは題名にも呼び名を出す（並べて置いたとき取り違えないため。オーナー指示 2026-09-22）
-        Title = AppEdition.Decorate(Title ?? "UwView(uvf)");
+        Title = AppEdition.TitleFor(Title ?? "UwView(uvf)");
         // macOS はシステムメニューバー（NativeMenu）を使うのでウィンドウ内メニューは隠す。
         WinMenu.IsVisible = !OperatingSystem.IsMacOS();
     }
