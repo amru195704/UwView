@@ -12,7 +12,7 @@
 #   確かめること:
 #     A 展開      (A) の書き方（ワイルドカード・カンマ・空白）と --files
 #     B 検索結果  rg（無ければ uvf 1本ずつ）と突き合わせ。-i / -E / -v / -H / -h / --json
-#     C 圧縮混在  gz を黙って素通りしない（uvf）・平文と gz を混ぜて束ねる（uvp・段階5）
+#     C 圧縮混在  平文と gz を混ぜて探す（uvf・段階5）／gz 単体の検索
 #     D 統合uwvz  作る／再利用／名前(B)でも引ける／追加を見落とさない／
 #                 追加は足したぶんだけで済む（作り直さない）／
 #                 変更で予告が出る／-extract がバイト一致／大きさが 1/9〜1/12
@@ -185,11 +185,21 @@ check "見つからなければ exit 1" "1" "$code"
 
 say ""
 say "== C 圧縮の混在 =="
+# uvf: 平文と gz を混ぜて探す（段階5）。参照は rg（gz は -z で展開して探す）、無ければ uvf を1本ずつ
+: > "$DETAIL/mixed-ref.txt"
+while IFS= read -r f; do
+  if [ -n "$RG" ]; then
+    z=""; case "$f" in *.gz) z="-z";; esac
+    "$RG" $z -n -- "$PAT" "$f" 2>/dev/null | sed "s#^#$f:#" | sed 's#:\([0-9][0-9]*\):#:\1\t#' >> "$DETAIL/mixed-ref.txt"
+  else
+    "$UVF" "$f" "$PAT" 2>/dev/null | sed "s#^#$f:#" >> "$DETAIL/mixed-ref.txt"
+  fi
+done < <(ls -1d $ALL 2>/dev/null | sort)
 "$UVF" "$ALL" "$PAT" > "$DETAIL/mixed.txt" 2>"$DETAIL/mixed.err"; code=$?
-if [ "$code" = 2 ] && grep -q "gz" "$DETAIL/mixed.err"; then
-  result PASS "uvf: gz を名指しで知らせ、平文だけ探す（exit 2）" ""
+if [ "$code" = 0 ] && cmp -s "$DETAIL/mixed-ref.txt" "$DETAIL/mixed.txt"; then
+  result PASS "uvf: 平文と gz を混ぜて探し、参照と一致（$(wc -l < "$DETAIL/mixed.txt" | tr -d ' ') 行）" ""
 else
-  result FAIL "uvf: gz を名指しで知らせ、平文だけ探す（exit 2）" "exit=$code $(head -1 "$DETAIL/mixed.err")"
+  result FAIL "uvf: 平文と gz を混ぜて探し、参照と一致" "exit=$code $(head -1 "$DETAIL/mixed.err")"
 fi
 
 gz="$(ls -1d $DATA/*.gz 2>/dev/null | head -1)"
