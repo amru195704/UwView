@@ -329,6 +329,22 @@ public class UvfCliTests : IDisposable
     }
 
     [Fact]
+    public async Task 圧縮ファイルは黙って素通りさせない()
+    {
+        // 平文として走査すると1件も当たらず、「このログにエラーは無い」と誤読させる（2026-09-22）
+        MakeSet();
+        using (var gz = new System.IO.Compression.GZipStream(File.Create(P("c.log.gz")),
+                                                             System.IO.Compression.CompressionLevel.Fastest))
+            gz.Write(Encoding.UTF8.GetBytes("1 gz ERROR\n"));
+
+        var run = await InDir("*", "ERROR");
+
+        Assert.Equal(UvfExit.Error, run.Exit);                    // 探せなかったものがある
+        Assert.Contains("c.log.gz", run.Err);
+        Assert.Contains("a.log:2\t", run.Out);                    // 平文のぶんは出す
+    }
+
+    [Fact]
     public async Task 複数ファイルで見つからなければ1を返す()
     {
         MakeSet();
