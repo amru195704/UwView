@@ -37,6 +37,32 @@ public class CliCommandSetupTests : IDisposable
         Assert.Null(CliCommandSetup.FindLauncher("uvp", gui));
     }
 
+    [Fact]
+    public void 別名の起動アプリも見つける()
+    {
+        // 試験用ビルドは uvfWF のような別名で入っている（オーナー報告 2026-09-22:
+        // 「この版には uvf が入っていません」と出た）。名前ちょうどが無ければ uvf* を探す
+        string launcher = MakeLauncher("wf", "uvfWF");
+        string gui = Path.Combine(Path.GetDirectoryName(launcher)!, "UwView.Desktop");
+        Assert.Equal(launcher, CliCommandSetup.FindLauncher("uvf", gui));
+        Assert.Null(CliCommandSetup.FindLauncher("uvp", gui));
+    }
+
+    [Fact]
+    public void 別名で見つけたときは実物の名前で登録する()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        string launcher = MakeLauncher("wf2", "uvfWF");
+        string gui = Path.Combine(Path.GetDirectoryName(launcher)!, "UwView.Desktop");
+        string bin = Path.Combine(_dir, "bin2");
+
+        var status = CliCommandSetup.InspectLink("uvfWF", launcher, bin);
+        Assert.Equal("uvfWF", status.Tool);
+        // 本番の uvf と別の場所に作るので、両方入れても取り合わない
+        Assert.Equal(Path.Combine(bin, "uvfWF"), status.Location);
+        Assert.Equal("uvfWF", Path.GetFileNameWithoutExtension(CliCommandSetup.FindLauncher("uvf", gui)!));
+    }
+
     // ── macOS / Linux: リンク ──
 
     [Fact]
