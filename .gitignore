@@ -463,5 +463,8 @@ $RECYCLE.BIN/
 # の2点から、配布は GitHub Releases に一本化した。
 dist/
 
+# 試験用ビルド（Wide Field を別名で焼いたもの。手元での Linux/Windows 確認用・配布しない）
+distWideField/
+
 # 内部向けドキュメント（企画・販売戦略・価格・ライセンス方針など）は非公開
 0-claude/
