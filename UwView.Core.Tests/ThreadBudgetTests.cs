@@ -169,6 +169,22 @@ public class ThreadBudgetTests : IDisposable
     }
 
     [Fact]
+    public void 平らなときは媒体と比べて理由を示す()
+    {
+        // Linux VM（2 論理プロセッサ・2.8GiB を測定）の実測: 1本 1.93 → 32本 2.19 GB/s で平ら。
+        // 「どれでも同じ」だけでは、媒体で止まっているのか CPU・メモリで止まっているのか分からない
+        var result = new TuneRunner.Result(
+            [new TuneRunner.Row(1, 1.93, 4), new TuneRunner.Row(2, 2.09, 2), new TuneRunner.Row(4, 2.15, 9)],
+            Recommended: 1, AllSame: true, DiskGbPerSec: 0.40, MeasuredBytes: 3L << 30, Busy: false,
+            OnMemory: true, MemoryBudget: 3L << 30);
+
+        string text = TuneRunner.Format(result, ja: true, "japan-latest.osm", logicalProcessors: 2);
+        Assert.Contains("どれでも同じ", text);
+        Assert.Contains("媒体は 0.40 GB/s", text);
+        Assert.Contains("CPU・メモリの側", text);   // 走査のほうが速い＝媒体では止まっていない
+    }
+
+    [Fact]
     public void 載ったときは余計なことを言わない()
     {
         var result = new TuneRunner.Result(
