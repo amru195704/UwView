@@ -21,6 +21,11 @@ public static class MultiFileSearch
     /// <summary>手元に貯める上限。これを超えたら自分の順番を待って直接書く。</summary>
     private const int BufferLimit = 64 << 20;
 
+    /// <summary>
+    /// テスト用: ファイル i が走り始める前に待たせる（到着順を入れ替えて、順番待ちの噛み合いを試す）。
+    /// </summary>
+    public static Func<int, Task>? ArrivalDelayForTests;
+
     /// <param name="Hits">全ファイル合計のヒット行数。</param>
     /// <param name="Truncated">上限で打ち切ったファイルがあったか。</param>
     /// <param name="Failed">読めなかったファイルと理由。</param>
@@ -43,6 +48,15 @@ public static class MultiFileSearch
         turn[0].SetResult();
 
         using var slots = new SemaphoreSlim(Math.Max(1, threads));
+
+        // 枠は<b>指定順に</b>取る。順番待ち（turn）は前のファイルの完了を待つので、
+        // 後ろのファイルが先に枠を取ると、前のファイルが枠を取れず永久に待ち合う
+        //（オーナーの比較テストで発覚 2026-09-22: UVF_MAX_THREADS=1 で6ファイルを検索すると止まった）。
+        // i 番目は「i-1 番目が枠を取った」合図を待ってから枠を取りに行く
+        var admitted = new TaskCompletionSource[files.Count + 1];
+        for (int i = 0; i <= files.Count; i++) admitted[i] = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        admitted[0].SetResult();
+
         var tasks = new Task[files.Count];
         for (int i = 0; i < files.Count; i++)
         {
@@ -50,7 +64,10 @@ public static class MultiFileSearch
             string file = files[i];
             tasks[i] = Task.Run(async () =>
             {
+                if (ArrivalDelayForTests is { } delay) await delay(index);
+                await admitted[index].Task.WaitAsync(ct);   // 前のファイルが枠を取ってから
                 await slots.WaitAsync(ct);
+                admitted[index + 1].TrySetResult();         // 次のファイルを枠取りへ進ませる
                 try
                 {
                     var one = await OneFileAsync(file, options, invert, json, lineNumbers, withFileName ? file : null,

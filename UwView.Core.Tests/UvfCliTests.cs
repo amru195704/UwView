@@ -286,6 +286,48 @@ public class UvfCliTests : IDisposable
         Assert.Equal(UvfExit.Error, run.Exit);
     }
 
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    public async Task 後ろのファイルが先に来ても止まらない(int threads)
+    {
+        // 到着順を逆にして、順番待ちの噛み合いを起こす（実機で起きた形。下のテストの説明を参照）
+        MultiFileSearch.ArrivalDelayForTests = i => Task.Delay(20 * (6 - i));
+        try { await ファイル数よりスレッドが少なくても止まらない本体(threads); }
+        finally { MultiFileSearch.ArrivalDelayForTests = null; }
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    public Task ファイル数よりスレッドが少なくても止まらない(int threads)
+        => ファイル数よりスレッドが少なくても止まらない本体(threads);
+
+    private async Task ファイル数よりスレッドが少なくても止まらない本体(int threads)
+    {
+        // オーナーの比較テストで発覚（2026-09-22・UVF_MAX_THREADS=1 で6ファイル → 固まった）。
+        // 出す順番を守るために「自分の番」を待つが、順番待ちの間も枠を握っていたため、
+        // 先の番のファイルが枠を取れずに永久に待ち合う
+        MakeSet();
+        for (int i = 0; i < 4; i++) File.WriteAllText(P($"extra-{i}.log"), $"1 x INFO\n2 extra{i} ERROR\n");
+
+        var run = await WithThreads(threads, () => InDir("*.log", "ERROR"))
+                        .WaitAsync(TimeSpan.FromSeconds(30));
+
+        Assert.Equal(UvfExit.Found, run.Exit);
+        Assert.Equal(6, run.Out.TrimEnd('\n').Split('\n').Length);   // a b extra0..3（順番どおり）
+        Assert.StartsWith("a.log:2\t", run.Out);
+    }
+
+    /// <summary>スレッド数を指定して走らせる（環境変数は後で必ず戻す）。</summary>
+    private static async Task<Result> WithThreads(int threads, Func<Task<Result>> run)
+    {
+        string? saved = Environment.GetEnvironmentVariable(ThreadBudget.FreeEnvironmentVariable);
+        Environment.SetEnvironmentVariable(ThreadBudget.FreeEnvironmentVariable, threads.ToString());
+        try { return await run(); }
+        finally { Environment.SetEnvironmentVariable(ThreadBudget.FreeEnvironmentVariable, saved); }
+    }
+
     [Fact]
     public async Task 複数ファイルで見つからなければ1を返す()
     {
