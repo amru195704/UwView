@@ -496,6 +496,29 @@ public static class UvfCli
                                                    UvfEnvironment env, Func<string, string, string> t,
                                                    CancellationToken ct)
     {
+        // 圧縮ファイルは<b>まだ複数ファイル検索の対象外</b>（段階5で対応予定）。
+        // 黙って平文として走査すると、中身を探したつもりで1件も当たらず
+        // 「このログにエラーは無い」と誤読させる（実際 uvf '*' では gz を素通りしていた。2026-09-22）
+        var compressed = new List<string>();
+        var searchable = new List<string>();
+        foreach (string file in files)
+        {
+            var probe = CompressedInput.Probe(file);
+            if (probe.Kind is CompressedKind.Gzip or CompressedKind.Zip) compressed.Add(file);
+            else searchable.Add(file);
+        }
+        foreach (string file in compressed)
+            env.StdErr.WriteLine(t(
+                $"{env.ToolName}: 圧縮ファイルは複数ファイル検索の対象外です（1つずつなら検索できます）: {file}",
+                $"{env.ToolName}: compressed files are not part of a multi-file search yet (search them one at a time): {file}"));
+        if (searchable.Count == 0)
+        {
+            env.StdErr.WriteLine(t($"{env.ToolName}: 探せるファイルがありません",
+                                   $"{env.ToolName}: no searchable files"));
+            return UvfExit.Error;
+        }
+        files = searchable;
+
         var options = new SearchOptions(inv.Pattern!, UseRegex: inv.Regex, IgnoreCase: inv.IgnoreCase);
         var watch = Stopwatch.StartNew();
         int threads = ThreadBudget.Resolve(
@@ -525,8 +548,9 @@ public static class UvfCli
                 $"Results were cut off at the limit ({SearchService.DefaultMaxHits:N0}). The output is incomplete."));
             return UvfExit.Error;
         }
-        // 1つでも読めなければ、読めたぶんは出したうえで exit 2（§2.3）
-        if (outcome.Failed.Count > 0) return UvfExit.Error;
+        // 1つでも読めなければ、読めたぶんは出したうえで exit 2（§2.3）。
+        // 圧縮ファイルを飛ばしたときも同じ（探せなかったものがある、と分かるように）
+        if (outcome.Failed.Count > 0 || compressed.Count > 0) return UvfExit.Error;
         return outcome.Hits > 0 ? UvfExit.Found : UvfExit.NotFound;
     }
 
