@@ -20,11 +20,19 @@ APP_PROJ="UwView.Desktop/UwView.Desktop.csproj"
 VER=$(grep -oE '<Version>[^<]+' UwView/UwView.csproj | sed 's/<Version>//' | head -1)
 : "${VER:=0.0.0}"
 OUT="${OUT:-dist}"   # 試験用に別フォルダへ出せる（例: OUT=distWideField ./build/publish.sh）
+
+# 試験用に別名で出す（既に入れてある版と並べて置けるように。オーナー指示 2026-09-22）。
+#   SUFFIX=WF → 配布物 UwViewWF-<ver>-…・アプリ UwViewWF.app・CLI uvfWF・別の bundle id
+# 既定（SUFFIX なし）では従来とまったく同じ名前で出る。
+SUFFIX="${SUFFIX:-}"
+NAME="${NAME:-UwView$SUFFIX}"
+CLI="${CLI:-uvf$SUFFIX}"
+BUNDLE_ID="${BUNDLE_ID:-net.y42u.uwview$(printf '%s' "${SUFFIX:+.$SUFFIX}" | tr 'A-Z' 'a-z')}"
 EXE="UwView.Desktop"   # 単一ファイル実行体名（プロジェクト名由来）
 RIDS=("$@"); [ ${#RIDS[@]} -eq 0 ] && RIDS=(osx-arm64 osx-x64 win-x64 win-arm64 linux-x64 linux-arm64)
 
 mkdir -p "$OUT"
-echo "UwView $VER → ${RIDS[*]}"
+echo "$NAME $VER → ${RIDS[*]}"
 
 publish_one() {
   local rid="$1" pubdir="obj/pub/$rid"
@@ -48,14 +56,14 @@ add_cli() { # $1=rid $2=GUI の発行先
   rm -rf "$clipub"
   dotnet publish "$CLI_PROJ" -c Release -r "$rid" --self-contained true \
     -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true \
-    -p:EnableCompressionInSingleFile=true -p:DebugType=none -o "$clipub" 1>&2
-  find "$clipub" -maxdepth 1 -type f \( -name 'uvf' -o -name 'uvf.exe' \) -exec cp {} "$dest/" \;
-  [ -f "$dest/uvf" ] || [ -f "$dest/uvf.exe" ] || { echo "uvf の発行に失敗: $rid" >&2; exit 1; }
+    -p:EnableCompressionInSingleFile=true -p:DebugType=none -p:AssemblyName="$CLI" -o "$clipub" 1>&2
+  find "$clipub" -maxdepth 1 -type f \( -name "$CLI" -o -name "$CLI.exe" \) -exec cp {} "$dest/" \;
+  [ -f "$dest/$CLI" ] || [ -f "$dest/$CLI.exe" ] || { echo "$CLI の発行に失敗: $rid" >&2; exit 1; }
 }
 
 pack_mac() { # $1=rid  $2=arch-label
   local rid="$1" arch="$2" pub; pub=$(publish_one "$rid")
-  local app="$OUT/UwView.app"
+  local app="$OUT/$NAME.app"
   local macos="$app/Contents/MacOS"
   rm -rf "$app"; mkdir -p "$macos" "$app/Contents/Resources"
   cp -R "$pub/." "$macos/"
@@ -63,9 +71,9 @@ pack_mac() { # $1=rid  $2=arch-label
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
-  <key>CFBundleName</key><string>UwView</string>
-  <key>CFBundleDisplayName</key><string>UwView</string>
-  <key>CFBundleIdentifier</key><string>net.y42u.uwview</string>
+  <key>CFBundleName</key><string>$NAME</string>
+  <key>CFBundleDisplayName</key><string>$NAME</string>
+  <key>CFBundleIdentifier</key><string>$BUNDLE_ID</string>
   <key>CFBundleExecutable</key><string>$EXE</string>
   <key>CFBundleIconFile</key><string>UwView.icns</string>
   <key>CFBundleShortVersionString</key><string>$VER</string>
@@ -106,20 +114,20 @@ pack_mac() { # $1=rid  $2=arch-label
       <key>CFBundleTypeName</key><string>UwView Compressed Cache</string>
       <key>CFBundleTypeRole</key><string>Viewer</string>
       <key>LSHandlerRank</key><string>Owner</string>
-      <key>LSItemContentTypes</key><array><string>net.y42u.uwview.uwvz</string></array>
+      <key>LSItemContentTypes</key><array><string>$BUNDLE_ID.uwvz</string></array>
     </dict>
   </array>
   <key>UTExportedTypeDeclarations</key>
   <array>
     <dict>
-      <key>UTTypeIdentifier</key><string>net.y42u.uwview.uwvz</string>
+      <key>UTTypeIdentifier</key><string>$BUNDLE_ID.uwvz</string>
       <key>UTTypeDescription</key><string>UwView Compressed Cache</string>
       <key>UTTypeConformsTo</key><array><string>public.data</string></array>
       <key>UTTypeTagSpecification</key>
       <dict><key>public.filename-extension</key><array><string>uwvz</string></array></dict>
     </dict>
     <dict>
-      <key>UTTypeIdentifier</key><string>net.y42u.uwview.uwvhl</string>
+      <key>UTTypeIdentifier</key><string>$BUNDLE_ID.uwvhl</string>
       <key>UTTypeDescription</key><string>UwView Highlighter Set</string>
       <key>UTTypeConformsTo</key><array><string>public.data</string></array>
       <key>UTTypeTagSpecification</key>
@@ -149,7 +157,7 @@ PLIST
     local mainbin="$macos/$EXE"
     while IFS= read -r -d '' f; do
       [ "$f" = "$mainbin" ] && continue
-      if [ "$(basename "$f")" = "uvf" ]; then
+      if [ "$(basename "$f")" = "$CLI" ]; then
         # 起動アプリ uvf も .NET の実行ファイルなので GUI と同じ entitlements が要る（無いと実行時に落ちる）
         codesign --force --timestamp --options runtime --entitlements "$ent" -s "$MAC_SIGN_ID" "$f"
       elif file "$f" | grep -q 'Mach-O'; then
@@ -163,7 +171,7 @@ PLIST
 
     if [ -n "${AC_PROFILE:-}" ]; then
       echo "  notarytool submit ($arch)…"
-      local nz="$OUT/UwView-$VER-mac-$arch-notarize.zip"
+      local nz="$OUT/$NAME-$VER-mac-$arch-notarize.zip"
       ditto -c -k --keepParent "$app" "$nz"
       xcrun notarytool submit "$nz" --keychain-profile "$AC_PROFILE" --wait
       xcrun stapler staple "$app"; xcrun stapler validate "$app"
@@ -175,7 +183,7 @@ PLIST
   fi
 
   # 配布物は DMG（UVP と同じ形。Applications へのリンクを置いてドラッグで入れられるようにする）
-  local out="$OUT/UwView-$VER-mac-$arch.dmg"
+  local out="$OUT/$NAME-$VER-mac-$arch.dmg"
   rm -f "$out"
 
   # hdiutil create -srcfolder は「中身をコピー → 一時ボリュームを unmount → 圧縮」の順に動くが、
@@ -187,7 +195,7 @@ PLIST
   # macOS の App Management 保護に当たって「Operation not permitted」で弾かれる。
   # マウント先は自前の場所を指定する。/Volumes に同名が残っていると（前回の失敗で detach し損ねた等）
   # 別名で mount され、こちらは残骸のほうへ書いてしまう（2026-09-17 に発生）。
-  local vol="UwView $VER ($arch)"
+  local vol="$NAME $VER ($arch)"
   local rw mnt size
   rw=$(mktemp -u).rw.dmg
   mnt=$(mktemp -d)
@@ -195,7 +203,7 @@ PLIST
   hdiutil create -size "${size}m" -fs HFS+ -volname "$vol" -type UDIF -ov "$rw"
   local dev; dev=$(hdiutil attach "$rw" -nobrowse -noverify -noautoopen -mountpoint "$mnt" \
                    | grep -Eo '^/dev/disk[0-9]+' | head -1)
-  ditto "$app" "$mnt/UwView.app"
+  ditto "$app" "$mnt/$NAME.app"
   ln -s /Applications "$mnt/Applications"
   sync
   hdiutil detach "$dev" -force
@@ -218,7 +226,7 @@ PLIST
 
 pack_linux() { # $1=rid  $2=arch-label(x86_64/aarch64)
   local rid="$1" arch="$2" pub; pub=$(publish_one "$rid")
-  local out="$OUT/UwView-$VER-linux-$arch.tar.gz"
+  local out="$OUT/$NAME-$VER-linux-$arch.tar.gz"
   # COPYFILE_DISABLE: mac の tar が付ける ._* （拡張属性の退避ファイル）を入れない
   rm -f "$out"; COPYFILE_DISABLE=1 tar -C "$pub" -czf "$out" .
   echo "  → $out"
@@ -226,10 +234,10 @@ pack_linux() { # $1=rid  $2=arch-label(x86_64/aarch64)
 
 pack_win() { # $1=rid  $2=arch-label(x64/arm64)
   local rid="$1" arch="$2" pub; pub=$(publish_one "$rid")
-  local out="$PWD/$OUT/UwView-$VER-win-$arch.zip"
+  local out="$PWD/$OUT/$NAME-$VER-win-$arch.zip"
   # --norsrc --noextattr: mac の ._* （リソースフォーク・拡張属性）を zip に入れない
   rm -f "$out"; ( cd "$pub" && ditto -c -k --norsrc --noextattr . "$out" )
-  echo "  → $OUT/UwView-$VER-win-$arch.zip（署名は Windows で EV 署名）"
+  echo "  → $OUT/$NAME-$VER-win-$arch.zip（署名は Windows で EV 署名）"
 }
 
 for rid in "${RIDS[@]}"; do
@@ -244,9 +252,10 @@ for rid in "${RIDS[@]}"; do
   esac
 done
 
-( cd "$OUT" && shasum -a 256 UwView-$VER-* > "SHA256SUMS-$VER.txt" )
+( cd "$OUT" && shasum -a 256 $NAME-$VER-* > "SHA256SUMS-$VER.txt" )
 echo "SHA256SUMS-$VER.txt:"; cat "$OUT/SHA256SUMS-$VER.txt"
 
-# サイト用: 版数なしの名前の複製（dist/latest/。6点揃ったときだけ）
-build/make-latest.sh UwView "$VER" "$OUT"
+# サイト用: 版数なしの名前の複製（dist/latest/。6点揃ったときだけ）。
+# 別名（SUFFIX）で焼いたものは試験用なので latest/ は作らない
+if [ -z "$SUFFIX" ]; then build/make-latest.sh "$NAME" "$VER" "$OUT"; fi
 echo "done. → $OUT/"
