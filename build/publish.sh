@@ -31,7 +31,10 @@ CLI="${CLI:-uvf$SUFFIX}"
 # ファイル名は短く、画面の名前は分かりやすく（例 APP_NAME="UwView (Wide Field)"）
 APP_NAME="${APP_NAME:-$NAME}"
 BUNDLE_ID="${BUNDLE_ID:-net.y42u.uwview$(printf '%s' "${SUFFIX:+.$SUFFIX}" | tr 'A-Z' 'a-z')}"
-EXE="UwView.Desktop"   # 単一ファイル実行体名（プロジェクト名由来）
+# 単一ファイル実行体名（プロジェクト名由来）。試験用ビルドは本体にも別名を付ける——
+# tar / zip を展開したとき、既に入れてある版と同じ名前だと上書きになる（オーナー報告 2026-09-22）
+EXE_BUILT="UwView.Desktop"
+EXE="UwView.Desktop$SUFFIX"
 RIDS=("$@"); [ ${#RIDS[@]} -eq 0 ] && RIDS=(osx-arm64 osx-x64 win-x64 win-arm64 linux-x64 linux-arm64)
 
 mkdir -p "$OUT"
@@ -45,6 +48,12 @@ publish_one() {
     -p:DebugType=none -o "$pubdir" 1>&2
   # 配布物に不要なもの（依存パッケージ同梱のデバッグ情報 libSkiaSharp.pdb など）は入れない
   find "$pubdir" -name '*.pdb' -delete
+  # 別名ビルドは本体の実行ファイルも改名する（単一ファイルなので名前を変えても動く）
+  if [ "$EXE" != "$EXE_BUILT" ]; then
+    for ext in "" ".exe"; do
+      if [ -f "$pubdir/$EXE_BUILT$ext" ]; then mv "$pubdir/$EXE_BUILT$ext" "$pubdir/$EXE$ext"; fi
+    done
+  fi
   add_cli "$rid" "$pubdir"
   echo "$pubdir"
 }

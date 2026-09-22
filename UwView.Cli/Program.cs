@@ -10,7 +10,10 @@ using System.Diagnostics;
 // （GUI の exe を直接コマンドプロンプトから呼ぶと、出力がどこにもつながらない）。
 
 const string Marker = "--uvf";
+// 本体の名前。試験用ビルドは別名で入っている（UwView.DesktopWF など。オーナー指示 2026-09-22）ので、
+// 名前ちょうどが無ければ同じ名前で始まるものを探す
 string[] guiNames = ["UwView.Desktop", "UwView.Desktop.exe", "UwView", "UwView.exe"];
+string[] guiPrefixes = ["UwView.Desktop", "UwView"];
 
 string? gui = FindGui();
 if (gui is null)
@@ -49,5 +52,22 @@ string? FindGui()
         string candidate = Path.Combine(dir, name);
         if (File.Exists(candidate) && !string.Equals(candidate, self, StringComparison.Ordinal)) return candidate;
     }
+
+    // 別名（UwView.DesktopWF）。拡張子付き（.exe）とそれ以外を取り違えないよう、形をそろえて探す
+    try
+    {
+        foreach (string prefix in guiPrefixes)
+            foreach (string candidate in Directory.EnumerateFiles(dir, prefix + "*"))
+            {
+                if (string.Equals(candidate, self, StringComparison.Ordinal)) continue;
+                string name = Path.GetFileName(candidate);
+                if (name.EndsWith(".dll", StringComparison.OrdinalIgnoreCase)
+                    || name.EndsWith(".json", StringComparison.OrdinalIgnoreCase)
+                    || name.EndsWith(".pdb", StringComparison.OrdinalIgnoreCase)) continue;
+                return candidate;
+            }
+    }
+    catch (IOException) { }
+    catch (UnauthorizedAccessException) { }
     return null;
 }
