@@ -262,7 +262,8 @@ public static class UvfCli
             switch (argv[0])
             {
                 case "--version" or "-version" or "--Version":
-                    await WriteLineAsync(env.StdOut, $"{tool} {(env.AppVersion.Length > 0 ? env.AppVersion : "?")}", ct);
+                    await WriteLineAsync(env.StdOut,
+                        AppEdition.Decorate($"{tool} {(env.AppVersion.Length > 0 ? env.AppVersion : "?")}"), ct);
                     return UvfExit.Found;
                 case "--help" or "-h" or "-help" or "--Help":
                     await WriteLineAsync(env.StdOut, Usage(ja, tool), ct);

@@ -25,6 +25,8 @@ public static class CliCommandDialog
     public static async Task RunAsync(Window owner, string tool)
     {
         var status = InspectOverride?.Invoke(tool) ?? CliCommandSetup.Inspect(tool);
+        // 実際に入っている名前で案内する（試験用ビルドは uvfWF のような別名。オーナー指摘 2026-09-22）
+        tool = status.Tool;
 
         switch (status.State)
         {

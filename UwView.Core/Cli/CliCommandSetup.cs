@@ -57,19 +57,43 @@ public static class CliCommandSetup
     public static string UserLinkDirectory =>
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".local", "bin");
 
-    /// <summary>アプリ本体の隣にある起動アプリ（uvf / uvf.exe）。無ければ null。</summary>
+    /// <summary>
+    /// アプリ本体の隣にある起動アプリ（uvf / uvf.exe）。無ければ null。
+    ///
+    /// <b>試験用ビルドは別名で入っている</b>（uvfWF / uvpWF。オーナー指示 2026-09-22）。
+    /// 名前ちょうどが無ければ <c>uvf*</c> を探して実物を返す——
+    /// ここで諦めると「この版には uvf が入っていません」と嘘を言うことになる。
+    /// </summary>
     public static string? FindLauncher(string tool, string? processPath = null)
     {
         processPath ??= Environment.ProcessPath;
         if (string.IsNullOrEmpty(processPath)) return null;
         string dir = Path.GetDirectoryName(processPath)!;
-        string candidate = Path.Combine(dir, OperatingSystem.IsWindows() ? tool + ".exe" : tool);
-        return File.Exists(candidate) ? candidate : null;
+        string extension = OperatingSystem.IsWindows() ? ".exe" : "";
+        string candidate = Path.Combine(dir, tool + extension);
+        if (File.Exists(candidate)) return candidate;
+
+        try
+        {
+            // 別名（uvfWF など）。同じ名前で始まるものだけを採り、短い順に決める
+            return Directory.EnumerateFiles(dir, tool + "*" + extension)
+                            .Where(p => Path.GetFileNameWithoutExtension(p)
+                                            .StartsWith(tool, StringComparison.OrdinalIgnoreCase)
+                                        && !SamePath(p, processPath, ignoreCase: true))
+                            .OrderBy(p => p.Length).ThenBy(p => p, StringComparer.Ordinal)
+                            .FirstOrDefault();
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException)
+        {
+            return null;
+        }
     }
 
     public static CliCommandStatus Inspect(string tool, string? processPath = null)
     {
         string? launcher = FindLauncher(tool, processPath);
+        // 見つかった実物の名前で登録する（試験用ビルドは uvfWF のまま登録し、本番の uvf と取り合わない）
+        if (launcher is not null) tool = Path.GetFileNameWithoutExtension(launcher);
 
         if (OperatingSystem.IsWindows())
         {
