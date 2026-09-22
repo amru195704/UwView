@@ -47,7 +47,7 @@
 # =============================================================================
 set -uo pipefail
 
-OLD="uvf"; NEW="./uvfWF"; DIR="."; GLOB='*'; ONE=""; PAT="Tokyo"
+OLD="uvf"; NEW="./uvfWF"; DIR="."; GLOB='osm/japan-dv-a?'; ONE=""; PAT="東京"
 THREADS="1,2,4,8"; RUNS=3; CSV="uvf_vs_wf.csv"; COLD=0
 
 while [ $# -gt 0 ]; do
