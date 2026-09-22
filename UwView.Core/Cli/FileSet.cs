@@ -61,12 +61,30 @@ public static class FileSet
         {
             var matched = ExpandOne(fragment, root);
             if (matched.Count == 0) { missing.Add(fragment); continue; }
+            char separator = SeparatorOf(fragment);
             foreach (string path in matched)
                 if (seen.Add(Path.GetFullPath(path)))     // 重複は先に出た側を採る
-                    files.Add(path);
+                    files.Add(AsWritten(path, separator));
         }
         return new Result(files, missing);
     }
+
+    /// <summary>
+    /// 書かれたとおりの区切り文字（<c>osm/x</c> と書いたら <c>/</c> のまま返す）。
+    ///
+    /// Windows では OS の区切りが <c>\</c> なので、そのまま出すと
+    /// <c>osm/japan-dv-ac</c> と指定したのに <c>osm\japan-dv-ac:12\t…</c> と出て、
+    /// ほかの道具（シェルの展開結果や以前の出力）と突き合わせたときに食い違う
+    /// （オーナー報告 2026-09-22: Windows の比較テストで「不一致」）。
+    /// <b>利用者が書いた形で返す</b>ことにして、突き合わせが成り立つようにする。
+    /// </summary>
+    private static char SeparatorOf(string fragment)
+        // Unix では \ は区切りではなく<b>普通の文字</b>なので、書いたとおりに返すと開けないパスになる。
+        // 書き分けを許すのは Windows だけ（そこでは / も \ もどちらも開ける）
+        => OperatingSystem.IsWindows() && fragment.Contains('\\') && !fragment.Contains('/') ? '\\' : '/';
+
+    private static string AsWritten(string path, char separator)
+        => separator == '/' ? path.Replace('\\', '/') : path.Replace('/', '\\');
 
     /// <summary>断片1つぶん。ワイルドカードが無ければそのファイル、あれば名前順に展開する。</summary>
     private static List<string> ExpandOne(string fragment, string root)
