@@ -12,7 +12,7 @@
 #   確かめること:
 #     A 展開      (A) の書き方（ワイルドカード・カンマ・空白）と --files
 #     B 検索結果  rg（無ければ uvf 1本ずつ）と突き合わせ。-i / -E / -v / -H / -h / --json
-#     C 圧縮混在  gz を黙って素通りしない（uvf）・黙って束ねない（uvp）
+#     C 圧縮混在  gz を黙って素通りしない（uvf）・平文と gz を混ぜて束ねる（uvp・段階5）
 #     D 統合uwvz  作る／再利用／名前(B)でも引ける／追加を見落とさない／
 #                 追加は足したぶんだけで済む（作り直さない）／
 #                 変更で予告が出る／-extract がバイト一致／大きさが 1/9〜1/12
@@ -201,15 +201,6 @@ else
   result SKIP "uvf: gz 単体" "gz がありません"
 fi
 
-if [ "$WITH_UVP" = 1 ]; then
-  ( cd "$WORK" && "$UVP" "$ROOT/$ALL" "$PAT" >/dev/null 2>"$DETAIL/uvp-mixed.err" ); code=$?
-  if [ "$code" = 2 ] && grep -qi "compress\|圧縮" "$DETAIL/uvp-mixed.err"; then
-    result PASS "uvp: gz が混ざったら束ねずに断る" ""
-  else
-    result FAIL "uvp: gz が混ざったら束ねずに断る" "exit=$code $(head -1 "$DETAIL/uvp-mixed.err")"
-  fi
-fi
-
 if [ "$WITH_UVP" = 0 ]; then
   say ""
   say "（uvp は省きました）"
@@ -229,7 +220,7 @@ else
     # できなかったら、残りは確かめようがない（空どうしを比べて PASS にしない）
     if [ -z "$uwvz" ]; then
       for t in "2回目は作り直さず同じ結果" "名前(B)でも同じ結果" "増えたファイルの行も拾う" \
-               "追加は足したぶんだけで済む（作り直さない）" \
+               "追加は足したぶんだけで済む（作り直さない）" "平文と gz を混ぜて束ね、結果が参照と一致" \
                "中身が変わったら予告して作り直す" "-extract で元の名前・バイト一致で戻せる" ".uwvz の大きさ"; do
         echo "SKIP|$t|統合 .uwvz ができなかったため"
       done
@@ -275,6 +266,25 @@ else
     else
       echo "FAIL|-extract で元の名前・バイト一致で戻せる|$(head -1 extract.log) got=[$got]"
     fi
+
+    # 段階5: 平文と gz を混ぜて束ねる。参照は rg（gz は -z で展開して探す）、無ければ uvf を1本ずつ
+    gzip -c m2.osm > z.osm.gz
+    : > d7.ref
+    for f in m1.osm z.osm.gz; do
+      if [ -n "$RG" ]; then
+        z=""; case "$f" in *.gz) z="-z";; esac
+        "$RG" $z -n -- "$PAT" "$f" 2>/dev/null | sed "s#^#$f:#" | sed 's#:\([0-9][0-9]*\):#:\1\t#' >> d7.ref
+      else
+        "$UVF" "$f" "$PAT" 2>/dev/null | sed "s#^#$f:#" >> d7.ref
+      fi
+    done
+    "$UVP" 'm1.osm,z.osm.gz' "$PAT" > d7.txt 2>d7.err
+    if [ -s d7.ref ] && cmp -s d7.ref d7.txt; then
+      echo "PASS|平文と gz を混ぜて束ね、結果が参照と一致（$(wc -l < d7.txt | tr -d ' ') 行）|"
+    else
+      echo "FAIL|平文と gz を混ぜて束ね、結果が参照と一致|$(head -1 d7.err)"
+    fi
+    rm -f z.osm.gz 'm1.osm%cz.osm.gz.uwvz'
 
     # 大きさ（完了条件4: 元の 1/9〜1/12）
     total=0
