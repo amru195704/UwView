@@ -19,14 +19,14 @@
 # 使い方（distWideField で・uvfWF / uvpWF と同じ場所）:
 #   ./uv_multi_test.sh                      osm17 を使い、<OS>_result/ へ結果を書く
 #   ./uv_multi_test.sh -d osm17 -o win_result
-#   ./uv_multi_test.sh --uvf ./uvfWF --uvp ./uvpWF
+#   ./uv_multi_test.sh --uvf uvfWF --uvp uvpWF   （既定。PATH の名前をそのまま使う）
 #   ./uv_multi_test.sh --no-uvp             uvf だけ（ライセンスが無い環境）
 #
 #   -p 検索語（既定 東京）  -q 2語目（既定 大阪）
 # =============================================================================
 set -u
 
-DATA="osm17"; OUT=""; UVF="./uvfWF"; UVP="./uvpWF"; PAT="東京"; PAT2="大阪"; WITH_UVP=1
+DATA="osm17"; OUT=""; UVF="uvfWF"; UVP="uvpWF"; PAT="東京"; PAT2="大阪"; WITH_UVP=1
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -50,20 +50,6 @@ case "$(uname -s)" in
 esac
 [ -n "$OUT" ] || OUT="${OSKIND}_result"
 
-resolve() {  # $1=指定 $2=説明 → 実体のパス（Windows は .exe を補う）
-  local given="$1" what="$2" found="" try
-  for try in "$given" "$given.exe"; do
-    case "$try" in
-      */*) if [ -x "$try" ]; then found="$(cd "$(dirname "$try")" && pwd)/$(basename "$try")"; fi ;;
-      *)   found="$(command -v "$try" 2>/dev/null || true)" ;;
-    esac
-    if [ -n "$found" ]; then break; fi
-  done
-  if [ -z "$found" ]; then echo "$what が見つかりません: $given" >&2; exit 2; fi
-  printf '%s' "$found"
-}
-UVF="$(resolve "$UVF" uvfWF)"
-[ "$WITH_UVP" = 1 ] && UVP="$(resolve "$UVP" uvpWF)"
 
 [ -d "$DATA" ] || { echo "データのフォルダがありません: $DATA" >&2; exit 2; }
 mkdir -p "$OUT"
@@ -116,6 +102,8 @@ FILES=()
 while IFS= read -r line; do FILES+=("$line"); done < <(ls -1d $PLAIN 2>/dev/null | sort)
 [ ${#FILES[@]} -ge 2 ] || { echo "平文が2つ以上ありません: $PLAIN" >&2; exit 2; }
 
+say "$UVF --version: $("$UVF" --version 2>&1)"
+if [ "$WITH_UVP" = 1 ]; then say "$UVP --version: $("$UVP" --version 2>&1)"; fi
 say "データ: ${#FILES[@]} ファイル（平文）／ $(ls -1d $ALL 2>/dev/null | wc -l | tr -d ' ') ファイル（gz 含む）"
 say "結果: $OUT/"
 say ""
@@ -221,6 +209,14 @@ else
     "$UVP" '*.osm' "$PAT" > d1.txt 2>d1.err; code=$?
     uwvz="$(ls -1 *.uwvz 2>/dev/null | head -1)"
     if [ -n "$uwvz" ] && [ "$code" -le 1 ]; then echo "PASS|統合 .uwvz を作る（$uwvz）|"; else echo "FAIL|統合 .uwvz を作る|exit=$code $(head -1 d1.err)"; fi
+    # できなかったら、残りは確かめようがない（空どうしを比べて PASS にしない）
+    if [ -z "$uwvz" ]; then
+      for t in "2回目は作り直さず同じ結果" "名前(B)でも同じ結果" "増えたファイルの行も拾う" \
+               "中身が変わったら予告して作り直す" "-extract で元の名前・バイト一致で戻せる" ".uwvz の大きさ"; do
+        echo "SKIP|$t|統合 .uwvz ができなかったため"
+      done
+      exit 0
+    fi
 
     "$UVP" '*.osm' "$PAT" > d2.txt 2>d2.err
     if ! grep -q "creating" d2.err && cmp -s d1.txt d2.txt; then echo "PASS|2回目は作り直さず同じ結果|"; else echo "FAIL|2回目は作り直さず同じ結果|$(head -1 d2.err)"; fi
@@ -263,7 +259,7 @@ else
 
   while IFS='|' read -r r title note; do
     case "$r" in
-      PASS|FAIL) result "$r" "$title" "$note";;
+      PASS|FAIL|SKIP) result "$r" "$title" "$note";;
       INFO) result PASS "$title" "$note";;
     esac
   done < "$DETAIL/uvp.txt"
