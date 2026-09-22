@@ -58,6 +58,24 @@ UwView は `uvf ファイル '語' -open` と打つだけで、**1回読むあ�
 
 ---
 
+## インストール
+
+**Mac（Homebrew）**
+```bash
+brew install --cask amru195704/uwview/uwview
+```
+**Windows（Scoop）**
+```powershell
+scoop bucket add uwview https://github.com/amru195704/scoop-uwview
+scoop install uwview
+```
+**Linux・手で入れる場合**は [GitHub Releases](https://github.com/amru195704/UwView/releases/latest) から dmg／zip／tar.gz を。
+
+Homebrew と Scoop は、どちらも公式の GitHub Releases から取得して SHA256 を照合します。**`uvf` コマンドもそのまま使えます。**
+更新は `brew upgrade --cask uwview` ／ `scoop update uwview`。
+
+---
+
 ## 使い方
 
 ```bash
@@ -137,7 +155,7 @@ klogg は索引を残さないので**開くたびに作り直し**、`uvf` は�
 
 **元ファイルを消しても検索でき、`-extract` で戻せます。** 51.25GB が約 5.7GB になります。
 
-**1問目は無料の `uvf` が ripgrep と同程度で、`uvp` は `.uwvz` を作るぶん 15〜20% 遅くなります。**
+**1問目は無料の `uvf` が ripgrep と同程度で、`uvp` は `.uwvz` を作るぶん 6〜7% 遅くなります**（v1.6.6.1・50GB で 59.0秒 対 54.9〜55.8秒）。
 **`uvp` が効くのは 10GB を超えて、同じファイルに2回以上聞くとき**です。
 
 > 買い切り **$129** ／ 月額 **$9**（Edit Upgrade は +$120 ／ +$8）・**14日間の無料試用**
@@ -147,7 +165,7 @@ klogg は索引を残さないので**開くたびに作り直し**、`uvf` は�
 
 ## 主な機能
 
-**実測最大 258.68GB・45億行**（無料版で到達）／`uvf` コマンド（`-i`・`-E`・`-v`・grep 互換の終了コード・`-open`）／
+**実測最大 258.68GB・45億行**（無料版で到達）／`uvf` コマンド（`-i`・`-E`・`-v`・終了コード 0／1／2（当たりあり／なし／エラー）・`-open`）／
 **`.gz` をそのまま検索**（v1.6.6〜・下記）／検索結果一覧（元の行番号つき・ジャンプ・前後の文脈・保存）／
 複数キーワードの色分け（32色・プリセット7種・`.uwvhl`）／文字コード自動判定（UTF-8・Shift-JIS・EUC-JP・UTF-16）／
 リアルタイム Tail ／gzip を直接開く／マルチタブ・ブックマーク・横スクロール・セッション復元／全OS同一描画
