@@ -109,17 +109,19 @@ say "結果: $OUT/"
 say ""
 
 # ---- 参照（正解）を作る: rg があれば rg、無ければ uvf を1本ずつ ----
-reference() {  # $1=出力先 $2..=uvf/rg のオプション
-  local out="$1"; shift
-  : > "$out"
+reference_stream() {  # 標準出力へ  $1..=uvf/rg のオプション
   local f
   for f in "${FILES[@]}"; do
     if [ -n "$RG" ]; then
-      "$RG" -n "$@" -- "$PAT" "$f" 2>/dev/null | sed "s#^#$f:#" | sed 's#:\([0-9][0-9]*\):#:\1\t#' >> "$out"
+      "$RG" -n "$@" -- "$PAT" "$f" 2>/dev/null | sed "s#^#$f:#" | sed 's#:\([0-9][0-9]*\):#:\1\t#'
     else
-      "$UVF" "$f" "$PAT" "$@" 2>/dev/null | sed "s#^#$f:#" >> "$out"
+      "$UVF" "$f" "$PAT" "$@" 2>/dev/null | sed "s#^#$f:#"
     fi
   done
+}
+reference() {  # $1=出力先 $2..=オプション
+  local out="$1"; shift
+  reference_stream "$@" > "$out"
 }
 
 say "== A 展開 =="
@@ -147,11 +149,15 @@ reference "$DETAIL/ref.txt"
 "$UVF" "$PLAIN" "$PAT" > "$DETAIL/multi.txt" 2>/dev/null
 check_file "複数ファイルの結果が参照と一致（$(wc -l < "$DETAIL/ref.txt" | tr -d ' ') 行）" "$DETAIL/ref.txt" "$DETAIL/multi.txt"
 
-for opt in -i -v; do
-  reference "$DETAIL/ref$opt.txt" "$opt"
-  "$UVF" "$PLAIN" "$PAT" "$opt" > "$DETAIL/multi$opt.txt" 2>/dev/null
-  check_file "$opt でも一致" "$DETAIL/ref$opt.txt" "$DETAIL/multi$opt.txt"
-done
+reference "$DETAIL/ref-i.txt" -i
+"$UVF" "$PLAIN" "$PAT" -i > "$DETAIL/multi-i.txt" 2>/dev/null
+check_file "-i でも一致" "$DETAIL/ref-i.txt" "$DETAIL/multi-i.txt"
+
+# -v は当たらない行を全部出すので、実データでは数GBになる（osm17 で 2.6GB×2）。
+# ファイルに書かず、照合値（cksum：CRC と長さ）で比べる
+want_v="$(reference_stream -v | cksum)"
+got_v="$("$UVF" "$PLAIN" "$PAT" -v 2>/dev/null | cksum)"
+check "-v でも一致（照合値）" "$want_v" "$got_v"
 
 hcount="$("$UVF" "$PLAIN" "$PAT" -h 2>/dev/null | grep -c ":" )"
 plain_ok=$("$UVF" "$PLAIN" "$PAT" -h 2>/dev/null | head -1 | grep -c "^[0-9]")
@@ -208,7 +214,7 @@ else
 
     "$UVP" '*.osm' "$PAT" > d1.txt 2>d1.err; code=$?
     uwvz="$(ls -1 *.uwvz 2>/dev/null | head -1)"
-    if [ -n "$uwvz" ] && [ "$code" -le 1 ]; then echo "PASS|統合 .uwvz を作る（$uwvz）|"; else echo "FAIL|統合 .uwvz を作る|exit=$code $(head -1 d1.err)"; fi
+    if [ -n "$uwvz" ] && [ "$code" -le 1 ]; then echo "PASS|統合 .uwvz を作る（${uwvz}）|"; else echo "FAIL|統合 .uwvz を作る|exit=$code $(head -1 d1.err)"; fi
     # できなかったら、残りは確かめようがない（空どうしを比べて PASS にしない）
     if [ -z "$uwvz" ]; then
       for t in "2回目は作り直さず同じ結果" "名前(B)でも同じ結果" "増えたファイルの行も拾う" \
@@ -257,6 +263,10 @@ else
     echo "INFO|.uwvz の大きさは元の 1/$ratio|元 $((total/1024/1024))MiB → $((size/1024/1024))MiB"
   ) > "$DETAIL/uvp.txt" 2>&1
 
+  if ! grep -qE '^(PASS|FAIL|SKIP|INFO)\|' "$DETAIL/uvp.txt"; then
+    # 途中で止まった（D の項目が1行も出なかった）。黙って PASS 数だけ出すと気づけない
+    result FAIL "統合 .uwvz の確認が途中で止まった" "$(head -1 "$DETAIL/uvp.txt")"
+  fi
   while IFS='|' read -r r title note; do
     case "$r" in
       PASS|FAIL|SKIP) result "$r" "$title" "$note";;
