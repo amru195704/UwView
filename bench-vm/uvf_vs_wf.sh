@@ -57,15 +57,29 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-OLD="$(cd "$(dirname "$OLD")" && pwd)/$(basename "$OLD")"
-NEW="$(cd "$(dirname "$NEW")" && pwd)/$(basename "$NEW")"
+# 置き場所を決める。**PATH に入れてあるものも使える**ようにする
+#（/usr/local/bin/uvf のように登録してあるのが普通。オーナー報告 2026-09-22「実行できません」）
+resolve() {  # $1=指定  $2=説明
+  local given="$1" what="$2" found=""
+  case "$given" in
+    */*) [ -x "$given" ] && found="$(cd "$(dirname "$given")" && pwd)/$(basename "$given")" ;;
+    *)   found="$(command -v "$given" 2>/dev/null || true)" ;;
+  esac
+  # 相対で書いたものが無ければ、同じ名前を PATH からも探す
+  if [ -z "$found" ]; then found="$(command -v "$(basename "$given")" 2>/dev/null || true)"; fi
+  if [ -z "$found" ] || [ ! -x "$found" ]; then
+    echo "$what が見つかりません: $given" >&2
+    echo "  パスで指定するか（例: -$3 ./uvfWF ／ -$3 /usr/local/bin/uvf）、PATH に入れてください" >&2
+    exit 2
+  fi
+  printf '%s' "$found"
+}
+OLD="$(resolve "$OLD" "既存の uvf" o)"
+NEW="$(resolve "$NEW" "試験用の uvfWF" n)"
 CSV="$(cd "$(dirname "$CSV")" 2>/dev/null || cd .; pwd)/$(basename "$CSV")"
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 cd "$DIR" || exit 2
-
-[ -x "$OLD" ] || { echo "実行できません: $OLD" >&2; exit 2; }
-[ -x "$NEW" ] || { echo "実行できません: $NEW" >&2; exit 2; }
 
 # 対象ファイル一覧（順序はシェルの展開＝名前順。uvfWF の並びと同じ）
 FILES=()
@@ -86,6 +100,11 @@ if [ "$MEM_KB" -gt 0 ]; then
 else
   echo "機械: 論理プロセッサ $CPUS"
 fi
+# どれとどれを比べているのかを最初に出す（取り違えたまま測らないため）
+echo "旧: $OLD"
+echo "    $("$OLD" --version 2>/dev/null || echo '版数が出ません（v1.6.6 より前かもしれません）')"
+echo "新: $NEW"
+echo "    $("$NEW" --version 2>/dev/null || echo '版数が出ません')"
 echo "検索語: $PAT"
 [ "$COLD" = 1 ] && echo "測り方: cold（毎回キャッシュを捨てます）" || echo "測り方: warm（2回目以降のキャッシュに載った状態）"
 echo
