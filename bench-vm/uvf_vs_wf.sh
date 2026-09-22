@@ -70,11 +70,15 @@ done
 # 置き場所を決める。**PATH に入れてあるものも使える**ようにする
 #（/usr/local/bin/uvf のように登録してあるのが普通。オーナー報告 2026-09-22「実行できません」）
 resolve() {  # $1=指定  $2=説明
-  local given="$1" what="$2" found=""
-  case "$given" in
-    */*) [ -x "$given" ] && found="$(cd "$(dirname "$given")" && pwd)/$(basename "$given")" ;;
-    *)   found="$(command -v "$given" 2>/dev/null || true)" ;;
-  esac
+  local given="$1" what="$2" found="" try
+  # Windows（Git for Windows の bash）では .exe を補う
+  for try in "$given" "$given.exe"; do
+    case "$try" in
+      */*) if [ -x "$try" ]; then found="$(cd "$(dirname "$try")" && pwd)/$(basename "$try")"; fi ;;
+      *)   found="$(command -v "$try" 2>/dev/null || true)" ;;
+    esac
+    if [ -n "$found" ]; then break; fi
+  done
   # 相対で書いたものが無ければ、同じ名前を PATH からも探す
   if [ -z "$found" ]; then found="$(command -v "$(basename "$given")" 2>/dev/null || true)"; fi
   if [ -z "$found" ] || [ ! -x "$found" ]; then
@@ -97,7 +101,8 @@ while IFS= read -r line; do FILES+=("$line"); done < <(eval ls -1 -- $GLOB 2>/de
 [ ${#FILES[@]} -gt 0 ] || { echo "対象が1つもありません: $GLOB" >&2; exit 2; }
 [ -n "$ONE" ] || ONE="${FILES[0]}"
 
-CPUS="$(getconf _NPROCESSORS_ONLN 2>/dev/null || echo '?')"
+CPUS="$(getconf _NPROCESSORS_ONLN 2>/dev/null || echo '')"
+if [ -z "$CPUS" ]; then CPUS="${NUMBER_OF_PROCESSORS:-?}"; fi   # Windows（Git for Windows の bash）
 MEM_KB="$(awk '/MemTotal/{print $2}' /proc/meminfo 2>/dev/null || echo 0)"
 TOTAL_BYTES=0
 for f in "${FILES[@]}"; do
