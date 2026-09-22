@@ -14,6 +14,7 @@
 #     B 検索結果  rg（無ければ uvf 1本ずつ）と突き合わせ。-i / -E / -v / -H / -h / --json
 #     C 圧縮混在  gz を黙って素通りしない（uvf）・黙って束ねない（uvp）
 #     D 統合uwvz  作る／再利用／名前(B)でも引ける／追加を見落とさない／
+#                 追加は足したぶんだけで済む（作り直さない）／
 #                 変更で予告が出る／-extract がバイト一致／大きさが 1/9〜1/12
 #
 # 使い方（distWideField で・uvfWF / uvpWF と同じ場所）:
@@ -84,6 +85,11 @@ PASS=0; FAIL=0; NO=0
 } > "$LOG"
 
 say() { printf '%s\n' "$*"; }
+# いまの時刻（秒・小数）。mac 標準の bash 3.2 には EPOCHREALTIME が無いので python3 で補う
+now_s() {
+  if [ -n "${EPOCHREALTIME:-}" ]; then printf '%s' "${EPOCHREALTIME/,/.}"
+  else python3 -c 'import time;print(f"{time.time():.3f}")'; fi
+}
 result() {  # $1=結果(PASS/FAIL/SKIP) $2=題 $3=備考
   case "$1" in
     PASS) PASS=$((PASS+1)); say "  ✅ $2";;
@@ -216,12 +222,14 @@ else
   for f in $small; do cp "$f" "$WORK/m$i.osm"; i=$((i+1)); done
   ( cd "$WORK" || exit 2
 
-    "$UVP" '*.osm' "$PAT" > d1.txt 2>d1.err; code=$?
+    t0="$(now_s)"; "$UVP" '*.osm' "$PAT" > d1.txt 2>d1.err; code=$?; t1="$(now_s)"
+    create_s="$(awk -v a="$t0" -v b="$t1" 'BEGIN{printf "%.2f", b-a}')"
     uwvz="$(ls -1 *.uwvz 2>/dev/null | head -1)"
     if [ -n "$uwvz" ] && [ "$code" -le 1 ]; then echo "PASS|統合 .uwvz を作る（${uwvz}）|"; else echo "FAIL|統合 .uwvz を作る|exit=$code $(head -1 d1.err)"; fi
     # できなかったら、残りは確かめようがない（空どうしを比べて PASS にしない）
     if [ -z "$uwvz" ]; then
       for t in "2回目は作り直さず同じ結果" "名前(B)でも同じ結果" "増えたファイルの行も拾う" \
+               "追加は足したぶんだけで済む（作り直さない）" \
                "中身が変わったら予告して作り直す" "-extract で元の名前・バイト一致で戻せる" ".uwvz の大きさ"; do
         echo "SKIP|$t|統合 .uwvz ができなかったため"
       done
@@ -237,11 +245,18 @@ else
     # ファイルを増やす。**検索語を含む行から作る**（先頭の数十行を切り出すだけだと、
     # 実データでは語が1件も無く「拾えたか」を確かめられない。2026-09-22 Mac の実データで発生）
     grep -m 5 -- "$PAT" m1.osm > m3.osm
-    "$UVP" '*.osm' "$PAT" > d4.txt 2>d4.err
+    t0="$(now_s)"; "$UVP" '*.osm' "$PAT" > d4.txt 2>d4.err; t1="$(now_s)"
+    append_s="$(awk -v a="$t0" -v b="$t1" 'BEGIN{printf "%.2f", b-a}')"
     if [ "$(wc -l < d4.txt)" -ge "$(wc -l < d1.txt)" ] && grep -q "m3.osm" d4.txt; then
       echo "PASS|増えたファイルの行も拾う|"
     else
       echo "FAIL|増えたファイルの行も拾う|$(head -1 d4.err)"
+    fi
+    # 完了条件2: 末尾への追加は、作り直さず足したぶんだけで済む
+    if grep -q "added" d4.err && ! grep -q "creating" d4.err; then
+      echo "PASS|追加は足したぶんだけで済む（作り直さない）|作成 ${create_s}s → 追加 ${append_s}s"
+    else
+      echo "FAIL|追加は足したぶんだけで済む（作り直さない）|$(grep -m1 'creating\|added' d4.err)"
     fi
 
     printf '\n%s\n' "$PAT" >> m1.osm    # 中身を変える
