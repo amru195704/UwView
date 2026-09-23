@@ -75,6 +75,9 @@
   <data name="FilterTip" xml:space="preserve"><value>ヒット行だけを表示</value></data>
 
   <data name="Indexing" xml:space="preserve"><value>索引中</value></data>
+  <data name="MergedFilesButton" xml:space="preserve"><value>ファイル一覧</value></data>
+  <data name="MergedFilesTip" xml:space="preserve"><value>番号と元ファイルの対応を見る</value></data>
+  <data name="MergedFilesTitle" xml:space="preserve"><value>束ねたファイル</value></data>
   <data name="ScrollDisabledWhileIndexing" xml:space="preserve"><value>索引を作っている間はスクロールバーを使えません</value></data>
   <data name="Cancel" xml:space="preserve"><value>キャンセル</value></data>
 

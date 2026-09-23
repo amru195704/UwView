@@ -292,6 +292,12 @@ public class TextView : Control
     private ScrollBar? _scroll;
     private bool _updatingScroll;
 
+    /// <summary>
+    /// 行番号欄に出す文字を差し替える（束ねた .uwvz のとき、uvp が「ファイル番号:行番号」を返す）。
+    /// null なら行番号だけ（従来どおり）。引数は1始まりの通し行番号。
+    /// </summary>
+    public Func<long, string>? LineLabel { get; set; }
+
     // ── 横スクロール（機能修正指示書_横スクロール §3）───────────────
     private ScrollBar? _hScroll;
     private double _hOffset;                 // 本文の横スクロール量（px・0以上）
@@ -986,6 +992,14 @@ public class TextView : Control
             long maxNo = 0;
             foreach (var v in visible) maxNo = Math.Max(maxNo, v.LineNo);
             int digits = Math.Max(6, maxNo.ToString(CultureInfo.InvariantCulture).Length);
+            // 「ファイル番号:行番号」を出すときは、その幅で桁を数える（いちばん長い行で測る）
+            if (LineLabel is not null)
+            {
+                int widestLabel = digits;
+                foreach (var v in visible)
+                    if (v.LineNo > 0) widestLabel = Math.Max(widestLabel, LineLabel(v.LineNo).Length);
+                digits = widestLabel;
+            }
             gutter = digits * _digitWidth + Padding * 2;
             ctx.FillRectangle(new SolidColorBrush(Color.FromRgb(0xF2, 0xF2, 0xF2)),
                 new Rect(0, 0, gutter, Bounds.Height));
@@ -1017,7 +1031,8 @@ public class TextView : Control
                     ctx.FillRectangle(bookmarkBrush, new Rect(0, gy, 4, lh));
                 if (showNumbers && lineNo > 0)
                 {
-                    var num = MakeText(lineNo.ToString(CultureInfo.InvariantCulture), numberBrush);
+                    var num = MakeText(LineLabel?.Invoke(lineNo) ?? lineNo.ToString(CultureInfo.InvariantCulture),
+                                       numberBrush);
                     ctx.DrawText(num, new Point(gutter - Padding - num.Width, gy));
                 }
                 gy += lh;
