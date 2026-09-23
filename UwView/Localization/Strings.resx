@@ -75,6 +75,9 @@
   <data name="FilterTip" xml:space="preserve"><value>Show only matching lines</value></data>
 
   <data name="Indexing" xml:space="preserve"><value>Indexing</value></data>
+  <data name="MergedFilesButton" xml:space="preserve"><value>Files</value></data>
+  <data name="MergedFilesTip" xml:space="preserve"><value>Show which file each number is</value></data>
+  <data name="MergedFilesTitle" xml:space="preserve"><value>Bundled files</value></data>
   <data name="ScrollDisabledWhileIndexing" xml:space="preserve"><value>The scrollbar is disabled while the index is being built</value></data>
   <data name="Cancel" xml:space="preserve"><value>Cancel</value></data>
 
