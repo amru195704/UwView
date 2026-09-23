@@ -16,10 +16,14 @@ public class CliCommandMenuTests : IDisposable
     private readonly List<string> _notices = [];
     private readonly List<(CliCommandState State, bool Install)> _applied = [];
 
+    /// <summary>3択で選ぶもの（1=登録し直す・2=解除する・0=閉じる）。</summary>
+    private int _choice = 2;
+
     public CliCommandMenuTests()
     {
         UwView.Localization.Localizer.Instance.SetLanguage("ja");
         CliCommandDialog.AskOverride = m => { _asked.Add(m); return Task.FromResult(true); };
+        CliCommandDialog.ChooseOverride = m => { _asked.Add(m); return Task.FromResult(_choice); };
         CliCommandDialog.NoticeOverride = m => _notices.Add(m);
         CliCommandDialog.ApplyOverride = (s, install) =>
         {
@@ -32,6 +36,7 @@ public class CliCommandMenuTests : IDisposable
     {
         CliCommandDialog.InspectOverride = null;
         CliCommandDialog.AskOverride = null;
+        CliCommandDialog.ChooseOverride = null;
         CliCommandDialog.NoticeOverride = null;
         CliCommandDialog.ApplyOverride = null;
     }
@@ -44,6 +49,14 @@ public class CliCommandMenuTests : IDisposable
         var item = UiHarness.Find<MenuItem>(w, "WinCliCommandItem");
         item.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
         await UiHarness.WaitUntil(() => _notices.Count > 0, "結果のお知らせ");
+    }
+
+    /// <summary>閉じたときなど、お知らせが出ない場合に使う（待たない）。</summary>
+    private static async Task ClickMenuWithoutNotice(MainWindow w)
+    {
+        var item = UiHarness.Find<MenuItem>(w, "WinCliCommandItem");
+        item.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
+        await Task.Yield();
     }
 
     [AvaloniaFact]
@@ -65,6 +78,7 @@ public class CliCommandMenuTests : IDisposable
     [AvaloniaFact]
     public async Task 登録済みなら解除を尋ねる()
     {
+        _choice = 2;   // 解除する
         CliCommandDialog.InspectOverride = _ => Status(CliCommandState.Installed);
         var (w, _, _) = UiHarness.OpenMainWindow();
         try
@@ -73,6 +87,39 @@ public class CliCommandMenuTests : IDisposable
             Assert.Contains("解除", _asked[0]);
             Assert.Equal([(CliCommandState.Installed, false)], _applied);
             Assert.Contains("解除しました", _notices[0]);
+        }
+        finally { w.Close(); }
+    }
+
+    [AvaloniaFact]
+    public async Task 登録済みならその場で登録し直せる()
+    {
+        // 「解除してから登録し直す」だと、mac / Linux で管理者パスワードを2回聞かれる
+        // （オーナー報告 2026-09-23）。1手で登録し直せること
+        _choice = 1;   // 登録し直す
+        CliCommandDialog.InspectOverride = _ => Status(CliCommandState.Installed);
+        var (w, _, _) = UiHarness.OpenMainWindow();
+        try
+        {
+            await ClickMenu(w);
+            Assert.Contains("登録し直す", _asked[0]);
+            Assert.Equal([(CliCommandState.Installed, true)], _applied);   // 解除を挟まない
+            Assert.Contains("使えるようにしました", _notices[0]);
+        }
+        finally { w.Close(); }
+    }
+
+    [AvaloniaFact]
+    public async Task 登録済みで閉じたら何もしない()
+    {
+        _choice = 0;
+        CliCommandDialog.InspectOverride = _ => Status(CliCommandState.Installed);
+        var (w, _, _) = UiHarness.OpenMainWindow();
+        try
+        {
+            await ClickMenuWithoutNotice(w);
+            Assert.Empty(_applied);
+            Assert.Empty(_notices);
         }
         finally { w.Close(); }
     }
