@@ -137,7 +137,15 @@ public static class UvfCli
             uvf '*.log' ERROR              ワイルドカード
             uvf 'a.log b.log' ERROR        空白区切り
             uvf 'logs/*.log,err/*.log' 語  カンマ区切り（名前に空白を含むパスはこちら）
+            uvf 'app.log,app.log.*.gz' 語  gz も混ぜられます（展開しながら探します）
+            uvf '*.gz' ERROR               gz だけをまとめて探すこともできます
             出力は「ファイル名:行番号<TAB>本文」。並びは指定した順です
+            zip は対象外です（1つずつ展開してから探してください）
+
+          入力の種類（拡張子ではなく中身で見分けます）:
+            gz           展開しながら探します（1つでも、複数ファイルに混ぜても）
+            zip          扱えません（展開してから探してください。zip は UwView Pro が扱います）
+            それ以外      テキストとして扱います
 
           そのほか:
             uvf --tune [ファイル] [--apply]   この機械に合うスレッド数を実測する（--apply で設定に保存）
@@ -164,7 +172,15 @@ public static class UvfCli
             uvf '*.log' ERROR              wildcard
             uvf 'a.log b.log' ERROR        separated by spaces
             uvf 'logs/*.log,err/*.log' p   separated by commas (use commas for paths with spaces)
+            uvf 'app.log,app.log.*.gz' p   gz files can be mixed in (searched while decompressing)
+            uvf '*.gz' ERROR               gz files alone work too
             Output is "file:line<TAB>text", in the order you wrote them.
+            zip files are not searched (extract them first).
+
+          Input types (decided by content, not by the extension):
+            gz           searched while decompressing (alone or mixed with plain files)
+            zip          not supported (extract it first; UwView Pro handles zip)
+            anything else treated as text
 
           Also:
             uvf --tune [file] [--apply]   measure the best thread count on this machine (--apply saves it)
