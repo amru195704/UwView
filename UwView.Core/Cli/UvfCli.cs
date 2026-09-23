@@ -140,6 +140,7 @@ public static class UvfCli
             uvf 'app.log,app.log.*.gz' 語  gz も混ぜられます（展開しながら探します）
             uvf '*.gz' ERROR               gz だけをまとめて探すこともできます
             出力は「ファイル名:行番号<TAB>本文」。並びは指定した順です
+            複数ファイルのときは -open を使えません（UwView Pro の uvp を使ってください）
             zip は対象外です（1つずつ展開してから探してください）
 
           入力の種類（拡張子ではなく中身で見分けます）:
@@ -175,6 +176,7 @@ public static class UvfCli
             uvf 'app.log,app.log.*.gz' p   gz files can be mixed in (searched while decompressing)
             uvf '*.gz' ERROR               gz files alone work too
             Output is "file:line<TAB>text", in the order you wrote them.
+            -open cannot be used with several files (use uvp from UwView Pro).
             zip files are not searched (extract them first).
 
           Input types (decided by content, not by the extension):
