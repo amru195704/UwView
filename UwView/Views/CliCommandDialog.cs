@@ -18,6 +18,9 @@ public static class CliCommandDialog
     internal static Func<string, CliCommandStatus>? InspectOverride { get; set; }
     internal static Func<CliCommandStatus, bool, Task<CliCommandResult>>? ApplyOverride { get; set; }
     internal static Func<string, Task<bool>>? AskOverride { get; set; }
+
+    /// <summary>テスト用: 3択の答えを差し替える（1=登録し直す・2=解除する・0=閉じる）。</summary>
+    internal static Func<string, Task<int>>? ChooseOverride { get; set; }
     internal static Action<string>? NoticeOverride { get; set; }
 
     private static bool Ja => Localizer.Instance.Culture.TwoLetterISOLanguageName == "ja";
@@ -43,13 +46,22 @@ public static class CliCommandDialog
                 return;
 
             case CliCommandState.Installed:
-                if (!await Ask(Ja
-                        ? $"{tool} はコマンドラインで使えます。\n\n{Where(status)}\n\n登録を解除しますか？"
-                        : $"{tool} is available on the command line.\n\n{Where(status)}\n\nRemove it?",
-                        Ja ? "解除する" : "Remove", Ja ? "閉じる" : "Close", owner))
-                    return;
-                await Report(owner, status, await Apply(status, install: false), install: false);
+            {
+                // 「解除してから登録し直す」を利用者にやらせると、mac / Linux では
+                // 管理者パスワードを2回聞くことになる（オーナー報告 2026-09-23）。
+                // 登録し直しをその場で選べるようにして、1回で済ませる
+                int choice = await Choose(Ja
+                        ? $"{tool} はコマンドラインで使えます。\n\n{Where(status)}\n\n"
+                          + "アプリを入れ替えたあとなどは「登録し直す」を選んでください（パスワードは1回だけです）。"
+                          + "\n使うのをやめるときは「解除する」を選んでください。"
+                        : $"{tool} is available on the command line.\n\n{Where(status)}\n\n"
+                          + "After replacing the app, choose \"Re-install\" (you are asked for the password once).",
+                        Ja ? "登録し直す" : "Re-install", Ja ? "解除する" : "Remove", Ja ? "閉じる" : "Close", owner);
+                if (choice == 0) return;
+                bool install = choice == 1;
+                await Report(owner, status, await Apply(status, install), install);
                 return;
+            }
 
             case CliCommandState.OtherTarget:
                 if (!await Ask(Ja
@@ -144,6 +156,10 @@ public static class CliCommandDialog
     private static Task<CliCommandResult> Apply(CliCommandStatus s, bool install) =>
         ApplyOverride?.Invoke(s, install)
         ?? (install ? CliCommandSetup.InstallAsync(s) : CliCommandSetup.UninstallAsync(s));
+
+    private static Task<int> Choose(string message, string first, string second, string cancel, Window owner) =>
+        ChooseOverride?.Invoke(message)
+        ?? ConfirmDialog.ChooseAsync(owner, Title, message, first, second, cancel);
 
     private static Task<bool> Ask(string message, string yes, string no, Window owner) =>
         AskOverride?.Invoke(message)
