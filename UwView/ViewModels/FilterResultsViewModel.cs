@@ -36,6 +36,9 @@ public sealed class FilterRow
     /// <summary>ヒット行のハイライト用（文脈行・separator は null）。</summary>
     public Regex? HighlightRegex { get; init; }
 
+    /// <summary>行番号欄の文字を差し替える（束ねた .uwvz の「ファイル番号:行番号」用。0 始まりで渡す）。</summary>
+    public Func<long, string>? LineLabel { get; init; }
+
     public FilterRow(LineDocument? doc) => _doc = doc;
 
     private long _resolvedLine = -2; // -2 = 未解決
@@ -44,7 +47,7 @@ public sealed class FilterRow
     /// 実効行番号。LineIndex 未指定のヒット行は Offset から解決する。
     /// WASM でデータ未到着のときは確定させず -1 を返す（到着後に再解決される）。
     /// </summary>
-    private long EffectiveLineIndex
+    public long EffectiveLineIndex
     {
         get
         {
@@ -73,7 +76,9 @@ public sealed class FilterRow
             if (IsSeparator || _doc is null) return _lineNumberText = "";
             long line = EffectiveLineIndex;
             if (line < 0) return ""; // 未解決は焼き付けない
-            return _lineNumberText = (line + 1).ToString("N0", Localizer.Instance.Culture);
+            return _lineNumberText = LineLabel is { } label
+                ? label(line)
+                : (line + 1).ToString("N0", Localizer.Instance.Culture);
         }
     }
 
@@ -268,6 +273,23 @@ public sealed partial class FilterResultsViewModel : ObservableObject, IDisposab
     /// </summary>
     public void RefreshTexts() => UpdateHitInfo();
 
+    /// <summary>
+    /// 行番号欄の文字を差し替える（束ねた .uwvz の「ファイル番号:行番号」用。0 始まりの行番号で呼ばれる）。
+    ///
+    /// 本体の行番号欄（<see cref="UwView.Controls.TextView.LineLabel"/>）と同じものを渡し、
+    /// 検索結果の一覧でも同じ番号が出るようにする（オーナー指摘 2026-09-23）。
+    /// </summary>
+    public Func<long, string>? LineLabel
+    {
+        get;
+        set
+        {
+            if (ReferenceEquals(field, value)) return;
+            field = value;
+            Rebuild();                 // 行は焼き付いているので作り直す
+        }
+    }
+
     /// <summary>行リストを現在のヒット・±N から作り直す（遅延リストなので軽い）。</summary>
     public void Rebuild()
     {
@@ -290,20 +312,20 @@ public sealed partial class FilterResultsViewModel : ObservableObject, IDisposab
         {
             // ヒット行のみ: ヒット（行頭オフセット列）をそのまま1行=1ヒットで並べる
             CancelLineMapping();
-            Rows = new HitOnlyRowList(doc, s.SearchHits, regex, known);
+            Rows = new HitOnlyRowList(doc, s.SearchHits, regex, known, LineLabel);
         }
         else if (_hitLines is { } cached && cached.Length == s.SearchHits.Count)
         {
             // 行番号への写像が済んでいる: ブロック結合 → 遅延展開
             Rows = new BlockRowList(doc, FilterBlocks.Build(cached, n, doc.TotalLines ?? 0), regex,
-                s.SearchHits);
+                s.SearchHits, LineLabel);
         }
         else
         {
             // 写像がまだ: 先にヒット行のみを出しておき、裏で非同期に写像する。
             // 同期 Read で写像すると WASM の未取得チャンクで数え落とし、
             // DataArrived → Rebuild → また未取得… の無限ループになる（タブが固まる）。
-            Rows = new HitOnlyRowList(doc, s.SearchHits, regex, known);
+            Rows = new HitOnlyRowList(doc, s.SearchHits, regex, known, LineLabel);
             StartLineMapping(s, doc);
         }
 
@@ -559,7 +581,7 @@ public sealed partial class FilterResultsViewModel : ObservableObject, IDisposab
         {
             if (row.IsSeparator) continue;
             if (!withContext && !row.IsHit) continue;
-            return row.LineNumberText == 1.ToString("N0", Localizer.Instance.Culture);
+            return row.EffectiveLineIndex == 0;
         }
         return false;
     }
@@ -641,7 +663,7 @@ public sealed partial class FilterResultsViewModel : ObservableObject, IDisposab
     /// （オーナー指摘 2026-09-18「最初は行番号なし、後で行番号が出る」）。
     /// </param>
     private sealed class HitOnlyRowList(LineDocument doc, IReadOnlyList<long> hits, Regex? regex,
-                                        IReadOnlyList<long>? lines = null)
+                                        IReadOnlyList<long>? lines = null, Func<long, string>? lineLabel = null)
         : LazyRowList
     {
         public override int Count => hits.Count;
@@ -656,6 +678,7 @@ public sealed partial class FilterResultsViewModel : ObservableObject, IDisposab
             ResolveLineFromOffset = doc.IsIndexed,
             HitOrdinal = index + 1,
             HighlightRegex = regex,
+            LineLabel = lineLabel,
         };
     }
 
@@ -670,10 +693,12 @@ public sealed partial class FilterResultsViewModel : ObservableObject, IDisposab
         private readonly int _count;
 
         private readonly IReadOnlyList<long> _hitOffsets; // ヒット通し番号(0始まり) → 行頭オフセット
+        private readonly Func<long, string>? _lineLabel;
 
         public BlockRowList(LineDocument doc, List<FilterBlock> blocks, Regex? regex,
-            IReadOnlyList<long> hitOffsets)
+            IReadOnlyList<long> hitOffsets, Func<long, string>? lineLabel = null)
         {
+            _lineLabel = lineLabel;
             _doc = doc;
             _blocks = blocks;
             _regex = regex;
@@ -722,6 +747,7 @@ public sealed partial class FilterResultsViewModel : ObservableObject, IDisposab
                 Offset = offset,
                 HitOrdinal = hitNo >= 0 ? hitNo + 1 : -1,
                 HighlightRegex = hitIdx >= 0 ? _regex : null,
+                LineLabel = _lineLabel,
             };
         }
 
