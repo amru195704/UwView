@@ -146,6 +146,7 @@ public static class UvfCli
           入力の種類（拡張子ではなく中身で見分けます）:
             gz           展開しながら探します（1つでも、複数ファイルに混ぜても）
             zip          扱えません（展開してから探してください。zip は UwView Pro が扱います）
+            pbf          扱えません（OSM の pbf は UwView Pro が XML にして扱います）
             それ以外      テキストとして扱います
 
           そのほか:
@@ -182,6 +183,7 @@ public static class UvfCli
           Input types (decided by content, not by the extension):
             gz           searched while decompressing (alone or mixed with plain files)
             zip          not supported (extract it first; UwView Pro handles zip)
+            pbf          not supported (UwView Pro turns OSM pbf into XML)
             anything else treated as text
 
           Also:
@@ -412,6 +414,15 @@ public static class UvfCli
         bool gzip = false;
         if (many is null)
         {
+            // pbf は UwView Pro の役目。テキストとして走査すると「1件も無い」と答えてしまう
+            if (OsmPbfFile.Is(inv.File!))
+            {
+                Err(T($"{Path.GetFileName(inv.File!)} は OSM の pbf です。UwView Pro（uvp）が扱います: "
+                      + $"uvp {inv.File} 語",
+                      $"{Path.GetFileName(inv.File!)} is an OSM pbf file; UwView Pro (uvp) handles it: "
+                      + $"uvp {inv.File} pattern"));
+                return UvfExit.Error;
+            }
             var probe = CompressedInput.Probe(inv.File!);
             gzip = probe is { Kind: CompressedKind.Gzip, IsRejected: false };
             if (!gzip && (probe.IsCompressed || probe.IsRejected))
@@ -534,6 +545,13 @@ public static class UvfCli
         var searchable = new List<string>();
         foreach (string file in files)
         {
+            if (OsmPbfFile.Is(file))
+            {
+                compressed.Add(file);
+                env.StdErr.WriteLine(t($"{env.ToolName}: pbf は対象外です（UwView Pro が扱います）: {file}",
+                                       $"{env.ToolName}: pbf files are not searched (UwView Pro handles them): {file}"));
+                continue;
+            }
             var probe = CompressedInput.Probe(file);
             if (probe.Kind == CompressedKind.Zip || probe.IsRejected)
             {

@@ -403,6 +403,24 @@ public class UvfCliTests : IDisposable
         Assert.Contains("-open", run.Err);
     }
 
+    /// <summary>
+    /// pbf は無料版では扱わない（UwView Pro の役目・指示書 段階7）。
+    /// テキストとして走査すると圧縮バイトを探しにいき「1件も無い」と答えてしまうので、名指しで断る。
+    /// </summary>
+    [Fact]
+    public async Task pbfは断ってuvpを案内する()
+    {
+        // 先頭が [長さ4バイト][BlobHeader("OSMHeader")] なら pbf（中身で見分ける）
+        var header = new byte[] { 0, 0, 0, 14, 0x0A, 9 };
+        File.WriteAllBytes(P("map.osm.pbf"), [.. header, .. "OSMHeader"u8, .. new byte[32]]);
+
+        var run = await InDir("map.osm.pbf", "ERROR");
+
+        Assert.Equal(UvfExit.Error, run.Exit);
+        Assert.Contains("uvp", run.Err);
+        Assert.Empty(run.Out);
+    }
+
     [Fact]
     public async Task 複数ファイルで見つからなければ1を返す()
     {
