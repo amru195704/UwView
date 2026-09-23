@@ -75,7 +75,9 @@ public static class FileSet
             if (matched.Count == 0) { missing.Add(fragment); continue; }
             char separator = SeparatorOf(fragment);
             foreach (string path in matched)
-                if (seen.Add(Path.GetFullPath(path)))     // 重複は先に出た側を採る
+                // 重複は先に出た側を採る。突き合わせは<b>展開の起点</b>から見た絶対パスで行う
+                //（カレントから見ると、別の場所を起点に展開したときに同じものを二重に数える）
+                if (seen.Add(Path.GetFullPath(path, root)))
                     files.Add(AsWritten(path, separator));
         }
         return new Result(files, missing);
