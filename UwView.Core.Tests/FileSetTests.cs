@@ -125,6 +125,16 @@ public class FileSetTests : IDisposable
         Assert.Empty(Expand("Program Files/app.log"));
     }
 
+    [Fact]
+    public void 自分が作った索引はワイルドカードの対象にしない()
+    {
+        // uvp '*' は同じフォルダに .uwvz を作る。次の実行で自分の索引を対象に含めてはいけない
+        Make("a.log", "b.log", "%a.log.uwvz", "a.log.uwvidx");
+        Assert.Equal(["a.log", "b.log"], Expand("*"));
+        // 名指しで書いたときは外さない（(B) を指す正しい使い方）
+        Assert.Equal(["%a.log.uwvz"], Expand("%a.log.uwvz"));
+    }
+
     [Theory]
     [InlineData("a.log", false)]
     [InlineData("a.log b.log", true)]

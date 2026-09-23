@@ -47,6 +47,18 @@ public static class FileSet
     public static bool HasWildcard(string text) => text.AsSpan().IndexOfAny('*', '?', '[') >= 0;
 
     /// <summary>
+    /// ワイルドカードの展開から外す拡張子（自分たちが作った派生ファイル）。
+    ///
+    /// <c>uvp '*' 語</c> は同じフォルダに <c>.uwvz</c> を作る。次に同じ指定で走らせると
+    /// <b>自分が作った索引まで対象に含めてしまう</b>（中身は圧縮バイトなので、本文として束ねると壊れる）。
+    /// 名指しで書いたときは外さない（<c>uvp '%a.log.uwvz' 語</c> は (B) を指す正しい使い方）。
+    /// </summary>
+    private static readonly string[] DerivedExtensions = [".uwvz", ".uwvidx"];
+
+    private static bool IsDerived(string path)
+        => DerivedExtensions.Any(e => path.EndsWith(e, StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>
     /// (A) を展開する。<paramref name="baseDirectory"/> は相対パスの起点（省略すればカレント）。
     /// </summary>
     public static Result Expand(string specification, string? baseDirectory = null)
@@ -122,7 +134,8 @@ public static class FileSet
                            .Where(path => Matches(path, spec, root))
                 : Directory.EnumerateFiles(searchRoot, pattern, options);
 
-            var list = found.Select(path => Relative(path, root)).ToList();
+            // 自分たちが作った派生ファイル（.uwvz など）は、ワイルドカードの対象にしない
+            var list = found.Where(path => !IsDerived(path)).Select(path => Relative(path, root)).ToList();
             list.Sort(StringComparer.Ordinal);   // 名前順（ロケールに依存しないバイト順）
             return list;
         }
