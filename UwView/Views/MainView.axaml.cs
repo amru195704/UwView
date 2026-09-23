@@ -628,7 +628,7 @@ public partial class MainView : UserControl
         {
             var view = new FilterResultsView(_filterResultsVm);
             _filterResultsView = view;
-            var remove = ShowOverlay(view, preferredWidth: 680);
+            var remove = ShowOverlay(view, preferredWidth: 660);   // 本体のスクロールバーぶん狭くする
             view.CloseRequested += () =>
             {
                 remove();
@@ -661,9 +661,11 @@ public partial class MainView : UserControl
                 ? Avalonia.Layout.VerticalAlignment.Top
                 : Avalonia.Layout.VerticalAlignment.Stretch,
             Width = preferredWidth,
+            // 右端にドッキングするとき、本体の縦スクロールバー（16px）を隠さないよう右を空ける
+            // （オーナー報告 2026-09-23: ポップアップの右のバーで本体のバーが半分消える）
             Margin = centered
                 ? new Avalonia.Thickness(0, 80, 0, 0)
-                : new Avalonia.Thickness(0, 6, 6, 6),
+                : new Avalonia.Thickness(0, 6, 26, 6),
             Background = Avalonia.Media.Brushes.White,
             BorderBrush = new Avalonia.Media.SolidColorBrush(Avalonia.Media.Color.FromRgb(0x99, 0x99, 0x99)),
             BorderThickness = new Avalonia.Thickness(1),
@@ -1306,6 +1308,17 @@ public partial class MainView : UserControl
         var s = tab.Session;
         _vm.IsIndexing = s.IsIndexing;
         _vm.IndexProgress = s.IndexProgress;
+
+        // ブラウザ版は索引を作っている間、縦スクロールバーを使えなくする（オーナー報告 2026-09-23:
+        // 開いている最中に操作すると止まる）。索引がまだ無いので、任意の位置へ飛ぼうとすると
+        // その都度ファイルを読みに行くことになり、WASM では固まって見える
+        if (OperatingSystem.IsBrowser())
+        {
+            VScroll.IsEnabled = !s.IsIndexing;
+            ToolTip.SetTip(VScroll, s.IsIndexing
+                ? L["ScrollDisabledWhileIndexing"]
+                : null);
+        }
 
         if (TextView.Mode == ViewMode.Line && TextView.TotalLines is { } total)
         {

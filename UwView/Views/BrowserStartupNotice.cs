@@ -95,7 +95,7 @@ public sealed class BrowserStartupNotice : UserControl
         });
         card.Children.Add(new TextBlock
         {
-            Text = T("お使いになる前に3点だけ。", "Three things before you start."),
+            Text = T("お使いになる前に4点だけ。", "Four things before you start."),
             Foreground = Brushes.Black,
             TextWrapping = TextWrapping.Wrap,
         });
@@ -107,6 +107,11 @@ public sealed class BrowserStartupNotice : UserControl
             T("それ以上の大きさを扱うときは、デスクトップ版の UwView をお使いください。",
               "For anything larger, please use the UwView desktop application.")));
         card.Children.Add(Bullet("3.",
+            T("ファイルを開いた直後は索引を作っています。その間、スクロールバーは使えません"
+              + "（画面下の「索引中」が消えたら使えます）。キーボードやマウスホイールでの移動はできます。",
+              "Right after a file is opened, the index is being built. The scrollbar is disabled until it finishes "
+              + "(watch for \"Indexing\" at the bottom). You can still move with the keyboard and the mouse wheel.")));
+        card.Children.Add(Bullet("4.",
             T("多段階検索などの高度な検索には UwView Pro をご利用ください。編集できるアップグレードもあります。",
               "For advanced searching such as drill-down, use UwView Pro. An upgrade that adds editing is also available.")));
 

@@ -75,6 +75,7 @@
   <data name="FilterTip" xml:space="preserve"><value>ヒット行だけを表示</value></data>
 
   <data name="Indexing" xml:space="preserve"><value>索引中</value></data>
+  <data name="ScrollDisabledWhileIndexing" xml:space="preserve"><value>索引を作っている間はスクロールバーを使えません</value></data>
   <data name="Cancel" xml:space="preserve"><value>キャンセル</value></data>
 
   <data name="OpenDialogTitle" xml:space="preserve"><value>テキストファイルを開く</value></data>
