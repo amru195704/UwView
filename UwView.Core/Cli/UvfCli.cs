@@ -365,6 +365,19 @@ public static class UvfCli
             }
         }
 
+        // 複数ファイルを画面で開くのは uwvz に束ねられる UwView Pro の役目（段階4）。
+        // 無料版で黙って受けると、ワイルドカードのままのパスを開こうとして何も出ない
+        if (many is not null && inv.Mode is UvfMode.OpenGui or UvfMode.SearchInGui)
+        {
+            Err(T($"複数ファイルを画面で開くことはできません（{many.Count:N0} 件が当たりました）。"
+                  + "結果を見るだけなら -open を外してください。画面で扱うなら UwView Pro（uvp）が"
+                  + "1つの .uwvz に束ねます: uvp '" + inv.File + "' 語 -open",
+                  $"Several files cannot be opened in the app ({many.Count:N0} matched). "
+                  + "Drop -open to see the results here, or use UwView Pro (uvp), which bundles them "
+                  + "into one .uwvz: uvp '" + inv.File + "' pattern -open"));
+            return UvfExit.Error;
+        }
+
         if (inv.Mode is UvfMode.OpenGui or UvfMode.SearchInGui)
         {
             string? file = inv.File is null ? null : Path.GetFullPath(inv.File);

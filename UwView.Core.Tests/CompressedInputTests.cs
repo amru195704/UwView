@@ -218,14 +218,15 @@ public class CompressedInputTests : IDisposable
     [Fact]
     public async Task 中止すると出力もtmpも残らない()
     {
-        byte[] plain = MakeText(64 << 20);            // 中止が間に合う程度に大きく
+        byte[] plain = MakeText(64 << 20);
         string gz = WriteGz("cancel.log.gz", plain);
         string dst = Path_("cancel.log");
         using var cts = new CancellationTokenSource();
-        cts.CancelAfter(TimeSpan.FromMilliseconds(30));
 
+        // 時計で中止すると、速い機械では展開が先に終わってしまう（この Mac では毎回そうなった）。
+        // 最初の進捗が届いた瞬間に中止する＝必ず「途中で止めた」状態を試せる
         await Assert.ThrowsAnyAsync<OperationCanceledException>(
-            () => CompressedInput.ExpandGzipAsync(gz, dst, null, cts.Token));
+            () => CompressedInput.ExpandGzipAsync(gz, dst, new CancelOnFirstReport(cts), cts.Token));
 
         Assert.False(File.Exists(dst), "中止したのに出力が残っている");
         Assert.Empty(Directory.GetFiles(_dir, "*.tmp-*"));
@@ -356,4 +357,11 @@ public class CompressedInputTests : IDisposable
             return null;
         }
     }
+
+    /// <summary>最初の進捗報告で中止する（その場で呼ばれるので、機械の速さに左右されない）。</summary>
+    private sealed class CancelOnFirstReport(CancellationTokenSource cts) : IProgress<double>
+    {
+        public void Report(double value) => cts.Cancel();
+    }
+
 }
