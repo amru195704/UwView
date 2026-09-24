@@ -206,6 +206,37 @@ If you have such a file, `gunzip` it first and open the plain text.
 
 ---
 
+## Coming next — Wide Field (v1.7, in development)
+
+**Several files, treated as one input.** Stages 1–7 are implemented in the test build **1.7.0.18** and verified on real data on a Mac. **It is not released yet** (Linux and Windows testing still to come).
+
+**In the free `uvf`**
+
+```bash
+uvf '*.log' ERROR                    search several files in one go (results on stdout)
+uvf 'app.log,app.log.*.gz' ERROR     plain text and .gz in a single command
+```
+
+**UwView Pro (`uvp`) only**
+
+Several files are bundled into **one `.uwvz`**, so from the second question on nothing is rebuilt. Text inside a `.zip`, and OpenStreetMap `.pbf`, can be used as input as well. Handing the hits to the window with `-open` is Pro-only for several files (the free `-open` takes one file).
+
+**Measured** (Mac, 8 logical CPUs, the 8 files in `UwTest/osm17`, first search plus the repeat right after, 1.7.0.18)
+
+| Target | ripgrep 15.2.0 (`-z`) | `uvf` | `uvp` (bundled `.uwvz`) |
+|---|---:|---:|---:|
+| 4 plain files (102 MB–1.03 GB) | **2.23 s** | 2.68 s | 3.45 s |
+| 4 `.gz` files (11 MB–1.12 GB) | 8.75 s | 7.17 s | **3.63 s** |
+| 4 plain + 4 `.gz` | 9.72 s | 8.58 s | **3.97 s** |
+
+**On plain text of this size, ripgrep is the fastest** (the test used four plain files of 102 MB–1.03 GB and the same four gzipped). Once `.gz` is in the mix, `uvf` is 1.13–1.22× and the bundled `uvp` is 2.41–2.45×. Seconds vary by machine.
+
+**pbf** (Pro only): `japan-latest.osm.pbf`, 2.46 GB, becomes a searchable 5.74 GB `.uwvz` — the content of 51.3 GB of XML — in **24.4 s**. Element counts match `osmium fileinfo`. Searching for 東京 took 6.81 s the first time and 5.08 s the second.
+
+Progress will be posted on [Releases](https://github.com/amru195704/UwView/releases) and the [blog](https://uvp.y42u.net/en/blog-en/). **The version to use today is v1.6.6.1.**
+
+---
+
 ## More detail
 
 | | |
