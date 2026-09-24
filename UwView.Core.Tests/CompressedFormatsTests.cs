@@ -320,6 +320,7 @@ public class CompressedFormatsTests : IDisposable
         const CompressedKind gz = CompressedKind.Gzip, xz = CompressedKind.Xz, zst = CompressedKind.Zstd;
         // gz＋xz＋zst＋gz: xz は1本だけなので全部を回す（ファイル数で割ると 2 本になり、xz だけが残って待たせた）
         Assert.Equal(8, MultiFileSearch.DecodeThreadsFor([gz, xz, zst, gz], 8));
+        Assert.Equal(8, CompressedFormats.DecodeThreadsFor([gz, xz, zst, gz], 8));
         Assert.Equal(4, MultiFileSearch.DecodeThreadsFor([xz, gz, xz, zst], 8));
         Assert.Equal(1, MultiFileSearch.DecodeThreadsFor([xz, xz, xz, xz, xz, xz, xz, xz, xz, xz], 8));
         Assert.Equal(8, MultiFileSearch.DecodeThreadsFor([gz, zst], 8));

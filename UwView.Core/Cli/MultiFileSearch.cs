@@ -91,10 +91,7 @@ public static class MultiFileSearch
 
     /// <summary>xz の部品1本あたりの展開スレッド数（全体の本数を、xz の部品の数で割る）。</summary>
     public static int DecodeThreadsFor(IReadOnlyList<CompressedKind> kinds, int threads)
-    {
-        int parallelDecoders = kinds.Count(CompressedFormats.UsesDecodeThreads);
-        return Math.Max(1, threads / Math.Max(1, Math.Min(threads, parallelDecoders)));
-    }
+        => CompressedFormats.DecodeThreadsFor(kinds, threads);
 
     private static async Task<(long Hits, bool Truncated, string? Reason)> OneFileAsync(
         string file, CompressedKind kind, SearchOptions options, bool invert, bool json, bool lineNumbers, string? name,
