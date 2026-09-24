@@ -421,6 +421,47 @@ public class UvfCliTests : IDisposable
         Assert.Empty(run.Out);
     }
 
+    /// <summary>
+    /// gz は「テキストを圧縮したもの」だけを扱う（オーナー指摘 2026-09-24）。
+    /// 画像やデータベースを gzip したものを索引にしても探せず、時間とディスクだけを使う。
+    /// ただし UTF-16 は 0 バイトを含むがテキストなので、BOM があれば通す。
+    /// </summary>
+    [Fact]
+    public async Task テキストでないgzは断る_UTF16は読める()
+    {
+        WriteGz("photo.jpg.gz", [0xFF, 0xD8, 0xFF, 0xE0, .. new byte[600]]);
+        WriteGz("utf16.log.gz", [0xFF, 0xFE, .. Encoding.Unicode.GetBytes("ERROR tokyo\nINFO ok\n")]);
+
+        var binary = await InDir("photo.jpg.gz", "ERROR");
+        Assert.Equal(UvfExit.Error, binary.Exit);
+        Assert.Contains("photo.jpg.gz", binary.Err);
+        Assert.Empty(binary.Out);
+
+        var wide = await InDir("utf16.log.gz", "ERROR");
+        Assert.Equal(UvfExit.Found, wide.Exit);
+        Assert.Contains("ERROR tokyo", wide.Out);
+    }
+
+    [Fact]
+    public async Task 複数ファイルでもテキストでないgzだけを外して残りは探す()
+    {
+        WriteGz("photo.jpg.gz", [0xFF, 0xD8, 0xFF, 0xE0, .. new byte[600]]);
+        WriteGz("app.log.gz", "a1 ERROR\na2 INFO\n"u8.ToArray());
+
+        var run = await InDir("*.gz", "ERROR");
+
+        Assert.Equal(UvfExit.Error, run.Exit);              // 探せなかったものがある
+        Assert.Contains("app.log.gz:1\ta1 ERROR", run.Out); // 探せたぶんは出す
+        Assert.Contains("photo.jpg.gz", run.Err);
+    }
+
+    private void WriteGz(string name, byte[] contents)
+    {
+        using var file = File.Create(P(name));
+        using var gz = new GZipStream(file, CompressionLevel.Fastest);
+        gz.Write(contents);
+    }
+
     [Fact]
     public async Task 複数ファイルで見つからなければ1を返す()
     {

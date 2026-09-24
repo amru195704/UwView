@@ -24,6 +24,8 @@ public enum CompressedReject
     TarArchive,
     /// <summary>gz の中がさらに gz（多重圧縮）。</summary>
     NestedGzip,
+    /// <summary>展開できたが、中身がテキストではない（画像・データベースなどを gzip したもの）。</summary>
+    NotText,
     /// <summary>
     /// gz として壊れている（最小サイズ未満・先頭が展開できない）。
     /// **後ろが切れているだけの gz はここでは分からない**（先頭しか見ないため）。
@@ -137,6 +139,9 @@ public static class CompressedInput
         if (got >= TarMagicOffset + 5
             && head.AsSpan(TarMagicOffset, 5).SequenceEqual("ustar"u8))
             return new CompressedProbe(CompressedKind.None, CompressedReject.TarArchive);
+        // 中身がテキストか（画像やデータベースを gzip したものを索引にしても探せない）
+        if (TextProbe.LooksBinary(head.AsSpan(0, got)))
+            return new CompressedProbe(CompressedKind.None, CompressedReject.NotText);
 
         return new CompressedProbe(CompressedKind.Gzip);
     }
