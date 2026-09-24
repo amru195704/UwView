@@ -48,9 +48,11 @@ public static class MultiFileSearch
         turn[0].SetResult();
 
         using var slots = new SemaphoreSlim(Math.Max(1, threads));
-        // xz の並列展開に回せる本数。ファイルを同時に何本も探すときは、その本数で割る
-        //（8ファイル × 8スレッドでコアを取り合わないように。1ファイルなら全部を回せる）
-        int decodeThreads = Math.Max(1, threads / Math.Max(1, Math.Min(threads, files.Count)));
+        // xz の並列展開に回せる本数は、xz の部品の数で割る。ほかの形式は1スレッドで展開するので数に入れない。
+        // ファイル数で割ると、gz＋xz＋zst＋gz では xz が 2 本しかもらえず、ほかが先に終わったあとも
+        // xz だけが 2 本で走り続けて全体を待たせた（管理部の混在テスト 2026-09-24: rg -z の 1/1.85）
+        var kinds = files.Select(f => CompressedInput.Probe(f).Kind).ToArray();
+        int decodeThreads = DecodeThreadsFor(kinds, threads);
 
         // 枠は<b>指定順に</b>取る。順番待ち（turn）は前のファイルの完了を待つので、
         // 後ろのファイルが先に枠を取ると、前のファイルが枠を取れず永久に待ち合う
@@ -73,8 +75,8 @@ public static class MultiFileSearch
                 admitted[index + 1].TrySetResult();         // 次のファイルを枠取りへ進ませる
                 try
                 {
-                    var one = await OneFileAsync(file, options, invert, json, lineNumbers, withFileName ? file : null,
-                                                 index, turn, output, ct, decodeThreads);
+                    var one = await OneFileAsync(file, kinds[index], options, invert, json, lineNumbers,
+                                                 withFileName ? file : null, index, turn, output, ct, decodeThreads);
                     Interlocked.Add(ref hits, one.Hits);
                     if (one.Truncated) truncated = true;
                     if (one.Reason is { } reason) lock (failedLock) failed.Add((file, reason));
@@ -87,9 +89,16 @@ public static class MultiFileSearch
         return new Result(hits, truncated, failed);
     }
 
+    /// <summary>xz の部品1本あたりの展開スレッド数（全体の本数を、xz の部品の数で割る）。</summary>
+    public static int DecodeThreadsFor(IReadOnlyList<CompressedKind> kinds, int threads)
+    {
+        int parallelDecoders = kinds.Count(CompressedFormats.UsesDecodeThreads);
+        return Math.Max(1, threads / Math.Max(1, Math.Min(threads, parallelDecoders)));
+    }
+
     private static async Task<(long Hits, bool Truncated, string? Reason)> OneFileAsync(
-        string file, SearchOptions options, bool invert, bool json, bool lineNumbers, string? name,
-        int index, TaskCompletionSource[] turn, TextWriter output, CancellationToken ct, int decodeThreads = 0)
+        string file, CompressedKind kind, SearchOptions options, bool invert, bool json, bool lineNumbers, string? name,
+        int index, TaskCompletionSource[] turn, TextWriter output, CancellationToken ct, int decodeThreads)
     {
         var buffer = new StringWriter { NewLine = "\n" };
         TextWriter writer = buffer;   // 自分の番が来るまでは手元に貯める
@@ -112,7 +121,6 @@ public static class MultiFileSearch
         {
             // 圧縮（gz・bz2・xz・lzma・zstd）は展開しながら探す（1ファイルのときと同じ読み口。
             // 切れていれば読み終えたところで気づく）
-            var kind = CompressedInput.Probe(file).Kind;
             await using IByteSource source = CompressedFormats.IsSingleStream(kind)
                 ? new CompressedStreamByteSource(file, kind, decodeThreads)
                 : new SequentialFileByteSource(file);

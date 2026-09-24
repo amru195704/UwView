@@ -81,6 +81,9 @@ public static class CompressedFormats
     /// </summary>
     public static int DecodeThreads { get; set; } = ThreadBudget.Resolve(null, 0);
 
+    /// <summary>展開に複数スレッドを使う形式か（いまは xz だけ。ほかは展開スレッド数を見ない）。</summary>
+    public static bool UsesDecodeThreads(CompressedKind kind) => kind == CompressedKind.Xz;
+
     /// <summary>展開しながら読むストリーム（前方専用）。</summary>
     public static Stream Open(string path, CompressedKind kind)
     {
