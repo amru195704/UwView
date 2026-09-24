@@ -1,21 +1,26 @@
 using System.Diagnostics;
 
-// uvf — 無料版 UwView の CLI の入口（小さな起動アプリ）。
+// uvf — 無料版 UwView の CLI の入口。
 //
-// CLI の中身は UwView 本体にある（本体を --uvf 付きで起動すると、画面を作らずに CLI として動く）。
-// ここは本体を探して起動し、標準入出力をそのまま引き継いで、終了コードを返すだけ。
-// 本体と同じ .NET 一式をもう1つ抱えないので、配布物がほとんど大きくならない。
+// 作りは OS で2通りある:
 //
-// Windows では、この起動アプリがコンソールアプリなので、GUI 本体はそのコンソールを受け継ぐ
-// （GUI の exe を直接コマンドプロンプトから呼ぶと、出力がどこにもつながらない）。
+// ■ mac（NativeAOT・IN_PROCESS_CLI）— CLI の中身（UwView.Core）をこの実行ファイルの中で直接動かす。
+//   以前は「起動アプリ → 本体を --uvf 付きで起動し直す」で .NET の起動が2回走り、何もしなくても 0.14 秒かかった
+//   （rg は 0.01 秒）。1GB の gz・zst・lz4 では、差のほとんどがこの一定時間だった（2026-09-24 実測）。
+//   NativeAOT なら起動は 0.01 秒で、中身も 5MB ほど。-open だけは画面が要るので、本体を起動する。
+//   NativeAOT は その OS の上でしかビルドできないので、当面は mac だけ（オーナー決定 2026-09-24）。
+//
+// ■ Linux・Windows（従来どおり）— 小さな起動アプリ。同じフォルダの本体を --uvf 付きで起動し、
+//   標準入出力をそのまま引き継いで、終了コードを返すだけ。
+//   Windows では、この起動アプリがコンソールアプリなので、GUI 本体はそのコンソールを受け継ぐ
+//   （GUI の exe を直接コマンドプロンプトから呼ぶと、出力がどこにもつながらない）。
 
+#if IN_PROCESS_CLI
+return UwView.Cli.InProcess.Run(args);
+#else
 const string Marker = "--uvf";
-// 本体の名前。試験用ビルドは別名で入っている（UwView.DesktopWF など。オーナー指示 2026-09-22）ので、
-// 名前ちょうどが無ければ同じ名前で始まるものを探す
-string[] guiNames = ["UwView.Desktop", "UwView.Desktop.exe", "UwView", "UwView.exe"];
-string[] guiPrefixes = ["UwView.Desktop", "UwView"];
 
-string? gui = FindGui();
+string? gui = UwView.Cli.GuiLocator.Find();
 if (gui is null)
 {
     Console.Error.WriteLine("uvf: UwView 本体が見つかりません（uvf は UwView と同じ場所に置いてください）"
@@ -34,40 +39,116 @@ using var process = Process.Start(psi);
 if (process is null) return 2;
 process.WaitForExit();
 return process.ExitCode;
+#endif
 
-// 本体を探す: 自分の実体（シンボリックリンクなら先をたどる）と同じフォルダ
-string? FindGui()
+namespace UwView.Cli
 {
-    string? self = Environment.ProcessPath;
-    if (string.IsNullOrEmpty(self)) return null;
-    try
+    /// <summary>同じフォルダにある UwView 本体（画面）を探す。</summary>
+    internal static class GuiLocator
     {
-        if (File.ResolveLinkTarget(self, returnFinalTarget: true) is { } target) self = target.FullName;
-    }
-    catch (IOException) { }
+        // 本体の名前。試験用ビルドは別名で入っている（UwView.DesktopWF など。オーナー指示 2026-09-22）ので、
+        // 名前ちょうどが無ければ同じ名前で始まるものを探す
+        private static readonly string[] GuiNames = ["UwView.Desktop", "UwView.Desktop.exe", "UwView", "UwView.exe"];
+        private static readonly string[] GuiPrefixes = ["UwView.Desktop", "UwView"];
 
-    string dir = Path.GetDirectoryName(self)!;
-    foreach (string name in guiNames)
-    {
-        string candidate = Path.Combine(dir, name);
-        if (File.Exists(candidate) && !string.Equals(candidate, self, StringComparison.Ordinal)) return candidate;
-    }
-
-    // 別名（UwView.DesktopWF）。拡張子付き（.exe）とそれ以外を取り違えないよう、形をそろえて探す
-    try
-    {
-        foreach (string prefix in guiPrefixes)
-            foreach (string candidate in Directory.EnumerateFiles(dir, prefix + "*"))
+        /// <summary>自分の実体（シンボリックリンクなら先をたどる）と同じフォルダから探す。</summary>
+        public static string? Find()
+        {
+            string? self = Environment.ProcessPath;
+            if (string.IsNullOrEmpty(self)) return null;
+            try
             {
-                if (string.Equals(candidate, self, StringComparison.Ordinal)) continue;
-                string name = Path.GetFileName(candidate);
-                if (name.EndsWith(".dll", StringComparison.OrdinalIgnoreCase)
-                    || name.EndsWith(".json", StringComparison.OrdinalIgnoreCase)
-                    || name.EndsWith(".pdb", StringComparison.OrdinalIgnoreCase)) continue;
-                return candidate;
+                if (File.ResolveLinkTarget(self, returnFinalTarget: true) is { } target) self = target.FullName;
             }
+            catch (IOException) { }
+
+            string dir = Path.GetDirectoryName(self)!;
+            foreach (string name in GuiNames)
+            {
+                string candidate = Path.Combine(dir, name);
+                if (File.Exists(candidate) && !string.Equals(candidate, self, StringComparison.Ordinal)) return candidate;
+            }
+
+            // 別名（UwView.DesktopWF）。拡張子付き（.exe）とそれ以外を取り違えないよう、形をそろえて探す
+            try
+            {
+                foreach (string prefix in GuiPrefixes)
+                    foreach (string candidate in Directory.EnumerateFiles(dir, prefix + "*"))
+                    {
+                        if (string.Equals(candidate, self, StringComparison.Ordinal)) continue;
+                        string name = Path.GetFileName(candidate);
+                        if (name.EndsWith(".dll", StringComparison.OrdinalIgnoreCase)
+                            || name.EndsWith(".json", StringComparison.OrdinalIgnoreCase)
+                            || name.EndsWith(".pdb", StringComparison.OrdinalIgnoreCase)) continue;
+                        return candidate;
+                    }
+            }
+            catch (IOException) { }
+            catch (UnauthorizedAccessException) { }
+            return null;
+        }
     }
-    catch (IOException) { }
-    catch (UnauthorizedAccessException) { }
-    return null;
+
+#if IN_PROCESS_CLI
+    /// <summary>
+    /// CLI をこの実行ファイルの中で動かす（mac の NativeAOT 版）。
+    /// 設定・言語・版数・-open の渡し方は、本体の CLI モード（UwView.Desktop の RunCli）と同じにする。
+    /// </summary>
+    internal static class InProcess
+    {
+        public static int Run(string[] args)
+        {
+            UwView.Core.EncodingDetector.EnsureCodePagesRegistered();
+
+            using var cts = new CancellationTokenSource();
+            Console.CancelKeyPress += (_, e) => { e.Cancel = true; cts.Cancel(); };
+
+            UwView.Core.Cli.UvfEnvironment? env = null;
+            env = new UwView.Core.Cli.UvfEnvironment
+            {
+                StdOut = Console.OpenStandardOutput(),
+                StdErr = Console.Error,
+                Japanese = UwView.Core.Cli.CliLanguage.IsJapanese(UwView.Core.Cli.CliLanguage.FreeSettingsFolder),
+                AppVersion = VersionText(),
+                // -open: 画面が要るので本体を起動する（検索パターンとファイル、CLI が見つけた結果の置き場所を渡す）
+                LaunchGui = (file, pattern) => LaunchGui(
+                    (pattern is not null && file is not null
+                        ? new[] { UwView.Core.Cli.UvfCli.SearchArgument,
+                                  Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(pattern)) }
+                        : Array.Empty<string>())
+                    .Concat(env!.SearchOptionLetters is { Length: > 0 } opts
+                        ? new[] { UwView.Core.Cli.UvfCli.OptionsArgument, opts } : Array.Empty<string>())
+                    .Concat(env!.HandoffPath is { } hits
+                        ? new[] { UwView.Core.Cli.CliHandoff.Argument, hits } : Array.Empty<string>())
+                    .Concat(file is null ? Array.Empty<string>() : new[] { file })),
+            };
+            return UwView.Core.Cli.UvfCli.RunAsync(args, env, cts.Token).GetAwaiter().GetResult();
+        }
+
+        /// <summary>本体（画面）を起動する。見つからなければ false（CLI が「見つかりません」と言う）。</summary>
+        private static bool LaunchGui(IEnumerable<string> guiArgs)
+        {
+            if (GuiLocator.Find() is not { } gui) return false;
+            try
+            {
+                var psi = new ProcessStartInfo(gui) { UseShellExecute = false };
+                foreach (string a in guiArgs) psi.ArgumentList.Add(a);
+                using var p = Process.Start(psi);
+                return p is not null;
+            }
+            catch (System.ComponentModel.Win32Exception) { return false; }
+        }
+
+        /// <summary>
+        /// 表示する版数（本体の App.VersionText と同じ規則: 4つ目があれば4つ目まで）。
+        /// 版数は bump-version.sh が本体と CLI の両方にそろえて入れている。
+        /// </summary>
+        private static string VersionText()
+        {
+            var v = typeof(InProcess).Assembly.GetName().Version;
+            if (v is null) return "1.0";
+            return v.Revision > 0 ? v.ToString(4) : v.ToString(3);
+        }
+    }
+#endif
 }
