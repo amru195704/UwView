@@ -5,7 +5,8 @@ using System.IO.Compression;
 namespace UwView.Core.Cli;
 
 /// <summary>
-/// gz を展開しながら先頭から順に読ませる <see cref="IByteSource"/>（CLI の gz 直接検索用。オーナー指示 2026-09-19）。
+/// 圧縮ファイルを展開しながら先頭から順に読ませる <see cref="IByteSource"/>（CLI の直接検索用）。
+/// gz（オーナー指示 2026-09-19）に加え、v1.7.1 で bzip2・xz・lzma・zstd も同じ口で読む。
 ///
 /// 検索（<see cref="RawGrep"/>）は前へ前へと読むので、展開したものを直近 <see cref="WindowBytes"/> だけ手元に残せば足りる。
 /// 少し戻る読み（文字コードの判定・長い行の出力）もその範囲なら応える。範囲より前は読めない（<see cref="InvalidDataException"/>）。
@@ -15,9 +16,11 @@ namespace UwView.Core.Cli;
 /// （<see cref="CompressedInput.VerifyGzipOutput"/>）。
 ///
 /// 展開と CRC は別スレッドで先回りして進め、検索と重ねる（3GB の gz で 2.2 秒 → 1.9 秒。gzip -dc | rg は 1.2 秒）。
-/// 展開は <see cref="GzipDecoder"/>（macOS は OS 標準の zlib）。
+/// 展開は <see cref="CompressedFormats.Open(string, CompressedKind)"/>（gz は macOS なら OS 標準の zlib）。
+/// gz 以外は形式そのものが切れ目を知っている（xz はフッター、bzip2 はブロックの CRC、zstd はフレームの終端）ので、
+/// 末尾の照合はライブラリに任せる。
 /// </summary>
-internal sealed class GzipStreamByteSource : IByteSource
+internal sealed class CompressedStreamByteSource : IByteSource
 {
     public const int WindowBytes = 64 << 20;
     private const int Chunk = 4 << 20;
@@ -35,10 +38,13 @@ internal sealed class GzipStreamByteSource : IByteSource
     private long _produced;              // 同上（展開したバイト数）
     private bool _eof;
 
-    public GzipStreamByteSource(string path)
+    private readonly CompressedKind _kind;
+
+    public CompressedStreamByteSource(string path, CompressedKind kind = CompressedKind.Gzip)
     {
         _path = path;
-        _trailer = CompressedInput.ReadTrailer(path);
+        _kind = kind;
+        _trailer = kind == CompressedKind.Gzip ? CompressedInput.ReadTrailer(path) : null;
         var file = new FileStream(path, FileMode.Open, FileAccess.Read,
                                   FileShare.ReadWrite | FileShare.Delete, 1 << 20, FileOptions.SequentialScan);
         _producer = Task.Run(() => Produce(file), CancellationToken.None);
@@ -49,7 +55,10 @@ internal sealed class GzipStreamByteSource : IByteSource
         var ct = _stop.Token;
         try
         {
-            using (var gz = GzipDecoder.Open(file, out bool verified))
+            bool verified = true;    // gz 以外はライブラリが照らす
+            using (var gz = _kind == CompressedKind.Gzip
+                       ? GzipDecoder.Open(file, out verified)
+                       : CompressedFormats.Open(file, _kind, _path))
             {
                 while (true)
                 {
@@ -89,7 +98,7 @@ internal sealed class GzipStreamByteSource : IByteSource
             long at = offset + written;
             if (at < _windowStart)
                 throw new InvalidDataException(
-                    $"gzip: cannot re-read data more than {WindowBytes >> 20} MB back (a line may be too long)");
+                    $"{CompressedFormats.Name(_kind)}: cannot re-read data more than {WindowBytes >> 20} MB back (a line may be too long)");
             if (at < _total)
             {
                 int n = (int)Math.Min(buffer.Length - written, _total - at);

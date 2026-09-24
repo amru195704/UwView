@@ -854,7 +854,7 @@ public partial class MainView : UserControl
             {
                 // 黙って失敗させない。理由を出して次へ
                 await NoticeAsync(CompressedOpenDialog.RejectMessage(probe.Reject,
-                    System.IO.Path.GetFileName(path)));
+                    System.IO.Path.GetFileName(path), CompressedFormats.NameOf(path)));
                 continue;
             }
 
@@ -884,13 +884,15 @@ public partial class MainView : UserControl
         if (method == CompressedOpenMethod.ConvertToUwvz)
             return ProConvertAndOpen is null ? null : await ProConvertAndOpen(this, path, kind);
 
-        return await ExpandAndOpenAsync(owner, path, name);
+        return await ExpandAndOpenAsync(owner, path, name, kind);
     }
 
-    /// <summary>gz を平文に展開してから通常オープンする（§2A）。</summary>
-    private async Task<DocumentTabViewModel?> ExpandAndOpenAsync(Window owner, string path, string name)
+    /// <summary>圧縮（gz・bz2・xz・lzma・zstd）を平文に展開してから通常オープンする（§2A）。</summary>
+    private async Task<DocumentTabViewModel?> ExpandAndOpenAsync(Window owner, string path, string name, CompressedKind kind)
     {
-        string dst = CompressedInput.DerivePlainPath(path);
+        string dst = kind == CompressedKind.Gzip
+            ? CompressedInput.DerivePlainPath(path)
+            : CompressedFormats.PlainPath(path, kind);
 
         // 既に同名の平文がある: 開き直すか展開し直すかを尋ねる（勝手に上書きしない）
         if (System.IO.File.Exists(dst))
@@ -925,7 +927,7 @@ public partial class MainView : UserControl
 
         try
         {
-            long written = await CompressedInput.ExpandGzipAsync(path, dst,
+            long written = await CompressedInput.ExpandAsync(path, kind, dst,
                 new Progress<double>(f => fraction = f), cts.Token);
             EndTaskProgress(Ja ? $"{written:N0} バイトに展開しました"
                                : $"Expanded to {written:N0} bytes");
@@ -939,7 +941,7 @@ public partial class MainView : UserControl
         catch (InvalidDataException)
         {
             EndTaskProgress(Ja ? "最後まで読めませんでした" : "Could not read to the end");
-            await NoticeAsync(CompressedOpenDialog.CorruptAfterExpandMessage(name));
+            await NoticeAsync(CompressedOpenDialog.CorruptAfterExpandMessage(name, CompressedFormats.Name(kind)));
             return null;
         }
         catch (IOException ex)

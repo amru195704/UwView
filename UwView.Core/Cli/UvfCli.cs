@@ -145,6 +145,7 @@ public static class UvfCli
 
           入力の種類（拡張子ではなく中身で見分けます）:
             gz           展開しながら探します（1つでも、複数ファイルに混ぜても）
+            bz2 xz lzma zst  同じく展開しながら探します（外部コマンドは使いません）
             zip          扱えません（展開してから探してください。zip は UwView Pro が扱います）
             pbf          扱えません（OSM の pbf は UwView Pro が XML にして扱います）
             それ以外      テキストとして扱います
@@ -182,6 +183,7 @@ public static class UvfCli
 
           Input types (decided by content, not by the extension):
             gz           searched while decompressing (alone or mixed with plain files)
+            bz2 xz lzma zst  the same, decompressed here (no external command is used)
             zip          not supported (extract it first; UwView Pro handles zip)
             pbf          not supported (UwView Pro turns OSM pbf into XML)
             anything else treated as text
@@ -411,7 +413,7 @@ public static class UvfCli
         // 読めない gz・zip は、理由を添えて断る（「圧縮ファイルです」だけだと、
         // 中身が gzip でない .gz にも同じ文が出て分からない。オーナー指示 2026-09-21）。
         // 複数ファイルのときは、この判定を通さない（1ファイル専用の経路）
-        bool gzip = false;
+        var compressed = CompressedKind.None;   // 展開しながら探す形式（gz・bz2・xz・lzma・zstd）
         if (many is null)
         {
             // pbf は UwView Pro の役目。テキストとして走査すると「1件も無い」と答えてしまう
@@ -424,8 +426,8 @@ public static class UvfCli
                 return UvfExit.Error;
             }
             var probe = CompressedInput.Probe(inv.File!);
-            gzip = probe is { Kind: CompressedKind.Gzip, IsRejected: false };
-            if (!gzip && (probe.IsCompressed || probe.IsRejected))
+            if (!probe.IsRejected && CompressedFormats.IsSingleStream(probe.Kind)) compressed = probe.Kind;
+            if (compressed == CompressedKind.None && (probe.IsCompressed || probe.IsRejected))
             {
                 Err(RejectText(probe.Reject, inv.File!, tool, T));
                 return UvfExit.Error;
@@ -435,12 +437,12 @@ public static class UvfCli
         try
         {
             if (many is not null) return await SearchManyAsync(many, inv, env, T, ct);
-            return await SearchToStdoutAsync(inv.File!, gzip, inv, env, T, Err, ct);
+            return await SearchToStdoutAsync(inv.File!, compressed, inv, env, T, Err, ct);
         }
-        catch (InvalidDataException) when (gzip)
+        catch (InvalidDataException) when (compressed != CompressedKind.None)
         {
             // 文字コードの判定など、検索を始める前に読めなくなった場合
-            Err(GzNotReadable(inv.File!, T, partialOutput: false));
+            Err(NotReadable(inv.File!, compressed, T, partialOutput: false));
             return UvfExit.Error;
         }
         catch (OperationCanceledException)
@@ -633,6 +635,14 @@ public static class UvfCli
                 + "（先に展開してください）。",
                 $"{name} is a tar archive holding several files. This tool handles a single gzip-compressed text file "
                 + "(please extract it first)."),
+            CompressedReject.WrongFormat => t(
+                $"{name} は名前のとおりの圧縮形式として読めません（中身がその形ではありません）。"
+                + "別の形式かもしれません。元のファイルは消さないでください。",
+                $"{name} cannot be read in the format its name suggests (the contents are not in that form). "
+                + "It may be another format. Please keep the original file."),
+            CompressedReject.NestedCompression => t(
+                $"{name} は圧縮が二重にかかっています。1回だけ圧縮したものを扱えます（一度展開してから試してください）。",
+                $"{name} is compressed twice. This tool handles a file compressed once (please decompress it once first)."),
             CompressedReject.NotText => t(
                 $"{name} の中身はテキストではありません（画像やデータベースなどを gzip したものに見えます）。"
                 + "探せるのはテキストだけです。元のファイルは消さないでください。",
@@ -644,9 +654,9 @@ public static class UvfCli
                 $"{name} is gzip-compressed twice. This tool handles a file compressed once "
                 + "(please gunzip it once first)."),
             CompressedReject.Corrupt => t(
-                $"{name} は gzip として読めません（先頭を展開できませんでした）。"
+                $"{name} は {CompressedFormats.NameOf(path)} として読めません（先頭を展開できませんでした）。"
                 + "別の形式か、途中で切れている可能性があります。元のファイルは消さないでください。",
-                $"{name} cannot be read as gzip (the beginning could not be decompressed). "
+                $"{name} cannot be read as {CompressedFormats.NameOf(path)} (the beginning could not be decompressed). "
                 + "It may be another format, or cut short. Please keep the original file."),
             CompressedReject.Unreadable => t(
                 $"{name} を読めませんでした（アクセスできないか、使用中かもしれません）。",
@@ -666,12 +676,13 @@ public static class UvfCli
     /// ファイル自体は正しいことが多い。壊れていると言われた利用者が元のファイルを
     /// 消してしまう恐れがあるので、そう言い切らず、消さないよう添える（オーナー指示 2026-09-21）。
     /// </summary>
-    private static string GzNotReadable(string path, Func<string, string, string> t, bool partialOutput)
+    private static string NotReadable(string path, CompressedKind kind, Func<string, string, string> t, bool partialOutput)
     {
         string name = Path.GetFileName(path);
-        string ja = $"{name} を最後まで読めませんでした（gzip として読み切れません）。"
+        string format = CompressedFormats.Name(kind);
+        string ja = $"{name} を最後まで読めませんでした（{format} として読み切れません）。"
                     + "途中で切れているか、作り方が想定と違うファイルかもしれません。";
-        string en = $"{name} could not be read to the end (it could not be read through as gzip). "
+        string en = $"{name} could not be read to the end (it could not be read through as {format}). "
                     + "It may be cut short, or made in a way this tool does not expect.";
         if (partialOutput)
         {
@@ -723,12 +734,14 @@ public static class UvfCli
     /// -i / -E / -v も同じ1回読みで扱う。
     /// </summary>
     private static async Task<int> SearchToStdoutAsync(
-        string path, bool gzip, UvfInvocation inv, UvfEnvironment env,
+        string path, CompressedKind compressed, UvfInvocation inv, UvfEnvironment env,
         Func<string, string, string> t, Action<string> err, CancellationToken ct)
     {
         var options = new SearchOptions(inv.Pattern!, UseRegex: inv.Regex, IgnoreCase: inv.IgnoreCase);
         var watch = Stopwatch.StartNew();
-        await using IByteSource src = gzip ? new GzipStreamByteSource(path) : new SequentialFileByteSource(path);
+        await using IByteSource src = compressed != CompressedKind.None
+            ? new CompressedStreamByteSource(path, compressed)
+            : new SequentialFileByteSource(path);
         var detected = EncodingDetector.Detect(src);
         var encoding = detected.Encoding;
 
@@ -740,10 +753,10 @@ public static class UvfCli
             {
                 outcome = await RawGrep.RunAsync(src, detected.BomLength, encoding, options, inv.Invert, Write, ct);
             }
-            catch (InvalidDataException) when (gzip)
+            catch (InvalidDataException) when (compressed != CompressedKind.None)
             {
                 await w.FlushAsync(ct);
-                err(GzNotReadable(path, t, partialOutput: true));
+                err(NotReadable(path, compressed, t, partialOutput: true));
                 return UvfExit.Error;
             }
 

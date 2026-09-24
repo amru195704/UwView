@@ -10,6 +10,14 @@ public enum CompressedKind
     None,
     Gzip,
     Zip,
+    /// <summary>bzip2（.bz2）。v1.7.1。</summary>
+    Bzip2,
+    /// <summary>xz（.xz）。v1.7.1。</summary>
+    Xz,
+    /// <summary>生の lzma（.lzma）。マジックが無いので名前も見る。v1.7.1。</summary>
+    Lzma,
+    /// <summary>zstd（.zst）。v1.7.1。</summary>
+    Zstd,
 }
 
 /// <summary>受け付けられない理由。表示文言は呼び出し側（UI）が言語に応じて作る。</summary>
@@ -26,6 +34,10 @@ public enum CompressedReject
     NestedGzip,
     /// <summary>展開できたが、中身がテキストではない（画像・データベースなどを gzip したもの）。</summary>
     NotText,
+    /// <summary>名前は bz2／xz／lzma／zstd だが、中身がその形ではない。</summary>
+    WrongFormat,
+    /// <summary>圧縮の中がさらに圧縮（gz 以外の形式での二重圧縮）。</summary>
+    NestedCompression,
     /// <summary>
     /// gz として壊れている（最小サイズ未満・先頭が展開できない）。
     /// **後ろが切れているだけの gz はここでは分からない**（先頭しか見ないため）。
@@ -96,14 +108,54 @@ public static class CompressedInput
             // .tgz は ".gz" で終わらないので、先に見る
             if (HasExtension(path, ".tgz"))
                 return new CompressedProbe(CompressedKind.None, CompressedReject.TarArchive);
+
+            // bzip2・xz・lzma・zstd は<b>中身で</b>見分ける（回転ログの app.log.1 が bz2 のことがある）
+            var sniffed = CompressedFormats.Sniff(path);
+            if (sniffed is CompressedKind.Bzip2 or CompressedKind.Xz or CompressedKind.Lzma or CompressedKind.Zstd)
+                return ProbeStream(path, sniffed);
+
             if (HasExtension(path, GzipExtension)) return ProbeGzip(path);
             if (HasExtension(path, ZipExtension)) return ProbeZip(path);
+
+            // 名前はそれらしいのに中身が違う。黙って平文として探すと「1件も無い」と答えてしまう
+            if (NewFormatExtensions.Any(e => HasExtension(path, e)))
+                return new CompressedProbe(CompressedKind.None, CompressedReject.WrongFormat);
             return CompressedProbe.Plain;
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
             return new CompressedProbe(CompressedKind.None, CompressedReject.Unreadable);
         }
+    }
+
+    /// <summary>v1.7.1 で足した形式の拡張子（名前と中身の食い違いを見つけるため）。</summary>
+    private static readonly string[] NewFormatExtensions =
+        [".bz2", ".bzip2", ".xz", ".lzma", ".zst", ".zstd", ".tbz2", ".txz"];
+
+    /// <summary>
+    /// bzip2・xz・lzma・zstd の中身を先頭だけ展開して確かめる（gz と同じ観点: 書庫・二重圧縮・テキストか）。
+    /// </summary>
+    private static CompressedProbe ProbeStream(string path, CompressedKind kind)
+    {
+        var head = new byte[512];
+        int got;
+        try
+        {
+            using var stream = CompressedFormats.Open(path, kind);
+            got = stream.ReadAtLeast(head, head.Length, throwOnEndOfStream: false);
+        }
+        catch (Exception e) when (e is InvalidDataException or EndOfStreamException)
+        {
+            return new CompressedProbe(CompressedKind.None, CompressedReject.Corrupt);
+        }
+
+        if (CompressedFormats.Sniff(head.AsSpan(0, got), "") != CompressedKind.None)
+            return new CompressedProbe(CompressedKind.None, CompressedReject.NestedCompression);
+        if (got >= TarMagicOffset + 5 && head.AsSpan(TarMagicOffset, 5).SequenceEqual("ustar"u8))
+            return new CompressedProbe(CompressedKind.None, CompressedReject.TarArchive);
+        if (TextProbe.LooksBinary(head.AsSpan(0, got)))
+            return new CompressedProbe(CompressedKind.None, CompressedReject.NotText);
+        return new CompressedProbe(kind);
     }
 
     private static CompressedProbe ProbeGzip(string path)
@@ -267,8 +319,19 @@ public static class CompressedInput
     /// </summary>
     /// <exception cref="InvalidDataException">gz として壊れている。</exception>
     /// <exception cref="OperationCanceledException">中止された（tmp は掃除済み）。</exception>
-    public static async Task<long> ExpandGzipAsync(
+    public static Task<long> ExpandGzipAsync(
         string gzPath, string dstPath,
+        IProgress<double>? progress = null, CancellationToken ct = default)
+        => ExpandAsync(gzPath, CompressedKind.Gzip, dstPath, progress, ct);
+
+    /// <summary>
+    /// 1つのテキストを圧縮したもの（gz・bz2・xz・lzma・zstd）を平文に展開する（GUI の「展開して開く」）。
+    /// gz だけは末尾の記録（CRC・長さ）と自分で照らす。ほかの形式はライブラリが読みの中で照らし、
+    /// 切れていれば例外を出す——その例外は <see cref="InvalidDataException"/> にそろえて返す
+    /// （呼び出し側が「最後まで読めませんでした」と言えるように）。
+    /// </summary>
+    public static async Task<long> ExpandAsync(
+        string gzPath, CompressedKind kind, string dstPath,
         IProgress<double>? progress = null, CancellationToken ct = default)
     {
         string tmp = dstPath + ".tmp-" + Guid.NewGuid().ToString("N");
@@ -280,7 +343,9 @@ public static class CompressedInput
                              FileShare.ReadWrite | FileShare.Delete, BufferSize, FileOptions.SequentialScan))
             {
                 long total = src.Length;
-                await using var gz = GzipDecoder.Open(src, out _);
+                await using var gz = kind == CompressedKind.Gzip
+                    ? GzipDecoder.Open(src, out _)
+                    : CompressedFormats.Open(src, kind, gzPath);
                 await using var dst = new FileStream(tmp, FileMode.CreateNew, FileAccess.Write,
                     FileShare.None, BufferSize, FileOptions.SequentialScan);
 
@@ -305,7 +370,7 @@ public static class CompressedInput
             }
 
             // 切り詰めを黙って通さない（GZipStream は切れていても例外を出さない）
-            if (ReadTrailer(gzPath) is { } trailer)
+            if (kind == CompressedKind.Gzip && ReadTrailer(gzPath) is { } trailer)
                 VerifyGzipOutput(trailer, written, Crc32.Finish(crc),
                                  length => SuffixCrcOfFile(tmp, length));
 

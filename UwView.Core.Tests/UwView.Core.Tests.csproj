@@ -22,4 +22,9 @@
     <ProjectReference Include="..\UwView.Core\UwView.Core.csproj" />
   </ItemGroup>
 
+  <!-- 圧縮形式の実物（v1.7.1）。本物の bzip2 / xz / zstd で作ったもの（自前の書き手と読み手で閉じないため） -->
+  <ItemGroup>
+    <None Include="TestData/**" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>
