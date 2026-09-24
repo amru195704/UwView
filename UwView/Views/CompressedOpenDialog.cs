@@ -96,6 +96,11 @@ public static class CompressedOpenDialog
             + "「1つのテキストを gzip したもの」だけです（先に展開してください）。",
             $"{fileName} is a tar archive holding several files. This app opens a single gzip-compressed text file "
             + "(please extract it first)."),
+        CompressedReject.NotText => T(
+            $"{fileName} の中身はテキストではありません（画像やデータベースなどを gzip したものに見えます）。"
+            + "このアプリで開けるのはテキストだけです。ファイルは消さないでください。",
+            $"{fileName} does not contain text (it looks like an image or a database compressed with gzip). "
+            + "This app opens text only. Please keep the file."),
         CompressedReject.NestedGzip => T(
             $"{fileName} は gzip が二重にかかっています。1回だけ gzip したものを開けます"
             + "（一度 gunzip してから開いてください）。",

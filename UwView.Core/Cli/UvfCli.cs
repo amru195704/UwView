@@ -541,6 +541,7 @@ public static class UvfCli
         // .gz は展開しながら探す（段階5・オーナー指示 2026-09-23「uvf でも '*.log,*.gz' を」）。
         // zip（複数エントリは uvp のみ）と、受け付けないもの（tar.gz など）は<b>黙って素通りさせず</b>、
         // 名指しして外す——平文として走査すると1件も当たらず「エラーは無い」と誤読させる
+        int requested = files.Count;     // 名前を前に付けるかは<b>指定が何件に当たったか</b>で決める
         var compressed = new List<string>();
         var searchable = new List<string>();
         foreach (string file in files)
@@ -582,7 +583,8 @@ public static class UvfCli
         await using (var w = new StreamWriter(env.StdOut, new UTF8Encoding(false), 1 << 16, leaveOpen: true) { NewLine = "\n" })
             outcome = await MultiFileSearch.RunAsync(
                 files, options, inv.Invert, inv.Json, lineNumbers: true,
-                withFileName: inv.FileNames ?? files.Count > 1,   // grep と同じ既定
+                // 外したファイルがあっても出力の形を変えない（grep と同じく、当たった件数で決める）
+                withFileName: inv.FileNames ?? requested > 1,
                 threads, w, ct);
 
         env.StdErr.WriteLine(t(
@@ -631,6 +633,11 @@ public static class UvfCli
                 + "（先に展開してください）。",
                 $"{name} is a tar archive holding several files. This tool handles a single gzip-compressed text file "
                 + "(please extract it first)."),
+            CompressedReject.NotText => t(
+                $"{name} の中身はテキストではありません（画像やデータベースなどを gzip したものに見えます）。"
+                + "探せるのはテキストだけです。元のファイルは消さないでください。",
+                $"{name} does not contain text (it looks like an image or a database compressed with gzip). "
+                + "Only text can be searched. Please keep the original file."),
             CompressedReject.NestedGzip => t(
                 $"{name} は gzip が二重にかかっています。1回だけ gzip したものを扱えます"
                 + "（一度 gunzip してから試してください）。",
