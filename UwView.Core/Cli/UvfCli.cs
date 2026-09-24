@@ -434,6 +434,11 @@ public static class UvfCli
             }
         }
 
+        // 展開に使うスレッド数は段階1の設定そのもの（xz の並列展開が使う。指示書 §4.2）
+        CompressedFormats.DecodeThreads = ThreadBudget.Resolve(
+            Environment.GetEnvironmentVariable(ThreadBudget.FreeEnvironmentVariable),
+            CliSettings.ReadInt(env.SettingsFolder, ThreadBudget.SettingsKey, 0));
+
         try
         {
             if (many is not null) return await SearchManyAsync(many, inv, env, T, ct);

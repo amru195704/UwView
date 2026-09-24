@@ -48,6 +48,9 @@ public static class MultiFileSearch
         turn[0].SetResult();
 
         using var slots = new SemaphoreSlim(Math.Max(1, threads));
+        // xz の並列展開に回せる本数。ファイルを同時に何本も探すときは、その本数で割る
+        //（8ファイル × 8スレッドでコアを取り合わないように。1ファイルなら全部を回せる）
+        int decodeThreads = Math.Max(1, threads / Math.Max(1, Math.Min(threads, files.Count)));
 
         // 枠は<b>指定順に</b>取る。順番待ち（turn）は前のファイルの完了を待つので、
         // 後ろのファイルが先に枠を取ると、前のファイルが枠を取れず永久に待ち合う
@@ -71,7 +74,7 @@ public static class MultiFileSearch
                 try
                 {
                     var one = await OneFileAsync(file, options, invert, json, lineNumbers, withFileName ? file : null,
-                                                 index, turn, output, ct);
+                                                 index, turn, output, ct, decodeThreads);
                     Interlocked.Add(ref hits, one.Hits);
                     if (one.Truncated) truncated = true;
                     if (one.Reason is { } reason) lock (failedLock) failed.Add((file, reason));
@@ -86,7 +89,7 @@ public static class MultiFileSearch
 
     private static async Task<(long Hits, bool Truncated, string? Reason)> OneFileAsync(
         string file, SearchOptions options, bool invert, bool json, bool lineNumbers, string? name,
-        int index, TaskCompletionSource[] turn, TextWriter output, CancellationToken ct)
+        int index, TaskCompletionSource[] turn, TextWriter output, CancellationToken ct, int decodeThreads = 0)
     {
         var buffer = new StringWriter { NewLine = "\n" };
         TextWriter writer = buffer;   // 自分の番が来るまでは手元に貯める
@@ -111,7 +114,7 @@ public static class MultiFileSearch
             // 切れていれば読み終えたところで気づく）
             var kind = CompressedInput.Probe(file).Kind;
             await using IByteSource source = CompressedFormats.IsSingleStream(kind)
-                ? new CompressedStreamByteSource(file, kind)
+                ? new CompressedStreamByteSource(file, kind, decodeThreads)
                 : new SequentialFileByteSource(file);
             var detected = EncodingDetector.Detect(source);
             var encoding = detected.Encoding;
