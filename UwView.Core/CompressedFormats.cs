@@ -103,11 +103,14 @@ public static class CompressedFormats
         => kind switch
         {
             CompressedKind.Gzip => GzipDecoder.Open(compressed, out _),
-            // 連結された bz2（pbzip2 などが作る）も続けて読む
-            CompressedKind.Bzip2 => SharpCompress.Compressors.BZip2.BZip2Stream.Create(
-                compressed, SharpCompress.Compressors.CompressionMode.Decompress, true, false, false),
-            CompressedKind.Xz => new SharpCompress.Compressors.Xz.XZStream(compressed),
-            CompressedKind.Lzma => OpenLzma(compressed),
+            // bzip2・xz・lzma は OS 標準のライブラリがあればそれで（bzip2 / xz コマンドと同じ速さ）。
+            // 無ければ SharpCompress（Windows など）。連結された bz2・xz も続けて読む
+            CompressedKind.Bzip2 => (Stream?)SystemBzip2Stream.TryCreate(compressed)
+                                    ?? SharpCompress.Compressors.BZip2.BZip2Stream.Create(
+                                        compressed, SharpCompress.Compressors.CompressionMode.Decompress, true, false, false),
+            CompressedKind.Xz => (Stream?)SystemLzmaStream.TryCreate(compressed, xz: true)
+                                 ?? new SharpCompress.Compressors.Xz.XZStream(compressed),
+            CompressedKind.Lzma => (Stream?)SystemLzmaStream.TryCreate(compressed, xz: false) ?? OpenLzma(compressed),
             CompressedKind.Zstd => new ZstdSharp.DecompressionStream(compressed),
             CompressedKind.Lz4 => K4os.Compression.LZ4.Streams.LZ4Stream.Decode(compressed),
             CompressedKind.Brotli => new CheckedBrotliStream(compressed),
@@ -140,6 +143,24 @@ public static class CompressedFormats
         CompressedKind.Brotli => "brotli",
         _ => "?",
     };
+
+    /// <summary>
+    /// その形式をどれで展開するか（"OS" = OS 標準のライブラリ、"managed" = .NET のライブラリ）。
+    /// mac・Linux で bzip2・xz・lzma が "managed" に落ちていたら、速さが 1/2.4〜1/2.8 になる（気づけるように出す）。
+    /// </summary>
+    public static string DecoderOf(CompressedKind kind)
+    {
+        using var empty = new MemoryStream();
+        Stream? native = kind switch
+        {
+            CompressedKind.Bzip2 => SystemBzip2Stream.TryCreate(empty),
+            CompressedKind.Xz => SystemLzmaStream.TryCreate(empty, xz: true),
+            CompressedKind.Lzma => SystemLzmaStream.TryCreate(empty, xz: false),
+            _ => null,
+        };
+        native?.Dispose();
+        return native is null ? "managed" : "OS";
+    }
 
     /// <summary>ファイルの形式名（先頭で分かれば）。分からなければ gzip（従来の文言に合わせる）。</summary>
     public static string NameOf(string path)

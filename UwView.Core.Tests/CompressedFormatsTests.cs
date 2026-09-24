@@ -131,6 +131,21 @@ public class CompressedFormatsTests : IDisposable
         Assert.Contains("keep the original file", run.Err);
     }
 
+    /// <summary>
+    /// mac・Linux では bzip2・xz・lzma を OS のライブラリで展開する（オーナー決定 2026-09-24）。
+    /// 黙って .NET 側へ落ちると速さが 1/2.4〜1/2.8 になるので、落ちていないことを確かめる。
+    /// </summary>
+    [Theory]
+    [InlineData(CompressedKind.Bzip2)]
+    [InlineData(CompressedKind.Xz)]
+    [InlineData(CompressedKind.Lzma)]
+    public void macとLinuxではOSのライブラリで展開する(CompressedKind kind)
+    {
+        if (!(OperatingSystem.IsMacOS() || OperatingSystem.IsLinux())) return;
+        if (Environment.GetEnvironmentVariable("UWVIEW_SYSTEM_DECODERS") == "0") return;
+        Assert.Equal("OS", CompressedFormats.DecoderOf(kind));
+    }
+
     [Fact]
     public void brotliはマジックが無いので名前が違えば平文として扱う()
     {
