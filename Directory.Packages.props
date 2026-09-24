@@ -22,6 +22,8 @@
         <PackageVersion Include="SharpCompress" Version="0.50.4" />
         <!-- Core: zstd の展開（v1.7.1・MIT）。UwViewPro と版を揃える -->
         <PackageVersion Include="ZstdSharp.Port" Version="0.8.1" />
+        <!-- Core: lz4 の展開（v1.7.1・MIT）。フレーム形式（lz4 コマンドの既定） -->
+        <PackageVersion Include="K4os.Compression.LZ4.Streams" Version="1.3.8" />
 
         <!-- Test -->
         <PackageVersion Include="coverlet.collector" Version="6.0.4" />

@@ -11,10 +11,10 @@ namespace UwView.Core;
 ///
 /// 見分けは<b>中身の先頭（マジック）</b>で行う。名前は当てにならない——ログの回転で
 /// <c>app.log.1</c> のような名前の gz や bz2 が普通にある。
-/// ただし <b>生の lzma にはマジックが無い</b>ので、これだけは拡張子も見る。
+/// ただし <b>生の lzma と brotli にはマジックが無い</b>ので、この2つだけは拡張子も見る。
 ///
-/// 対応は第1弾の bzip2・xz・lzma・zstd（オーナー決定 2026-09-24。実測で外部コマンドとの差が
-/// 許容範囲のもの）。lz4・brotli は外す。
+/// 対応は第1弾の bzip2・xz・lzma・zstd・lz4・brotli（オーナー決定 2026-09-24）。
+/// 実測（50MB）で lz4・brotli は外部コマンドより速く、bzip2・xz は 1/2.4〜1/2.8。
 /// </summary>
 public static class CompressedFormats
 {
@@ -46,9 +46,13 @@ public static class CompressedFormats
             return CompressedKind.Xz;
         if (head.Length >= 4 && head[0] == 0x28 && head[1] == 0xB5 && head[2] == 0x2F && head[3] == 0xFD)
             return CompressedKind.Zstd;
+        if (head.Length >= 4 && head[0] == 0x04 && head[1] == 0x22 && head[2] == 0x4D && head[3] == 0x18)
+            return CompressedKind.Lz4;
 
         // 生の lzma にはマジックが無い。名前が .lzma で、ヘッダーとして筋が通るときだけ受ける
         if (Extension(path, ".lzma") && LooksLikeLzma(head)) return CompressedKind.Lzma;
+        // brotli にもマジックが無い。名前が .br なら brotli として試す（展開できなければ断る）
+        if (Extension(path, ".br") && head.Length > 0) return CompressedKind.Brotli;
         return CompressedKind.None;
     }
 
@@ -105,6 +109,8 @@ public static class CompressedFormats
             CompressedKind.Xz => new SharpCompress.Compressors.Xz.XZStream(compressed),
             CompressedKind.Lzma => OpenLzma(compressed),
             CompressedKind.Zstd => new ZstdSharp.DecompressionStream(compressed),
+            CompressedKind.Lz4 => K4os.Compression.LZ4.Streams.LZ4Stream.Decode(compressed),
+            CompressedKind.Brotli => new CheckedBrotliStream(compressed),
             _ => throw new NotSupportedException($"cannot decompress as {Name(kind)}: {path}"),
         };
 
@@ -130,6 +136,8 @@ public static class CompressedFormats
         CompressedKind.Xz => "xz",
         CompressedKind.Lzma => "lzma",
         CompressedKind.Zstd => "zstd",
+        CompressedKind.Lz4 => "lz4",
+        CompressedKind.Brotli => "brotli",
         _ => "?",
     };
 
@@ -140,7 +148,7 @@ public static class CompressedFormats
     /// <summary>この形式が「1つのテキストを圧縮したもの」か（zip のような書庫ではない）。</summary>
     public static bool IsSingleStream(CompressedKind kind)
         => kind is CompressedKind.Gzip or CompressedKind.Bzip2 or CompressedKind.Xz
-                 or CompressedKind.Lzma or CompressedKind.Zstd;
+                 or CompressedKind.Lzma or CompressedKind.Zstd or CompressedKind.Lz4 or CompressedKind.Brotli;
 
     /// <summary>その形式でふつうに使う拡張子（展開後の名前を作るときに外す）。</summary>
     public static string[] Extensions(CompressedKind kind) => kind switch
@@ -150,6 +158,8 @@ public static class CompressedFormats
         CompressedKind.Xz => [".xz"],
         CompressedKind.Lzma => [".lzma"],
         CompressedKind.Zstd => [".zst", ".zstd"],
+        CompressedKind.Lz4 => [".lz4"],
+        CompressedKind.Brotli => [".br"],
         _ => [],
     };
 
@@ -207,6 +217,76 @@ internal sealed class DecodeFailureStream(Stream inner, string format) : Stream
     protected override void Dispose(bool disposing)
     {
         if (disposing) inner.Dispose();
+        base.Dispose(disposing);
+    }
+}
+
+/// <summary>
+/// brotli を展開して読む（途中で切れていれば例外）。
+///
+/// .NET の <see cref="BrotliStream"/> は、入力が途中で終わっても<b>黙って終わる</b>
+/// （gz の <see cref="GZipStream"/> と同じ癖）。それでは切れたファイルを最後まで読めたように見せてしまう。
+/// 下の <see cref="BrotliDecoder"/> を直に回し、「終わり」の印（<see cref="System.Buffers.OperationStatus.Done"/>）に
+/// 届かないまま入力が尽きたら <see cref="InvalidDataException"/> を出す。
+/// </summary>
+internal sealed class CheckedBrotliStream(Stream input) : Stream
+{
+    private BrotliDecoder _decoder = new();
+    private readonly byte[] _in = new byte[1 << 16];
+    private int _start, _end;
+    private bool _inputEnded, _done;
+
+    public override int Read(Span<byte> buffer)
+    {
+        if (_done || buffer.IsEmpty) return 0;
+        while (true)
+        {
+            var status = _decoder.Decompress(_in.AsSpan(_start, _end - _start), buffer, out int consumed, out int written);
+            _start += consumed;
+            switch (status)
+            {
+                case System.Buffers.OperationStatus.InvalidData:
+                    throw new InvalidDataException("brotli: the data is not valid brotli");
+                case System.Buffers.OperationStatus.Done:
+                    _done = true;
+                    return written;
+            }
+            if (written > 0) return written;
+
+            // 足りないのは入力。尽きていれば、終わりの印に届かないまま切れている
+            if (_inputEnded) throw new InvalidDataException("brotli: the stream ended before its end mark (cut short)");
+            if (_start == _end) _start = _end = 0;
+            else if (_start > 0)
+            {
+                Buffer.BlockCopy(_in, _start, _in, 0, _end - _start);
+                _end -= _start;
+                _start = 0;
+            }
+            int n = input.Read(_in, _end, _in.Length - _end);
+            if (n == 0) _inputEnded = true;
+            else _end += n;
+        }
+    }
+
+    public override int Read(byte[] buffer, int offset, int count) => Read(buffer.AsSpan(offset, count));
+
+    public override bool CanRead => true;
+    public override bool CanSeek => false;
+    public override bool CanWrite => false;
+    public override long Length => throw new NotSupportedException();
+    public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+    public override void Flush() { }
+    public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+    public override void SetLength(long value) => throw new NotSupportedException();
+    public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            _decoder.Dispose();
+            input.Dispose();
+        }
         base.Dispose(disposing);
     }
 }
