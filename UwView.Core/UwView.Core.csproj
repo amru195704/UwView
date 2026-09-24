@@ -9,9 +9,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- bzip2 / xz / lzma / zstd / tar を展開するため（v1.7.1）。外部コマンドは呼ばない方針（指示書 §0-2） -->
+    <!-- bzip2 / xz / lzma / zstd / lz4 / tar を展開するため（v1.7.1。brotli は .NET 標準）。外部コマンドは呼ばない方針（指示書 §0-2） -->
     <PackageReference Include="SharpCompress" />
     <PackageReference Include="ZstdSharp.Port" />
+    <PackageReference Include="K4os.Compression.LZ4.Streams" />
   </ItemGroup>
 
   <!-- 試験用ビルドの呼び名。EDITION="Wide Field" を与えたときだけ焼き込む（AppEdition が読む）。

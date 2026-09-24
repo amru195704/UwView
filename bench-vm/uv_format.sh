@@ -6,7 +6,7 @@
 #   置き場所は UwTest／元データは UwTest/osm17 の平文（3サイズ）。
 #
 #   形式ごとに、同じ中身を CLI（ripgrep）・uvfWF・uvpWF で探して比べる:
-#     CLI  rg -z -n -F 語 file      ripgrep は外部コマンド（gzip / bzip2 / xz / zstd）へパイプして展開する
+#     CLI  rg -z -n -F 語 file      ripgrep は外部コマンド（gzip / bzip2 / xz / zstd / lz4 / brotli）へパイプして展開する
 #     uvf  uvfWF file 語            自分で展開しながら探す（外部コマンドは使わない）
 #     uvp  uvpWF file 語            1回目は .uwvz を作りながら（cold）、2回目は .uwvz を使う（hot）
 #   正しさは「平文を rg で探した結果」と突き合わせる（rg -z が展開できない環境でも比べられるように）。
@@ -15,12 +15,13 @@
 #   その場合は「rg は探せなかった」と書き、倍率は出さない（こちらの勝ちにも数えない）。
 #
 #   圧縮ファイルは osm17_fmt/ に作って残す（2回目からは作らない。元の平文は消さない）。
-#   作り方は各コマンドの既定: gzip -6 / bzip2 -9 / xz -6 / lzma（xz --format=lzma -6）/ zstd -3。
+#   作り方は各コマンドの既定: gzip -6 / bzip2 -9 / xz -6 / lzma（xz --format=lzma -6）/ zstd -3 / lz4 -1。
+#   brotli だけは既定（-q 11）が極端に遅い（1GB で十数分）ので -q 6 にする（展開の速さは段階でほぼ変わらない）。
 #   作る道具が無い環境（Windows など）は、Mac で作った osm17_fmt/ を写せば同じものを測れる。
 #
 # 使い方（uvfWF / uvpWF と同じ場所で。環境はそのまま使う）:
-#   ./uv_format.sh                          5形式 × 3サイズ（1m / 3m / 10m）
-#   ./uv_format.sh --formats bz2,xz         形式を絞る（gz,bz2,xz,lzma,zst）
+#   ./uv_format.sh                          7形式 × 3サイズ（1m / 3m / 10m）
+#   ./uv_format.sh --formats bz2,xz         形式を絞る（gz,bz2,xz,lzma,zst,lz4,br）
 #   ./uv_format.sh --sizes 1m,3m            サイズを絞る
 #   ./uv_format.sh --no-uvp                 uvf だけ
 #   -p 検索語（既定 東京）  -d 元データ（既定 osm17）  -f 圧縮の置き場所（既定 osm17_fmt）  -o 結果の置き場所
@@ -31,7 +32,7 @@
 set -u
 
 DATA="osm17"; FMT="osm17_fmt"; OUT=""; UVF="uvfWF"; UVP="uvpWF"; PAT="東京"; WITH_UVP=1
-FORMATS="gz,bz2,xz,lzma,zst"; SIZES="1m,3m,10m"
+FORMATS="gz,bz2,xz,lzma,zst,lz4,br"; SIZES="1m,3m,10m"
 PURGE="${PURGE:-1}"; SETTLE="${SETTLE:-10}"
 
 while [ $# -gt 0 ]; do
@@ -124,6 +125,8 @@ maker_of() {
     xz)   command -v xz    >/dev/null 2>&1 && echo "xz -6 -T1 -c" ;;
     lzma) command -v xz    >/dev/null 2>&1 && echo "xz --format=lzma -6 -c" ;;
     zst)  command -v zstd  >/dev/null 2>&1 && echo "zstd -3 -q -c" ;;
+    lz4)  command -v lz4   >/dev/null 2>&1 && echo "lz4 -1 -q -c" ;;
+    br)   command -v brotli >/dev/null 2>&1 && echo "brotli -q 6 -c" ;;
   esac
 }
 uwvz_of() { printf '%s.uwvz' "$1"; }
@@ -142,7 +145,7 @@ say ""
   echo "| ${UVF} | $(command -v "$UVF") $("$UVF" --version 2>/dev/null | head -1) |"
   [ "$WITH_UVP" = 1 ] && echo "| ${UVP} | $(command -v "$UVP") $("$UVP" --version 2>/dev/null | head -1) |"
   echo "| ripgrep | $(command -v rg) ($(rg --version | head -1)) |"
-  echo "| 展開コマンド（rg が使う） | gzip:$(command -v gzip >/dev/null && echo あり || echo 無し) bzip2:$(command -v bzip2 >/dev/null && echo あり || echo 無し) xz:$(command -v xz >/dev/null && echo あり || echo 無し) zstd:$(command -v zstd >/dev/null && echo あり || echo 無し) |"
+  echo "| 展開コマンド（rg が使う） | gzip:$(command -v gzip >/dev/null && echo あり || echo 無し) bzip2:$(command -v bzip2 >/dev/null && echo あり || echo 無し) xz:$(command -v xz >/dev/null && echo あり || echo 無し) zstd:$(command -v zstd >/dev/null && echo あり || echo 無し) lz4:$(command -v lz4 >/dev/null && echo あり || echo 無し) brotli:$(command -v brotli >/dev/null && echo あり || echo 無し) |"
   echo "| 元データ | ${DATA}（サイズ: ${SIZES}） |"
   echo "| 圧縮の置き場所 | ${FMT}（無ければ作って残す） |"
   echo "| 検索語 | $PAT |"
@@ -276,6 +279,7 @@ done < "$TOT" | tee -a "$LOG"
   echo ""
   echo "**見どころ**"
   echo "- bz2・xz は展開そのものが遅い形式。${UVF} は自前で展開するので、外部コマンドの速さ（C 実装）に届かないことがある。"
+  echo "- lz4・brotli は自前の展開のほうが外部コマンドより速い（事前の 50MB 実測）。"
   echo "- ${UVP} は1回目に .uwvz を作れば、2回目からは**展開しない**。形式が遅いほど、hot の差が開く。"
   echo "- ⛔ は ripgrep が展開コマンドを見つけられず、**何も言わずに 0 件で終わった**もの（rg の仕様）。"
   echo ""

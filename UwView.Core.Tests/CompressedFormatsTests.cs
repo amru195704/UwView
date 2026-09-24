@@ -8,7 +8,7 @@ namespace UwView.Core.Tests;
 /// <summary>
 /// bzip2・xz・lzma・zstd を読む（v1.7.1 第1弾・指示書_開発部_圧縮形式サポート_2026-09-24）。
 ///
-/// 実物は<b>本物の道具</b>（bzip2 -1 / xz / xz --format=lzma / zstd）で作って TestData に置いた。
+/// 実物は<b>本物の道具</b>（bzip2 -1 / xz / xz --format=lzma / zstd / lz4 / brotli）で作って TestData に置いた。
 /// 自前の書き手と読み手だけで閉じると、同じ思い違いを両側でして見逃す。
 /// 中身は sample.log（3000 行・「東京」は 384 行）。bzip2 は -1（100KB ブロック）で2ブロックにしてある。
 /// </summary>
@@ -48,6 +48,8 @@ public class CompressedFormatsTests : IDisposable
         { "sample.log.xz", CompressedKind.Xz },
         { "sample.log.lzma", CompressedKind.Lzma },
         { "sample.log.zst", CompressedKind.Zstd },
+        { "sample.log.lz4", CompressedKind.Lz4 },
+        { "sample.log.br", CompressedKind.Brotli },
     };
 
     [Theory]
@@ -65,6 +67,7 @@ public class CompressedFormatsTests : IDisposable
     [InlineData("sample.log.bz2", CompressedKind.Bzip2)]
     [InlineData("sample.log.xz", CompressedKind.Xz)]
     [InlineData("sample.log.zst", CompressedKind.Zstd)]
+    [InlineData("sample.log.lz4", CompressedKind.Lz4)]
     public void 名前が違っても中身で見分ける(string fixture, CompressedKind kind)
     {
         // ログの回転で app.log.1 のような名前の圧縮ファイルは普通にある
@@ -126,6 +129,23 @@ public class CompressedFormatsTests : IDisposable
         Assert.Equal(UvfExit.Error, run.Exit);
         Assert.Contains(CompressedFormats.Name(kind), run.Err);
         Assert.Contains("keep the original file", run.Err);
+    }
+
+    [Fact]
+    public void brotliはマジックが無いので名前が違えば平文として扱う()
+    {
+        // brotli には先頭の目印が無い。.br でないものを brotli と決めつけると、普通のファイルを壊して読む
+        string path = Copy("sample.log.br", "app.log.1");
+        Assert.Equal(CompressedKind.None, CompressedInput.Probe(path).Kind);
+    }
+
+    [Fact]
+    public void 名前はbrなのに中身がbrotliでなければ読めないと言う()
+    {
+        string path = Path.Combine(_dir, "fake.br");
+        File.WriteAllText(path, "plain text 東京 but named .br\n");
+        var probe = CompressedInput.Probe(path);
+        Assert.True(probe.IsRejected);
     }
 
     [Fact]

@@ -18,6 +18,10 @@ public enum CompressedKind
     Lzma,
     /// <summary>zstd（.zst）。v1.7.1。</summary>
     Zstd,
+    /// <summary>lz4 のフレーム形式（.lz4）。v1.7.1。</summary>
+    Lz4,
+    /// <summary>brotli（.br）。マジックが無いので名前で見る。v1.7.1。</summary>
+    Brotli,
 }
 
 /// <summary>受け付けられない理由。表示文言は呼び出し側（UI）が言語に応じて作る。</summary>
@@ -34,7 +38,7 @@ public enum CompressedReject
     NestedGzip,
     /// <summary>展開できたが、中身がテキストではない（画像・データベースなどを gzip したもの）。</summary>
     NotText,
-    /// <summary>名前は bz2／xz／lzma／zstd だが、中身がその形ではない。</summary>
+    /// <summary>名前は bz2／xz／lzma／zstd／lz4／br だが、中身がその形ではない。</summary>
     WrongFormat,
     /// <summary>圧縮の中がさらに圧縮（gz 以外の形式での二重圧縮）。</summary>
     NestedCompression,
@@ -109,9 +113,10 @@ public static class CompressedInput
             if (HasExtension(path, ".tgz"))
                 return new CompressedProbe(CompressedKind.None, CompressedReject.TarArchive);
 
-            // bzip2・xz・lzma・zstd は<b>中身で</b>見分ける（回転ログの app.log.1 が bz2 のことがある）
+            // bzip2・xz・lzma・zstd・lz4・brotli は<b>中身で</b>見分ける（回転ログの app.log.1 が bz2 のことがある。
+            // lzma と brotli はマジックが無いので名前も見る）
             var sniffed = CompressedFormats.Sniff(path);
-            if (sniffed is CompressedKind.Bzip2 or CompressedKind.Xz or CompressedKind.Lzma or CompressedKind.Zstd)
+            if (sniffed is not (CompressedKind.None or CompressedKind.Gzip or CompressedKind.Zip))
                 return ProbeStream(path, sniffed);
 
             if (HasExtension(path, GzipExtension)) return ProbeGzip(path);
@@ -130,10 +135,10 @@ public static class CompressedInput
 
     /// <summary>v1.7.1 で足した形式の拡張子（名前と中身の食い違いを見つけるため）。</summary>
     private static readonly string[] NewFormatExtensions =
-        [".bz2", ".bzip2", ".xz", ".lzma", ".zst", ".zstd", ".tbz2", ".txz"];
+        [".bz2", ".bzip2", ".xz", ".lzma", ".zst", ".zstd", ".lz4", ".br", ".tbz2", ".txz"];
 
     /// <summary>
-    /// bzip2・xz・lzma・zstd の中身を先頭だけ展開して確かめる（gz と同じ観点: 書庫・二重圧縮・テキストか）。
+    /// bzip2・xz・lzma・zstd・lz4・brotli の中身を先頭だけ展開して確かめる（gz と同じ観点: 書庫・二重圧縮・テキストか）。
     /// </summary>
     private static CompressedProbe ProbeStream(string path, CompressedKind kind)
     {

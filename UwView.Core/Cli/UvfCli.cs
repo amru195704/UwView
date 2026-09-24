@@ -145,7 +145,7 @@ public static class UvfCli
 
           入力の種類（拡張子ではなく中身で見分けます）:
             gz           展開しながら探します（1つでも、複数ファイルに混ぜても）
-            bz2 xz lzma zst  同じく展開しながら探します（外部コマンドは使いません）
+            bz2 xz lzma zst lz4 br  同じく展開しながら探します（外部コマンドは使いません）
             zip          扱えません（展開してから探してください。zip は UwView Pro が扱います）
             pbf          扱えません（OSM の pbf は UwView Pro が XML にして扱います）
             それ以外      テキストとして扱います
@@ -183,7 +183,7 @@ public static class UvfCli
 
           Input types (decided by content, not by the extension):
             gz           searched while decompressing (alone or mixed with plain files)
-            bz2 xz lzma zst  the same, decompressed here (no external command is used)
+            bz2 xz lzma zst lz4 br  the same, decompressed here (no external command is used)
             zip          not supported (extract it first; UwView Pro handles zip)
             pbf          not supported (UwView Pro turns OSM pbf into XML)
             anything else treated as text
