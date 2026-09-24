@@ -84,6 +84,16 @@ public static class CompressedFormats
     /// <summary>展開に複数スレッドを使う形式か（いまは xz だけ。ほかは展開スレッド数を見ない）。</summary>
     public static bool UsesDecodeThreads(CompressedKind kind) => kind == CompressedKind.Xz;
 
+    /// <summary>
+    /// 何本かを同時に展開するときの、xz の部品1本あたりのスレッド数（全体の本数を xz の部品の数で割る）。
+    /// ほかの形式は1スレッドで展開するので数に入れない。
+    /// </summary>
+    public static int DecodeThreadsFor(IEnumerable<CompressedKind> kinds, int threads)
+    {
+        int parallelDecoders = kinds.Count(UsesDecodeThreads);
+        return Math.Max(1, threads / Math.Max(1, Math.Min(threads, parallelDecoders)));
+    }
+
     /// <summary>展開しながら読むストリーム（前方専用）。</summary>
     public static Stream Open(string path, CompressedKind kind)
     {
