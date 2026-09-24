@@ -18,6 +18,11 @@
         <!-- Core: Shift-JIS(932) / EUC-JP(51932) 用エンコーディングプロバイダ -->
         <PackageVersion Include="System.Text.Encoding.CodePages" Version="9.0.0" />
 
+        <!-- Core: bzip2 / xz / lzma / tar の展開（v1.7.1・MIT）。外部コマンドは呼ばない -->
+        <PackageVersion Include="SharpCompress" Version="0.50.4" />
+        <!-- Core: zstd の展開（v1.7.1・MIT）。UwViewPro と版を揃える -->
+        <PackageVersion Include="ZstdSharp.Port" Version="0.8.1" />
+
         <!-- Test -->
         <PackageVersion Include="coverlet.collector" Version="6.0.4" />
         <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />

@@ -8,6 +8,12 @@
     <RootNamespace>UwView.Core</RootNamespace>
   </PropertyGroup>
 
+  <ItemGroup>
+    <!-- bzip2 / xz / lzma / zstd / tar を展開するため（v1.7.1）。外部コマンドは呼ばない方針（指示書 §0-2） -->
+    <PackageReference Include="SharpCompress" />
+    <PackageReference Include="ZstdSharp.Port" />
+  </ItemGroup>
+
   <!-- 試験用ビルドの呼び名。EDITION="Wide Field" を与えたときだけ焼き込む（AppEdition が読む）。
        本番ビルドでは何も足さない。UVP もこのプロジェクトを参照しているので、ここ1か所で両製品に効く。 -->
   <ItemGroup Condition="'$(EDITION)' != ''">

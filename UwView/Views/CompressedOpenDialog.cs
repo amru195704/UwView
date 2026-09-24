@@ -79,7 +79,8 @@ public static class CompressedOpenDialog
     /// 壊れていると言われた利用者が元のファイルを消してしまう恐れがあるので、
     /// 「読めません（どう違うか）」と伝え、消さないよう添える（オーナー指示 2026-09-21）。
     /// </summary>
-    public static string RejectMessage(CompressedReject reject, string fileName) => reject switch
+    /// <param name="format">形式名（先頭は読めたが展開できなかったときに言う。既定は gzip）。</param>
+    public static string RejectMessage(CompressedReject reject, string fileName, string format = "gzip") => reject switch
     {
         CompressedReject.NotGzip => T(
             $"{fileName} は gzip として読めません（名前は .gz ですが、中身が gzip の形ではありません）。"
@@ -96,6 +97,14 @@ public static class CompressedOpenDialog
             + "「1つのテキストを gzip したもの」だけです（先に展開してください）。",
             $"{fileName} is a tar archive holding several files. This app opens a single gzip-compressed text file "
             + "(please extract it first)."),
+        CompressedReject.WrongFormat => T(
+            $"{fileName} は名前のとおりの圧縮形式として読めません（中身がその形ではありません）。"
+            + "別の形式かもしれません。ファイルは消さないでください。",
+            $"{fileName} cannot be read in the format its name suggests (the contents are not in that form). "
+            + "It may be another format. Please keep the file."),
+        CompressedReject.NestedCompression => T(
+            $"{fileName} は圧縮が二重にかかっています。1回だけ圧縮したものを開けます（一度展開してから開いてください）。",
+            $"{fileName} is compressed twice. This app opens a file compressed once (please decompress it once first)."),
         CompressedReject.NotText => T(
             $"{fileName} の中身はテキストではありません（画像やデータベースなどを gzip したものに見えます）。"
             + "このアプリで開けるのはテキストだけです。ファイルは消さないでください。",
@@ -107,11 +116,11 @@ public static class CompressedOpenDialog
             $"{fileName} is gzip-compressed twice. This app opens a file compressed once "
             + "(please gunzip it once first)."),
         CompressedReject.Corrupt => T(
-            $"{fileName} は gzip として読めません（先頭を展開できませんでした）。"
+            $"{fileName} は {format} として読めません（先頭を展開できませんでした）。"
             + "別の形式か、途中で切れている可能性があります。ファイルは消さずに、"
-            + "`gzip -t` などで確かめてください。",
-            $"{fileName} cannot be read as gzip (the beginning could not be decompressed). "
-            + "It may be another format, or cut short. Please keep the file and check it, e.g. with `gzip -t`."),
+            + $"`{format} -t` などで確かめてください。",
+            $"{fileName} cannot be read as {format} (the beginning could not be decompressed). "
+            + $"It may be another format, or cut short. Please keep the file and check it, e.g. with `{format} -t`."),
         CompressedReject.Unreadable => T($"{fileName} を読めませんでした（アクセスできないか、使用中かもしれません）。",
                                          $"{fileName} could not be read (no access, or it may be in use)."),
         _ => "",
@@ -128,11 +137,11 @@ public static class CompressedOpenDialog
         + "Please extract it first.");
 
     /// <summary>展開が最後まで進まなかったときの説明（切り詰め・別形式）。</summary>
-    public static string CorruptAfterExpandMessage(string fileName) => T(
-        $"{fileName} を最後まで読めませんでした（gzip の末尾の照合が合いません）。"
+    public static string CorruptAfterExpandMessage(string fileName, string format = "gzip") => T(
+        $"{fileName} を最後まで読めませんでした（{format} として読み切れません）。"
         + "途中で切れているか、作り方が想定と違うファイルかもしれません。"
         + "展開しかけたファイルは残していません。元のファイルは消さないでください。",
-        $"{fileName} could not be read to the end (the gzip trailer does not match). "
+        $"{fileName} could not be read to the end (it could not be read through as {format}). "
         + "It may be cut short, or made in a way this app does not expect. "
         + "No half-expanded file was left behind. Please keep the original file.");
 
@@ -207,7 +216,8 @@ public static class CompressedOpenDialog
 
         string head = kind == CompressedKind.Zip
             ? T($"{fileName} は zip です。どう開きますか？", $"{fileName} is a zip file. How should it be opened?")
-            : T($"{fileName} は gzip です。どう開きますか？", $"{fileName} is a gzip file. How should it be opened?");
+            : T($"{fileName} は {CompressedFormats.Name(kind)} です。どう開きますか？",
+                $"{fileName} is a {CompressedFormats.Name(kind)} file. How should it be opened?");
 
         var body = new StackPanel { Margin = new Thickness(22), Spacing = 12 };
         body.Children.Add(new TextBlock
