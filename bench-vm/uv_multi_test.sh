@@ -185,7 +185,9 @@ check "見つからなければ exit 1" "1" "$code"
 
 say ""
 say "== C 圧縮の混在 =="
-# uvf: 平文と gz を混ぜて探す（段階5）。参照は rg（gz は -z で展開して探す）、無ければ uvf を1本ずつ
+# uvf: 平文と gz を混ぜて探す（段階5）。参照は rg（gz は -z で展開して探す）、無ければ uvf を1本ずつ。
+# rg -z は内部で gzip を呼ぶので `gzip -dc | rg` と同じ結果・同じ速さ
+#（5.75GB の gz で 21.6 秒 / 21.8 秒・出力一致。2026-09-24 Mac）
 : > "$DETAIL/mixed-ref.txt"
 while IFS= read -r f; do
   if [ -n "$RG" ]; then
