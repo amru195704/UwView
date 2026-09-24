@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -21,5 +21,21 @@
     <EnableUnsafeBinaryFormatterSerialization>false</EnableUnsafeBinaryFormatterSerialization>
     <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
   </PropertyGroup>
+
+  <!-- mac だけ: CLI の中身をこの実行ファイルの中で動かす NativeAOT 版にする（Program.cs の IN_PROCESS_CLI）。
+       本体を起動し直さないので、起動が 0.14 秒 → 0.01 秒（rg と同じ）。NativeAOT はその OS の上でしか
+       ビルドできないので、Linux・Windows は従来の起動アプリのまま（オーナー決定 2026-09-24）。
+       RID を付けない dotnet build（開発・テスト）は従来の起動アプリになる。 -->
+  <PropertyGroup Condition="$(RuntimeIdentifier.StartsWith('osx-'))">
+    <PublishAot>true</PublishAot>
+    <PublishSingleFile>false</PublishSingleFile>
+    <DefineConstants>$(DefineConstants);IN_PROCESS_CLI</DefineConstants>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- 中身を動かすので .NET の説明文を残す（削ると「正規表現が正しくありません: MakeException, [, 1, …」になる） -->
+    <UseSystemResourceKeys>false</UseSystemResourceKeys>
+  </PropertyGroup>
+  <ItemGroup Condition="$(RuntimeIdentifier.StartsWith('osx-'))">
+    <ProjectReference Include="../UwView.Core/UwView.Core.csproj" />
+  </ItemGroup>
 
 </Project>

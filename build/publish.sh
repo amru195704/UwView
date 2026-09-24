@@ -66,9 +66,18 @@ CLI_PROJ="UwView.Cli/UwView.Cli.csproj"
 add_cli() { # $1=rid $2=GUI の発行先
   local rid="$1" dest="$2" clipub="obj/pub-cli/$rid"
   rm -rf "$clipub"
-  dotnet publish "$CLI_PROJ" -c Release -r "$rid" --self-contained true \
-    -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true \
-    -p:EnableCompressionInSingleFile=true -p:DebugType=none -p:AssemblyName="$CLI" -o "$clipub" 1>&2
+  case "$rid" in
+    osx-*)
+      # mac は NativeAOT（CLI の中身をこの中で直接動かす。起動 0.14 秒 → 0.01 秒。UwView.Cli.csproj 参照）。
+      # -p:AssemblyName は参照先（UwView.Core）にまで効いて名前がぶつかるので付けない。
+      # 既定名（uvf）で作って、写すときに $CLI の名前にする（ネイティブの実行ファイルは名前を変えてよい）
+      dotnet publish "$CLI_PROJ" -c Release -r "$rid" -p:DebugType=none -o "$clipub" 1>&2
+      [ "$CLI" = uvf ] || mv -f "$clipub/uvf" "$clipub/$CLI" ;;
+    *)
+      dotnet publish "$CLI_PROJ" -c Release -r "$rid" --self-contained true \
+        -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true \
+        -p:EnableCompressionInSingleFile=true -p:DebugType=none -p:AssemblyName="$CLI" -o "$clipub" 1>&2 ;;
+  esac
   find "$clipub" -maxdepth 1 -type f \( -name "$CLI" -o -name "$CLI.exe" \) -exec cp {} "$dest/" \;
   [ -f "$dest/$CLI" ] || [ -f "$dest/$CLI.exe" ] || { echo "$CLI の発行に失敗: $rid" >&2; exit 1; }
 }

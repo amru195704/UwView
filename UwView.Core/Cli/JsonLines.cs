@@ -12,25 +12,32 @@ namespace UwView.Core.Cli;
 /// </summary>
 public static class JsonLines
 {
-    // 出力は端末やファイルへそのまま流すので、日本語をエスケープしない（テ… にしない）
-    private static readonly JsonSerializerOptions Text = new() { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
+    /// <summary>
+    /// 文字列を JSON の文字列にする（前後の引用符つき）。
+    /// 出力は端末やファイルへそのまま流すので、日本語をエスケープしない（テ… にしない）。
+    ///
+    /// <see cref="JsonSerializer"/> は型をリフレクションで調べるので、NativeAOT（mac の uvf）では動かない。
+    /// <see cref="JsonEncodedText"/> は文字列の逃がしだけをするので、どのビルドでも同じ結果になる。
+    /// </summary>
+    private static string Quote(string value)
+        => "\"" + JsonEncodedText.Encode(value, JavaScriptEncoder.UnsafeRelaxedJsonEscaping).Value + "\"";
 
     /// <summary>ヒット1行（<paramref name="file"/> は単一ファイルのときは null で省ける）。</summary>
     public static string Hit(string? file, long lineNumber, string text)
     {
-        string body = $"\"n\":{lineNumber},\"line\":{JsonSerializer.Serialize(text, Text)}";
-        return file is null ? $"{{{body}}}" : $"{{\"file\":{JsonSerializer.Serialize(file, Text)},{body}}}";
+        string body = $"\"n\":{lineNumber},\"line\":{Quote(text)}";
+        return file is null ? $"{{{body}}}" : $"{{\"file\":{Quote(file)},{body}}}";
     }
 
     /// <summary>行番号を出さない（<c>--no-line-number</c>）ときのヒット1行。</summary>
     public static string HitWithoutNumber(string? file, string text)
         => file is null
-            ? $"{{\"line\":{JsonSerializer.Serialize(text, Text)}}}"
-            : $"{{\"file\":{JsonSerializer.Serialize(file, Text)},\"line\":{JsonSerializer.Serialize(text, Text)}}}";
+            ? $"{{\"line\":{Quote(text)}}}"
+            : $"{{\"file\":{Quote(file)},\"line\":{Quote(text)}}}";
 
     /// <summary>集計（<c>-uniq</c>）の1行。</summary>
     public static string Tally(string value, long count)
-        => $"{{\"value\":{JsonSerializer.Serialize(value, Text)},\"count\":{count}}}";
+        => $"{{\"value\":{Quote(value)},\"count\":{count}}}";
 
     /// <summary>順序検索（<c>-seq</c>）の1件（語ごとの行番号の並び）。</summary>
     public static string Sequence(IEnumerable<long> lineNumbers)
