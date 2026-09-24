@@ -143,7 +143,67 @@ public class CompressedFormatsTests : IDisposable
     {
         if (!(OperatingSystem.IsMacOS() || OperatingSystem.IsLinux())) return;
         if (Environment.GetEnvironmentVariable("UWVIEW_SYSTEM_DECODERS") == "0") return;
-        Assert.Equal("OS", CompressedFormats.DecoderOf(kind));
+        Assert.StartsWith("OS", CompressedFormats.DecoderOf(kind));
+    }
+
+    // ── xz の並列展開（実装指示書_xz並列展開_2026-09-24）──────────────────
+
+    /// <summary>
+    /// 複数ブロックの xz（xz -T4 --block-size=16KiB で作った 9 ブロック）を、並列でも単スレッドでも
+    /// 読んで、<b>バイト単位で同じ</b>になること（完了条件2）。出力はブロック順に揃っていること。
+    /// </summary>
+    [Theory]
+    [InlineData(1)]
+    [InlineData(4)]
+    [InlineData(8)]
+    public void 複数ブロックのxzは並列でも単スレッドでも同じ中身になる(int threads)
+    {
+        string path = Copy("sample.multiblock.log.xz");
+        using var file = File.OpenRead(path);
+        using var stream = CompressedFormats.Open(file, CompressedKind.Xz, path, threads);
+        Assert.Equal(Plain, ReadAll(stream));
+    }
+
+    [Fact]
+    public void macとLinuxではxzを並列のデコーダで展開する()
+    {
+        // 並列の口（liblzma 5.4 以降）が無い環境では単スレッドに落ちる。mac の OS 標準は 5.4.3
+        if (!OperatingSystem.IsMacOS()) return;
+        if (Environment.GetEnvironmentVariable("UWVIEW_SYSTEM_DECODERS") == "0") return;
+        int saved = CompressedFormats.DecodeThreads;
+        try
+        {
+            CompressedFormats.DecodeThreads = 4;
+            Assert.Equal("OS×4", CompressedFormats.DecoderOf(CompressedKind.Xz));
+            CompressedFormats.DecodeThreads = 1;
+            Assert.Equal("OS", CompressedFormats.DecoderOf(CompressedKind.Xz));   // 1 本なら単スレッドのデコーダ
+        }
+        finally { CompressedFormats.DecodeThreads = saved; }
+    }
+
+    [Fact]
+    public void 複数ブロックのxzも途中で切れていれば知らせる()
+    {
+        string path = Copy("sample.multiblock.log.xz");
+        byte[] whole = File.ReadAllBytes(path);
+        File.WriteAllBytes(path, whole[..(whole.Length * 2 / 3)]);
+
+        Assert.Throws<InvalidDataException>(() =>
+        {
+            using var file = File.OpenRead(path);
+            using var stream = CompressedFormats.Open(file, CompressedKind.Xz, path, 8);
+            _ = ReadAll(stream);
+        });
+    }
+
+    [Fact]
+    public async Task 複数ブロックのxzをuvfで探すと平文と同じ結果になる()
+    {
+        string plain = Path.Combine(_dir, "sample.log");
+        File.WriteAllBytes(plain, Plain);
+        string packed = Copy("sample.multiblock.log.xz");
+
+        Assert.Equal((await Uvf(plain, "東京")).Out, (await Uvf(packed, "東京")).Out);
     }
 
     [Fact]

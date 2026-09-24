@@ -74,6 +74,13 @@ public static class CompressedFormats
     private static bool Extension(string path, string extension)
         => path.EndsWith(extension, StringComparison.OrdinalIgnoreCase);
 
+    /// <summary>
+    /// 展開に使ってよいスレッド数（xz の並列展開が使う）。段階1の設定（UVF_MAX_THREADS / UVP_MAX_THREADS・
+    /// 設定の MaxThreads）をそのまま入れる——この機能のための別の設定は作らない（指示書 §4.2）。
+    /// 入口（uvf / uvp の CLI・画面）が起動時に入れる。入れなければ既定（8、論理プロセッサ数まで）。
+    /// </summary>
+    public static int DecodeThreads { get; set; } = ThreadBudget.Resolve(null, 0);
+
     /// <summary>展開しながら読むストリーム（前方専用）。</summary>
     public static Stream Open(string path, CompressedKind kind)
     {
@@ -88,18 +95,20 @@ public static class CompressedFormats
     /// gz 以外は、展開ライブラリの失敗を <see cref="InvalidDataException"/> にそろえて返す
     /// （ライブラリごとに例外の型がまちまちで、呼び出し側が「切れている」と言えなくなるため）。
     /// </summary>
-    public static Stream Open(Stream compressed, CompressedKind kind, string path)
+    /// <param name="threads">展開に使うスレッド数（0 なら <see cref="DecodeThreads"/>）。複数ファイルを同時に
+    /// 探すときは、ファイルの数で割った本数を渡す（掛け算でコアを取り合わないように）。</param>
+    public static Stream Open(Stream compressed, CompressedKind kind, string path, int threads = 0)
     {
-        if (kind == CompressedKind.Gzip) return OpenRaw(compressed, kind, path);
+        if (kind == CompressedKind.Gzip) return OpenRaw(compressed, kind, path, threads);
         // 開く時点でヘッダーを読む形式もある（xz・lzma）。そこでの失敗も同じくそろえる
-        try { return new DecodeFailureStream(OpenRaw(compressed, kind, path), Name(kind)); }
+        try { return new DecodeFailureStream(OpenRaw(compressed, kind, path, threads), Name(kind)); }
         catch (Exception e) when (DecodeFailureStream.IsDecodeFailure(e))
         {
             throw new InvalidDataException($"{Name(kind)}: {e.Message}", e);
         }
     }
 
-    private static Stream OpenRaw(Stream compressed, CompressedKind kind, string path)
+    private static Stream OpenRaw(Stream compressed, CompressedKind kind, string path, int threads)
         => kind switch
         {
             CompressedKind.Gzip => GzipDecoder.Open(compressed, out _),
@@ -108,7 +117,9 @@ public static class CompressedFormats
             CompressedKind.Bzip2 => (Stream?)SystemBzip2Stream.TryCreate(compressed)
                                     ?? SharpCompress.Compressors.BZip2.BZip2Stream.Create(
                                         compressed, SharpCompress.Compressors.CompressionMode.Decompress, true, false, false),
-            CompressedKind.Xz => (Stream?)SystemLzmaStream.TryCreate(compressed, xz: true)
+            // xz は複数ブロックなら並列で展開する（1ブロックなら liblzma が単スレッドで流す）
+            CompressedKind.Xz => (Stream?)SystemLzmaStream.TryCreate(compressed, xz: true,
+                                                                   threads > 0 ? threads : DecodeThreads)
                                  ?? new SharpCompress.Compressors.Xz.XZStream(compressed),
             CompressedKind.Lzma => (Stream?)SystemLzmaStream.TryCreate(compressed, xz: false) ?? OpenLzma(compressed),
             CompressedKind.Zstd => new ZstdSharp.DecompressionStream(compressed),
@@ -154,12 +165,18 @@ public static class CompressedFormats
         Stream? native = kind switch
         {
             CompressedKind.Bzip2 => SystemBzip2Stream.TryCreate(empty),
-            CompressedKind.Xz => SystemLzmaStream.TryCreate(empty, xz: true),
+            CompressedKind.Xz => SystemLzmaStream.TryCreate(empty, xz: true, DecodeThreads),
             CompressedKind.Lzma => SystemLzmaStream.TryCreate(empty, xz: false),
             _ => null,
         };
+        string name = native switch
+        {
+            null => "managed",
+            SystemLzmaStream { Threads: > 1 } lzma => $"OS×{lzma.Threads}",   // 並列デコーダ
+            _ => "OS",
+        };
         native?.Dispose();
-        return native is null ? "managed" : "OS";
+        return name;
     }
 
     /// <summary>ファイルの形式名（先頭で分かれば）。分からなければ gzip（従来の文言に合わせる）。</summary>

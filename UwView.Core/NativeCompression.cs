@@ -195,6 +195,16 @@ internal sealed unsafe class SystemBzip2Stream : Stream
 /// <summary>
 /// OS 標準の liblzma で xz（または生の lzma）を展開する読み取り専用ストリーム。
 /// xz は連結されたものも続けて読む。終わりの印に届く前に入力が尽きたら例外。
+///
+/// <b>xz は複数スレッドで展開する</b>（実装指示書_xz並列展開_2026-09-24）。
+/// xz 5.6 以降は既定で複数ブロックのファイルを作り、ブロックは独立に展開できる。
+/// 外部 xz は約9コアで展開していて、1コアのこちらは 6.2 倍負けていた（1コアあたりはこちらが速い）。
+/// liblzma 5.4 からの並列デコーダ（<c>lzma_stream_decoder_mt</c>）を使う——ブロックを配り、
+/// <b>出力はブロック順に揃え</b>、メモリの上限を超えそうなら<b>自分で単スレッドに落とす</b>
+/// （指示書 §4.4 の「大きすぎるときは並列度を落とす」をそのまま持っている）。
+/// 1ブロックのファイルは並べようがないので、従来どおりの速さで流れる（§4.3）。
+/// 古い liblzma（5.2 以前）には並列デコーダが無いので、単スレッドで展開する。
+/// 生の lzma には複数ブロックの仕組みが無いので、いつも単スレッド。
 /// </summary>
 internal sealed unsafe class SystemLzmaStream : Stream
 {
@@ -211,30 +221,76 @@ internal sealed unsafe class SystemLzmaStream : Stream
     private bool _inputEnded, _finished;
     private readonly string _format;
 
-    private SystemLzmaStream(Stream input, LzmaStream* z, byte* inBuf, string format)
+    /// <summary>展開に使うスレッド数の上限（1 なら単スレッドのデコーダ）。</summary>
+    public int Threads { get; }
+
+    private SystemLzmaStream(Stream input, LzmaStream* z, byte* inBuf, string format, int threads)
     {
         _input = input;
         _z = z;
         _in = inBuf;
         _format = format;
+        Threads = threads;
     }
 
     /// <param name="xz">true なら xz（.xz）、false なら生の lzma（.lzma）。</param>
-    public static SystemLzmaStream? TryCreate(Stream input, bool xz)
+    /// <param name="threads">xz の展開に使うスレッド数（段階1の設定。1 以下なら単スレッド）。</param>
+    public static SystemLzmaStream? TryCreate(Stream input, bool xz, int threads = 1)
     {
         if (!NativeCompression.Enabled) return null;
         NativeCompression.EnsureResolver();
         var z = (LzmaStream*)NativeMemory.AllocZeroed(StreamBytes);
         try
         {
-            int rc = xz ? lzma_stream_decoder(z, ulong.MaxValue, LzmaConcatenated)
+            int used = 1;
+            int rc;
+            if (xz && threads > 1 && TryInitMultiThreaded(z, threads) is { } mt)
+            {
+                rc = mt;
+                used = threads;
+            }
+            else
+            {
+                rc = xz ? lzma_stream_decoder(z, ulong.MaxValue, LzmaConcatenated)
                         : lzma_alone_decoder(z, ulong.MaxValue);
+            }
             if (rc == LzmaOk)
-                return new SystemLzmaStream(input, z, (byte*)NativeMemory.Alloc(InputSize), xz ? "xz" : "lzma");
+                return new SystemLzmaStream(input, z, (byte*)NativeMemory.Alloc(InputSize), xz ? "xz" : "lzma", used);
         }
         catch (Exception e) when (e is DllNotFoundException or EntryPointNotFoundException) { }
         NativeMemory.Free(z);
         return null;
+    }
+
+    /// <summary>
+    /// 並列デコーダで始める。liblzma が古くて口が無ければ null（呼び出し側は単スレッドで始める）。
+    ///
+    /// メモリは「スレッド数 × ブロックの展開後の大きさ」ぶん要る。上限（<see cref="ThreadingMemoryLimit"/>）を
+    /// 超えそうなときは liblzma が自分で単スレッドに切り替える（止まりはしない）。
+    /// </summary>
+    private static int? TryInitMultiThreaded(LzmaStream* z, int threads)
+    {
+        var options = new LzmaMt
+        {
+            flags = LzmaConcatenated,
+            threads = (uint)threads,
+            timeout = 0,
+            memlimit_threading = ThreadingMemoryLimit(),
+            memlimit_stop = ulong.MaxValue,       // 単スレッドのデコーダと同じく、止めはしない
+        };
+        try { return lzma_stream_decoder_mt(z, &options); }
+        catch (EntryPointNotFoundException) { return null; }   // liblzma 5.2 以前
+    }
+
+    /// <summary>
+    /// 並列で展開するときに使ってよいメモリ（使えるメモリの 1/4、多くても 4GB）。
+    /// 1ブロックが巨大なファイル（-T1 や古い xz で作ったもの）でメモリを食い潰さないための上限。
+    /// </summary>
+    private static ulong ThreadingMemoryLimit()
+    {
+        long available = GC.GetGCMemoryInfo().TotalAvailableMemoryBytes;
+        long quarter = available > 0 ? available / 4 : 1L << 30;
+        return (ulong)Math.Clamp(quarter, 256L << 20, 4L << 30);
     }
 
     public override int Read(byte[] buffer, int offset, int count) => Read(buffer.AsSpan(offset, count));
@@ -307,7 +363,21 @@ internal sealed unsafe class SystemLzmaStream : Stream
         public byte* next_out; public nuint avail_out; public ulong total_out;
     }
 
+    /// <summary>lzma/container.h の lzma_mt（5.4 以降。並びは C の既定どおり・全 128 バイト）。</summary>
+    [StructLayout(LayoutKind.Sequential)]
+    private struct LzmaMt
+    {
+        public uint flags; public uint threads; public ulong block_size;
+        public uint timeout; public uint preset; public nint filters;
+        public int check; public int reserved_enum1; public int reserved_enum2; public int reserved_enum3;
+        public uint reserved_int1; public uint reserved_int2; public uint reserved_int3; public uint reserved_int4;
+        public ulong memlimit_threading; public ulong memlimit_stop;
+        public ulong reserved_int7; public ulong reserved_int8;
+        public nint reserved_ptr1, reserved_ptr2, reserved_ptr3, reserved_ptr4;
+    }
+
     [DllImport(NativeCompression.Lzma)] private static extern int lzma_stream_decoder(LzmaStream* s, ulong memlimit, uint flags);
+    [DllImport(NativeCompression.Lzma)] private static extern int lzma_stream_decoder_mt(LzmaStream* s, LzmaMt* options);
     [DllImport(NativeCompression.Lzma)] private static extern int lzma_alone_decoder(LzmaStream* s, ulong memlimit);
     [DllImport(NativeCompression.Lzma)] private static extern int lzma_code(LzmaStream* s, int action);
     [DllImport(NativeCompression.Lzma)] private static extern void lzma_end(LzmaStream* s);

@@ -40,10 +40,14 @@ internal sealed class CompressedStreamByteSource : IByteSource
 
     private readonly CompressedKind _kind;
 
-    public CompressedStreamByteSource(string path, CompressedKind kind = CompressedKind.Gzip)
+    private readonly int _threads;
+
+    /// <param name="threads">展開に使うスレッド数（0 なら既定＝段階1の設定）。</param>
+    public CompressedStreamByteSource(string path, CompressedKind kind = CompressedKind.Gzip, int threads = 0)
     {
         _path = path;
         _kind = kind;
+        _threads = threads;
         _trailer = kind == CompressedKind.Gzip ? CompressedInput.ReadTrailer(path) : null;
         var file = new FileStream(path, FileMode.Open, FileAccess.Read,
                                   FileShare.ReadWrite | FileShare.Delete, 1 << 20, FileOptions.SequentialScan);
@@ -58,7 +62,7 @@ internal sealed class CompressedStreamByteSource : IByteSource
             bool verified = true;    // gz 以外はライブラリが照らす
             using (var gz = _kind == CompressedKind.Gzip
                        ? GzipDecoder.Open(file, out verified)
-                       : CompressedFormats.Open(file, _kind, _path))
+                       : CompressedFormats.Open(file, _kind, _path, _threads))
             {
                 while (true)
                 {
