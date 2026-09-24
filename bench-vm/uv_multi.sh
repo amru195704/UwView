@@ -462,7 +462,7 @@ PY
     else
       echo "FAIL|平文と gz を混ぜて束ね、rg -z と一致|$(head -1 d7.err)"
     fi
-    rm -f z.osm.gz 'm1.osm%cz.osm.gz.uwvz'
+    rm -f z.osm.gz 'uw-m1.osm%cz.osm.gz.uwvz'
 
     # 大きさ（元の 1/9〜1/12 が目安）
     total=0
