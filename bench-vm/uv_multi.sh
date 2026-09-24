@@ -321,7 +321,7 @@ run_correctness() {
   if [ "$code" = 2 ] && [ ! -s "$DETAIL/bin.out" ]; then
     result PASS "uvf: テキストでない gz は断る" "$(head -1 "$DETAIL/bin.err" | cut -c1-60)"
   else
-    result FAIL "uvf: テキストでない gz は断る" "exit=$code（テキスト判定は v1.7.0.18 以降）"
+    result FAIL "uvf: テキストでない gz は断る" "exit=${code}（テキスト判定は v1.7.0.18 以降）"
   fi
 
   # 複数ファイルの -open は uvp を案内して断る（画面は起こさない）
