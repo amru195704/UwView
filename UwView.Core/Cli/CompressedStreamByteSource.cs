@@ -11,6 +11,11 @@ namespace UwView.Core.Cli;
 /// 検索（<see cref="RawGrep"/>）は前へ前へと読むので、展開したものを直近 <see cref="WindowBytes"/> だけ手元に残せば足りる。
 /// 少し戻る読み（文字コードの判定・長い行の出力）もその範囲なら応える。範囲より前は読めない（<see cref="InvalidDataException"/>）。
 ///
+/// 手元は<b>展開したかたまりを並べたまま</b>持ち、読みはそこから直接写す。以前は 64MB の窓に写し直し、
+/// 窓が一杯になるたびに後ろ半分を詰め直していたので、展開したものを実質 2.5 回余計に写していた。
+/// Mac の実機では目立たないが、Linux の VM（2 vCPU）では lz4 で rg -z に 1/1.54 と負ける原因になった
+///（展開が速い形式ほど、写す手間がそのまま表に出る。2026-09-25 の切り分け）。
+///
 /// 展開後の長さは読み終わるまで分からないので、それまで <see cref="Length"/> は <see cref="long.MaxValue"/>。
 /// 読み終わったら gz の末尾の記録（CRC32・長さ）と照らす。.NET の展開は途中で切れた gz でも黙って終わるため
 /// （<see cref="CompressedInput.VerifyGzipOutput"/>）。
@@ -23,16 +28,19 @@ namespace UwView.Core.Cli;
 internal sealed class CompressedStreamByteSource : IByteSource
 {
     public const int WindowBytes = 64 << 20;
-    private const int Chunk = 4 << 20;
+    // 展開のかたまり。小さめにして、展開したものがキャッシュに残っているうちに探す
+    private const int Chunk = 1 << 20;
 
     private readonly string _path;
     private readonly CompressedInput.GzipTrailer? _trailer;
     // 展開済みのかたまり（null の Buffer は終わり。Error があれば展開の失敗）
-    private readonly BlockingCollection<(byte[]? Buffer, int Length, Exception? Error)> _ready = new(boundedCapacity: 4);
+    private readonly BlockingCollection<(byte[]? Buffer, int Length, Exception? Error)> _ready = new(boundedCapacity: 8);
     private readonly CancellationTokenSource _stop = new();
     private readonly Task _producer;
-    private readonly byte[] _window = new byte[WindowBytes];
-    private long _windowStart;   // _window[0] の位置
+    // 手元のかたまり（古い順）。合計が WindowBytes を超えたら古いものから返す
+    private readonly List<(long Start, byte[] Buffer, int Length)> _held = [];
+    private long _heldBytes;
+    private long _windowStart;   // 手元の最初のかたまりの位置
     private long _total;         // 展開したバイト数（＝手元の終わりの位置）
     private uint _crc = Crc32.Initial;   // 展開側のスレッドだけが触る
     private long _produced;              // 同上（展開したバイト数）
@@ -105,8 +113,13 @@ internal sealed class CompressedStreamByteSource : IByteSource
                     $"{CompressedFormats.Name(_kind)}: cannot re-read data more than {WindowBytes >> 20} MB back (a line may be too long)");
             if (at < _total)
             {
-                int n = (int)Math.Min(buffer.Length - written, _total - at);
-                _window.AsSpan((int)(at - _windowStart), n).CopyTo(buffer[written..]);
+                // 後ろから探す（検索はほぼ最後のかたまりを読んでいる）
+                int i = _held.Count - 1;
+                while (_held[i].Start > at) i--;
+                var (start, held, length) = _held[i];
+                int from = (int)(at - start);
+                int n = Math.Min(buffer.Length - written, length - from);
+                held.AsSpan(from, n).CopyTo(buffer[written..]);
                 written += n;
                 continue;
             }
@@ -115,24 +128,22 @@ internal sealed class CompressedStreamByteSource : IByteSource
         return written;
     }
 
-    /// <summary>1かたまり展開して手元に足す。手元が一杯なら古い半分を捨てる。終わりなら照合して false。</summary>
+    /// <summary>1かたまり展開して手元に足す。手元が一杯なら古いかたまりから返す。終わりなら照合して false。</summary>
     private bool Pull()
     {
-        int kept = (int)(_total - _windowStart);
-        if (kept + Chunk > WindowBytes)
-        {
-            int keep = WindowBytes / 2;
-            _window.AsSpan(kept - keep, keep).CopyTo(_window);
-            _windowStart = _total - keep;
-            kept = keep;
-        }
-
         var (buffer, length, error) = _ready.Take();
         if (buffer is not null)
         {
-            buffer.AsSpan(0, length).CopyTo(_window.AsSpan(kept));
-            ArrayPool<byte>.Shared.Return(buffer);
+            _held.Add((_total, buffer, length));
+            _heldBytes += length;
             _total += length;
+            while (_held.Count > 1 && _heldBytes - _held[0].Length >= WindowBytes)
+            {
+                _heldBytes -= _held[0].Length;
+                ArrayPool<byte>.Shared.Return(_held[0].Buffer);
+                _held.RemoveAt(0);
+            }
+            _windowStart = _held[0].Start;
             return true;
         }
 
@@ -174,5 +185,7 @@ internal sealed class CompressedStreamByteSource : IByteSource
             if (item.Buffer is not null) ArrayPool<byte>.Shared.Return(item.Buffer);
         _ready.Dispose();
         _stop.Dispose();
+        foreach (var (_, buffer, _) in _held) ArrayPool<byte>.Shared.Return(buffer);
+        _held.Clear();
     }
 }
