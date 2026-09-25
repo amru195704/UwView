@@ -326,4 +326,26 @@ public class CompressedFormatsTests : IDisposable
         Assert.Equal(8, MultiFileSearch.DecodeThreadsFor([gz, zst], 8));
         Assert.Equal(1, MultiFileSearch.DecodeThreadsFor([xz, xz], 1));
     }
+
+    [Fact]
+    public void lz4は連結されたフレームも続けて読む()
+    {
+        byte[] one = File.ReadAllBytes(Fixture("sample.log.lz4"));
+        string path = Path.Combine(_dir, "twice.log.lz4");
+        File.WriteAllBytes(path, [.. one, .. one]);
+        string expected = File.ReadAllText(Fixture("sample.log"));
+
+        using var reader = new StreamReader(CompressedFormats.Open(path, CompressedKind.Lz4));
+        Assert.Equal(expected + expected, reader.ReadToEnd());
+    }
+
+    [Fact]
+    public void lz4をOSのライブラリで展開するのはLinuxだけ()
+    {
+        // mac の OS には liblz4 が無いので .NET 向けの展開のまま。Linux でも 1.10 より前の liblz4 は使わない
+        //（Ubuntu 24.04 の 1.9.4 は K4os より遅い）
+        string decoder = CompressedFormats.DecoderOf(CompressedKind.Lz4);
+        if (!OperatingSystem.IsLinux()) Assert.Equal("managed", decoder);
+        else Assert.Contains(decoder, new[] { "OS", "managed" });
+    }
 }
