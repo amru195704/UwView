@@ -73,6 +73,20 @@ add_cli() { # $1=rid $2=GUI の発行先
       # 既定名（uvf）で作って、写すときに $CLI の名前にする（ネイティブの実行ファイルは名前を変えてよい）
       dotnet publish "$CLI_PROJ" -c Release -r "$rid" -p:DebugType=none -o "$clipub" 1>&2
       [ "$CLI" = uvf ] || mv -f "$clipub/uvf" "$clipub/$CLI" ;;
+    linux-*)
+      # Linux も NativeAOT（起動 約 0.3 秒 → 0.01 秒前後）。NativeAOT はその OS の上でしかビルドできないので、
+      # Mac の中の Linux（Colima＋Docker・/Volumes/BIWIN/Docker）で作る（build/linux-aot-cli.sh）。
+      # LINUX_AOT=0 なら NativeAOT を使わない（JIT で動く単一ファイル。Colima が無くても作れる）
+      if [ "${LINUX_AOT:-1}" = 1 ]; then
+        mkdir -p "$clipub"
+        build/linux-aot-cli.sh "$rid" UwView/UwView.Cli/UwView.Cli.csproj "$(cd "$clipub" && pwd)" 1>&2
+        [ "$CLI" = uvf ] || mv -f "$clipub/uvf" "$clipub/$CLI"
+      else
+        dotnet publish "$CLI_PROJ" -c Release -r "$rid" --self-contained true \
+          -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true \
+          -p:EnableCompressionInSingleFile=true -p:DebugType=none -p:AssemblyName="$CLI" \
+          -p:PublishAot=false -o "$clipub" 1>&2
+      fi ;;
     *)
       dotnet publish "$CLI_PROJ" -c Release -r "$rid" --self-contained true \
         -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true \
