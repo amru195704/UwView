@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 namespace UwView.Core;
 
 /// <summary>
-/// OS 標準の展開ライブラリを直接呼ぶための入口（zlib・bzip2・liblzma・liblz4）。
+/// OS 標準の展開ライブラリを直接呼ぶための入口（zlib・bzip2・liblzma・liblz4・libzstd）。
 ///
 /// ripgrep の <c>-z</c> は <c>bzip2</c>・<c>xz</c> コマンドへパイプする。そのコマンドの中身は
 /// このライブラリなので、<b>同じものを直接呼べば同じ速さで展開できる</b>（外部コマンドは呼ばない）。
@@ -22,6 +22,7 @@ internal static class NativeCompression
     public const string Bzip2 = "libbz2";
     public const string Lzma = "liblzma";
     public const string Lz4 = "liblz4";
+    public const string Zstd = "libzstd";
 
     /// <summary>bzip2・lzma で OS のライブラリを使うか（既定は使う。0 で使わない）。</summary>
     public static bool Enabled => Environment.GetEnvironmentVariable("UWVIEW_SYSTEM_DECODERS") != "0";
@@ -49,6 +50,8 @@ internal static class NativeCompression
                 : ["liblzma.so.5", "liblzma.so"],
             // lz4 は Linux だけ（mac の OS には無い。mac は .NET 向けの展開で lz4 コマンドと互角だった）
             Lz4 => OperatingSystem.IsLinux() ? ["liblz4.so.1", "liblz4.so"] : null,
+            // zstd も Linux だけ（mac の OS には無い）。.uwvz の中身の圧縮・展開に使う
+            Zstd => OperatingSystem.IsLinux() ? ["libzstd.so.1", "libzstd.so"] : null,
             _ => null,
         };
         if (candidates is null) return 0;
@@ -501,4 +504,116 @@ internal sealed unsafe class SystemLz4Stream : Stream
     [DllImport(NativeCompression.Lz4)] private static extern uint LZ4F_isError(nuint code);
     [DllImport(NativeCompression.Lz4)] private static extern nint LZ4F_getErrorName(nuint code);
     [DllImport(NativeCompression.Lz4)] private static extern int LZ4_versionNumber();
+}
+
+/// <summary>
+/// ブロック1つを zstd の1フレームに圧縮する（.uwvz の中身）。Linux は OS の libzstd、無ければ ZstdSharp。
+///
+/// ZstdSharp（.NET 向けの移植）は、同じレベル 1 で C の zstd の約 1.8 倍の CPU 時間がかかった
+///（3G: ZstdSharp 約 4.3 秒・zstd -1 -T1 2.43 秒）。コアの少ない機械では .uwvz の1回目がそのまま遅くなる
+///（Linux 2 vCPU で lz4 の1回目 4.08 秒のうち約 2 秒強。2026-09-25）。
+/// 出力はどちらも標準の zstd フレームなので、どちらで作った .uwvz もどちらでも読める。
+/// </summary>
+public sealed unsafe class ZstdBlockCompressor : IDisposable
+{
+    private readonly int _level;
+    private nint _cctx;
+    private ZstdSharp.Compressor? _managed;
+
+    public ZstdBlockCompressor(int level)
+    {
+        _level = level;
+        _cctx = NativeZstd.CreateCCtx();
+        if (_cctx == 0) _managed = new ZstdSharp.Compressor(level);
+    }
+
+    /// <summary>OS の libzstd で圧縮しているか。</summary>
+    public bool IsNative => _cctx != 0;
+
+    /// <summary>src を圧縮して dst に書き、書いた長さを返す（dst が足りなければ例外）。</summary>
+    public int Wrap(ReadOnlySpan<byte> src, Span<byte> dst)
+    {
+        if (_managed is not null) return _managed.Wrap(src, dst);
+        fixed (byte* s = src)
+        fixed (byte* d = dst)
+        {
+            nuint rc = NativeZstd.ZSTD_compressCCtx(_cctx, d, (nuint)dst.Length, s, (nuint)src.Length, _level);
+            if (NativeZstd.ZSTD_isError(rc) != 0)
+                throw new InvalidOperationException($"zstd: could not compress ({NativeZstd.ErrorName(rc)})");
+            return (int)rc;
+        }
+    }
+
+    public void Dispose()
+    {
+        if (_cctx != 0) { NativeZstd.ZSTD_freeCCtx(_cctx); _cctx = 0; }
+        _managed?.Dispose();
+        _managed = null;
+    }
+}
+
+/// <summary>zstd の1フレームを展開する（.uwvz の中身）。Linux は OS の libzstd、無ければ ZstdSharp。</summary>
+public sealed unsafe class ZstdBlockDecompressor : IDisposable
+{
+    private nint _dctx;
+    private ZstdSharp.Decompressor? _managed;
+
+    public ZstdBlockDecompressor()
+    {
+        _dctx = NativeZstd.CreateDCtx();
+        if (_dctx == 0) _managed = new ZstdSharp.Decompressor();
+    }
+
+    public bool IsNative => _dctx != 0;
+
+    /// <summary>src を展開して dst に書き、書いた長さを返す（壊れていれば <see cref="InvalidDataException"/>）。</summary>
+    public int Unwrap(ReadOnlySpan<byte> src, Span<byte> dst)
+    {
+        if (_managed is not null) return _managed.Unwrap(src, dst);
+        fixed (byte* s = src)
+        fixed (byte* d = dst)
+        {
+            nuint rc = NativeZstd.ZSTD_decompressDCtx(_dctx, d, (nuint)dst.Length, s, (nuint)src.Length);
+            if (NativeZstd.ZSTD_isError(rc) != 0)
+                throw new InvalidDataException($"zstd: could not decompress ({NativeZstd.ErrorName(rc)})");
+            return (int)rc;
+        }
+    }
+
+    public void Dispose()
+    {
+        if (_dctx != 0) { NativeZstd.ZSTD_freeDCtx(_dctx); _dctx = 0; }
+        _managed?.Dispose();
+        _managed = null;
+    }
+}
+
+internal static unsafe class NativeZstd
+{
+    /// <summary>OS の libzstd の圧縮の器（使えなければ 0）。</summary>
+    public static nint CreateCCtx() => Try(() => ZSTD_createCCtx());
+
+    /// <summary>OS の libzstd の展開の器（使えなければ 0）。</summary>
+    public static nint CreateDCtx() => Try(() => ZSTD_createDCtx());
+
+    private static nint Try(Func<nint> create)
+    {
+        if (!NativeCompression.Enabled || !OperatingSystem.IsLinux()) return 0;
+        NativeCompression.EnsureResolver();
+        try { return create(); }
+        catch (Exception e) when (e is DllNotFoundException or EntryPointNotFoundException) { return 0; }
+    }
+
+    public static string ErrorName(nuint code) => Marshal.PtrToStringAnsi(ZSTD_getErrorName(code)) ?? code.ToString();
+
+    [DllImport(NativeCompression.Zstd)] public static extern nint ZSTD_createCCtx();
+    [DllImport(NativeCompression.Zstd)] public static extern nuint ZSTD_freeCCtx(nint cctx);
+    [DllImport(NativeCompression.Zstd)]
+    public static extern nuint ZSTD_compressCCtx(nint cctx, byte* dst, nuint dstCapacity, byte* src, nuint srcSize, int level);
+    [DllImport(NativeCompression.Zstd)] public static extern nint ZSTD_createDCtx();
+    [DllImport(NativeCompression.Zstd)] public static extern nuint ZSTD_freeDCtx(nint dctx);
+    [DllImport(NativeCompression.Zstd)]
+    public static extern nuint ZSTD_decompressDCtx(nint dctx, byte* dst, nuint dstCapacity, byte* src, nuint srcSize);
+    [DllImport(NativeCompression.Zstd)] public static extern uint ZSTD_isError(nuint code);
+    [DllImport(NativeCompression.Zstd)] public static extern nint ZSTD_getErrorName(nuint code);
 }
