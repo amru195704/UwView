@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 namespace UwView.Core;
 
 /// <summary>
-/// OS 標準の展開ライブラリを直接呼ぶための入口（zlib・bzip2・liblzma）。
+/// OS 標準の展開ライブラリを直接呼ぶための入口（zlib・bzip2・liblzma・liblz4）。
 ///
 /// ripgrep の <c>-z</c> は <c>bzip2</c>・<c>xz</c> コマンドへパイプする。そのコマンドの中身は
 /// このライブラリなので、<b>同じものを直接呼べば同じ速さで展開できる</b>（外部コマンドは呼ばない）。
@@ -21,6 +21,7 @@ internal static class NativeCompression
     public const string Zlib = "libz";
     public const string Bzip2 = "libbz2";
     public const string Lzma = "liblzma";
+    public const string Lz4 = "liblz4";
 
     /// <summary>bzip2・lzma で OS のライブラリを使うか（既定は使う。0 で使わない）。</summary>
     public static bool Enabled => Environment.GetEnvironmentVariable("UWVIEW_SYSTEM_DECODERS") != "0";
@@ -46,6 +47,8 @@ internal static class NativeCompression
             Lzma => OperatingSystem.IsMacOS()
                 ? ["/usr/lib/liblzma.dylib", "liblzma.5.dylib"]
                 : ["liblzma.so.5", "liblzma.so"],
+            // lz4 は Linux だけ（mac の OS には無い。mac は .NET 向けの展開で lz4 コマンドと互角だった）
+            Lz4 => OperatingSystem.IsLinux() ? ["liblz4.so.1", "liblz4.so"] : null,
             _ => null,
         };
         if (candidates is null) return 0;
@@ -381,4 +384,121 @@ internal sealed unsafe class SystemLzmaStream : Stream
     [DllImport(NativeCompression.Lzma)] private static extern int lzma_alone_decoder(LzmaStream* s, ulong memlimit);
     [DllImport(NativeCompression.Lzma)] private static extern int lzma_code(LzmaStream* s, int action);
     [DllImport(NativeCompression.Lzma)] private static extern void lzma_end(LzmaStream* s);
+}
+
+/// <summary>
+/// OS 標準の liblz4（Linux）で lz4 のフレーム形式を展開する読み取り専用ストリーム。
+/// 連結されたフレームも続けて読む。フレームの途中で入力が尽きたら例外。
+///
+/// .NET 向けの展開（K4os）は、Linux の VM（2 vCPU・lz4 1.10）で lz4 コマンドの約 1.6 倍の時間がかかり、
+/// rg -z に 1/1.14 と負けていた（2026-09-25）。lz4 コマンドの中身はこのライブラリなので、直接呼べば同じ速さになる。
+/// <b>ただし 1.10 より前の liblz4 は使わない</b>: Ubuntu 24.04 の 1.9.4 では、lz4 コマンドでも K4os より遅かった
+///（3G: lz4 -dc 1.12 秒・uvf＋K4os 1.0 秒・uvf＋liblz4 1.05 秒。1.10 の lz4 -dc は 0.75 秒）。
+/// </summary>
+internal sealed unsafe class SystemLz4Stream : Stream
+{
+    private const int InputSize = 1 << 20;
+    private const uint Lz4fVersion = 100;
+    private const int MinLibraryVersion = 11000;   // 1.10.0（LZ4_versionNumber の形）
+
+    private readonly Stream _input;
+    private nint _dctx;
+    private byte* _in;
+    private int _inPos, _inLen;
+    private bool _inputEnded, _inFrame;
+
+    private SystemLz4Stream(Stream input, nint dctx, byte* inBuf)
+    {
+        _input = input;
+        _dctx = dctx;
+        _in = inBuf;
+    }
+
+    public static SystemLz4Stream? TryCreate(Stream input)
+    {
+        if (!NativeCompression.Enabled || !OperatingSystem.IsLinux()) return null;
+        NativeCompression.EnsureResolver();
+        try
+        {
+            if (LZ4_versionNumber() < MinLibraryVersion) return null;
+            nint dctx;
+            if (LZ4F_isError(LZ4F_createDecompressionContext(&dctx, Lz4fVersion)) == 0)
+                return new SystemLz4Stream(input, dctx, (byte*)NativeMemory.Alloc(InputSize));
+        }
+        catch (Exception e) when (e is DllNotFoundException or EntryPointNotFoundException) { }
+        return null;
+    }
+
+    public override int Read(byte[] buffer, int offset, int count) => Read(buffer.AsSpan(offset, count));
+
+    public override int Read(Span<byte> buffer)
+    {
+        if (_dctx == 0) throw new ObjectDisposedException(nameof(SystemLz4Stream));
+        if (buffer.Length == 0) return 0;
+
+        fixed (byte* outPtr = buffer)
+        {
+            while (true)
+            {
+                if (_inPos == _inLen && !_inputEnded) Refill();
+                if (_inPos == _inLen && _inputEnded)
+                {
+                    // フレームの切れ目で入力も尽きた＝きれいに終わった。途中なら切れている
+                    if (!_inFrame) return 0;
+                    throw new InvalidDataException("lz4: the data ended before the end of the frame (the file may be cut short)");
+                }
+
+                nuint dstSize = (nuint)buffer.Length;
+                nuint srcSize = (nuint)(_inLen - _inPos);
+                nuint rc = LZ4F_decompress(_dctx, outPtr, &dstSize, _in + _inPos, &srcSize, null);
+                if (LZ4F_isError(rc) != 0)
+                    throw new InvalidDataException(
+                        $"lz4: could not read the data ({Marshal.PtrToStringAnsi(LZ4F_getErrorName(rc))})");
+                _inPos += (int)srcSize;
+                _inFrame = rc != 0;   // 0 はフレームを読み終えたしるし（続きがあれば次のフレームとして読む）
+                if (dstSize > 0) return (int)dstSize;
+            }
+        }
+    }
+
+    private void Refill()
+    {
+        int n = _input.Read(new Span<byte>(_in, InputSize));
+        if (n <= 0) { _inputEnded = true; return; }
+        _inPos = 0;
+        _inLen = n;
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (_dctx != 0)
+        {
+            LZ4F_freeDecompressionContext(_dctx);
+            NativeMemory.Free(_in);
+            _dctx = 0;
+            _in = null;
+            if (disposing) _input.Dispose();
+        }
+        base.Dispose(disposing);
+    }
+
+    ~SystemLz4Stream() => Dispose(false);
+
+    public override bool CanRead => true;
+    public override bool CanSeek => false;
+    public override bool CanWrite => false;
+    public override long Length => throw new NotSupportedException();
+    public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+    public override void Flush() { }
+    public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+    public override void SetLength(long value) => throw new NotSupportedException();
+    public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+
+    [DllImport(NativeCompression.Lz4)] private static extern nuint LZ4F_createDecompressionContext(nint* dctx, uint version);
+    [DllImport(NativeCompression.Lz4)] private static extern nuint LZ4F_freeDecompressionContext(nint dctx);
+    [DllImport(NativeCompression.Lz4)]
+    private static extern nuint LZ4F_decompress(nint dctx, byte* dst, nuint* dstSize, byte* src, nuint* srcSize, void* options);
+    [DllImport(NativeCompression.Lz4)] private static extern uint LZ4F_isError(nuint code);
+    [DllImport(NativeCompression.Lz4)] private static extern nint LZ4F_getErrorName(nuint code);
+    [DllImport(NativeCompression.Lz4)] private static extern int LZ4_versionNumber();
 }

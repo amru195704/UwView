@@ -136,7 +136,9 @@ public static class CompressedFormats
                                  ?? new SharpCompress.Compressors.Xz.XZStream(compressed),
             CompressedKind.Lzma => (Stream?)SystemLzmaStream.TryCreate(compressed, xz: false) ?? OpenLzma(compressed),
             CompressedKind.Zstd => new ZstdSharp.DecompressionStream(compressed),
-            CompressedKind.Lz4 => K4os.Compression.LZ4.Streams.LZ4Stream.Decode(compressed),
+            // lz4 は Linux なら OS の liblz4（lz4 コマンドと同じ速さ）。無ければ K4os
+            CompressedKind.Lz4 => (Stream?)SystemLz4Stream.TryCreate(compressed)
+                                  ?? K4os.Compression.LZ4.Streams.LZ4Stream.Decode(compressed),
             CompressedKind.Brotli => new CheckedBrotliStream(compressed),
             _ => throw new NotSupportedException($"cannot decompress as {Name(kind)}: {path}"),
         };
@@ -180,6 +182,7 @@ public static class CompressedFormats
             CompressedKind.Bzip2 => SystemBzip2Stream.TryCreate(empty),
             CompressedKind.Xz => SystemLzmaStream.TryCreate(empty, xz: true, DecodeThreads),
             CompressedKind.Lzma => SystemLzmaStream.TryCreate(empty, xz: false),
+            CompressedKind.Lz4 => SystemLz4Stream.TryCreate(empty),
             _ => null,
         };
         string name = native switch

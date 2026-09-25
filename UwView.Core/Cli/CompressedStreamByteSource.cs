@@ -72,13 +72,15 @@ internal sealed class CompressedStreamByteSource : IByteSource
                        ? GzipDecoder.Open(file, out verified)
                        : CompressedFormats.Open(file, _kind, _path, _threads))
             {
+                // lz4 は塊（最大 4MB）ごと受けられる器にする。小さいと liblz4 が内部で展開してから写し直す
+                int chunk = _kind == CompressedKind.Lz4 ? 4 << 20 : Chunk;
                 while (true)
                 {
-                    byte[] buf = ArrayPool<byte>.Shared.Rent(Chunk);
+                    byte[] buf = ArrayPool<byte>.Shared.Rent(chunk);
                     int got = 0;
-                    while (got < Chunk)
+                    while (got < chunk)
                     {
-                        int n = gz.Read(buf, got, Chunk - got);
+                        int n = gz.Read(buf, got, chunk - got);
                         if (n <= 0) break;
                         got += n;
                     }
