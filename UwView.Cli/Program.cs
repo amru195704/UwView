@@ -18,8 +18,6 @@ using System.Diagnostics;
 #if IN_PROCESS_CLI
 return UwView.Cli.InProcess.Run(args);
 #else
-const string Marker = "--uvf";
-
 string? gui = UwView.Cli.GuiLocator.Find();
 if (gui is null)
 {
@@ -27,22 +25,32 @@ if (gui is null)
                             + " / UwView was not found next to uvf.");
     return 2;
 }
-
-var psi = new ProcessStartInfo(gui) { UseShellExecute = false };   // 入出力は引き継ぐ（リダイレクトしない）
-psi.ArgumentList.Add(Marker);
-foreach (string a in args) psi.ArgumentList.Add(a);
-
-// Ctrl+C は本体にも同時に届く（同じコンソール／プロセスグループ）。本体の後始末を待ってから終わる
-Console.CancelKeyPress += (_, e) => e.Cancel = true;
-
-using var process = Process.Start(psi);
-if (process is null) return 2;
-process.WaitForExit();
-return process.ExitCode;
+return UwView.Cli.MainApp.Run(gui, args);
 #endif
 
 namespace UwView.Cli
 {
+    /// <summary>本体を --uvf 付きで起動し、標準入出力をそのまま引き継いで、終了コードを返す。</summary>
+    internal static class MainApp
+    {
+        private const string Marker = "--uvf";
+
+        public static int Run(string gui, string[] args)
+        {
+            var psi = new ProcessStartInfo(gui) { UseShellExecute = false };   // 入出力は引き継ぐ（リダイレクトしない）
+            psi.ArgumentList.Add(Marker);
+            foreach (string a in args) psi.ArgumentList.Add(a);
+
+            // Ctrl+C は本体にも同時に届く（同じコンソール／プロセスグループ）。本体の後始末を待ってから終わる
+            Console.CancelKeyPress += (_, e) => e.Cancel = true;
+
+            using var process = Process.Start(psi);
+            if (process is null) return 2;
+            process.WaitForExit();
+            return process.ExitCode;
+        }
+    }
+
     /// <summary>同じフォルダにある UwView 本体（画面）を探す。</summary>
     internal static class GuiLocator
     {
@@ -98,6 +106,11 @@ namespace UwView.Cli
     {
         public static int Run(string[] args)
         {
+            // 必須の文字列で絞れない正規表現を大きな入力に当てるときは、JIT で動く本体に任せる
+            //（NativeAOT は正規表現をコンパイルできず約 2 倍遅い。CompiledRegexRoute）
+            if (UwView.Core.Cli.CompiledRegexRoute.ForUvf(args) && GuiLocator.Find() is { } gui)
+                return MainApp.Run(gui, args);
+
             UwView.Core.EncodingDetector.EnsureCodePagesRegistered();
 
             using var cts = new CancellationTokenSource();
