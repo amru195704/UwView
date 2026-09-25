@@ -8,7 +8,7 @@
     <RootNamespace>UwView.Cli</RootNamespace>
     <!-- コマンド名は uvf（無料版 UwView の CLI。オーナー指示 2026-09-14） -->
     <AssemblyName>uvf</AssemblyName>
-    <Version>1.7.1.8</Version>
+    <Version>1.7.1.9</Version>
 
     <!-- 中身は「UwView 本体を CLI モードで起動する」だけの起動アプリ。
          .NET 一式を抱えると 36MB になるので、使わない部分を削って小さくする（オーナー指摘 2026-09-14） -->
@@ -22,11 +22,12 @@
     <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
   </PropertyGroup>
 
-  <!-- mac だけ: CLI の中身をこの実行ファイルの中で動かす NativeAOT 版にする（Program.cs の IN_PROCESS_CLI）。
-       本体を起動し直さないので、起動が 0.14 秒 → 0.01 秒（rg と同じ）。NativeAOT はその OS の上でしか
-       ビルドできないので、Linux・Windows は従来の起動アプリのまま（オーナー決定 2026-09-24）。
+  <!-- mac と Linux: CLI の中身をこの実行ファイルの中で動かす NativeAOT 版にする（Program.cs の IN_PROCESS_CLI）。
+       本体を起動し直さないので、起動が mac 0.14 秒・Linux 約 0.3 秒 → 0.01 秒前後（rg と同じ）。
+       NativeAOT はその OS の上でしかビルドできないので、Linux は Mac の中の Linux（Colima＋Docker）で作る
+       （build/publish.sh → UwView/build/linux-aot-cli.sh。2026-09-25）。Windows は従来の起動アプリのまま。
        RID を付けない dotnet build（開発・テスト）は従来の起動アプリになる。 -->
-  <PropertyGroup Condition="$(RuntimeIdentifier.StartsWith('osx-'))">
+  <PropertyGroup Condition="$(RuntimeIdentifier.StartsWith('osx-')) Or $(RuntimeIdentifier.StartsWith('linux-'))">
     <PublishAot>true</PublishAot>
     <PublishSingleFile>false</PublishSingleFile>
     <DefineConstants>$(DefineConstants);IN_PROCESS_CLI</DefineConstants>
@@ -34,7 +35,7 @@
     <!-- 中身を動かすので .NET の説明文を残す（削ると「正規表現が正しくありません: MakeException, [, 1, …」になる） -->
     <UseSystemResourceKeys>false</UseSystemResourceKeys>
   </PropertyGroup>
-  <ItemGroup Condition="$(RuntimeIdentifier.StartsWith('osx-'))">
+  <ItemGroup Condition="$(RuntimeIdentifier.StartsWith('osx-')) Or $(RuntimeIdentifier.StartsWith('linux-'))">
     <ProjectReference Include="../UwView.Core/UwView.Core.csproj" />
   </ItemGroup>
 
