@@ -37,21 +37,27 @@ internal static class NativeCompression
         catch (InvalidOperationException) { /* ほかの経路で登録済み */ }
     }
 
+    /// <summary>実行ファイルと同じフォルダーの DLL（Windows に同梱したもの。build/native/win-x64）。</summary>
+    private static string Beside(string fileName) => Path.Combine(AppContext.BaseDirectory, fileName);
+
     private static nint Resolve(string name, System.Reflection.Assembly assembly, DllImportSearchPath? path)
     {
         string[]? candidates = name switch
         {
             Zlib => OperatingSystem.IsMacOS() ? ["/usr/lib/libz.dylib", "libz.dylib"] : ["libz.so.1", "libz.so"],
-            Bzip2 => OperatingSystem.IsMacOS()
-                ? ["/usr/lib/libbz2.dylib", "libbz2.dylib"]
-                : ["libbz2.so.1", "libbz2.so.1.0", "libbz2.so"],
-            Lzma => OperatingSystem.IsMacOS()
-                ? ["/usr/lib/liblzma.dylib", "liblzma.5.dylib"]
-                : ["liblzma.so.5", "liblzma.so"],
+            Bzip2 => OperatingSystem.IsMacOS() ? ["/usr/lib/libbz2.dylib", "libbz2.dylib"]
+                   : OperatingSystem.IsWindows() ? null
+                   : ["libbz2.so.1", "libbz2.so.1.0", "libbz2.so"],
+            // Windows は OS に無いので、実行ファイルの隣に同梱した DLL だけを読む（検索順に任せると別の同名 DLL を拾いうる）
+            Lzma => OperatingSystem.IsMacOS() ? ["/usr/lib/liblzma.dylib", "liblzma.5.dylib"]
+                  : OperatingSystem.IsWindows() ? [Beside("liblzma.dll")]
+                  : ["liblzma.so.5", "liblzma.so"],
             // lz4 は Linux だけ（mac の OS には無い。mac は .NET 向けの展開で lz4 コマンドと互角だった）
             Lz4 => OperatingSystem.IsLinux() ? ["liblz4.so.1", "liblz4.so"] : null,
-            // zstd も Linux だけ（mac の OS には無い）。.uwvz の中身の圧縮・展開に使う
-            Zstd => OperatingSystem.IsLinux() ? ["libzstd.so.1", "libzstd.so"] : null,
+            // zstd は Linux と Windows（同梱）。mac の OS には無い。.uwvz の中身の圧縮・展開に使う
+            Zstd => OperatingSystem.IsLinux() ? ["libzstd.so.1", "libzstd.so"]
+                  : OperatingSystem.IsWindows() ? [Beside("libzstd.dll")]
+                  : null,
             _ => null,
         };
         if (candidates is null) return 0;
@@ -598,7 +604,7 @@ internal static unsafe class NativeZstd
 
     private static nint Try(Func<nint> create)
     {
-        if (!NativeCompression.Enabled || !OperatingSystem.IsLinux()) return 0;
+        if (!NativeCompression.Enabled || !(OperatingSystem.IsLinux() || OperatingSystem.IsWindows())) return 0;
         NativeCompression.EnsureResolver();
         try { return create(); }
         catch (Exception e) when (e is DllNotFoundException or EntryPointNotFoundException) { return 0; }

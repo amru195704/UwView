@@ -267,8 +267,18 @@ pack_linux() { # $1=rid  $2=arch-label(x86_64/aarch64)
   echo "  → $out"
 }
 
+# Windows に同梱する展開ライブラリ（liblzma・libzstd）とそのライセンス文書を、実行ファイルの隣に置く。
+# Windows の OS には無いので、無いと xz が1スレッドの .NET 展開になる（rg -z に 1/7.95。build/native/README.md）
+add_native() { # $1=rid $2=発行先
+  local src="build/native/$1"
+  [ -d "$src" ] || return 0
+  cp "$src"/*.dll "$2/"
+  mkdir -p "$2/third-party" && cp "$src"/third-party/* "$2/third-party/"
+}
+
 pack_win() { # $1=rid  $2=arch-label(x64/arm64)
   local rid="$1" arch="$2" pub; pub=$(publish_one "$rid")
+  add_native "$rid" "$pub"
   local out="$PWD/$OUT/$NAME-$VER-win-$arch.zip"
   # --norsrc --noextattr: mac の ._* （リソースフォーク・拡張属性）を zip に入れない
   rm -f "$out"; ( cd "$pub" && ditto -c -k --norsrc --noextattr . "$out" )
