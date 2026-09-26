@@ -1,11 +1,14 @@
 namespace UwView.Core.Cli;
 
 /// <summary>
-/// 除外の設定（<c>--no-ignore</c>・<c>--ignore-file</c>。指示書 WideField v1.7 §12）。uvf・uvp 共通。
+/// 除外の設定（<c>--no-ignore</c>・<c>--ignore-file</c>・<c>--no-ignore-files</c>。指示書 WideField v1.7 §12）。uvf・uvp 共通。
+/// ripgrep 15 と同じく、<c>--no-ignore</c> は <c>.ignore</c>・<c>.gitignore</c> 類だけを止め、
+/// <c>--ignore-file</c> で足した規則は止めない（止めるのは <c>--no-ignore-files</c>。外部レビュー 2026-09-27 で指摘）。
 /// </summary>
-/// <param name="Enabled">false なら除外をしない（<c>--no-ignore</c>。足したファイルも止める。ripgrep と同じ）。</param>
+/// <param name="Enabled">false なら <c>.ignore</c>・<c>.gitignore</c>・<c>.git/info/exclude</c>・全体設定に従わない（<c>--no-ignore</c>）。</param>
 /// <param name="ExtraFiles">足す除外ファイル（<c>--ignore-file</c>。一番弱い。後に書いたものほど強い）。</param>
-public sealed record IgnoreOptions(bool Enabled = true, IReadOnlyList<string>? ExtraFiles = null)
+/// <param name="ExtraEnabled">false なら <paramref name="ExtraFiles"/> も使わない（<c>--no-ignore-files</c>）。</param>
+public sealed record IgnoreOptions(bool Enabled = true, IReadOnlyList<string>? ExtraFiles = null, bool ExtraEnabled = true)
 {
     public static readonly IgnoreOptions Default = new();
     public static readonly IgnoreOptions None = new(Enabled: false);
@@ -18,10 +21,11 @@ public sealed record IgnoreOptions(bool Enabled = true, IReadOnlyList<string>? E
     {
         var rest = new List<string>(argv.Count);
         var extra = new List<string>();
-        bool enabled = true;
+        bool enabled = true, extraEnabled = true;
         for (int i = 0; i < argv.Count; i++)
         {
             if (argv[i] == "--no-ignore") { enabled = false; continue; }
+            if (argv[i] == "--no-ignore-files") { extraEnabled = false; continue; }
             if (argv[i] == "--ignore-file")
             {
                 if (i + 1 >= argv.Count)
@@ -32,7 +36,7 @@ public sealed record IgnoreOptions(bool Enabled = true, IReadOnlyList<string>? E
             }
             rest.Add(argv[i]);
         }
-        return (enabled && extra.Count == 0 ? null : new IgnoreOptions(enabled, extra), rest, null, null);
+        return (enabled && extraEnabled && extra.Count == 0 ? null : new IgnoreOptions(enabled, extra, extraEnabled), rest, null, null);
     }
 }
 
@@ -237,10 +241,12 @@ public sealed class IgnoreTree
     public IgnoreTree(IgnoreOptions options, string? workingDirectory = null)
     {
         _enabled = options.Enabled;
-        if (!_enabled) { _extra = []; return; }
         string cwd = Path.GetFullPath(workingDirectory ?? Directory.GetCurrentDirectory());
-        _global = GlobalExcludesFile() is { } global ? IgnoreFile.Load(global, cwd) : null;
-        _extra = [.. (options.ExtraFiles ?? []).Select(f => IgnoreFile.Load(Path.GetFullPath(f, cwd))).OfType<IgnoreFile>()];
+        _global = _enabled && GlobalExcludesFile() is { } global ? IgnoreFile.Load(global, cwd) : null;
+        // --ignore-file の規則は --no-ignore でも効く（ripgrep と同じ）。止めるのは --no-ignore-files だけ
+        _extra = options.ExtraEnabled
+            ? [.. (options.ExtraFiles ?? []).Select(f => IgnoreFile.Load(Path.GetFullPath(f, cwd))).OfType<IgnoreFile>()]
+            : [];
     }
 
     /// <summary>
@@ -248,16 +254,16 @@ public sealed class IgnoreTree
     /// </summary>
     public bool IsIgnored(string fullPath, bool isDirectory, string parentDirectory)
     {
-        if (!_enabled) return false;
-        var node = NodeFor(parentDirectory);
-        if (!node.AnyRules && _global is null && _extra.Length == 0) return false;
+        if (!_enabled && _extra.Length == 0) return false;
+        var node = _enabled ? NodeFor(parentDirectory) : null;
+        if (node is { AnyRules: false } && _global is null && _extra.Length == 0) return false;
 
         IgnoreMatch ignore = IgnoreMatch.None, git = IgnoreMatch.None, exclude = IgnoreMatch.None;
         bool sawGit = false;
         for (var n = node; n is not null; n = n.Parent)
         {
             if (ignore == IgnoreMatch.None && n.Ignore is { } i) ignore = i.Match(fullPath, isDirectory);
-            if (node.AnyGit && !sawGit)
+            if (node!.AnyGit && !sawGit)
             {
                 if (git == IgnoreMatch.None && n.GitIgnore is { } g) git = g.Match(fullPath, isDirectory);
                 if (exclude == IgnoreMatch.None && n.Exclude is { } x) exclude = x.Match(fullPath, isDirectory);
@@ -267,7 +273,7 @@ public sealed class IgnoreTree
         var result = ignore != IgnoreMatch.None ? ignore
                    : git != IgnoreMatch.None ? git
                    : exclude != IgnoreMatch.None ? exclude
-                   : node.AnyGit && _global is not null ? _global.Match(fullPath, isDirectory)
+                   : node is { AnyGit: true } && _global is not null ? _global.Match(fullPath, isDirectory)
                    : IgnoreMatch.None;
         for (int k = _extra.Length - 1; result == IgnoreMatch.None && k >= 0; k--)
             result = _extra[k].Match(fullPath, isDirectory);

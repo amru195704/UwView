@@ -58,7 +58,9 @@ public static class CliHelpTopics
               ワイルドカードで広げたファイルのうち、.ignore と .gitignore（git のリポジトリの中だけ）に
               当たるものは探しません。ripgrep と同じ規則です。名前を書いたファイルは除外しません。
               --ignore-file <ファイル>   除外の規則を足す（何回でも）
-              --no-ignore                除外をしない
+              --no-ignore                .ignore・.gitignore による除外をしない（--ignore-file の規則は効く）
+              --no-ignore-files          --ignore-file で足した規則も使わない
+              （.rgignore は読みません。ripgrep 専用の名前なので、要るなら .ignore に書いてください）
               --files                    何が対象になるか確かめる（除外した本数も出します）
           """
         : """
@@ -104,7 +106,9 @@ public static class CliHelpTopics
               Files found by wildcards are skipped when .ignore or .gitignore (inside a git repository only)
               excludes them. The rules are the same as ripgrep's. Files you name are never excluded.
               --ignore-file <file>   add exclusion rules (repeatable)
-              --no-ignore            do not exclude anything
+              --no-ignore            do not exclude by .ignore / .gitignore (--ignore-file rules still apply)
+              --no-ignore-files      do not use the --ignore-file rules either
+              (.rgignore is not read; it is ripgrep's own name, so write the same rules in .ignore)
               --files                check what is covered (the number of excluded files is shown too)
           """).Replace("uvf ", tool + " ");
 
@@ -124,9 +128,11 @@ public static class CliHelpTopics
               (?=…) (?!…) 先読み   (?<=…) (?<!…) 後読み   \1 後方参照
 
             使えないもの（書き換えてください）
-              [[:alpha:]] など  →  \p{L}（文字）  \d（数字）  \s（空白）
-              \p{Han}          →  \p{IsCJKUnifiedIdeographs}（漢字）
-              \p{Hiragana}     →  \p{IsHiragana}      \p{Katakana} → \p{IsKatakana}
+              [[:alpha:]]  →  [A-Za-z]      [[:digit:]] → [0-9]      [[:space:]] → [ \t\r\n\f\v]
+                （ripgrep と同じ ASCII の範囲。日本語なども含めるなら \p{L}（文字）\d（数字）\s（空白）。
+                  .NET の \d は全角数字にも当たります）
+              \p{Han}          →  \p{IsCJKUnifiedIdeographs}（漢字の主な範囲。々・〇・拡張A は含みません）
+              \p{Hiragana}     →  \p{IsHiragana}      \p{Katakana} → \p{IsKatakana}（半角カナは含みません）
               （ripgrep の名前付きグループ (?P<名前>…) はそのまま使えます）
 
             決まりごと
@@ -149,9 +155,11 @@ public static class CliHelpTopics
               (?=...) (?!...) lookahead   (?<=...) (?<!...) lookbehind   \1 backreference
 
             Not available (rewrite them)
-              [[:alpha:]] and others  ->  \p{L} (letter)  \d (digit)  \s (space)
-              \p{Han}                 ->  \p{IsCJKUnifiedIdeographs} (kanji)
-              \p{Hiragana}            ->  \p{IsHiragana}      \p{Katakana} -> \p{IsKatakana}
+              [[:alpha:]]  ->  [A-Za-z]      [[:digit:]] -> [0-9]      [[:space:]] -> [ \t\r\n\f\v]
+                (the same ASCII range as ripgrep; to include Japanese and other scripts use \p{L} (letter)
+                 \d (digit) \s (space). .NET's \d also matches full-width digits)
+              \p{Han}                 ->  \p{IsCJKUnifiedIdeographs} (the main range of kanji; not 々 〇 or Extension A)
+              \p{Hiragana}            ->  \p{IsHiragana}      \p{Katakana} -> \p{IsKatakana} (not half-width kana)
               (ripgrep's named group (?P<name>...) works as it is)
 
             Rules

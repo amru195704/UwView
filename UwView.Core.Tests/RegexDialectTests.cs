@@ -15,8 +15,34 @@ public class RegexDialectTests
     {
         var invalid = RegexDialect.Check("[[:alpha:]]+");
         Assert.NotNull(invalid);
-        Assert.Contains(@"\p{L}", invalid.Value.Ja);
+        Assert.Contains("[A-Za-z]", invalid.Value.Ja);      // ripgrep と同じ ASCII の範囲を先に
+        Assert.Contains(@"\p{L}", invalid.Value.Ja);        // 日本語なども含めるときの書き方も添える
         Assert.Contains("POSIX", invalid.Value.En);
+        Assert.Contains("[0-9]", RegexDialect.Check("[[:digit:]]")!.Value.Ja);
+    }
+
+    /// <summary>
+    /// 案内する ASCII の書き方は ripgrep の POSIX 文字クラスと同じ範囲（全角数字・é・日本語には当たらない）。
+    /// .NET の \d は全角数字にも当たるので、範囲をそろえるなら [0-9]（外部レビュー 2026-09-27）。
+    /// </summary>
+    [Theory]
+    [InlineData("[A-Za-z]", "abc", true)]
+    [InlineData("[A-Za-z]", "é", false)]
+    [InlineData("[A-Za-z]", "東京", false)]
+    [InlineData("[0-9]", "12", true)]
+    [InlineData("[0-9]", "１２", false)]
+    [InlineData(@"\d", "１２", true)]
+    public void 案内する書き方の範囲(string pattern, string text, bool matches)
+        => Assert.Equal(matches, System.Text.RegularExpressions.Regex.IsMatch(text, pattern));
+
+    [Fact]
+    public void 漢字の近い書き方は々と〇と拡張Aにも当たる()
+    {
+        string hint = RegexDialect.Check(@"\p{Han}+")!.Value.Ja;
+        string wide = hint[hint.IndexOf('[')..(hint.IndexOf(']') + 1)];
+        Assert.Null(RegexDialect.Check(wide));
+        foreach (string c in new[] { "漢", "々", "〇", "㐀" }) Assert.Matches(wide, c);
+        Assert.DoesNotMatch(@"\p{IsCJKUnifiedIdeographs}", "々");
     }
 
     [Fact]

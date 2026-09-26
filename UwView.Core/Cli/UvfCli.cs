@@ -135,7 +135,8 @@ public static class UvfCli
                       -h を単独で書くと使い方を表示します
             --files   検索せず、指定が何に広がるかだけを出す（除外した本数も出します）
             --ignore-file <ファイル>  除外の規則を足す（何回でも。.gitignore と同じ書き方）
-            --no-ignore  .ignore・.gitignore による除外をしない
+            --no-ignore  .ignore・.gitignore による除外をしない（--ignore-file で足した規則は効く）
+            --no-ignore-files  --ignore-file で足した規則も使わない
             -open     結果を stdout ではなく GUI で表示する（-i/-E/-v と併用できます）
 
           ファイルの指定: '*.log'（今のフォルダー）'**/*.log'（サブフォルダーも）'a.log,b.log'（複数）
@@ -185,7 +186,8 @@ public static class UvfCli
                       -h on its own prints this usage
             --files   list what the specification expands to, without searching (and how many were excluded)
             --ignore-file <file>  add exclusion rules (repeatable; same syntax as .gitignore)
-            --no-ignore  do not exclude files by .ignore / .gitignore
+            --no-ignore  do not exclude files by .ignore / .gitignore (rules added with --ignore-file still apply)
+            --no-ignore-files  do not use the rules added with --ignore-file either
             -open     show the results in the app instead of stdout (can be combined with -i/-E/-v)
 
           Files: '*.log' (this folder) '**/*.log' (subfolders too) 'a.log,b.log' (several)
