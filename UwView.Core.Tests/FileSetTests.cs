@@ -121,8 +121,10 @@ public class FileSetTests : IDisposable
     {
         Make("Program Files/app.log", "other.log");
         Assert.Equal(["Program Files/app.log", "other.log"], Expand("Program Files/app.log,other.log"));
-        // カンマが無いと空白で割れてしまい、1件も当たらない（指示書 §2.2b の注意点）
-        Assert.Empty(Expand("Program Files/app.log"));
+        // 全体がそのまま実在するファイルなら、空白を含んでも1本として扱う（外部レビュー 2026-09-27）
+        Assert.Equal(["Program Files/app.log"], Expand("Program Files/app.log"));
+        // 複数書くときはカンマが要る。無いと空白で割れてしまい、当たらない（指示書 §2.2b の注意点）
+        Assert.DoesNotContain("Program Files/app.log", Expand("Program Files/app.log other.log"));
     }
 
     [Fact]
@@ -206,5 +208,30 @@ public class FileSetTests : IDisposable
         try { Directory.CreateSymbolicLink(Path.Combine(_dir, "loop"), _dir); }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException) { return; }   // 作れない環境
         Assert.Equal(["real/r.log"], Expand("**/*.log"));
+    }
+
+    /// <summary>名前に空白を含むファイル1本は、そのまま書けば1本として扱う（外部レビュー 2026-09-27）。</summary>
+    [Fact]
+    public void 空白を含む名前のファイル1本はそのまま書ける()
+    {
+        string dir = Path.Combine(Path.GetTempPath(), "fileset-space-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(Path.Combine(dir, "sp dir"));
+        File.WriteAllText(Path.Combine(dir, "sp dir", "my log.txt"), "x\n");
+        File.WriteAllText(Path.Combine(dir, "sp dir", "other.txt"), "x\n");
+        try
+        {
+            Assert.Equal(["sp dir/my log.txt"], FileSet.Expand("sp dir/my log.txt", dir).Files);
+            Assert.Equal(["sp dir/my log.txt", "sp dir/other.txt"],
+                         FileSet.Expand("sp dir/*.txt,", dir).Files.Select(f => f.Replace('\\', '/')));   // 末尾のカンマで空白を区切りにしない
+            string previous = Directory.GetCurrentDirectory();
+            Directory.SetCurrentDirectory(dir);
+            try
+            {
+                Assert.False(FileSet.IsMultiple("sp dir/my log.txt"));
+                Assert.True(FileSet.IsMultiple("sp dir/*.txt,"));
+            }
+            finally { Directory.SetCurrentDirectory(previous); }
+        }
+        finally { Directory.Delete(dir, recursive: true); }
     }
 }
