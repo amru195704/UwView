@@ -249,6 +249,22 @@ public class UvfCliTests : IDisposable
         Assert.Equal("2\t2 a.log ERROR\n2\t2 b.log ERROR\n", never.Out);
     }
 
+    /// <summary>
+    /// -h は単独のときだけ使い方（uvp と同じ。grep 互換で -h を先頭に書く人がいる。指示書 §8 B1）。
+    /// </summary>
+    [Fact]
+    public async Task hは単独のときだけ使い方でそれ以外はファイル名なし()
+    {
+        MakeSet();
+        var first = await InDir("-h", "a.log b.log", "ERROR");
+        Assert.Equal("2\t2 a.log ERROR\n2\t2 b.log ERROR\n", first.Out);
+
+        var alone = await InDir("-h");
+        Assert.Contains("uvf", alone.Out);
+        Assert.Contains("--no-ignore", alone.Out);
+        Assert.DoesNotContain("中身で見分け", alone.Out + (await InDir("--help")).Out);
+    }
+
     [Fact]
     public async Task 何に広がるかだけを出せる()
     {

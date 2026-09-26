@@ -26,9 +26,11 @@ public enum UvfMode
 /// </param>
 /// <param name="FileNames">各行にファイル名を前置するか（null＝複数ファイルのときだけ。grep と同じ）。</param>
 /// <param name="ListFiles">検索せず、(A) が何に広がるかだけを出す（<c>--files</c>）。</param>
+/// <param name="Ignore">除外の設定（<c>--no-ignore</c>・<c>--ignore-file</c>。null なら既定＝.ignore・.gitignore に従う）。</param>
 public sealed record UvfInvocation(UvfMode Mode, string? File, string? Pattern,
                                    bool IgnoreCase = false, bool Regex = false, bool Invert = false,
-                                   bool Json = false, bool? FileNames = null, bool ListFiles = false);
+                                   bool Json = false, bool? FileNames = null, bool ListFiles = false,
+                                   IgnoreOptions? Ignore = null);
 
 /// <summary>終了コード（grep 互換。UwView Pro の uvp と同じ）。</summary>
 public static class UvfExit
@@ -130,7 +132,10 @@ public static class UvfCli
             -v        当てはまらない行を出す
             --json    1行に1つの JSON で出す（{"n":行番号,"line":"本文"}）
             -H / -h   ファイル名を必ず付ける／付けない（既定は複数ファイルのときだけ付ける）
-            --files   検索せず、指定が何に広がるかだけを出す
+                      -h を単独で書くと使い方を表示します
+            --files   検索せず、指定が何に広がるかだけを出す（除外した本数も出します）
+            --ignore-file <ファイル>  除外の規則を足す（何回でも。.gitignore と同じ書き方）
+            --no-ignore  .ignore・.gitignore による除外をしない
             -open     結果を stdout ではなく GUI で表示する（-i/-E/-v と併用できます）
 
           ファイルの指定: '*.log'（今のフォルダー）'**/*.log'（サブフォルダーも）'a.log,b.log'（複数）
@@ -138,6 +143,7 @@ public static class UvfCli
 
           複数ファイル（引用符で囲むこと。シェルに展開させない）:
             uvf '*.log' ERROR              ワイルドカード
+            uvf '**/*.log' ERROR           サブフォルダーも含めて探します
             uvf 'a.log b.log' ERROR        空白区切り
             uvf 'logs/*.log,err/*.log' 語  カンマ区切り（名前に空白を含むパスはこちら）
             uvf 'app.log,app.log.*.gz' 語  gz も混ぜられます（展開しながら探します）
@@ -145,12 +151,16 @@ public static class UvfCli
             出力は「ファイル名:行番号<TAB>本文」。並びは指定した順です
             複数ファイルのときは -open を使えません（UwView Pro の uvp を使ってください）
             zip は対象外です（1つずつ展開してから探してください）
+            ワイルドカードで広げたファイルのうち、.ignore・.gitignore に当たるものは探しません
+            （ripgrep と同じ規則。名前を書いたファイルは除外しません。詳しくは uvf --help files）
 
-          入力の種類（拡張子ではなく中身で見分けます）:
+          入力の種類（拡張子で見分けます。.gz なのに中身が gzip でなければ知らせます）:
             gz           展開しながら探します（1つでも、複数ファイルに混ぜても）
             bz2 xz lzma zst lz4 br  同じく展開しながら探します（外部コマンドは使いません）
             zip          扱えません（展開してから探してください。zip は UwView Pro が扱います）
             pbf          扱えません（OSM の pbf は UwView Pro が XML にして扱います）
+            .uwvz        扱えません（UwView Pro のファイルです）
+            tar.gz       扱えません（複数ファイルをまとめた tar のため。展開してから探してください）
             それ以外      テキストとして扱います
 
           そのほか:
@@ -172,7 +182,10 @@ public static class UvfCli
             -v        print the lines that do NOT match
             --json    print one JSON object per line ({"n":<line>,"line":"<text>"})
             -H / -h   always / never prefix the file name (default: only with several files)
-            --files   list what the specification expands to, without searching
+                      -h on its own prints this usage
+            --files   list what the specification expands to, without searching (and how many were excluded)
+            --ignore-file <file>  add exclusion rules (repeatable; same syntax as .gitignore)
+            --no-ignore  do not exclude files by .ignore / .gitignore
             -open     show the results in the app instead of stdout (can be combined with -i/-E/-v)
 
           Files: '*.log' (this folder) '**/*.log' (subfolders too) 'a.log,b.log' (several)
@@ -180,6 +193,7 @@ public static class UvfCli
 
           Several files (quote them; do not let the shell expand them):
             uvf '*.log' ERROR              wildcard
+            uvf '**/*.log' ERROR           subfolders included
             uvf 'a.log b.log' ERROR        separated by spaces
             uvf 'logs/*.log,err/*.log' p   separated by commas (use commas for paths with spaces)
             uvf 'app.log,app.log.*.gz' p   gz files can be mixed in (searched while decompressing)
@@ -187,12 +201,16 @@ public static class UvfCli
             Output is "file:line<TAB>text", in the order you wrote them.
             -open cannot be used with several files (use uvp from UwView Pro).
             zip files are not searched (extract them first).
+            Files found by wildcards are skipped when .ignore / .gitignore exclude them
+            (the same rules as ripgrep; files you name are never excluded; see uvf --help files).
 
-          Input types (decided by content, not by the extension):
+          Input types (decided by the file extension; a .gz that is not gzip is reported):
             gz           searched while decompressing (alone or mixed with plain files)
             bz2 xz lzma zst lz4 br  the same, decompressed here (no external command is used)
             zip          not supported (extract it first; UwView Pro handles zip)
             pbf          not supported (UwView Pro turns OSM pbf into XML)
+            .uwvz        not supported (it is a UwView Pro file)
+            tar.gz       not supported (a tar bundles several files; extract it first)
             anything else treated as text
 
           Also:
@@ -224,7 +242,9 @@ public static class UvfCli
         }
 
         // 2) uvf ファイル 検索パターン [-i] [-E] [-v] [-open]
-        var args = argv.ToList();
+        // 除外の指定（--no-ignore・--ignore-file <path>。位置は自由。指示書 §12）
+        var (ignore, args, ignoreJa, ignoreEn) = IgnoreOptions.Take(argv);
+        if (ignoreJa is not null) return (null, ignoreJa, ignoreEn);
         bool open = args.Count > 0 && args[^1] == "-open";
         if (open) args.RemoveAt(args.Count - 1);
         if (args.Contains("-open"))
@@ -251,7 +271,7 @@ public static class UvfCli
 
         // --files は「(A) が何に広がるか」を見るだけなので、検索語は要らない
         if (listFiles && args.Count == 1)
-            return (new UvfInvocation(UvfMode.Search, args[0], null, ListFiles: true), null, null);
+            return (new UvfInvocation(UvfMode.Search, args[0], null, ListFiles: true, Ignore: ignore), null, null);
 
         // シェルが展開してしまった形（uvf a.log b.log c.log 語）。黙って受けると .uwvz の名前が決まらない
         //（指示書 §2.2b）。引用符で囲むよう促す
@@ -272,7 +292,7 @@ public static class UvfCli
 
 
         return (new UvfInvocation(open ? UvfMode.SearchInGui : UvfMode.Search, args[0], args[1],
-                                  icase, regex, invert, json, fileNames, listFiles), null, null);
+                                  icase, regex, invert, json, fileNames, listFiles, ignore), null, null);
     }
 
     public static async Task<int> RunAsync(IReadOnlyList<string> argv, UvfEnvironment env, CancellationToken ct = default)
@@ -320,12 +340,14 @@ public static class UvfCli
         // 複数ファイルの指定（空白・カンマ・ワイルドカード）は、ここで一覧に広げる。
         // 単一ファイルのときは従来どおり素通りさせる（出力を1バイトも変えないため。§2.6）
         IReadOnlyList<string>? many = null;
+        string? ignoredNotice = null;
         if (inv.File is { Length: > 0 } specification
             && (FileSet.IsMultiple(specification) || inv.FileNames == true || inv.ListFiles))
         {
-            var found = FileSet.Expand(specification);
+            var found = FileSet.Expand(specification, ignore: inv.Ignore);
             foreach (string miss in found.Missing)
-                env.StdErr.WriteLine(T($"{tool}: 1件も当たりません: {miss}", $"{tool}: nothing matched: {miss}"));
+                env.StdErr.WriteLine(found.MissingNotice(miss, ja, tool));
+            ignoredNotice = found.IgnoredNotice(ja, tool);
             if (found.Files.Count == 0)
             {
                 // 空白で割れた結果すべて外れた＝名前に空白を含むパスの可能性（§2.2b）
@@ -350,6 +372,8 @@ public static class UvfCli
             var text = new StringBuilder();
             for (int i = 0; i < list.Count; i++) text.Append(i + 1).Append('\t').Append(list[i]).Append('\n');
             await WriteLineAsync(env.StdOut, text.ToString().TrimEnd('\n'), ct);
+            // 除外した本数は最後に stderr へ（一覧そのものは rg --files と同じ形のまま。指示書 §12.2）
+            if (ignoredNotice is not null) env.StdErr.WriteLine(ignoredNotice);
             return UvfExit.Found;
         }
 

@@ -53,6 +53,13 @@ public static class CliHelpTopics
               ・フォルダー名だけ（'logs'）は使えません。'logs/**' と書いてください
               ・シンボリックリンクのフォルダーはたどりません
               ・パスの区切りは / と \ のどちらでも書けます（Windows）
+
+            除外（.ignore・.gitignore）
+              ワイルドカードで広げたファイルのうち、.ignore と .gitignore（git のリポジトリの中だけ）に
+              当たるものは探しません。ripgrep と同じ規則です。名前を書いたファイルは除外しません。
+              --ignore-file <ファイル>   除外の規則を足す（何回でも）
+              --no-ignore                除外をしない
+              --files                    何が対象になるか確かめる（除外した本数も出します）
           """
         : """
           Specifying files (the first argument)
@@ -92,6 +99,13 @@ public static class CliHelpTopics
               - A folder name alone ('logs') is not accepted; write 'logs/**'
               - Symbolic links to folders are not followed
               - Both / and \ can be used as the path separator (Windows)
+
+            Exclusion (.ignore / .gitignore)
+              Files found by wildcards are skipped when .ignore or .gitignore (inside a git repository only)
+              excludes them. The rules are the same as ripgrep's. Files you name are never excluded.
+              --ignore-file <file>   add exclusion rules (repeatable)
+              --no-ignore            do not exclude anything
+              --files                check what is covered (the number of excluded files is shown too)
           """).Replace("uvf ", tool + " ");
 
     public static string Regex(bool ja, string tool) => (ja
