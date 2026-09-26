@@ -67,11 +67,14 @@ public class ZstdBlockTests
     }
 
     [Fact]
-    public void LinuxではOSのlibzstdを使う()
+    public void LinuxとWindowsではOSのlibzstdを使う()
     {
+        // Windows は実行ファイルの隣に同梱した libzstd.dll（build/native/win-x64）。mac の OS には無い
+        bool expected = OperatingSystem.IsLinux()
+                        || OperatingSystem.IsWindows() && File.Exists(Path.Combine(AppContext.BaseDirectory, "libzstd.dll"));
         using var c = new ZstdBlockCompressor(1);
         using var d = new ZstdBlockDecompressor();
-        Assert.Equal(OperatingSystem.IsLinux(), c.IsNative);
-        Assert.Equal(OperatingSystem.IsLinux(), d.IsNative);
+        Assert.Equal(expected, c.IsNative);
+        Assert.Equal(expected, d.IsNative);
     }
 }
