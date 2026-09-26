@@ -16,6 +16,8 @@ namespace UwView.Core.Cli;
 ///         <c>[ ]</c> <c>{ }</c> は使えない（文字どおりの名前）。照合は段ごとに進め、必要な段だけ読む（指示書 §9）</item>
 ///   <item>隠しファイル・隠しフォルダーは対象外。シンボリックリンクのフォルダーはたどらない（ループを避ける）</item>
 ///   <item>パス区切りは <c>/</c> と <c>\</c> の両方を受ける（Windows で <c>\</c> を書く人がいる）</item>
+///   <item><b>ワイルドカードで広げたものは <c>.ignore</c>・<c>.gitignore</c> に従って外す</b>（ripgrep と同じ規則。
+///         除外したフォルダーには降りない。名前を書いたファイルは外さない。指示書 §12・<see cref="IgnoreTree"/>）</item>
 /// </list>
 /// </summary>
 public static class FileSet
@@ -28,7 +30,32 @@ public static class FileSet
 
     /// <param name="Files">見つかったファイル（順序は §2.2 の規則どおり）。</param>
     /// <param name="Missing">1件も当たらなかった断片（そのまま利用者に見せる）。</param>
-    public readonly record struct Result(IReadOnlyList<string> Files, IReadOnlyList<string> Missing);
+    /// <param name="IgnoredFiles">除外したファイルの数（<c>--files</c> で知らせる）。</param>
+    /// <param name="IgnoredFolders">除外したフォルダーの数（中は見ていないので、中のファイルは数えていない）。</param>
+    /// <param name="MissingByIgnore"><paramref name="Missing"/> のうち、除外がなければ当たっていた断片。</param>
+    public readonly record struct Result(IReadOnlyList<string> Files, IReadOnlyList<string> Missing,
+                                         int IgnoredFiles = 0, int IgnoredFolders = 0,
+                                         IReadOnlyList<string>? MissingByIgnore = null)
+    {
+        public int Ignored => IgnoredFiles + IgnoredFolders;
+
+        /// <summary><c>--files</c> の最後に出す知らせ（何も外していなければ null）。</summary>
+        public string? IgnoredNotice(bool ja, string tool)
+            => Ignored == 0 ? null
+             : ja ? $"{tool}: 除外 {IgnoredFiles:N0} 本"
+                    + (IgnoredFolders > 0 ? $"・フォルダー {IgnoredFolders:N0} 個（中は見ていません）" : "")
+                    + "（.gitignore ほか。--no-ignore で含めます）"
+                  : $"{tool}: {IgnoredFiles:N0} files excluded"
+                    + (IgnoredFolders > 0 ? $" and {IgnoredFolders:N0} folders not entered" : "")
+                    + " (.gitignore and others; --no-ignore includes them)";
+
+        /// <summary>1件も当たらなかった断片の知らせ（除外のせいなら、そう添える）。</summary>
+        public string MissingNotice(string fragment, bool ja, string tool)
+            => MissingByIgnore?.Contains(fragment) == true
+                ? ja ? $"{tool}: 1件も当たりません: {fragment}（.gitignore などで除外。--no-ignore で含めます）"
+                     : $"{tool}: nothing matched: {fragment} (excluded by .gitignore or the like; --no-ignore includes them)"
+                : ja ? $"{tool}: 1件も当たりません: {fragment}" : $"{tool}: nothing matched: {fragment}";
+    }
 
     /// <summary>
     /// (A) を断片に割る。
@@ -64,18 +91,27 @@ public static class FileSet
     /// <summary>
     /// (A) を展開する。<paramref name="baseDirectory"/> は相対パスの起点（省略すればカレント）。
     /// </summary>
-    public static Result Expand(string specification, string? baseDirectory = null)
+    /// <param name="ignore">除外の設定（省略すれば <see cref="IgnoreOptions.Default"/>＝.ignore・.gitignore に従う）。</param>
+    public static Result Expand(string specification, string? baseDirectory = null, IgnoreOptions? ignore = null)
     {
         string root = baseDirectory ?? Directory.GetCurrentDirectory();
         var files = new List<string>();
         var seen = new HashSet<string>(OperatingSystem.IsLinux() ? StringComparer.Ordinal
                                                                  : StringComparer.OrdinalIgnoreCase);
         var missing = new List<string>();
+        var missingByIgnore = new List<string>();
+        var walk = new WalkState(new IgnoreTree(ignore ?? IgnoreOptions.Default, root));
 
         foreach (string fragment in Split(specification))
         {
-            var matched = ExpandOne(fragment, root);
-            if (matched.Count == 0) { missing.Add(fragment); continue; }
+            int ignoredBefore = walk.IgnoredFiles.Count + walk.IgnoredFolders.Count;
+            var matched = ExpandOne(fragment, root, walk);
+            if (matched.Count == 0)
+            {
+                missing.Add(fragment);
+                if (walk.IgnoredFiles.Count + walk.IgnoredFolders.Count > ignoredBefore) missingByIgnore.Add(fragment);
+                continue;
+            }
             char separator = SeparatorOf(fragment);
             foreach (string path in matched)
                 // 重複は先に出た側を採る。突き合わせは<b>展開の起点</b>から見た絶対パスで行う
@@ -83,7 +119,15 @@ public static class FileSet
                 if (seen.Add(Path.GetFullPath(path, root)))
                     files.Add(AsWritten(path, separator));
         }
-        return new Result(files, missing);
+        return new Result(files, missing, walk.IgnoredFiles.Count, walk.IgnoredFolders.Count, missingByIgnore);
+    }
+
+    /// <summary>1回の展開で共有するもの（除外ファイルはフォルダーごとに1回だけ読む）。</summary>
+    private sealed class WalkState(IgnoreTree ignore)
+    {
+        public IgnoreTree Ignore { get; } = ignore;
+        public HashSet<string> IgnoredFiles { get; } = new(StringComparer.Ordinal);
+        public HashSet<string> IgnoredFolders { get; } = new(StringComparer.Ordinal);
     }
 
     /// <summary>
@@ -104,7 +148,7 @@ public static class FileSet
         => separator == '/' ? path.Replace('\\', '/') : path.Replace('/', '\\');
 
     /// <summary>断片1つぶん。ワイルドカードが無ければそのファイル、あれば名前順に展開する。</summary>
-    private static List<string> ExpandOne(string fragment, string root)
+    private static List<string> ExpandOne(string fragment, string root, WalkState walk)
     {
         string spec = fragment.Replace('\\', Path.DirectorySeparatorChar)
                               .Replace('/', Path.DirectorySeparatorChar);
@@ -128,7 +172,8 @@ public static class FileSet
         if (!Directory.Exists(start)) return [];   // 手前のフォルダーが無い＝1件も当たらない
 
         var found = new HashSet<string>(StringComparer.Ordinal);
-        try { Walk(start, segments, first, found); }
+        // 先頭のワイルドカードの無い段（名前を書いたフォルダー）は除外しない（ripgrep に渡したフォルダーと同じ）
+        try { Walk(Path.GetFullPath(start), segments, first, found, walk); }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException) { }
 
         // 自分たちが作った派生ファイル（.uwvz など）は、ワイルドカードの対象にしない
@@ -141,10 +186,13 @@ public static class FileSet
 
     /// <summary>
     /// 1段ずつ照合する（<c>*</c> <c>?</c> は1段の中だけ・<c>**</c> は0段以上）。
+    ///
     /// 隠しファイル・隠しフォルダーは見ない（.NET の既定。Unix は <c>.</c> で始まる名前）。
     /// シンボリックリンクのフォルダーは下りない（ループを避ける）。リンクのファイルは対象にする。
     /// </summary>
-    private static void Walk(string directory, string[] segments, int index, HashSet<string> found)
+    /// 除外（.ignore・.gitignore）に当たるファイルは拾わず、当たるフォルダーには降りない（指示書 §12）。
+    /// </summary>
+    private static void Walk(string directory, string[] segments, int index, HashSet<string> found, WalkState walk)
     {
         string segment = segments[index];
         bool last = index == segments.Length - 1;
@@ -154,21 +202,21 @@ public static class FileSet
             if (last)
             {
                 // dir/** … dir 以下のすべてのファイル
-                foreach (string file in Files(directory, "*")) found.Add(file);
-                foreach (string sub in Directories(directory, "*")) Walk(sub, segments, index, found);
+                foreach (string file in Files(directory, "*", walk)) found.Add(file);
+                foreach (string sub in Directories(directory, "*", walk)) Walk(sub, segments, index, found, walk);
                 return;
             }
-            Walk(directory, segments, index + 1, found);                     // 0段
-            foreach (string sub in Directories(directory, "*")) Walk(sub, segments, index, found);   // 1段以上
+            Walk(directory, segments, index + 1, found, walk);                     // 0段
+            foreach (string sub in Directories(directory, "*", walk)) Walk(sub, segments, index, found, walk);   // 1段以上
             return;
         }
 
         if (last)
         {
-            foreach (string file in Files(directory, segment)) found.Add(file);
+            foreach (string file in Files(directory, segment, walk)) found.Add(file);
             return;
         }
-        foreach (string sub in Directories(directory, segment)) Walk(sub, segments, index + 1, found);
+        foreach (string sub in Directories(directory, segment, walk)) Walk(sub, segments, index + 1, found, walk);
     }
 
     private static readonly EnumerationOptions Listing = new()
@@ -179,15 +227,26 @@ public static class FileSet
         AttributesToSkip = FileAttributes.Hidden | FileAttributes.System,
     };
 
-    private static IEnumerable<string> Files(string directory, string pattern)
-        => Directory.EnumerateFiles(directory, "*", Listing)
-                    .Where(path => FileSystemName.MatchesSimpleExpression(pattern, Path.GetFileName(path), IgnoreCase));
+    private static IEnumerable<string> Files(string directory, string pattern, WalkState walk)
+    {
+        foreach (string path in Directory.EnumerateFiles(directory, "*", Listing))
+        {
+            if (!FileSystemName.MatchesSimpleExpression(pattern, Path.GetFileName(path), IgnoreCase)) continue;
+            if (walk.Ignore.IsIgnored(path, isDirectory: false, directory)) { walk.IgnoredFiles.Add(path); continue; }
+            yield return path;
+        }
+    }
 
-    private static IEnumerable<string> Directories(string directory, string pattern)
-        => new DirectoryInfo(directory).EnumerateDirectories("*", Listing)
-                                       .Where(d => (d.Attributes & FileAttributes.ReparsePoint) == 0)   // リンクは下りない
-                                       .Where(d => FileSystemName.MatchesSimpleExpression(pattern, d.Name, IgnoreCase))
-                                       .Select(d => d.FullName);
+    private static IEnumerable<string> Directories(string directory, string pattern, WalkState walk)
+    {
+        foreach (var d in new DirectoryInfo(directory).EnumerateDirectories("*", Listing))
+        {
+            if ((d.Attributes & FileAttributes.ReparsePoint) != 0) continue;   // リンクは下りない
+            if (!FileSystemName.MatchesSimpleExpression(pattern, d.Name, IgnoreCase)) continue;
+            if (walk.Ignore.IsIgnored(d.FullName, isDirectory: true, directory)) { walk.IgnoredFolders.Add(d.FullName); continue; }
+            yield return d.FullName;
+        }
+    }
 
     private static string Relative(string path, string root)
     {
