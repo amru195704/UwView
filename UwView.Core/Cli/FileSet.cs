@@ -69,9 +69,17 @@ public static class FileSet
             ? specification.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             : specification.Split([' ', '\t'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
-    /// <summary>(A) が複数のファイル・ワイルドカードを含むか（単一ファイルの経路を変えないための判定）。</summary>
+    /// <summary>
+    /// (A) が複数のファイル・ワイルドカードを含むか（単一ファイルの経路を変えないための判定）。
+    /// <b>全体がそのまま実在するファイルの名前なら1本</b>とみる。名前に空白を含むファイル
+    /// （<c>'my log.txt'</c>）を1本だけ書くと、空白で割れて見つからなかった（外部レビュー 2026-09-27）。
+    /// カンマを含む指定（<c>'C:/Program Files/app/*.log,'</c> のように末尾に付けたものも）は複数の書き方とみる。
+    /// </summary>
     public static bool IsMultiple(string specification)
-        => Split(specification).Length > 1 || HasWildcard(specification);
+    {
+        if (!specification.Contains(',') && File.Exists(specification)) return false;
+        return Split(specification).Length > 1 || HasWildcard(specification) || specification.Contains(',');
+    }
 
     /// <summary>ワイルドカードを含むか（<c>*</c> と <c>?</c>。<c>[ ]</c> は文字どおりの名前として扱う）。</summary>
     public static bool HasWildcard(string text) => text.AsSpan().IndexOfAny('*', '?') >= 0;
@@ -101,6 +109,10 @@ public static class FileSet
         var missing = new List<string>();
         var missingByIgnore = new List<string>();
         var walk = new WalkState(new IgnoreTree(ignore ?? IgnoreOptions.Default, root));
+
+        // 全体がそのまま実在するファイルの名前なら、その1本（名前に空白を含むファイル。IsMultiple と同じ判定）
+        if (!specification.Contains(',') && File.Exists(Path.IsPathRooted(specification) ? specification : Path.Combine(root, specification)))
+            return new Result([specification], []);
 
         foreach (string fragment in Split(specification))
         {
