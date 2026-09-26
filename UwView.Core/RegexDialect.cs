@@ -38,19 +38,37 @@ public static class RegexDialect
 
     private static readonly Regex Posix = new(@"\[:(?<name>[a-z]+):\]", RegexOptions.CultureInvariant);
 
-    private static readonly Dictionary<string, string> PosixReplacement = new()
+    /// <summary>
+    /// POSIX 文字クラスの書き換え先。ripgrep（Rust）の POSIX 文字クラスは <b>ASCII だけ</b>に当たるので、
+    /// 結果が変わらない ASCII の書き方を先に、日本語なども含めたいときの書き方を後に添える
+    /// （.NET の <c>\d</c> <c>\s</c> <c>\p{L}</c> は全角数字や日本語にも当たり、範囲が広がる。外部レビュー 2026-09-27）。
+    /// </summary>
+    private static readonly Dictionary<string, (string Ascii, string? Unicode)> PosixReplacement = new()
     {
-        ["alpha"] = @"\p{L}", ["digit"] = @"\d", ["alnum"] = @"[\p{L}\p{N}]", ["space"] = @"\s",
-        ["upper"] = @"\p{Lu}", ["lower"] = @"\p{Ll}", ["punct"] = @"\p{P}", ["xdigit"] = "[0-9A-Fa-f]",
-        ["word"] = @"\w", ["blank"] = @"[ \t]", ["cntrl"] = @"\p{Cc}",
+        ["alpha"] = ("[A-Za-z]", @"\p{L}"), ["digit"] = ("[0-9]", @"\d"), ["alnum"] = ("[A-Za-z0-9]", @"[\p{L}\p{N}]"),
+        ["space"] = (@"[ \t\r\n\f\v]", @"\s"), ["upper"] = ("[A-Z]", @"\p{Lu}"), ["lower"] = ("[a-z]", @"\p{Ll}"),
+        ["punct"] = (@"[!-/:-@\[-`{-~]", @"\p{P}"), ["xdigit"] = ("[0-9A-Fa-f]", null), ["word"] = ("[A-Za-z0-9_]", @"\w"),
+        ["blank"] = (@"[ \t]", null), ["cntrl"] = (@"[\x00-\x1F\x7F]", null), ["graph"] = ("[!-~]", null), ["print"] = ("[ -~]", null),
     };
 
-    /// <summary>ripgrep などの用字名と、.NET で書くときの名前（.NET は用字名を持たず、Unicode のブロック名を使う）。</summary>
-    private static readonly Dictionary<string, string> ScriptReplacement = new(StringComparer.OrdinalIgnoreCase)
+    /// <summary>
+    /// ripgrep などの用字名と、.NET で書くときの近い書き方（.NET は用字名を持たず、Unicode のブロック名を使う）。
+    /// 用字とブロックは同じ範囲ではないので、違いも添える（例: \p{Han} は 々・〇・拡張A の 㐀 にも当たるが、
+    /// \p{IsCJKUnifiedIdeographs} は当たらない）。
+    /// </summary>
+    private static readonly Dictionary<string, (string Instead, string Ja, string En)> ScriptReplacement = new(StringComparer.OrdinalIgnoreCase)
     {
-        ["Han"] = "IsCJKUnifiedIdeographs", ["Hiragana"] = "IsHiragana", ["Katakana"] = "IsKatakana",
-        ["Hangul"] = "IsHangulSyllables", ["Latin"] = "IsBasicLatin", ["Greek"] = "IsGreek",
-        ["Cyrillic"] = "IsCyrillic", ["Arabic"] = "IsArabic", ["Thai"] = "IsThai",
+        ["Han"] = (@"\p{IsCJKUnifiedIdeographs}",
+                   @"漢字の主な範囲。々・〇・拡張A（㐀 など）も含めるなら [\p{IsCJKUnifiedIdeographs}\p{IsCJKUnifiedIdeographsExtensionA}\p{IsCJKCompatibilityIdeographs}々〇]。拡張B 以降は書けません",
+                   @"the main range of kanji; to also cover 々 〇 and Extension A (㐀 etc.) use [\p{IsCJKUnifiedIdeographs}\p{IsCJKUnifiedIdeographsExtensionA}\p{IsCJKCompatibilityIdeographs}々〇]; Extension B and later cannot be written"),
+        ["Hiragana"] = (@"\p{IsHiragana}", "ほぼ同じ範囲", "almost the same range"),
+        ["Katakana"] = (@"\p{IsKatakana}", @"半角カナは含みません。含めるなら [\p{IsKatakana}ｦ-ﾟ]", @"half-width kana are not included; use [\p{IsKatakana}ｦ-ﾟ] for them"),
+        ["Hangul"] = (@"\p{IsHangulSyllables}", "音節だけ（字母は含みません）", "syllables only (not jamo)"),
+        ["Latin"] = (@"\p{IsBasicLatin}", "ASCII だけ（アクセント付きの文字は含みません）", "ASCII only (not accented letters)"),
+        ["Greek"] = (@"\p{IsGreek}", "近い範囲", "a close range"),
+        ["Cyrillic"] = (@"\p{IsCyrillic}", "近い範囲", "a close range"),
+        ["Arabic"] = (@"\p{IsArabic}", "近い範囲", "a close range"),
+        ["Thai"] = (@"\p{IsThai}", "近い範囲", "a close range"),
     };
 
     /// <summary>
@@ -63,9 +81,15 @@ public static class RegexDialect
         if (posix.Success)
         {
             string name = posix.Groups["name"].Value;
-            string instead = PosixReplacement.TryGetValue(name, out var r) ? r : @"\p{…}";
-            return ($"[[:{name}:]] のような POSIX 文字クラスは使えません（別の意味で探してしまいます）。{instead} を使ってください",
-                    $"POSIX classes such as [[:{name}:]] are not supported (they would mean something else). Use {instead} instead");
+            if (!PosixReplacement.TryGetValue(name, out var r))
+                return ($"[[:{name}:]] のような POSIX 文字クラスは使えません（別の意味で探してしまいます）",
+                        $"POSIX classes such as [[:{name}:]] are not supported (they would mean something else)");
+            string wideJa = r.Unicode is { } u ? $"。日本語なども含めるなら {u}" : "";
+            string wideEn = r.Unicode is { } w ? $"; to include Japanese and other scripts, use {w}" : "";
+            return ($"[[:{name}:]] のような POSIX 文字クラスは使えません（別の意味で探してしまいます）。"
+                    + $"{r.Ascii} を使ってください（ripgrep と同じ ASCII の範囲{wideJa}）",
+                    $"POSIX classes such as [[:{name}:]] are not supported (they would mean something else). "
+                    + $"Use {r.Ascii} instead (the same ASCII range as ripgrep{wideEn})");
         }
 
         try
@@ -78,10 +102,11 @@ public static class RegexDialect
         {
             string hintJa = "", hintEn = "";
             var unknown = System.Text.RegularExpressions.Regex.Match(e.Message, @"Unknown property '(?<name>[^']+)'");
-            if (unknown.Success && ScriptReplacement.TryGetValue(unknown.Groups["name"].Value, out var block))
+            if (unknown.Success && ScriptReplacement.TryGetValue(unknown.Groups["name"].Value, out var script))
             {
-                hintJa = $"（\\p{{{unknown.Groups["name"].Value}}} は使えません。\\p{{{block}}} を使ってください）";
-                hintEn = $" (\\p{{{unknown.Groups["name"].Value}}} is not supported; use \\p{{{block}}})";
+                string name = unknown.Groups["name"].Value;
+                hintJa = $"（\\p{{{name}}} は使えません。{script.Instead} を使ってください。{script.Ja}）";
+                hintEn = $" (\\p{{{name}}} is not supported; use {script.Instead}: {script.En})";
             }
             return ($"正規表現が正しくありません: {e.Message}{hintJa}", $"Invalid regular expression: {e.Message}{hintEn}");
         }

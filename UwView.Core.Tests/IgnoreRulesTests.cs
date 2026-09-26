@@ -175,8 +175,12 @@ public class IgnoreRulesTests : IDisposable
         Assert.Equal(["b.txt"], [.. FileSet.Expand("*", Path.Combine(_dir, "sub")).Files]);
     }
 
+    /// <summary>
+    /// --no-ignore は .ignore・.gitignore 類だけを止め、--ignore-file の規則は効いたまま（ripgrep 15 と同じ）。
+    /// 足した規則も止めるのは --no-ignore-files（外部レビュー 2026-09-27 の指摘で合わせた）。
+    /// </summary>
     [Fact]
-    public void 足したファイルは一番弱く_no_ignoreは全部止める()
+    public void 足したファイルは一番弱く_no_ignoreでも効き_no_ignore_filesで止まる()
     {
         Touch(".ignore", "!keep.log\n");
         Touch("keep.log");
@@ -187,7 +191,11 @@ public class IgnoreRulesTests : IDisposable
         try
         {
             Assert.Equal(["b.txt", "keep.log"], Listed("**", new IgnoreOptions(ExtraFiles: [extra])));   // .ignore の ! が勝つ
-            Assert.Equal(["b.txt", "drop.log", "keep.log"], Listed("**", new IgnoreOptions(Enabled: false, ExtraFiles: [extra])));
+            Assert.Equal(["b.txt"], Listed("**", new IgnoreOptions(Enabled: false, ExtraFiles: [extra])));   // .ignore の ! も止まり、*.log が効く
+            Assert.Equal(["b.txt", "drop.log", "keep.log"],
+                         Listed("**", new IgnoreOptions(Enabled: false, ExtraFiles: [extra], ExtraEnabled: false)));
+            Assert.Equal(["b.txt", "drop.log", "keep.log"],
+                         Listed("**", new IgnoreOptions(ExtraFiles: [extra], ExtraEnabled: false)));   // 足した規則だけ止める
         }
         finally { File.Delete(extra); }
     }
@@ -230,10 +238,11 @@ public class IgnoreRulesTests : IDisposable
     [Fact]
     public void 引数から除外の指定を取り出す()
     {
-        var (options, rest, error, _) = IgnoreOptions.Take(["--no-ignore", "a.log", "--ignore-file", "x.ignore", "語", "--ignore-file", "y"]);
+        var (options, rest, error, _) = IgnoreOptions.Take(["--no-ignore", "a.log", "--ignore-file", "x.ignore", "語", "--ignore-file", "y", "--no-ignore-files"]);
         Assert.Null(error);
         Assert.Equal(["a.log", "語"], rest);
         Assert.False(options!.Enabled);
+        Assert.False(options.ExtraEnabled);
         Assert.Equal(["x.ignore", "y"], options.ExtraFiles);
 
         Assert.Null(IgnoreOptions.Take(["a.log", "語"]).Options);   // 何も無ければ既定（null）
