@@ -62,7 +62,8 @@ public static class SearchService
     {
         var opts = RegexOptions.CultureInvariant;
         if (options.IgnoreCase) opts |= RegexOptions.IgnoreCase;
-        string pattern = options.UseRegex ? options.Pattern : Regex.Escape(options.Pattern);
+        // (?P<名前> は (?<名前> と同じ意味に読み替える（ripgrep から持ってきた式。RegexDialect）
+        string pattern = options.UseRegex ? RegexDialect.Normalize(options.Pattern) : Regex.Escape(options.Pattern);
         return new Regex(pattern, opts, TimeSpan.FromSeconds(5));
     }
 

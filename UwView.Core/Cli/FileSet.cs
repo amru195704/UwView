@@ -11,7 +11,10 @@ namespace UwView.Core.Cli;
 ///         uvp が <c>.uwvz</c> の名前を決められない）</item>
 ///   <item><b>区切りは空白とカンマの両方。</b>名前に空白を含むパス（<c>Program Files</c>）はカンマ区切りで書く</item>
 ///   <item><b>並びは「書いた順」→「名前順」</b>（ロケールに依存しないバイト順）。重複は先に出た側を採る</item>
-///   <item>ワイルドカードは分けて考えない。<c>*/*.log</c> も <c>**</c> も、この仕組みが解釈できる形はすべて受ける</item>
+///   <item>ワイルドカードは <c>*</c>（1段の中の任意の文字の並び）・<c>?</c>（任意の1文字）・<c>**</c>（フォルダーを何段でも。0段も含む）。
+///         <c>*</c> はフォルダーの区切りをまたがない（シェルと同じ。<c>*/*.log</c> はちょうど1段下）。
+///         <c>[ ]</c> <c>{ }</c> は使えない（文字どおりの名前）。照合は段ごとに進め、必要な段だけ読む（指示書 §9）</item>
+///   <item>隠しファイル・隠しフォルダーは対象外。シンボリックリンクのフォルダーはたどらない（ループを避ける）</item>
 ///   <item>パス区切りは <c>/</c> と <c>\</c> の両方を受ける（Windows で <c>\</c> を書く人がいる）</item>
 /// </list>
 /// </summary>
@@ -43,8 +46,8 @@ public static class FileSet
     public static bool IsMultiple(string specification)
         => Split(specification).Length > 1 || HasWildcard(specification);
 
-    /// <summary>ワイルドカードを含むか。</summary>
-    public static bool HasWildcard(string text) => text.AsSpan().IndexOfAny('*', '?', '[') >= 0;
+    /// <summary>ワイルドカードを含むか（<c>*</c> と <c>?</c>。<c>[ ]</c> は文字どおりの名前として扱う）。</summary>
+    public static bool HasWildcard(string text) => text.AsSpan().IndexOfAny('*', '?') >= 0;
 
     /// <summary>
     /// ワイルドカードの展開から外す拡張子（自分たちが作った派生ファイル）。
@@ -111,68 +114,80 @@ public static class FileSet
             return File.Exists(path) ? [spec] : [];
         }
 
-        // ワイルドカードは「どこまでが普通のフォルダか」で分けて、残りを照合に使う
-        string directoryPart = Path.GetDirectoryName(spec) ?? "";
-        string pattern = Path.GetFileName(spec);
-        while (HasWildcard(directoryPart) is false && directoryPart.Length > 0
-               && !Directory.Exists(Path.IsPathRooted(directoryPart) ? directoryPart : Path.Combine(root, directoryPart)))
-            return [];   // 手前のフォルダが無い＝1件も当たらない
-
-        string searchRoot = directoryPart.Length == 0 ? root
-                          : Path.IsPathRooted(directoryPart) ? directoryPart
-                          : Path.Combine(root, directoryPart);
-        var options = new EnumerationOptions
+        // 起点（絶対パスならその根、相対なら root）と、段ごとの形に分ける。
+        // ワイルドカードの無い先頭の段は、普通のフォルダーとしてそのままたどる（列挙しない）
+        string start = Path.IsPathRooted(spec) ? Path.GetPathRoot(spec)! : root;
+        string rest = Path.IsPathRooted(spec) ? spec[Path.GetPathRoot(spec)!.Length..] : spec;
+        var segments = rest.Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries);
+        int first = 0;
+        while (first < segments.Length - 1 && !HasWildcard(segments[first]))
         {
-            MatchCasing = OperatingSystem.IsLinux() ? MatchCasing.CaseSensitive : MatchCasing.CaseInsensitive,
-            RecurseSubdirectories = HasWildcard(directoryPart) || spec.Contains("**"),
-            IgnoreInaccessible = true,
-        };
-
-        try
-        {
-            // 手前にワイルドカードがある（logs/*/app.log・**/x.log）ときは、下まで見てから形で絞る
-            var found = options.RecurseSubdirectories
-                ? Directory.EnumerateFiles(WildcardFreeRoot(searchRoot, root), "*", options)
-                           .Where(path => Matches(path, spec, root))
-                : Directory.EnumerateFiles(searchRoot, pattern, options);
-
-            // 自分たちが作った派生ファイル（.uwvz など）は、ワイルドカードの対象にしない
-            var list = found.Where(path => !IsDerived(path)).Select(path => Relative(path, root)).ToList();
-            list.Sort(StringComparer.Ordinal);   // 名前順（ロケールに依存しないバイト順）
-            return list;
+            start = Path.Combine(start, segments[first]);
+            first++;
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException)
-        {
-            return [];
-        }
+        if (!Directory.Exists(start)) return [];   // 手前のフォルダーが無い＝1件も当たらない
+
+        var found = new HashSet<string>(StringComparer.Ordinal);
+        try { Walk(start, segments, first, found); }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException) { }
+
+        // 自分たちが作った派生ファイル（.uwvz など）は、ワイルドカードの対象にしない
+        var list = found.Where(path => !IsDerived(path)).Select(path => Relative(path, root)).ToList();
+        list.Sort(StringComparer.Ordinal);   // 名前順（ロケールに依存しないバイト順）
+        return list;
     }
 
-    /// <summary>ワイルドカードが始まる手前までのフォルダ。</summary>
-    private static string WildcardFreeRoot(string searchRoot, string root)
+    private static bool IgnoreCase => !OperatingSystem.IsLinux();
+
+    /// <summary>
+    /// 1段ずつ照合する（<c>*</c> <c>?</c> は1段の中だけ・<c>**</c> は0段以上）。
+    /// 隠しファイル・隠しフォルダーは見ない（.NET の既定。Unix は <c>.</c> で始まる名前）。
+    /// シンボリックリンクのフォルダーは下りない（ループを避ける）。リンクのファイルは対象にする。
+    /// </summary>
+    private static void Walk(string directory, string[] segments, int index, HashSet<string> found)
     {
-        string current = searchRoot;
-        while (HasWildcard(current))
-            current = Path.GetDirectoryName(current) ?? "";
-        return current.Length == 0 ? root : current;
-    }
+        string segment = segments[index];
+        bool last = index == segments.Length - 1;
 
-    /// <summary>このパスが (A) の断片の形に当てはまるか（フォルダ部分のワイルドカードも見る）。</summary>
-    private static bool Matches(string path, string spec, string root)
-    {
-        string relative = Relative(path, root);
-        string normalized = spec.Replace('\\', Path.DirectorySeparatorChar).Replace('/', Path.DirectorySeparatorChar);
-        var comparison = OperatingSystem.IsLinux() ? MatchCasing.CaseSensitive : MatchCasing.CaseInsensitive;
-        bool ignoreCase = comparison == MatchCasing.CaseInsensitive;
-
-        // `**` は「間のフォルダは何段でもよい」。照合しやすい形に直してから当てる
-        if (normalized.Contains("**"))
+        if (segment == "**")
         {
-            string tail = normalized[(normalized.LastIndexOf("**", StringComparison.Ordinal) + 2)..]
-                          .TrimStart(Path.DirectorySeparatorChar);
-            return FileSystemName.MatchesSimpleExpression(tail, Path.GetFileName(relative), ignoreCase);
+            if (last)
+            {
+                // dir/** … dir 以下のすべてのファイル
+                foreach (string file in Files(directory, "*")) found.Add(file);
+                foreach (string sub in Directories(directory, "*")) Walk(sub, segments, index, found);
+                return;
+            }
+            Walk(directory, segments, index + 1, found);                     // 0段
+            foreach (string sub in Directories(directory, "*")) Walk(sub, segments, index, found);   // 1段以上
+            return;
         }
-        return FileSystemName.MatchesSimpleExpression(normalized, relative, ignoreCase);
+
+        if (last)
+        {
+            foreach (string file in Files(directory, segment)) found.Add(file);
+            return;
+        }
+        foreach (string sub in Directories(directory, segment)) Walk(sub, segments, index + 1, found);
     }
+
+    private static readonly EnumerationOptions Listing = new()
+    {
+        RecurseSubdirectories = false,
+        IgnoreInaccessible = true,
+        MatchCasing = MatchCasing.PlatformDefault,
+        AttributesToSkip = FileAttributes.Hidden | FileAttributes.System,
+    };
+
+    private static IEnumerable<string> Files(string directory, string pattern)
+        => Directory.EnumerateFiles(directory, "*", Listing)
+                    .Where(path => FileSystemName.MatchesSimpleExpression(pattern, Path.GetFileName(path), IgnoreCase));
+
+    private static IEnumerable<string> Directories(string directory, string pattern)
+        => new DirectoryInfo(directory).EnumerateDirectories("*", Listing)
+                                       .Where(d => (d.Attributes & FileAttributes.ReparsePoint) == 0)   // リンクは下りない
+                                       .Where(d => FileSystemName.MatchesSimpleExpression(pattern, d.Name, IgnoreCase))
+                                       .Select(d => d.FullName);
 
     private static string Relative(string path, string root)
     {

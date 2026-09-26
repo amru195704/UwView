@@ -143,4 +143,68 @@ public class FileSetTests : IDisposable
     [InlineData("logs/*/a.log", true)]
     public void 複数指定かどうかを見分ける(string specification, bool multiple)
         => Assert.Equal(multiple, FileSet.IsMultiple(specification));
+
+    // ── 指示書 §9: ワイルドカードの直し（G1〜G5） ──
+
+    private void MakeTree() => Make(
+        "top.log",
+        "a/one.log", "a/b/two.log", "a/b/c/three.log",
+        "logs/app.log", "logs/2026-09/x.log", "logs/2026-09/sub/y.log",
+        "x/sub/z.log", "sub/w.log");
+
+    [Fact]
+    public void 星は区切りをまたがずちょうど1段下だけ()   // G1
+    {
+        MakeTree();
+        Assert.Equal(["a/one.log", "logs/app.log", "sub/w.log"], Expand("*/*.log"));
+    }
+
+    [Fact]
+    public void 二重星は0段以上で今のフォルダーも含む()
+    {
+        MakeTree();
+        Assert.Equal(["a/b/c/three.log", "a/b/two.log", "a/one.log", "logs/2026-09/sub/y.log", "logs/2026-09/x.log",
+                      "logs/app.log", "sub/w.log", "top.log", "x/sub/z.log"], Expand("**/*.log"));
+        Assert.Equal(["logs/2026-09/sub/y.log", "logs/2026-09/x.log", "logs/app.log"], Expand("logs/**/*.log"));
+    }
+
+    [Fact]
+    public void 二重星のあとにフォルダーがあっても当たる()   // G2
+    {
+        MakeTree();
+        Assert.Equal(["logs/2026-09/sub/y.log", "sub/w.log", "x/sub/z.log"], Expand("**/sub/*.log"));
+        Assert.Equal(["logs/2026-09/x.log"], Expand("**/2026-09/*.log"));
+    }
+
+    [Fact]
+    public void フォルダーのあとの二重星だけならその下の全部()   // G3
+    {
+        MakeTree();
+        Assert.Equal(["logs/2026-09/sub/y.log", "logs/2026-09/x.log", "logs/app.log"], Expand("logs/**"));
+    }
+
+    [Fact]
+    public void 角かっこは文字どおりの名前()   // G4
+    {
+        Make("app[12].log", "app1.log");
+        Assert.Equal(["app[12].log"], Expand("app[12].log"));
+        Assert.Equal(["app1.log", "app[12].log"], Expand("app*.log"));
+    }
+
+    [Fact]
+    public void 隠しファイルと隠しフォルダーは対象外()
+    {
+        Make("v.log", ".hidden.log", ".git/h.log");
+        if (!OperatingSystem.IsWindows())   // Windows の隠しは属性で決まる（. で始まる名前ではない）
+            Assert.Equal(["v.log"], Expand("**/*.log"));
+    }
+
+    [Fact]
+    public void シンボリックリンクのフォルダーはたどらない()   // G5
+    {
+        Make("real/r.log");
+        try { Directory.CreateSymbolicLink(Path.Combine(_dir, "loop"), _dir); }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { return; }   // 作れない環境
+        Assert.Equal(["real/r.log"], Expand("**/*.log"));
+    }
 }

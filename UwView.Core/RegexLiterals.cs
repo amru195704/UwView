@@ -32,6 +32,7 @@ public static class RegexLiterals
     public static IReadOnlyList<string>? Extract(string pattern, bool ignoreCase)
     {
         if (ignoreCase || string.IsNullOrEmpty(pattern)) return null;
+        pattern = RegexDialect.Normalize(pattern);   // 照合と同じ読み替え（(?P< のまま読むと必須の文字を取り違える）
         try
         {
             var parser = new Parser(pattern);

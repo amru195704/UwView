@@ -737,4 +737,35 @@ public class UvfCliTests : IDisposable
         }
         catch (System.ComponentModel.Win32Exception) { return null; }
     }
+
+    // ── 指示書 §9・§10: --help files / --help regex と正規表現の方言 ──
+
+    [Theory]
+    [InlineData("files", "'**/*.log'")]
+    [InlineData("regex", "IsCJKUnifiedIdeographs")]
+    public async Task help_の詳しい説明が出る(string topic, string expected)
+    {
+        var run = await Uvf("--help", topic);
+        Assert.Equal(UvfExit.Found, run.Exit);
+        Assert.Contains(expected, run.Out);
+        Assert.Contains("--help files", (await Uvf("--help")).Out);   // 本体からも案内する
+    }
+
+    [Fact]
+    public async Task POSIX文字クラスは探す前に止めて書き換えを案内する()
+    {
+        string log = WriteLog();
+        var run = await Uvf(log, "[[:alpha:]]+", "-E");
+        Assert.Equal(UvfExit.Error, run.Exit);
+        Assert.Contains(@"\p{L}", run.Err);
+    }
+
+    [Fact]
+    public async Task ripgrepの名前付きグループがそのまま動く()
+    {
+        string log = WriteLog();
+        var run = await Uvf(log, "(?P<lv>ERROR) dev(?P<d>2)", "-E");
+        Assert.Equal(UvfExit.Found, run.Exit);
+        Assert.Equal((await Uvf(log, "(?<lv>ERROR) dev(?<d>2)", "-E")).Out, run.Out);
+    }
 }

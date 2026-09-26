@@ -126,12 +126,15 @@ public static class UvfCli
 
           オプション:
             -i        大文字小文字を区別しない
-            -E        パターンを正規表現として扱う
+            -E        パターンを正規表現として扱う（.NET の正規表現。詳しくは uvf --help regex）
             -v        当てはまらない行を出す
             --json    1行に1つの JSON で出す（{"n":行番号,"line":"本文"}）
             -H / -h   ファイル名を必ず付ける／付けない（既定は複数ファイルのときだけ付ける）
             --files   検索せず、指定が何に広がるかだけを出す
             -open     結果を stdout ではなく GUI で表示する（-i/-E/-v と併用できます）
+
+          ファイルの指定: '*.log'（今のフォルダー）'**/*.log'（サブフォルダーも）'a.log,b.log'（複数）
+            必ず引用符で囲みます。詳しくは uvf --help files
 
           複数ファイル（引用符で囲むこと。シェルに展開させない）:
             uvf '*.log' ERROR              ワイルドカード
@@ -154,6 +157,7 @@ public static class UvfCli
             uvf --tune [ファイル] [--apply]   この機械に合うスレッド数を実測する（--apply で設定に保存）
             uvf --version   版数を出す
             uvf --help      この使い方を出す
+            uvf --help files / --help regex   ファイルの指定・正規表現の詳しい説明
 
           出力は「行番号<TAB>本文」。終了コード: 0=見つかった 1=見つからない 2=エラー
           """
@@ -164,12 +168,15 @@ public static class UvfCli
 
           Options:
             -i        ignore case
-            -E        treat the pattern as a regular expression
+            -E        treat the pattern as a regular expression (.NET regex; see uvf --help regex)
             -v        print the lines that do NOT match
             --json    print one JSON object per line ({"n":<line>,"line":"<text>"})
             -H / -h   always / never prefix the file name (default: only with several files)
             --files   list what the specification expands to, without searching
             -open     show the results in the app instead of stdout (can be combined with -i/-E/-v)
+
+          Files: '*.log' (this folder) '**/*.log' (subfolders too) 'a.log,b.log' (several)
+            Always quote them. For details: uvf --help files
 
           Several files (quote them; do not let the shell expand them):
             uvf '*.log' ERROR              wildcard
@@ -192,6 +199,7 @@ public static class UvfCli
             uvf --tune [file] [--apply]   measure the best thread count on this machine (--apply saves it)
             uvf --version   print the version
             uvf --help      print this usage
+            uvf --help files / --help regex   details on specifying files / regular expressions
 
           Output is "line<TAB>text". Exit codes: 0=found 1=not found 2=error
           """).Replace("uvf ", tool + " ");
@@ -278,6 +286,14 @@ public static class UvfCli
         if (argv.Count > 0 && argv[0] == "--tune")
             return await TuneAsync(argv, env, T, Err, ct);
 
+        // --help files / --help regex: ファイルの指定・正規表現の詳しい説明（指示書 §9.3・§10.3）
+        if (argv.Count == 2 && argv[0] is "--help" or "-h" or "-help" or "--Help"
+            && CliHelpTopics.Find(argv[1], ja, tool) is { } topic)
+        {
+            await WriteLineAsync(env.StdOut, topic, ct);
+            return UvfExit.Found;
+        }
+
         // --version / --help（uvp と同じ綴り。無かったので入れた。オーナー指摘 2026-09-21）
         if (argv.Count == 1)
         {
@@ -358,17 +374,13 @@ public static class UvfCli
         // 正規表現の書き間違いは、探し始める前にここで伝える。
         // -open の結果集めは下の try の外で走るので、そちらでは例外が素通りしていた
         //（再レビュー 2026-09-19 の指摘F。画面も起動しないまま終了コード2で返す）
-        if (inv.Regex && inv.Pattern is { Length: > 0 } pattern)
+        // POSIX 文字クラス（[[:alpha:]]）は黙って別の意味で探すので、書き換えを案内して止める。
+        // \p{Han} などの用字名は書き換え先を添える（指示書 §10.2）
+        if (inv.Regex && inv.Pattern is { Length: > 0 } pattern
+            && RegexDialect.Check(pattern, inv.IgnoreCase) is { } invalid)
         {
-            try
-            {
-                _ = SearchService.BuildRegex(new SearchOptions(pattern, UseRegex: true, IgnoreCase: inv.IgnoreCase));
-            }
-            catch (Exception e) when (e is RegexParseException or ArgumentException)
-            {
-                Err(T($"正規表現が正しくありません: {e.Message}", $"Invalid regular expression: {e.Message}"));
-                return UvfExit.Error;
-            }
+            Err(T(invalid.Ja, invalid.En));
+            return UvfExit.Error;
         }
 
         // 複数ファイルを画面で開くのは uwvz に束ねられる UwView Pro の役目（段階4）。

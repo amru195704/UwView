@@ -114,7 +114,7 @@ public sealed class CompiledHighlighter
             {
                 var opts = RegexOptions.CultureInvariant;
                 if (rule.IgnoreCase) opts |= RegexOptions.IgnoreCase;
-                string pat = rule.IsRegex ? rule.Pattern : Regex.Escape(rule.Pattern);
+                string pat = rule.IsRegex ? RegexDialect.Normalize(rule.Pattern) : Regex.Escape(rule.Pattern);
                 regex = new Regex(pat, opts, TimeSpan.FromSeconds(1));
             }
             catch (ArgumentException) { continue; } // 不正な正規表現はスキップ
