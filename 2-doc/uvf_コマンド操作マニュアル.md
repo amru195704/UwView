@@ -1,0 +1,476 @@
+# uvf コマンド操作マニュアル（UwView 無料版）
+/Volumes/BIWIN/26-git/UwView/2-doc/uvf_コマンド操作マニュアル.md
+
+対象：uvf 1.7.2.7（Wide Field 試験版）／作成 2026-09-27・更新 2026-09-27（除外 `.ignore`・`.gitignore`、外部レビューの指摘を反映）
+
+`uvf --help` は要点だけを並べたものです。このマニュアルは、書き方の決まりと例をまとめて説明します。
+有料版の `uvp`（UwView Pro）については `UwViewPro/2-doc/uvp_コマンド操作マニュアル.md` を見てください。
+
+---
+
+## 目次
+
+1. uvf でできること
+2. 基本の形（2つだけ）
+3. 検索のオプション
+4. ファイルの指定（1本・複数・ワイルドカード・除外）
+5. 出力の形
+6. 圧縮ファイル
+7. 正規表現（-E）
+8. GUI と組み合わせる（-open）
+9. スレッド数の調整（--tune）
+10. 終了コード
+11. ripgrep・grep との対応表
+12. よくあるつまずき
+
+---
+
+## 1. uvf でできること
+
+- 大きなテキストファイル（ログ、CSV、OSM の XML など）を速く検索する
+- 複数のファイルをまとめて検索する（ワイルドカード・サブフォルダーも）
+- ワイルドカードで広げたとき、`.ignore`・`.gitignore` に当たるファイルを ripgrep と同じ規則で外す（4.7）
+- gz・bz2・xz・lzma・zst・lz4・br の圧縮ファイルを、展開しながらそのまま検索する（外部コマンドは使いません）
+- 結果を GUI（UwView）で開く
+
+索引（`.uwvz`）を作って2回目以降を速くする機能、zip・pbf の読み込み、集計や置換は **UwView Pro の uvp** の機能です。
+
+---
+
+## 2. 基本の形（2つだけ）
+
+```
+uvf ファイル 検索語 [オプション]        検索して結果を出す
+uvf -open [ファイル] [検索語]            GUI を起動する（ファイルがあれば開き、検索語があれば検索まで）
+```
+
+例：
+
+```bash
+uvf app.log ERROR                  # app.log から ERROR を含む行を出す
+uvf app.log 'connection reset'     # 空白を含む検索語は引用符で囲む
+uvf app.log ERROR -i               # 大文字小文字を区別しない
+uvf -open app.log ERROR            # GUI で開いて ERROR を検索した状態にする
+```
+
+**検索語は、既定では文字列そのまま**で探します（正規表現ではありません）。正規表現で探すときは `-E` を付けます（7章）。
+
+オプションの位置は自由です（ファイルと検索語の前でも後でも構いません）。ただし `-open` だけは**先頭か末尾**に書きます。
+
+---
+
+## 3. 検索のオプション
+
+| オプション | 意味 | 例 |
+|---|---|---|
+| `-i` | 大文字小文字を区別しない | `uvf app.log error -i` |
+| `-E` | 検索語を正規表現として扱う（7章） | `uvf app.log 'code=5\d\d' -E` |
+| `-v` | 当てはまら**ない**行を出す | `uvf app.log DEBUG -v` |
+| `--json` | 1行に1つの JSON で出す（5章） | `uvf app.log ERROR --json` |
+| `-H` | ファイル名を必ず付ける | `uvf app.log ERROR -H` |
+| `-h` | ファイル名を付けない（**`-h` だけを書くと使い方を表示**） | `uvf '*.log' ERROR -h` |
+| `--files` | 検索せず、ファイルの指定が何に広がるかだけを出す（除外した本数も出す） | `uvf '**/*.log' --files` |
+| `--no-ignore` | `.ignore`・`.gitignore` による除外をしない（`--ignore-file` で足した規則は効く。4.7） | `uvf '**/*.log' ERROR --no-ignore` |
+| `--no-ignore-files` | `--ignore-file` で足した規則も使わない（4.7） | `uvf '**' ERROR --no-ignore --no-ignore-files` |
+| `--ignore-file <ファイル>` | 除外の規則を足す。何回でも書ける（4.7） | `uvf '**' ERROR --ignore-file my.ignore` |
+| `-open` | 結果を GUI で表示する（1本のファイルのとき） | `uvf app.log ERROR -i -open` |
+
+そのほか：
+
+| コマンド | 意味 |
+|---|---|
+| `uvf --help` | 使い方 |
+| `uvf --help files` | ファイルの指定の詳しい説明 |
+| `uvf --help regex` | 正規表現の詳しい説明 |
+| `uvf --version` | 版数 |
+| `uvf --tune [ファイル] [--apply]` | この機械に合うスレッド数を測る（9章） |
+
+---
+
+## 4. ファイルの指定（1本・複数・ワイルドカード・除外）
+
+### 4.1 いちばん大事な決まり：**必ず引用符で囲む**
+
+複数のファイルやワイルドカードは、**全体を1つの引用符で囲みます。** シェルに広げさせず、uvf が自分で広げます。
+
+```bash
+uvf '*.log' ERROR           # ○
+uvf *.log ERROR             # ✕ シェルが広げてしまう → エラーになります
+uvf a.log b.log ERROR       # ✕ 同じ理由でエラー
+uvf 'a.log b.log' ERROR     # ○
+```
+
+引数は「ファイルの指定」と「検索語」の2つだけ、と覚えてください。
+
+### 4.2 区切り
+
+- 空白かカンマで、複数のファイルを書けます。
+- **カンマが1つでもあれば、カンマだけで区切ります。** 名前に空白を含むパス（`Program Files` など）はカンマで区切ってください。
+
+```bash
+uvf 'a.log b.log' ERROR
+uvf 'logs/*.log,err/*.log' ERROR
+uvf 'C:/Program Files/app/*.log,D:/logs/*.log' ERROR     # 空白を含むパスはカンマで
+```
+
+### 4.3 使える記号
+
+| 記号 | 意味 | 例 |
+|---|---|---|
+| `*` | 任意の文字の並び。**フォルダーの区切り（`/`）はまたがない** | `uvf '*.log' ERROR` |
+| `?` | 任意の1文字 | `uvf 'app-0?.log' ERROR` |
+| `**` | フォルダーを何段でも（0段も含む） | `uvf '**/*.log' ERROR` |
+| `[ ]` `{ }` | **使えません**（文字どおりの名前として扱います） | `uvf 'app[1].log' ERROR`（`app[1].log` という名前のファイル） |
+
+### 4.4 例
+
+| コマンド | 対象 |
+|---|---|
+| `uvf '*.log' ERROR` | 今のフォルダーの .log |
+| `uvf 'logs/*.log' ERROR` | logs の直下の .log |
+| `uvf '*/*.log' ERROR` | 1段下のフォルダーの .log（今のフォルダーの .log は含まない） |
+| `uvf '**/*.log' ERROR` | 今のフォルダー以下**すべて**の .log（サブフォルダーも） |
+| `uvf 'logs/**/*.log' ERROR` | logs 以下すべての .log |
+| `uvf 'logs/**' ERROR` | logs 以下のすべてのファイル |
+| `uvf '**/2026-09/*.log' ERROR` | どこかにある 2026-09 フォルダーの直下の .log |
+| `uvf 'app.log,app.log.*.gz' ERROR` | 平文と gz を混ぜて |
+| `uvf '/var/log/app/*.log' ERROR` | 絶対パスでも書けます |
+
+### 4.5 決まりごと
+
+- **並び**：書いた順。1つの指定の中は名前順です。同じファイルは1回だけ探します。
+- **隠しファイル・隠しフォルダー**（`.` で始まる名前など）は対象外です。
+- **大文字と小文字**：Linux は区別します。Mac と Windows は区別しません。
+- **`.uwvz`**（UwView Pro の索引）はワイルドカードでは拾いません。
+- **1件も当たらない指定**は、その指定を名前で知らせます（黙って0件にしません）。
+- **1,000本を超える**と知らせます（止めません）。目安は環境変数 `UVF_MANY_FILES` で変えられます。
+- **フォルダー名だけ**（`'logs'`）は使えません。`'logs/**'` と書いてください。
+- **シンボリックリンクのフォルダー**はたどりません。
+- **パスの区切り**は `/` と `\` のどちらでも書けます（Windows）。
+- **`.ignore`・`.gitignore` に当たるもの**は、ワイルドカードで広げたときに外します（4.7）。隠しファイルを外すのとは別の決まりです。
+
+### 4.6 何が対象になるか確かめる：`--files`
+
+検索する前に、指定が何に広がるかを確かめられます。
+
+```bash
+$ uvf 'logs/**/*.log' --files
+1	logs/app.log
+2	logs/2026-09/app-0901.log
+3	logs/2026-09/app-0902.log
+```
+
+除外（4.7）で外したものがあれば、最後に本数を出します（標準エラー出力）。対象になるファイルの組み合わせは `rg --files` と同じです（出力は番号付きなので、形は違います。`.rgignore` は読みません）。
+
+### 4.7 除外（`.ignore`・`.gitignore`）
+
+ワイルドカードで広げたファイルのうち、`.ignore`・`.gitignore` に当たるものは探しません（v1.7.2.5 から）。
+主な規則は ripgrep と同じで、`UwTest/uv_ignore_test.sh` の突き合わせで、対象の一覧と検索結果が ripgrep と一致することを確かめています。違いは `.rgignore` を読まないことです。
+`.gitignore` などに `bin/` `obj/` と書いてあれば、`'**'` で探してもそれらを読みません（git で管理しているだけでは外れません。規則に書かれているものが外れます）。
+
+| 決まり | 内容 |
+|---|---|
+| 効く範囲 | **ワイルドカードで広げたファイルだけ**。名前を書いたファイルは除外しません（`uvf 'build/app.log' 語` は build が除外されていても探します） |
+| 名前を書いたフォルダー | `'build/**'` のように**先頭に書いたフォルダー**は除外しません。中のファイルは規則で見ます（ripgrep に `rg 語 build/` と渡したときと同じ） |
+| 読むファイル | `.ignore`・`.gitignore`・`.git/info/exclude`・git の全体設定（`~/.gitconfig` の `[core] excludesFile`。無ければ `~/.config/git/ignore`） |
+| `.gitignore` が効くのは | **git のリポジトリの中だけ**（どこかの親フォルダーに `.git` がある）。`.ignore` はリポジトリの外でも効きます |
+| 親フォルダー | 探し始めたフォルダーより**上**の除外ファイルも効きます（`.gitignore` はリポジトリの根まで） |
+| 強さ | `.ignore` → `.gitignore` → `.git/info/exclude` → 全体設定 → `--ignore-file` の順に強い。同じ種類なら**深いフォルダーのほうが強い** |
+| 除外したフォルダー | **中を見ません**（大きな `node_modules` なども読まないので速い）。中のファイルを `!` で戻すこともできません（git と同じ） |
+| 大文字・小文字 | 区別します（git・ripgrep と同じ。4.5 のファイルの指定の決まりとは別） |
+| `.rgignore` | 読みません（ripgrep 専用の名前です。必要なら同じ中身を `.ignore` に書いてください） |
+
+**書き方**（`.gitignore` と同じ）：
+
+| 書き方 | 意味 |
+|---|---|
+| 空行・`#` で始まる行 | 無視（`#` そのものを書くときは `\#`） |
+| `*.log` | どの深さの .log にも当たる |
+| `/build` | その除外ファイルがあるフォルダーの**直下だけ**（先頭の `/` で固定） |
+| `doc/*.md` | 途中に `/` があれば、その除外ファイルのフォルダーから見たパス |
+| `build/` | **フォルダーだけ**に当たる |
+| `*` `?` `[a-z]` `[!a-z]` | ワイルドカード（`*` `?` は `/` をまたがない）。**除外の書き方では `[ ]` が使えます**（4.3 のファイルの指定では使えません） |
+| `**/tmp`・`out/**`・`a/**/b` | 何段でも |
+| `!keep.log` | 除外を取り消す。後の行が勝ちます |
+| 行末の空白 | 無視（空白そのものは `\ `） |
+
+改行が CRLF（Windows）の除外ファイルや、先頭に BOM のあるものも読みます。
+
+**オプション**：
+
+| オプション | 意味 | 例 |
+|---|---|---|
+| `--no-ignore` | `.ignore`・`.gitignore`・`.git/info/exclude`・全体設定による除外をしない。**`--ignore-file` で足した規則は効いたまま**です（ripgrep 15 と同じ） | `uvf '**' ERROR --no-ignore` |
+| `--no-ignore-files` | `--ignore-file` で足した規則も使わない（ripgrep と同名） | `uvf '**' ERROR --no-ignore --no-ignore-files` |
+| `--ignore-file <ファイル>` | 除外の規則を足す。何回でも書けます。**一番弱い**ので、`.ignore` などの `!` には負けます。名前だけの規則（`*.md` など）は、そのファイルを置いた場所に関係なくどこにでも当たります | `uvf '**' ERROR --ignore-file extra.ignore` |
+| `--files` | 何が対象になるかを出す（最後に除外した本数） | `uvf '**' --files` |
+
+**知らせ方**：
+
+- 検索の結果には何も足しません（grep・ripgrep と同じく黙って外します）。
+- `--files` の最後に「除外 N 本・フォルダー M 個（中は見ていません）」を出します。何が外れたかは `--no-ignore` を付けた一覧と比べれば分かります。
+- 指定が**除外のせいで1件も当たらなくなった**ときは、「1件も当たりません: 指定（.gitignore などで除外。--no-ignore で含めます）」と出します。黙って0件にはしません。
+
+例（`.gitignore` に `build/`・`*.tmp`・`!keep.tmp`、`logs/.ignore` に `old/` と書いてあるリポジトリ）：
+
+```bash
+$ uvf '**' --files
+1	app.log
+2	keep.tmp
+3	logs/b.log
+uvf: 除外 1 本・フォルダー 2 個（中は見ていません）（.gitignore ほか。--no-ignore で含めます）
+
+$ uvf 'build/**' --files          # 名前を書いたフォルダーは除外しない
+1	build/a.log
+
+$ uvf 'x.tmp' --files             # 名前を書いたファイルも除外しない
+1	x.tmp
+
+uvf '**/*.log' ERROR --no-ignore                # 除外せずに探す
+uvf '**' ERROR --ignore-file ~/extra.ignore      # 規則を足して探す
+```
+
+### 4.8 特別な名前の書き方
+
+| 名前 | 書き方 | 例 |
+|---|---|---|
+| 空白を含むファイル1本 | そのまま書けます（全体がそのまま実在するファイルなら1本として扱います。1.7.2.7 から） | `uvf 'sp dir/my log.txt' ERROR` |
+| 空白を含むワイルドカード1つ | 最後にカンマを付けます（カンマがあると空白で区切らないため） | `uvf 'C:/Program Files/app/*.log,' ERROR` |
+| 空白を含むものを複数 | カンマで区切ります | `uvf 'C:/Program Files/app/*.log,D:/logs/*.log' ERROR` |
+| カンマを含む名前 | カンマは区切りになるので、`?` に置き換えます | `uvf 'a?b.log' ERROR`（`a,b.log` に当たる） |
+| `-` で始まる名前 | `./` を付けます | `uvf ./-debug.log ERROR` |
+| `[ ]` `{ }` を含む名前 | そのまま書けます（ワイルドカードではありません） | `uvf 'app[1].log' ERROR` |
+
+---
+
+## 5. 出力の形
+
+| コマンド | 形 |
+|---|---|
+| `uvf app.log ERROR`（1本のファイル） | `行番号<TAB>本文` |
+| `uvf '*.log' ERROR`（複数のファイル） | `ファイル名:行番号<TAB>本文` |
+| `uvf app.log ERROR -H` | 1本でも `ファイル名:行番号<TAB>本文` |
+| `uvf '*.log' ERROR -h` | 複数でも `行番号<TAB>本文` |
+| `uvf app.log ERROR --json` | 1行に1つの JSON：`{"n":行番号,"line":"本文"}` |
+| `uvf '*.log' ERROR --json` | 複数ファイルのときは `{"file":"a.log","n":…,"line":"…"}` |
+
+```bash
+$ uvf app.log ERROR
+128	2026-09-27 10:01:02 ERROR connection reset
+512	2026-09-27 10:05:44 ERROR timeout
+
+$ uvf '*.log' ERROR
+a.log:128	2026-09-27 10:01:02 ERROR connection reset
+b.log:7	2026-09-27 11:00:00 ERROR disk full
+```
+
+- 行番号は 1 から数えます。
+- 行末の改行が CRLF（Windows）でも、表示は本文だけです。
+- ripgrep は `ファイル名:行番号:本文` ですが、uvf は**行番号の後ろが TAB** です。`cut -f2-` で本文だけを取り出せます。
+
+---
+
+## 6. 圧縮ファイル
+
+圧縮ファイルは、**展開しながらそのまま検索**します。外部のコマンド（gzip・xz など）は使いません。
+
+| 形式（拡張子） | コマンド | uvf |
+|---|---|---|
+| `.gz` | `uvf app.log.gz ERROR` | 検索できます（1本でも、複数に混ぜても） |
+| `.bz2` `.xz` `.lzma` `.zst` `.lz4` `.br` | `uvf app.log.xz ERROR` | 検索できます |
+| `.zip` | `uvf logs.zip ERROR` | **扱えません**（展開してから探してください。zip は uvp が扱います） |
+| `.pbf`（OSM） | `uvf japan.osm.pbf 東京` | **扱えません**（uvp が XML にして扱います） |
+| `.tar.gz` | `uvf logs.tar.gz ERROR` | **扱えません**（複数のファイルをまとめた tar のため。展開してから探してください） |
+| `.uwvz` | `uvf app.log.uwvz ERROR` | **扱えません**（UwView Pro の索引です） |
+| それ以外 | `uvf app.log ERROR` | テキストとして扱います |
+
+- **形式は拡張子で見分けます。** `.gz` なのに中身が gzip でなければ、そのことを知らせます。
+- 平文と圧縮を混ぜて、1回で探せます：`uvf 'app.log,app.log.*.gz' ERROR`
+- xz は、複数ブロックで作られたもの（xz 5.6 以降の既定）なら複数スレッドで展開します。
+
+### 6.1 文字コード
+
+ファイルの先頭（256KB まで）を見て、自動で見分けます。文字コードを指定するオプションはありません。
+
+| 順 | 見分け方 | 文字コード |
+|---|---|---|
+| 1 | 先頭の BOM | UTF-8・UTF-16LE・UTF-16BE・UTF-32LE |
+| 2 | BOM なしで UTF-8 として正しい（ASCII だけのものも含む） | UTF-8 |
+| 3 | それ以外は Shift_JIS と EUC-JP を比べ、おかしなバイトの少ないほう | Shift_JIS か EUC-JP |
+| 4 | 決められないとき | Shift_JIS |
+
+BOM の無い UTF-16・UTF-32、UTF-32BE、そのほかの文字コード（Latin-1・GBK・ISO-2022-JP など）は見分けません。
+
+---
+
+## 7. 正規表現（-E）
+
+`-E` を付けると、検索語を正規表現として扱います。**UwView は .NET の正規表現**を使います。よく使う書き方は ripgrep（Rust）と同じですが、**当たる範囲が変わる違い**があります（7.2）。
+
+### 7.1 よく使う書き方
+
+| 書き方 | 意味 | 例 |
+|---|---|---|
+| `.` | 任意の1文字 | `uvf app.log 'E.ROR' -E` |
+| `*` `+` `?` `{2,5}` | 0回以上・1回以上・0か1回・2〜5回 | `uvf app.log 'code=\d{3}' -E` |
+| `[abc]` `[^abc]` `[0-9]` | 文字の集まり | `uvf app.log 'code=[45][0-9][0-9]' -E` |
+| `( )` `a\|b` | グループ・どちらか | `uvf app.log '(ERROR\|WARN) disk' -E` |
+| `^` `$` | 行頭・行末 | `uvf app.log '^2026-09-27' -E` |
+| `\d` `\w` `\s` `\b` | 数字・英数字（日本語も含む）・空白・語の境目 | `uvf app.log '\bERROR\b' -E` |
+| `(?i)` | 大文字小文字を区別しない（`-i` と同じ） | `uvf app.log '(?i)error' -E` |
+
+```bash
+uvf app.log 'ERROR|WARN' -E
+uvf access.log '" (4|5)\d\d ' -E
+uvf app.log '^2026-09-27 1[0-2]:' -E
+```
+
+### 7.2 ripgrep との違い
+
+| 書き方 | uvf（.NET） | ripgrep |
+|---|---|---|
+| 既定の扱い | `uvf app.log 'a.b'`（**文字列そのまま**で「a.b」を探す。正規表現は `-E`） | `rg 'a.b' app.log`（正規表現。文字列そのままは `-F`） |
+| 先読み・後読み | `uvf app.log 'ERROR(?=.*disk)' -E`（**使えます**） | `rg -P 'ERROR(?=.*disk)' app.log`（PCRE2 を使うとき。`-P` か `--engine auto`） |
+| 後方参照 | `uvf app.log '(\w+) \1' -E`（**使えます**） | `rg -P '(\w+) \1' app.log`（PCRE2 を使うとき。`-P` か `--engine auto`） |
+| 名前付きグループ | `uvf app.log '(?P<code>\d{3})' -E`（uvf が `(?<code>…)` に読み替えます。.NET の標準の書き方は `(?<code>\d{3})`） | `rg '(?P<code>\d{3})' app.log` |
+| POSIX 文字クラス | `uvf app.log '[A-Za-z]+' -E`（`[[:alpha:]]` は**使えません**。エラーで同じ範囲の書き方を案内します） | `rg '[[:alpha:]]+' app.log`（**ASCII の英字だけ**に当たる） |
+| 数字・空白 | `uvf app.log '[0-9]+' -E`（`\d` は**全角数字にも当たる**） | `rg '\d+' app.log`（Unicode の数字） |
+| 用字（漢字・ひらがな） | `uvf app.log '\p{IsCJKUnifiedIdeographs}+' -E`（`\p{Han}` は**使えません**。範囲も少し違う） | `rg '\p{Han}+' app.log` |
+
+書き換えの例（**ripgrep と同じ範囲**になる書き方）：
+
+| ripgrep | uvf | 注意 |
+|---|---|---|
+| `rg '[[:alpha:]]+' app.log` | `uvf app.log '[A-Za-z]+' -E` | `\p{L}` にすると日本語なども当たる（範囲が広がる） |
+| `rg 'id=[[:digit:]]+' app.log` | `uvf app.log 'id=[0-9]+' -E` | `\d` にすると全角数字（１２）も当たる |
+| `rg 'a[[:space:]]b' app.log` | `uvf app.log 'a[ \t\r\n\f\v]b' -E` | `\s` にすると全角空白なども当たる |
+| `rg '\p{Han}+' app.log` | `uvf app.log '[\p{IsCJKUnifiedIdeographs}\p{IsCJKUnifiedIdeographsExtensionA}\p{IsCJKCompatibilityIdeographs}々〇]+' -E` | 近い範囲。`\p{IsCJKUnifiedIdeographs}` だけだと 々・〇・拡張A（㐀 など）に当たらない。拡張B 以降は書けない |
+| `rg '\p{Hiragana}+' app.log` | `uvf app.log '\p{IsHiragana}+' -E` | ほぼ同じ範囲 |
+| `rg '\p{Katakana}+' app.log` | `uvf app.log '[\p{IsKatakana}ｦ-ﾟ]+' -E` | `\p{IsKatakana}` だけだと半角カナに当たらない |
+
+日本語・全角文字も含めて探したいときは、`\p{L}`（文字）・`\d`（数字）・`\s`（空白）を使ってください。ripgrep の `[[:alpha:]]` などより範囲が広くなります。
+
+### 7.3 決まりごと
+
+- 1行ずつ照合します（複数行にまたがる検索はできません）。
+- 1回の照合が 5 秒を超えたら止めます。式を見直してください。
+- 書き間違いは、探し始める前に「正規表現が正しくありません」と知らせます。
+- ファイルの文字コードに関係なく、文字として照合します。
+
+---
+
+## 8. GUI と組み合わせる（-open）
+
+| 書き方 | 動き |
+|---|---|
+| `uvf -open` | GUI（UwView）を起動するだけ |
+| `uvf -open app.log` | app.log を GUI で開く |
+| `uvf -open app.log ERROR` | 開いて ERROR を検索した状態にする |
+| `uvf app.log ERROR -i -E -open` | `-i` `-E` `-v` を付けた検索を GUI で表示する |
+
+- **複数ファイルでは `-open` を使えません。** 複数ファイルを GUI で見るには UwView Pro を使ってください。
+- `-open` は先頭か末尾に書きます。`--json` とは一緒に使えません。
+
+---
+
+## 9. スレッド数の調整（--tune）
+
+検索に使うスレッド数を、この機械で実測して決めます。
+
+```bash
+uvf --tune                 # 測って、おすすめの値を表示する
+uvf --tune big.log         # 手持ちの大きなファイルで測る
+uvf --tune --apply         # 測った値を設定に保存する（GUI と共通）
+```
+
+たいていは既定のままで構いません。CPU の多い機械や、遅いディスクで効きます。
+
+---
+
+## 10. 終了コード
+
+| コード | 意味 |
+|---|---|
+| 0 | 見つかった |
+| 1 | 見つからなかった |
+| 2 | エラー（ファイルが無い、正規表現の誤り、指定の誤りなど） |
+
+grep・ripgrep と同じなので、シェルのスクリプトでそのまま使えます。
+
+```bash
+if uvf app.log 'FATAL' > /dev/null; then echo "FATAL あり"; fi
+```
+
+---
+
+## 11. ripgrep・grep との対応表
+
+例のファイル名は `app.log`、フォルダーは `logs`、探す語は `ERROR` にそろえています。
+
+| やりたいこと | ripgrep | uvf |
+|---|---|---|
+| 文字列で探す | `rg -F ERROR app.log` | `uvf app.log ERROR` |
+| 正規表現で探す | `rg 'ERROR\|WARN' app.log` | `uvf app.log 'ERROR\|WARN' -E` |
+| 大文字小文字を無視 | `rg -F -i error app.log` | `uvf app.log error -i` |
+| 含まない行 | `rg -F -v DEBUG app.log` | `uvf app.log DEBUG -v` |
+| サブフォルダーも | `rg -F ERROR logs/` | `uvf 'logs/**' ERROR` |
+| 特定の拡張子だけ | `rg -F -g '*.log' ERROR` | `uvf '**/*.log' ERROR` |
+| 圧縮ファイルも | `rg -z -F ERROR app.log.gz` | `uvf app.log.gz ERROR`（`-z` は不要） |
+| ファイル名を必ず付ける | `rg -F -H ERROR app.log` | `uvf app.log ERROR -H` |
+| ファイル名を付けない | `rg -F -I ERROR logs/` | `uvf 'logs/**' ERROR -h` |
+| 対象ファイルの一覧 | `rg --files logs/` | `uvf 'logs/**' --files`（除外の規則は同じ。`.rgignore` は読まない） |
+| `.ignore`・`.gitignore` に従う | `rg -F ERROR .`（既定で従う） | `uvf '**' ERROR`（既定で従う。4.7） |
+| 除外しない | `rg -F --no-ignore ERROR .` | `uvf '**' ERROR --no-ignore` |
+| 除外の規則を足す | `rg -F --ignore-file extra.ignore ERROR .` | `uvf '**' ERROR --ignore-file extra.ignore` |
+| 足した規則も使わない | `rg -F --no-ignore --no-ignore-files ERROR .` | `uvf '**' ERROR --no-ignore --no-ignore-files` |
+| JSON で出す | `rg -F --json ERROR app.log` | `uvf app.log ERROR --json`（形は違います） |
+
+grep の `-h`（ファイル名を付けない）と ripgrep の `-h`（ヘルプ）は意味が逆です。uvf は grep と同じく「ファイル名を付けない」で、**`-h` だけを書いたときだけ**使い方を表示します。
+
+**向き不向き**：uvf は、大きなファイルや圧縮したログを、除外に従って手軽に探し、GUI で確かめるのに向いています。
+検索条件や出力の細かい指定（前後の行・件数だけ・一致した部分だけ・標準入力など）は ripgrep のほうが豊富です（11.1）。
+
+### 11.1 ripgrep にあって uvf に無いもの
+
+uvf のオプションは 3 章の表がすべてです。次の ripgrep の機能は uvf にはありません。代わりの書き方があるものは右の列に書きました。
+
+| ripgrep | 内容 | uvf での代わり |
+|---|---|---|
+| `rg -F -C 3 ERROR app.log`（`-A` `-B` も） | 前後の行も出す | ありません（UwView Pro の `uvp app.log ERROR -C 3`） |
+| `rg -F -w ERROR app.log` | 単語として一致 | `uvf app.log '\bERROR\b' -E` |
+| `rg -F -x ERROR app.log` | 行全体が一致 | `uvf app.log '^ERROR$' -E` |
+| `rg -F -c ERROR app.log` | 一致した行の数 | `uvf app.log ERROR \| wc -l`（件数は最後に「N 件」とも出ます） |
+| `rg -F -l ERROR logs/` | 一致したファイルの名前だけ | `uvf 'logs/**' ERROR \| cut -d: -f1 \| uniq` |
+| `rg -F -q ERROR app.log` | あるかどうかだけ（見つけたら止める） | `uvf app.log ERROR > /dev/null`（終了コードで分かる。見つけても最後まで読む） |
+| `rg -F -m 5 ERROR logs/` | ファイルごとの件数の上限 | ありません（全体の先頭なら `uvf 'logs/**' ERROR \| head -5`） |
+| `rg -o 'code=\d+' app.log` | 一致した部分だけ出す | ありません（値ごとに数えるなら uvp の `-uniq`） |
+| `rg -e ERROR -e WARN app.log`（`-f` も） | 複数の語 | `uvf app.log 'ERROR\|WARN' -E`（語のファイル `-f` はありません） |
+| `cat app.log \| rg ERROR` | 標準入力を探す | ありません（ファイルに書いてから探してください） |
+| `rg -U 'a\nb' app.log` | 複数行にまたがる | ありません（1行ずつ照合します） |
+| `rg --hidden ERROR` | 隠しファイルも探す | ありません（隠しファイルも名前を書けば探せます） |
+| `rg -L ERROR` | リンク先のフォルダーをたどる | ありません |
+| `rg -t log ERROR`・`--max-depth`・`--max-filesize` | 種類・深さ・大きさで絞る | 種類と深さはファイルの指定で（`uvf '**/*.log' ERROR`・`uvf '*/*.log' ERROR`）。大きさはありません |
+| `rg -E sjis ERROR app.log` | 文字コードを指定 | ありません（自動で見分けます） |
+| `rg -r 'WARN' ERROR app.log` | 置き換えて出す | ありません（UwView Pro の `uvp app.log ERROR -replace WARN`） |
+| `rg -0`・`--column`・`-b` | NUL 区切り・列番号・バイト位置 | ありません |
+
+また、ファイルの指定は**1つの文字列**にまとめて書く形です（4章）。空白・カンマ・`[ ]` `{ }` を含む名前はそのまま書けないことがあり、
+既存のスクリプトからファイル名を1つずつ渡す使い方は、ripgrep のほうが向いています。
+
+---
+
+## 12. よくあるつまずき
+
+| 症状 | 原因と対処 |
+|---|---|
+| 「複数のファイルが直接渡されました」 | 引用符を付け忘れて、シェルがワイルドカードを広げました。`uvf '*.log' 語` のように囲んでください |
+| 空白を含むパスで1件も当たらない | 空白で区切られています。カンマで区切ってください |
+| `*/*.log` でサブフォルダーの奥が出ない | `*` は1段だけです。奥まで探すなら `'**/*.log'` |
+| `[[:alpha:]]` がエラー | .NET の正規表現では使えません。`\p{L}` に書き換えてください（7.2） |
+| 正規表現のつもりが当たらない | `-E` を付け忘れています（既定は文字列そのまま） |
+| zip を探せない | uvf は zip を扱いません。展開するか、uvp を使ってください |
+| 隠しファイルが対象にならない | 仕様です（4.5） |
+| あるはずのファイルが対象にならない | `.gitignore`・`.ignore` で除外されているかもしれません。`--files` の最後の「除外 N 本」で確かめ、含めるなら `--no-ignore`（4.7） |
+| git のフォルダーでは `.gitignore` が効くのに、ほかでは効かない | 仕様です。`.gitignore` は git のリポジトリの中だけで効きます。どこでも効かせるなら `.ignore` に書いてください |
+| 複数ファイルで `-open` がエラー | 複数ファイルの GUI 表示は UwView Pro の機能です |
+
