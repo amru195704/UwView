@@ -122,10 +122,10 @@ public sealed class BrowserStartupNotice : UserControl
             Margin = new Thickness(0, 4, 0, 0),
             Children =
             {
-                LinkButton(T("デスクトップ版を入手（無料）", "Get the desktop version (free)"),
+                LinkButton("import", T("デスクトップ版を入手（無料）", "Get the desktop version (free)"),
                            () => SiteLinks.DownloadLink,
                            T("無料版 UwView の入手ページを開く", "Open the download page for the free UwView")),
-                LinkButton(T("UwView Pro を見る", "See UwView Pro"),
+                LinkButton("open-new", T("UwView Pro を見る", "See UwView Pro"),
                            () => SiteLinks.ProLink,
                            T("UwView Pro の紹介ページを開く", "Open the UwView Pro product page")),
             },
@@ -206,10 +206,11 @@ public sealed class BrowserStartupNotice : UserControl
     }
 
     /// <summary>リンクは押した時点の表示言語で開く（起動後に切り替えられても正しい方へ行く）。</summary>
-    private Button LinkButton(string label, Func<string> url, string tip)
+    private Button LinkButton(string icon, string label, Func<string> url, string tip)
     {
-        var b = new Button { Content = label, Padding = new Thickness(12, 6) };
-        ToolTip.SetTip(b, tip);
+        var b = new Button { Padding = new Thickness(12, 6) };
+        UwView.Controls.ToolbarIcon.Apply(b, icon, label);
+        ToolTip.SetTip(b, label + "\n" + tip);
         b.Click += async (_, _) =>
         {
             if (TopLevel.GetTopLevel(this)?.Launcher is { } launcher)

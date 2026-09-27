@@ -19,13 +19,19 @@
                        VerticalAlignment="Center">
                 <TextBlock Text="{Binding HitInfo}" VerticalAlignment="Center" Foreground="Black" />
                 <!-- 複数ファイルの結果のとき、番号と実ファイルの対応表を開く -->
-                <Button x:Name="FileListButton" Content="{loc:Localize FileListButton}"
+                <Button x:Name="FileListButton"
                         ToolTip.Tip="{loc:Localize TipFileList}"
-                        IsVisible="{Binding IsResultSet}" />
+                        IsVisible="{Binding IsResultSet}"
+                        AutomationProperties.Name="{loc:Localize FileListButton}">
+                    <Image Width="22" Height="22" RenderOptions.BitmapInterpolationMode="HighQuality" Source="avares://UwView/Assets/Toolbar/filelist.png" />
+                </Button>
                 <!-- 上限で打ち切ったとき、上限を変える設定画面へ（UVP のみ） -->
-                <Button x:Name="ChangeLimitButton" Content="{loc:Localize ChangeSearchLimit}"
+                <Button x:Name="ChangeLimitButton"
                         ToolTip.Tip="{loc:Localize TipChangeSearchLimit}"
-                        IsVisible="{Binding ShowChangeLimit}" />
+                        IsVisible="{Binding ShowChangeLimit}"
+                        AutomationProperties.Name="{loc:Localize ChangeSearchLimit}">
+                    <Image Width="22" Height="22" RenderOptions.BitmapInterpolationMode="HighQuality" Source="avares://UwView/Assets/Toolbar/tune.png" />
+                </Button>
                 <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center"
                             IsVisible="{Binding AllowContext}">
                     <TextBlock Text="{loc:Localize ContextLabel}" VerticalAlignment="Center" Foreground="Black" />
