@@ -27,7 +27,7 @@ internal static class NativeCompression
     /// <summary>bzip2・lzma で OS のライブラリを使うか（既定は使う。0 で使わない）。</summary>
     public static bool Enabled => Environment.GetEnvironmentVariable("UWVIEW_SYSTEM_DECODERS") != "0";
 
-    private static readonly Dictionary<string, nint> Loaded = [];
+    private static readonly Dictionary<string, string?> Loaded = [];
     private static int _resolverSet;
 
     public static void EnsureResolver()
@@ -61,14 +61,20 @@ internal static class NativeCompression
             _ => null,
         };
         if (candidates is null) return 0;
+        // 返すたびに読み直して参照数を1つ増やす。NativeAOT は同時に解決した負け側のハンドルを Free するので、
+        // 同じハンドルを使い回すと使用中のライブラリが外れて落ちる（Linux で当たりが多いときに 134/139）
         lock (Loaded)
         {
-            if (Loaded.TryGetValue(name, out nint cached)) return cached;
-            nint handle = 0;
+            if (Loaded.TryGetValue(name, out string? found))
+                return found is not null && NativeLibrary.TryLoad(found, out nint again) ? again : 0;
             foreach (string candidate in candidates)
-                if (NativeLibrary.TryLoad(candidate, out handle)) break;
-            Loaded[name] = handle;
-            return handle;
+                if (NativeLibrary.TryLoad(candidate, out nint handle))
+                {
+                    Loaded[name] = candidate;
+                    return handle;
+                }
+            Loaded[name] = null;
+            return 0;
         }
     }
 }
