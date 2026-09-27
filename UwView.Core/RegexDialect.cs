@@ -59,8 +59,8 @@ public static class RegexDialect
     private static readonly Dictionary<string, (string Instead, string Ja, string En)> ScriptReplacement = new(StringComparer.OrdinalIgnoreCase)
     {
         ["Han"] = (@"\p{IsCJKUnifiedIdeographs}",
-                   @"漢字の主な範囲。々・〇・拡張A（㐀 など）も含めるなら [\p{IsCJKUnifiedIdeographs}\p{IsCJKUnifiedIdeographsExtensionA}\p{IsCJKCompatibilityIdeographs}々〇]。拡張B 以降は書けません",
-                   @"the main range of kanji; to also cover 々 〇 and Extension A (㐀 etc.) use [\p{IsCJKUnifiedIdeographs}\p{IsCJKUnifiedIdeographsExtensionA}\p{IsCJKCompatibilityIdeographs}々〇]; Extension B and later cannot be written"),
+                   @"漢字の主な範囲。々・〇・拡張A（㐀 など）も含めるなら [\p{IsCJKUnifiedIdeographs}\p{IsCJKUnifiedIdeographsExtensionA}\p{IsCJKCompatibilityIdeographs}々〇]。拡張B 以降はこのブロック指定の書き方では含められません（.NET の正規表現は UTF-16 の1文字ずつで照合するため）",
+                   @"the main range of kanji; to also cover 々 〇 and Extension A (㐀 etc.) use [\p{IsCJKUnifiedIdeographs}\p{IsCJKUnifiedIdeographsExtensionA}\p{IsCJKCompatibilityIdeographs}々〇]; Extension B and later cannot be covered by these block names (.NET regex matches UTF-16 code units)"),
         ["Hiragana"] = (@"\p{IsHiragana}", "ほぼ同じ範囲", "almost the same range"),
         ["Katakana"] = (@"\p{IsKatakana}", @"半角カナは含みません。含めるなら [\p{IsKatakana}ｦ-ﾟ]", @"half-width kana are not included; use [\p{IsKatakana}ｦ-ﾟ] for them"),
         ["Hangul"] = (@"\p{IsHangulSyllables}", "音節だけ（字母は含みません）", "syllables only (not jamo)"),
