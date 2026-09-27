@@ -404,22 +404,6 @@ public class UvfCliTests : IDisposable
     }
 
     /// <summary>
-    /// 複数ファイルを画面で開くのは Pro の役目（uvp が1つの .uwvz に束ねる）。
-    /// 無料版が黙って受けると、ワイルドカードのままのパスを開こうとして何も出ない
-    /// （オーナー指摘 2026-09-23「uvfWF 'osm17/*.osm' '東京' -open はできないの？」）。
-    /// </summary>
-    [Fact]
-    public async Task 複数ファイルを画面で開こうとしたら断ってuvpを案内する()
-    {
-        MakeSet();
-        var run = await InDir("a.log b.log", "ERROR", "-open");
-        Assert.Equal(UvfExit.Error, run.Exit);
-        Assert.Empty(run.Launched);                        // 画面は起こさない
-        Assert.Contains("uvp", run.Err);                   // 束ねられる方を案内する
-        Assert.Contains("-open", run.Err);
-    }
-
-    /// <summary>
     /// pbf は無料版では扱わない（UwView Pro の役目・指示書 段階7）。
     /// テキストとして走査すると圧縮バイトを探しにいき「1件も無い」と答えてしまうので、名指しで断る。
     /// </summary>

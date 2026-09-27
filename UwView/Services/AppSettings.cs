@@ -127,6 +127,12 @@ public sealed class AppSettings
     public bool CommandModeEnabled { get; set; } = true;
 
     /// <summary>
+    /// ファイル一覧の「タブで開く」（オン＝追加タブ・オフ＝メイン。既定はオフ）。
+    /// 次に開いたときも同じ状態で始める（実装指示書_uvf複数ファイルGUI表示とタブ §5.2）。
+    /// </summary>
+    public bool FileListOpenInTab { get; set; }
+
+    /// <summary>
     /// UVP: 1回の検索で保持する最大ヒット数（0＝無制限）。CLI（uvp）も同じ値を読む
     /// （指示書 2026-09-15「検索上限のパラメータ化」）。無料版では使わない。
     /// </summary>

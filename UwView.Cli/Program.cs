@@ -133,6 +133,8 @@ namespace UwView.Cli
                         ? new[] { UwView.Core.Cli.UvfCli.OptionsArgument, opts } : Array.Empty<string>())
                     .Concat(env!.HandoffPath is { } hits
                         ? new[] { UwView.Core.Cli.CliHandoff.Argument, hits } : Array.Empty<string>())
+                    .Concat(env!.MultiHandoffPath is { } multi
+                        ? new[] { UwView.Core.Cli.MultiHandoff.Argument, multi } : Array.Empty<string>())
                     .Concat(file is null ? Array.Empty<string>() : new[] { file })),
             };
             return UwView.Core.Cli.UvfCli.RunAsync(args, env, cts.Token).GetAwaiter().GetResult();

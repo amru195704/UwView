@@ -226,4 +226,24 @@
   <data name="HelpSupport" xml:space="preserve"><value>お問い合わせ</value></data>
   <data name="CliCommandMenu" xml:space="preserve"><value>コマンドライン設定…</value></data>
   <data name="HelpHowTo" xml:space="preserve"><value>使い方</value></data>
+  <data name="MultiResultTitle" xml:space="preserve"><value>{0} — {1} ファイル・{2} 件</value></data>
+  <data name="FileListButton" xml:space="preserve"><value>ファイル一覧</value></data>
+  <data name="TipFileList" xml:space="preserve"><value>番号と実ファイルの対応表。ダブルクリックでそのファイルを開きます</value></data>
+  <data name="FileListTitle" xml:space="preserve"><value>ファイル一覧</value></data>
+  <data name="FileListOpenInTab" xml:space="preserve"><value>タブで開く</value></data>
+  <data name="TipFileListOpenInTab" xml:space="preserve"><value>オン: 追加のタブで開く（タブは最大 8 個）／オフ: メインで開く</value></data>
+  <data name="FileListNumber" xml:space="preserve"><value>番号</value></data>
+  <data name="FileListFile" xml:space="preserve"><value>ファイル</value></data>
+  <data name="FileListHits" xml:space="preserve"><value>当たり</value></data>
+  <data name="FileListSize" xml:space="preserve"><value>大きさ</value></data>
+  <data name="FileListMain" xml:space="preserve"><value>メイン</value></data>
+  <data name="FileListTab" xml:space="preserve"><value>タブ</value></data>
+  <data name="FileListTabCount" xml:space="preserve"><value>タブ {0} / {1}</value></data>
+  <data name="TabsFull" xml:space="preserve"><value>タブは {0} 個までです（メイン＋{1}）。どれかを閉じてから開いてください</value></data>
+  <data name="MultiOpening" xml:space="preserve"><value>開いています… {0}</value></data>
+  <data name="MultiFileChanged" xml:space="preserve"><value>このファイルは検索した後に変わっています（行がずれている可能性があります）: {0}</value></data>
+  <data name="MultiCannotOpen" xml:space="preserve"><value>{0} は画面で開けません（zip・pbf などは探していません）</value></data>
+  <data name="MergedSourceMissing" xml:space="preserve"><value>元のファイルがありません。中身はメインの束ねた本文で見られます: {0}</value></data>
+  <data name="MergedZipEntryNoTab" xml:space="preserve"><value>zip の中のファイルはタブで開けません。中身はメインの束ねた本文で見られます: {0}</value></data>
+  <data name="MainTabCannotClose" xml:space="preserve"><value>メインのタブは閉じられません（結果の一覧・ファイル一覧のもとになっています）</value></data>
 </root>

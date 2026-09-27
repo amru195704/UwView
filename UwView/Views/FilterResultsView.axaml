@@ -18,6 +18,10 @@
             <WrapPanel x:Name="ToolbarPanel" Orientation="Horizontal" ItemSpacing="10" LineSpacing="4"
                        VerticalAlignment="Center">
                 <TextBlock Text="{Binding HitInfo}" VerticalAlignment="Center" Foreground="Black" />
+                <!-- 複数ファイルの結果のとき、番号と実ファイルの対応表を開く -->
+                <Button x:Name="FileListButton" Content="{loc:Localize FileListButton}"
+                        ToolTip.Tip="{loc:Localize TipFileList}"
+                        IsVisible="{Binding IsResultSet}" />
                 <!-- 上限で打ち切ったとき、上限を変える設定画面へ（UVP のみ） -->
                 <Button x:Name="ChangeLimitButton" Content="{loc:Localize ChangeSearchLimit}"
                         ToolTip.Tip="{loc:Localize TipChangeSearchLimit}"
@@ -53,6 +57,13 @@
                 <Button x:Name="CloseButton" Content="{loc:Localize Close}"
                         ToolTip.Tip="{loc:Localize TipCloseList}" />
             </WrapPanel>
+        </Border>
+
+        <!-- 複数ファイルの結果: 選んでいる行のファイル（番号: 実ファイル名） -->
+        <Border DockPanel.Dock="Bottom" Background="#F5F5F5" BorderBrush="#CCCCCC"
+                BorderThickness="0,1,0,0" Padding="6,3" IsVisible="{Binding IsResultSet}">
+            <TextBlock x:Name="CursorFileText" Text="{Binding CursorFileText}" Foreground="Black"
+                       TextTrimming="CharacterEllipsis" />
         </Border>
 
         <!-- 結果リスト（自前描画。メインの TextView と同じ方式で可視行だけ描く。

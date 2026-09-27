@@ -61,14 +61,16 @@
                       SelectedItem="{Binding ActiveTab, Mode=TwoWay}">
                 <TabStrip.ItemTemplate>
                     <DataTemplate x:DataType="vm:DocumentTabViewModel">
-                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center"
+                                    ToolTip.Tip="{Binding FilePath}">
                             <TextBlock Text="{Binding DisplayName}" Foreground="Black" VerticalAlignment="Center" />
                             <TextBlock Text="{Binding IndexProgress, StringFormat='{}{0:P0}'}"
                                        Foreground="Black" VerticalAlignment="Center"
                                        IsVisible="{Binding IsIndexing}" />
                             <Button Content="×" Padding="4,0" MinWidth="0" Background="Transparent"
                                     Foreground="Black"
-                                    Command="{Binding CloseCommand}" />
+                                    Command="{Binding CloseCommand}"
+                                    IsVisible="{Binding CanClose}" />
                         </StackPanel>
                     </DataTemplate>
                 </TabStrip.ItemTemplate>
@@ -181,6 +183,9 @@
                         ToolTip.Tip="{loc:Localize FilterResultsOpenTip}">
                     <Image RenderOptions.BitmapInterpolationMode="HighQuality" Source="avares://UwView/Assets/Toolbar/results.png" />
                 </Button>
+                <!-- 複数ファイルの結果（uvf -open '*.log' 語）のときだけ出す -->
+                <Button x:Name="FileListButton" IsVisible="False"
+                        Content="{loc:Localize FileListButton}" ToolTip.Tip="{loc:Localize TipFileList}" />
                 <TextBlock Text="{Binding SearchInfo}" VerticalAlignment="Center" Foreground="Black" />
             </StackPanel>
         </Border>

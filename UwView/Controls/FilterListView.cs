@@ -51,7 +51,19 @@ public sealed class FilterListView : Control
     // 選択（index ベース。FilterRow インスタンスに依存しないので再構築で壊れない）
     private readonly HashSet<int> _selected = [];
     private int _anchor = -1;
-    private int _cursor = -1;
+    private int _cursorRow = -1;
+
+    /// <summary>カーソル行（変わったら <see cref="CursorChanged"/> を出す）。</summary>
+    private int CursorIndex
+    {
+        get => _cursorRow;
+        set
+        {
+            if (_cursorRow == value) return;
+            _cursorRow = value;
+            CursorChanged?.Invoke(CursorRow);
+        }
+    }
 
     // ドラッグ
     private bool _pressPending;
@@ -72,6 +84,9 @@ public sealed class FilterListView : Control
     /// <summary>行の活性化（ダブルクリック / Enter）。</summary>
     public event Action<FilterRow>? RowActivated;
 
+    /// <summary>カーソル行が変わった（上下キー・クリック。開くのは <see cref="RowActivated"/> だけ）。</summary>
+    public event Action<FilterRow?>? CursorChanged;
+
     /// <summary>選択行の右クリック。ホストがコピー/保存メニューを表示する。</summary>
     public event Action<PointerPressedEventArgs>? SelectionMenuRequested;
 
@@ -91,7 +106,7 @@ public sealed class FilterListView : Control
             _rows = value;
             ClampTop();
             // 行の中身が変わったので選択は保持しつつカーソルだけ範囲内へ収める
-            if (_cursor >= Count) _cursor = Count - 1;
+            if (CursorIndex >= Count) CursorIndex = Count - 1;
             InvalidateVisual();
             NotifyScrollChanged();
         }
@@ -141,7 +156,7 @@ public sealed class FilterListView : Control
 
     /// <summary>カーソル行（単一クリックで選んだ行。ジャンプ対象）。</summary>
     public FilterRow? CursorRow
-        => _rows is { } src && _cursor >= 0 && _cursor < src.Count ? src[_cursor] : null;
+        => _rows is { } src && CursorIndex >= 0 && CursorIndex < src.Count ? src[CursorIndex] : null;
 
     public void ClearSelection()
     {
@@ -328,18 +343,18 @@ public sealed class FilterListView : Control
         if (toggle)
         {
             if (!_selected.Add(row)) _selected.Remove(row);
-            _anchor = _cursor = row;
+            _anchor = CursorIndex = row;
         }
         else if (extend && _anchor >= 0)
         {
             SelectRange(_anchor, row);
-            _cursor = row;
+            CursorIndex = row;
         }
         else
         {
             _selected.Clear();
             _selected.Add(row);
-            _anchor = _cursor = row;
+            _anchor = CursorIndex = row;
             // ドラッグ開始待ち（閾値を超えたら範囲選択へ）
             _pressPending = true;
             _dragging = false;
@@ -372,7 +387,7 @@ public sealed class FilterListView : Control
         if (row >= 0)
         {
             SelectRange(_pressRow, row);
-            _cursor = row;
+            CursorIndex = row;
         }
 
         // ビュー端でオートスクロール（距離で加速。TextView と同じ挙動）
@@ -400,7 +415,7 @@ public sealed class FilterListView : Control
             TopRow = _topRow + _autoDelta;
             int edge = _autoDelta < 0 ? _topRow : Math.Min(Count - 1, _topRow + VisibleRows - 1);
             SelectRange(_pressRow, edge);
-            _cursor = edge;
+            CursorIndex = edge;
             InvalidateVisual();
         };
         return timer;
@@ -436,7 +451,7 @@ public sealed class FilterListView : Control
                          || e.KeyModifiers.HasFlag(KeyModifiers.Meta):
                 SelectRange(0, Count - 1);
                 _anchor = 0;
-                _cursor = Count - 1;
+                CursorIndex = Count - 1;
                 InvalidateVisual();
                 e.Handled = true;
                 return;
@@ -457,7 +472,7 @@ public sealed class FilterListView : Control
     }
 
     private void MoveCursor(int delta, KeyEventArgs e)
-        => MoveCursorTo((_cursor < 0 ? _topRow : _cursor) + delta, e);
+        => MoveCursorTo((CursorIndex < 0 ? _topRow : CursorIndex) + delta, e);
 
     private void MoveCursorTo(int row, KeyEventArgs e)
     {
@@ -471,7 +486,7 @@ public sealed class FilterListView : Control
             _selected.Add(row);
             _anchor = row;
         }
-        _cursor = row;
+        CursorIndex = row;
         EnsureVisible(row);
         InvalidateVisual();
         e.Handled = true;

@@ -59,6 +59,12 @@ public sealed class UvfEnvironment
     /// <summary>-open のとき、検索の種類（<c>i</c>/<c>E</c>/<c>v</c> の並び）。<see cref="LaunchGui"/> が GUI へ渡す。</summary>
     public string? SearchOptionLetters { get; set; }
 
+    /// <summary>
+    /// 複数ファイルの -open のとき、結果を書いたファイル（<see cref="MultiHandoff"/>）。
+    /// <see cref="LaunchGui"/> はこれが入っていれば GUI へ渡す（ファイルと検索語は渡さない）。
+    /// </summary>
+    public string? MultiHandoffPath { get; set; }
+
     public bool Japanese { get; init; } = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ja";
 
     /// <summary><c>--version</c> で出す版数（本体が渡す。uvp と同じ形で出す）。</summary>
@@ -150,7 +156,9 @@ public static class UvfCli
             uvf 'app.log,app.log.*.gz' 語  gz も混ぜられます（展開しながら探します）
             uvf '*.gz' ERROR               gz だけをまとめて探すこともできます
             出力は「ファイル名:行番号<TAB>本文」。並びは指定した順です
-            複数ファイルのときは -open を使えません（UwView Pro の uvp を使ってください）
+            uvf -open '*.log' ERROR        結果を画面で見る（ダブルクリックで元のファイルのその行へ）
+              行番号欄は「ファイル番号:行番号」。番号と実ファイルの対応は画面の「ファイル一覧」で見られます
+              元のファイルを開き直してから移るので、大きいファイルは少し待ちます（uvp は束ねた索引ですぐ移ります）
             zip は対象外です（1つずつ展開してから探してください）
             ワイルドカードで広げたファイルのうち、.ignore・.gitignore に当たるものは探しません
             （ripgrep と同じ規則。名前を書いたファイルは除外しません。詳しくは uvf --help files）
@@ -201,7 +209,9 @@ public static class UvfCli
             uvf 'app.log,app.log.*.gz' p   gz files can be mixed in (searched while decompressing)
             uvf '*.gz' ERROR               gz files alone work too
             Output is "file:line<TAB>text", in the order you wrote them.
-            -open cannot be used with several files (use uvp from UwView Pro).
+            uvf -open '*.log' ERROR        see the results in the app (double-click to go to that line of the file)
+              The line column shows "file number:line"; the app's file list maps numbers to files.
+              The file is reopened before moving, so large files take a moment (uvp moves at once in its bundled index).
             zip files are not searched (extract them first).
             Files found by wildcards are skipped when .ignore / .gitignore exclude them
             (the same rules as ripgrep; files you name are never excluded; see uvf --help files).
@@ -409,18 +419,10 @@ public static class UvfCli
             return UvfExit.Error;
         }
 
-        // 複数ファイルを画面で開くのは uwvz に束ねられる UwView Pro の役目（段階4）。
-        // 無料版で黙って受けると、ワイルドカードのままのパスを開こうとして何も出ない
+        // 複数ファイルの -open（実装指示書_uvf複数ファイルGUI表示とタブ §4）。CLI で探して結果を画面へ渡す。
+        // 画面は複数ファイルを探し直せないので、先頭の -open でも検索語があればここで探す
         if (many is not null && inv.Mode is UvfMode.OpenGui or UvfMode.SearchInGui)
-        {
-            Err(T($"複数ファイルを画面で開くことはできません（{many.Count:N0} 件が当たりました）。"
-                  + "結果を見るだけなら -open を外してください。画面で扱うなら UwView Pro（uvp）が"
-                  + "1つの .uwvz に束ねます: uvp '" + inv.File + "' 語 -open",
-                  $"Several files cannot be opened in the app ({many.Count:N0} matched). "
-                  + "Drop -open to see the results here, or use UwView Pro (uvp), which bundles them "
-                  + "into one .uwvz: uvp '" + inv.File + "' pattern -open"));
-            return UvfExit.Error;
-        }
+            return await OpenManyInGuiAsync(many, inv, env, T, Err, ct);
 
         if (inv.Mode is UvfMode.OpenGui or UvfMode.SearchInGui)
         {
@@ -767,6 +769,134 @@ public static class UvfCli
                                        or OperationCanceledException)
         {
             return null;   // 渡せなくても困らない（画面が普通に検索する）
+        }
+    }
+
+    /// <summary>
+    /// 複数ファイルの結果を画面で開く（§4.1）。番号 1 のファイルがメインに出て、結果の窓が <c>n:行番号</c> で出る。
+    /// 渡す件数は画面の設定「1回の検索で保持する最大ヒット数」まで。無制限でも <see cref="SearchService.LegacyDefaultMaxHits"/>
+    /// で止める（本文も渡すので、数千万件を画面に抱えさせない。uvf の制限 §4.6）。
+    /// </summary>
+    private static async Task<int> OpenManyInGuiAsync(
+        IReadOnlyList<string> files, UvfInvocation inv, UvfEnvironment env,
+        Func<string, string, string> t, Action<string> err, CancellationToken ct)
+    {
+        int limit = CliSettings.ReadSearchMaxHits(env.SettingsFolder);
+        if (limit <= 0) limit = SearchService.LegacyDefaultMaxHits;
+        int threads = ThreadBudget.Resolve(
+            Environment.GetEnvironmentVariable(ThreadBudget.FreeEnvironmentVariable),
+            CliSettings.ReadInt(env.SettingsFolder, ThreadBudget.SettingsKey, 0),
+            m => env.StdErr.WriteLine($"{env.ToolName}: {m}"));
+
+        var (handoff, failed) = await CollectManyForGuiAsync(files, inv, limit, threads, ct);
+        foreach (var (file, reason) in failed)
+            env.StdErr.WriteLine(t($"{env.ToolName}: 読めませんでした: {file}（{reason}）",
+                                   $"{env.ToolName}: could not read: {file} ({reason})"));
+        if (handoff.Truncated)
+            env.StdErr.WriteLine(t($"{env.ToolName}: 結果が上限（{limit:N0} 件）で止まりました。画面にはそこまでを出します",
+                                   $"{env.ToolName}: results stopped at the limit ({limit:N0}); the app shows them up to there"));
+
+        if (handoff.WriteTemp() is not { } path)
+        {
+            err(t("結果を画面へ渡すファイルを書けませんでした（一時フォルダーを確認してください）",
+                  "Could not write the results for the app (check the temporary folder)"));
+            return UvfExit.Error;
+        }
+        env.MultiHandoffPath = path;
+        if (env.LaunchGui is null || !env.LaunchGui(null, null))
+        {
+            try { File.Delete(path); } catch (IOException) { }
+            err(t("UwView（GUI）が見つかりません。インストールされているか確認してください",
+                  "UwView (the app) was not found. Check that it is installed."));
+            return UvfExit.Error;
+        }
+        return UvfExit.Found;
+    }
+
+    /// <summary>
+    /// 画面へ渡すために複数ファイルを探す。並びは指定順（番号は <c>--files</c> と同じ）。
+    /// 探せないもの（zip・pbf・読めない圧縮）も番号だけは持たせる（番号がずれると CLI と話が合わない）。
+    /// </summary>
+    internal static async Task<(MultiHandoff Handoff, List<(string File, string Reason)> Failed)> CollectManyForGuiAsync(
+        IReadOnlyList<string> files, UvfInvocation inv, int limit, int threads, CancellationToken ct)
+    {
+        var entries = new MultiHandoffFile[files.Count];
+        for (int i = 0; i < files.Count; i++)
+        {
+            string file = files[i];
+            var probe = CompressedInput.Probe(file);
+            bool canOpen = !OsmPbfFile.Is(file) && probe.Kind != CompressedKind.Zip && !probe.IsRejected;
+            var info = new FileInfo(file);
+            entries[i] = new MultiHandoffFile(Path.GetFullPath(file), file, info.Exists ? info.Length : 0,
+                                              info.Exists ? info.LastWriteTimeUtc.Ticks : 0,
+                                              canOpen ? probe.Kind : CompressedKind.None, canOpen);
+        }
+
+        var failed = new List<(string File, string Reason)>();
+        if (inv.Pattern is not { } pattern)
+            return (new MultiHandoff(inv.File!, null, inv.IgnoreCase, inv.Regex, inv.Invert, false, entries, []), failed);
+
+        var options = new SearchOptions(pattern, UseRegex: inv.Regex, IgnoreCase: inv.IgnoreCase, MaxHits: 0);
+        var perFile = new List<MultiHandoffHit>?[files.Count];
+        long taken = 0;
+        bool truncated = false;
+        using var full = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        using var slots = new SemaphoreSlim(Math.Max(1, threads));
+        int decodeThreads = CompressedFormats.DecodeThreadsFor(entries.Select(e => e.Kind).ToArray(), threads);
+
+        var tasks = new List<Task>();
+        for (int i = 0; i < files.Count; i++)
+        {
+            if (!entries[i].CanOpen) continue;
+            int index = i;
+            tasks.Add(Task.Run(async () =>
+            {
+                await slots.WaitAsync(ct);
+                try
+                {
+                    var hits = new List<MultiHandoffHit>();
+                    perFile[index] = hits;
+                    var kind = entries[index].Kind;
+                    await using IByteSource src = kind != CompressedKind.None
+                        ? new CompressedStreamByteSource(files[index], kind, decodeThreads)
+                        : new SequentialFileByteSource(files[index]);
+                    var detected = EncodingDetector.Detect(src);
+                    var encoding = detected.Encoding;
+                    await RawGrep.RunAsync(src, detected.BomLength, encoding, options, inv.Invert,
+                        (line, lineStart, text) =>
+                        {
+                            if (Interlocked.Increment(ref taken) > limit) { truncated = true; full.Cancel(); return; }
+                            hits.Add(new MultiHandoffHit(index, line, lineStart, Head(encoding, text)));
+                        },
+                        full.Token);
+                }
+                catch (OperationCanceledException) when (full.IsCancellationRequested && !ct.IsCancellationRequested)
+                {
+                    truncated = true;   // 上限に届いた（ほかのファイルが止めたときもここ）
+                }
+                catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
+                {
+                    lock (failed) failed.Add((files[index], e.Message));
+                }
+                finally { slots.Release(); }
+            }, ct));
+        }
+        await Task.WhenAll(tasks);
+
+        // 並べるのは指定順。上限で止めたときは、並べた先頭から上限までにそろえる
+        var all = new List<MultiHandoffHit>();
+        foreach (var list in perFile)
+            if (list is not null) all.AddRange(list);
+        if (all.Count > limit) { all.RemoveRange(limit, all.Count - limit); truncated = true; }
+        return (new MultiHandoff(inv.File!, pattern, inv.IgnoreCase, inv.Regex, inv.Invert, truncated, entries, all),
+                failed);
+
+        static string Head(Encoding encoding, ReadOnlySpan<byte> text)
+        {
+            // 長い行は先頭だけ（一覧で読むには足りる）。先に切ってから直す（数 MB の行を丸ごと直さない）
+            var head = text.Length > MultiHandoff.MaxTextLength * 4 ? text[..(MultiHandoff.MaxTextLength * 4)] : text;
+            string s = encoding.GetString(head);
+            return s.Length > MultiHandoff.MaxTextLength ? s[..MultiHandoff.MaxTextLength] : s;
         }
     }
 
