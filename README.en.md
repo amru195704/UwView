@@ -219,7 +219,7 @@ uvf 'app.log,app.log.*.gz' ERROR     plain text and .gz in a single command
 
 **UwView Pro (`uvp`) only**
 
-Several files are bundled into **one `.uwvz`**, so from the second question on nothing is rebuilt. Text inside a `.zip`, and OpenStreetMap `.pbf`, can be used as input as well. Handing the hits to the window with `-open` is Pro-only for several files (the free `-open` takes one file).
+Several files are bundled into **one `.uwvz`**, so from the second question on nothing is rebuilt. Text inside a `.zip`, and OpenStreetMap `.pbf`, can be used as input as well. With `-open`, the window moves to a hit **at once** inside the bundled text (the free `-open` handles several files too, but reopens the original file before moving).
 
 **Measured** (Mac, 8 logical CPUs, the 8 files in `UwTest/osm17`, first search plus the repeat right after, 1.7.0.18)
 

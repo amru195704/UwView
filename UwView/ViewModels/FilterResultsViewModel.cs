@@ -39,6 +39,12 @@ public sealed class FilterRow
     /// <summary>行番号欄の文字を差し替える（束ねた .uwvz の「ファイル番号:行番号」用。0 始まりで渡す）。</summary>
     public Func<long, string>? LineLabel { get; init; }
 
+    /// <summary>
+    /// 複数ファイルの結果の1件（uvf -open '*.log' 語）。本文と番号は受け渡しから出す
+    /// （ファイルはまだ開いていない。開くのはダブルクリックしたとき）。
+    /// </summary>
+    public UwView.Core.Cli.MultiHandoffHit? HandoffHit { get; init; }
+
     public FilterRow(LineDocument? doc) => _doc = doc;
 
     private long _resolvedLine = -2; // -2 = 未解決
@@ -73,6 +79,8 @@ public sealed class FilterRow
         get
         {
             if (_lineNumberText is not null) return _lineNumberText;
+            if (HandoffHit is { } hit)
+                return _lineNumberText = $"{hit.File + 1}:{(hit.Line + 1).ToString("N0", Localizer.Instance.Culture)}";
             if (IsSeparator || _doc is null) return _lineNumberText = "";
             long line = EffectiveLineIndex;
             if (line < 0) return ""; // 未解決は焼き付けない
@@ -91,6 +99,7 @@ public sealed class FilterRow
         get
         {
             if (_text is not null) return _text;
+            if (HandoffHit is { } hit) return _text = hit.Text;
             if (IsSeparator || _doc is null) return _text = "⋯";
             try
             {
@@ -121,7 +130,7 @@ public sealed class FilterRow
     public async ValueTask<string?> GetTextForSaveAsync(CancellationToken ct = default)
     {
         if (_text is not null) return _text;
-        if (IsSeparator || _doc is null) return Text;
+        if (HandoffHit is not null || IsSeparator || _doc is null) return Text;
         try
         {
             string? t = Offset >= 0 ? await _doc.GetLineAtOffsetAsync(Offset, ct)
@@ -237,9 +246,68 @@ public sealed partial class FilterResultsViewModel : ObservableObject, IDisposab
         _session = session;
         if (_session is not null)
             _session.SearchUpdated += OnSearchUpdated;
-        DocumentName = _session?.DisplayName ?? "";
+        if (_resultSet is null) DocumentName = _session?.DisplayName ?? "";
         Rebuild();
     }
+
+    // ── 複数ファイルの結果（uvf -open '*.log' 語。実装指示書_uvf複数ファイルGUI表示とタブ §4.3）──
+    //
+    // 窓は特定のタブに結びつけず、結果セットに結びつける。メインのファイルを差し替えても一覧はそのまま。
+    // 画面で新しく検索したら（メインの1ファイルだけを探す）、そちらの結果に切り替わる。
+
+    private UwView.Core.Cli.MultiHandoff? _resultSet;
+    private System.Text.RegularExpressions.Regex? _resultRegex;
+
+    /// <summary>複数ファイルの結果を出しているか（ファイル一覧のボタン・ファイル名の行を出す）。</summary>
+    [ObservableProperty] private bool _isResultSet;
+
+    /// <summary>選んでいる行のファイル（ステータス行に出す。番号: 実ファイル名）。</summary>
+    [ObservableProperty] private string _cursorFileText = "";
+
+    /// <summary>結果の1件を開く（ダブルクリック・Enter。そのファイルをメインに出してその行へ）。</summary>
+    public Action<UwView.Core.Cli.MultiHandoffHit>? OpenHit { get; set; }
+
+    /// <summary>ファイル一覧を開く（結果の窓のボタン）。</summary>
+    public Action? OpenFileList { get; set; }
+
+    /// <summary>複数ファイルの結果に切り替える（null で1ファイルの検索結果へ戻す）。</summary>
+    public void SetResultSet(UwView.Core.Cli.MultiHandoff? set)
+    {
+        InvalidateLineMapping();
+        _resultSet = set;
+        IsResultSet = set is not null;
+        _currentOrdinal = 0;
+        CursorFileText = "";
+        _resultRegex = null;
+        if (set?.ToOptions() is { } options)
+        {
+            try { _resultRegex = SearchService.BuildRegex(options); }
+            catch (ArgumentException) { _resultRegex = null; }
+        }
+        DocumentName = set is null ? _session?.DisplayName ?? "" : ResultTitle(set);
+        Rebuild();
+    }
+
+    /// <summary>窓の題名（(A) と語、ファイル数と件数）。</summary>
+    private static string ResultTitle(UwView.Core.Cli.MultiHandoff set)
+    {
+        var culture = Localizer.Instance.Culture;
+        string what = set.Pattern is null ? set.Spec : $"{set.Spec} {set.Pattern}";
+        return Localizer.Instance.Format("MultiResultTitle", what,
+            set.Files.Count.ToString("N0", culture), set.Hits.Count.ToString("N0", culture));
+    }
+
+    /// <summary>選んだ行が変わった（ファイル名をステータス行に出す。ファイルは開かない）。</summary>
+    public void OnCursor(FilterRow? row)
+    {
+        if (_resultSet is not { } set || row?.HandoffHit is not { } hit || hit.File >= set.Files.Count)
+        {
+            CursorFileText = "";
+            return;
+        }
+        CursorFileText = $"{hit.File + 1}: {set.Files[hit.File].Path}";
+    }
+
 
     /// <summary>検索中の再構築を間引くための最終更新時刻（WASM でのフリーズ防止）。</summary>
     private DateTime _lastRebuild = DateTime.MinValue;
@@ -293,6 +361,12 @@ public sealed partial class FilterResultsViewModel : ObservableObject, IDisposab
     /// <summary>行リストを現在のヒット・±N から作り直す（遅延リストなので軽い）。</summary>
     public void Rebuild()
     {
+        if (_resultSet is { } set)
+        {
+            Rows = new ResultSetRowList(set.Hits, _resultRegex);
+            UpdateHitInfo();
+            return;
+        }
         var s = _session;
         if (s is null || s.SearchHits.Count == 0)
         {
@@ -438,6 +512,17 @@ public sealed partial class FilterResultsViewModel : ObservableObject, IDisposab
     /// <summary>件数表示を更新する（現在位置が判っていれば "C/Total"、未確定なら "Total"）。</summary>
     private void UpdateHitInfo()
     {
+        if (_resultSet is { } set)
+        {
+            var c = Localizer.Instance.Culture;
+            string all = set.Hits.Count.ToString("N0", c);
+            HitInfo = (_currentOrdinal > 0
+                    ? Localizer.Instance.Format("SearchHitsCurrent", _currentOrdinal.ToString("N0", c), all)
+                    : Localizer.Instance.Format("SearchHits", all))
+                + (set.Truncated ? Localizer.Instance["SearchTruncated"] : "");
+            ShowChangeLimit = false;
+            return;
+        }
         var s = _session;
         if (s is null || s.SearchHits.Count == 0)
         {
@@ -473,6 +558,13 @@ public sealed partial class FilterResultsViewModel : ObservableObject, IDisposab
     public void Jump(FilterRow? row)
     {
         if (row is null || row.IsSeparator) return;
+        if (row.HandoffHit is { } hit)
+        {
+            _currentOrdinal = row.HitOrdinal;
+            UpdateHitInfo();
+            OpenHit?.Invoke(hit);
+            return;
+        }
         long off = row.ResolveJumpOffset();
         if (off >= 0)
         {
@@ -561,6 +653,7 @@ public sealed partial class FilterResultsViewModel : ObservableObject, IDisposab
     /// <summary>ファイルの1行目（読めなければ null）。</summary>
     private string? HeaderLine()
     {
+        if (_resultSet is not null) return null;   // 複数ファイルの結果には「1行目」が無い
         var doc = _session?.Document;
         if (doc is null) return null;
         try
@@ -679,6 +772,22 @@ public sealed partial class FilterResultsViewModel : ObservableObject, IDisposab
             HitOrdinal = index + 1,
             HighlightRegex = regex,
             LineLabel = lineLabel,
+        };
+    }
+
+    /// <summary>複数ファイルの結果（本文と番号は受け渡しから。ファイルは開かない）。</summary>
+    private sealed class ResultSetRowList(IReadOnlyList<UwView.Core.Cli.MultiHandoffHit> hits, Regex? regex)
+        : LazyRowList
+    {
+        public override int Count => hits.Count;
+
+        protected override FilterRow Create(int index) => new(null)
+        {
+            RowIndex = index,
+            IsHit = true,
+            HitOrdinal = index + 1,
+            HighlightRegex = regex,
+            HandoffHit = hits[index],
         };
     }
 

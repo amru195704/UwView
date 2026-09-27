@@ -38,6 +38,26 @@ public partial class App : Application
     /// <summary>uvf -open が渡してきた検索の種類（i/E/v の並び）。</summary>
     public static string? PendingCliOptions { get; internal set; }
 
+    /// <summary>uvf -open '*.log' 語 が渡してきた複数ファイルの結果の置き場所（<see cref="UwView.Core.Cli.MultiHandoff"/>）。</summary>
+    public static string? PendingCliMulti { get; internal set; }
+
+    /// <summary>起動引数から <c>--uvf-multi &lt;path&gt;</c> を取り除き、残りを返す。</summary>
+    internal static string[] ExtractCliMulti(string[] args, out string? multiPath)
+    {
+        multiPath = null;
+        var rest = new System.Collections.Generic.List<string>(args.Length);
+        for (int i = 0; i < args.Length; i++)
+        {
+            if (args[i] == UwView.Core.Cli.MultiHandoff.Argument && i + 1 < args.Length)
+            {
+                multiPath = args[++i];
+                continue;
+            }
+            rest.Add(args[i]);
+        }
+        return [.. rest];
+    }
+
     /// <summary>uvf が GUI を起動するときに付ける引数名（uvf 側と同じ）。</summary>
     public const string CliSearchArgument = "--uvf-search";
 
@@ -156,7 +176,9 @@ public partial class App : Application
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             // uvf -open から来た検索パターンを抜く（残りがファイル指定）
-            LaunchFileArgs = ExtractCliSearch(desktop.Args ?? [], out var pattern, out var hitsPath, out var opts);
+            LaunchFileArgs = ExtractCliSearch(ExtractCliMulti(desktop.Args ?? [], out var multi),
+                                              out var pattern, out var hitsPath, out var opts);
+            PendingCliMulti = multi;
             PendingCliSearch = pattern;
             PendingCliHits = hitsPath;
             PendingCliOptions = opts;

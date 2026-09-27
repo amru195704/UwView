@@ -12,8 +12,19 @@ public partial class DocumentTabViewModel : ObservableObject, IAsyncDisposable
     private readonly Action<DocumentTabViewModel> _onClose;
 
     public DocumentSession Session { get; }
-    public string DisplayName => Session.DisplayName;
+    public string DisplayName => TitlePrefix + Session.DisplayName;
     public string FilePath => Session.FilePath;
+
+    /// <summary>タブ名の前に付ける番号（ファイル一覧から開いたタブは <c>3: </c>。どのファイルか分かるように）。</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DisplayName))]
+    private string _titlePrefix = "";
+
+    /// <summary>
+    /// 閉じられるか。結果セット・束ねた索引のメインは false（閉じるボタンを出さない。
+    /// 実装指示書_uvf複数ファイルGUI表示とタブ §5.5）。
+    /// </summary>
+    [ObservableProperty] private bool _canClose = true;
 
     [ObservableProperty] private double _indexProgress;
     [ObservableProperty] private bool _isIndexing;
@@ -32,7 +43,7 @@ public partial class DocumentTabViewModel : ObservableObject, IAsyncDisposable
         _onClose = onClose;
         IsIndexing = session.IsIndexing;
         Session.IndexProgressChanged += OnIndexProgress;
-        CloseCommand = new RelayCommand(() => _onClose(this));
+        CloseCommand = new RelayCommand(() => { if (CanClose) _onClose(this); });
     }
 
     private void OnIndexProgress(object? sender, EventArgs e)

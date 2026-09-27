@@ -55,6 +55,8 @@ public partial class FilterResultsView : UserControl
         RowList.AttachHScrollBar(RowHScroll);
         RowList.Rows = _vm.Rows;
         RowList.RowActivated += row => _vm.Jump(row);
+        RowList.CursorChanged += row => _vm.OnCursor(row);
+        FileListButton.Click += (_, _) => _vm.OpenFileList?.Invoke();
         RowList.CopyRequested += () => _ = CopySelectedAsync();
         RowList.SelectionMenuRequested += ShowSelectionMenu;
 

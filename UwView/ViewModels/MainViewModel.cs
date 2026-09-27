@@ -98,7 +98,10 @@ public partial class MainViewModel : ViewModelBase
 
     /// <summary>タブの × ボタンから発火。実際の破棄は View 側で行う。</summary>
     public event EventHandler<DocumentTabViewModel>? CloseTabRequested;
-    public void RequestClose(DocumentTabViewModel tab) => CloseTabRequested?.Invoke(this, tab);
+    public void RequestClose(DocumentTabViewModel tab)
+    {
+        if (tab.CanClose) CloseTabRequested?.Invoke(this, tab);
+    }
 
     public MainViewModel()
     {

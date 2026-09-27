@@ -34,12 +34,12 @@ public partial class MainView : UserControl
         TextView.StateChanged += (_, _) => UpdateStatus();
 
         OpenButton.Click += OnOpenClick;
-        CloseButton.Click += (_, _) => { if (_vm?.ActiveTab is { } t) _vm.RequestClose(t); };
+        CloseButton.Click += (_, _) => CloseActiveTab();
         JumpButton.Click += OnJumpClick;
 
         // File メニュー（メニューバー）→ このメイン画面の操作へ委譲
         App.RequestOpenFile = () => OnOpenClick(this, new RoutedEventArgs());
-        App.RequestCloseTab = () => { if (_vm?.ActiveTab is { } t) _vm.RequestClose(t); };
+        App.RequestCloseTab = CloseActiveTab;
         App.RequestCloseAll = () =>
         {
             if (_vm is null) return;
@@ -76,7 +76,8 @@ public partial class MainView : UserControl
 
         // フィルタ結果ポップアップ（§11-⑤改め 機能修正指示書_検索フィルタPopup.md。
         // inline フィルタ表示は廃止し、別ウィンドウ（ジャンプ／保存）に一本化）
-        FilterResultsButton.Click += (_, _) => OpenFilterResults();
+        FilterResultsButton.Click += (_, _) => OnFilterResultsClick();
+        FileListButton.Click += (_, _) => OpenFileList();
 
         // 色分けハイライタ（実装指示書_Ver1.1_色分けハイライタ）
         HighlighterButton.Click += (_, _) => OpenHighlighter();
@@ -149,6 +150,14 @@ public partial class MainView : UserControl
     }
 
     private bool _suppressFavApply;
+
+    /// <summary>今のタブを閉じる。結果セットのメインは閉じずに理由を出す（§5.5）。</summary>
+    private void CloseActiveTab()
+    {
+        if (_vm?.ActiveTab is not { } t) return;
+        if (!t.CanClose) { SetTransientStatus(L["MainTabCannotClose"]); return; }
+        _vm.RequestClose(t);
+    }
 
     private void OpenStartSelection(ListBox list)
     {
@@ -355,6 +364,7 @@ public partial class MainView : UserControl
 
         _autoPopupPending = true; // 完了時に結果一覧を自動表示
         _currentHitOrdinal = 0;   // 新しい検索なので「C/Total」の C をリセット
+        ForgetMultiSearch(tab.Session);
         TextView.ClearEmphasis(); // 前の検索/ジャンプの強調を消し、次へ/前への基準もリセット
         PushSearchHistory(text); // Ver1.1-A: 検索履歴に追加
 
@@ -482,6 +492,7 @@ public partial class MainView : UserControl
         _autoPopupPending = false;
         _currentHitOrdinal = 0;
         TextView.ClearEmphasis();
+        ForgetMultiSearch(tab.Session);
         tab.Session.ClearSearch();
         _vm.SearchText = "";
         TextView.Refresh();
@@ -1093,6 +1104,14 @@ public partial class MainView : UserControl
     /// <summary>起動シーケンス: ファイル指定があればそれのみ、無ければ前回セッションの復元を確認。</summary>
     public async void RunStartup(string[] fileArgs)
     {
+        // uvf -open '*.log' 語: 複数ファイルの結果を受けて開く（ファイル指定・前回の復元より先）
+        if (UwView.App.PendingCliMulti is { } multi)
+        {
+            UwView.App.PendingCliMulti = null;
+            await StartMultiAsync(multi);
+            return;
+        }
+
         var existing = fileArgs.Where(System.IO.File.Exists).ToList();
         if (existing.Count > 0)
         {
@@ -1193,6 +1212,7 @@ public partial class MainView : UserControl
         int idx = _vm.Tabs.IndexOf(tab);
         bool wasActive = _vm.ActiveTab == tab;
         _vm.Tabs.Remove(tab);
+        ForgetMultiTab(tab);
 
         if (wasActive)
         {
