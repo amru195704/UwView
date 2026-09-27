@@ -190,7 +190,7 @@ public partial class MainView
                     _vm.RequestClose(tab);
                     return group.TabOf(index);
                 }
-                tab.TitlePrefix = $"{index + 1}: ";
+                tab.TitlePrefix = $"{index + 1}:";
                 break;
             default:
                 tab = await ReplaceMainAsync(index, ct);
@@ -228,7 +228,7 @@ public partial class MainView
     private static void MakeMain(DocumentTabViewModel tab, int index)
     {
         tab.CanClose = false;
-        tab.TitlePrefix = $"{index + 1}: ";
+        tab.TitlePrefix = $"{index + 1}:";
     }
 
     /// <summary>

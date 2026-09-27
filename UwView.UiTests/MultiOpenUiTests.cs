@@ -86,7 +86,7 @@ public class MultiOpenUiTests : IDisposable
         Assert.Single(vm.Tabs);
         var main = vm.Tabs[0];
         Assert.Equal(F("f01.log"), main.FilePath);
-        Assert.Equal("1: f01.log", main.DisplayName);
+        Assert.Equal("1:f01.log", main.DisplayName);
         Assert.False(main.CanClose);                               // メインは閉じられない
 
         var results = view.MultiResultsViewModel!;
@@ -120,7 +120,7 @@ public class MultiOpenUiTests : IDisposable
         await UiHarness.Pump();
 
         Assert.Single(vm.Tabs);                                     // 差し替え（前のファイルは閉じる）
-        Assert.Equal("3: f03.log", vm.ActiveTab!.DisplayName);
+        Assert.Equal("3:f03.log", vm.ActiveTab!.DisplayName);
         Assert.False(vm.ActiveTab.CanClose);
         var text = UiHarness.Find<TextView>(view, "TextView");
         long line7 = File.ReadAllText(F("f03.log")).Split('\n').Take(6).Sum(l => l.Length + 1);
@@ -142,7 +142,7 @@ public class MultiOpenUiTests : IDisposable
         await UiHarness.WaitUntil(() => vm.Tabs.Count == 2, "タブが増える");
 
         var added = vm.Tabs[1];
-        Assert.Equal("2: f02.log", added.DisplayName);
+        Assert.Equal("2:f02.log", added.DisplayName);
         Assert.True(added.CanClose);
         Assert.Same(added, vm.ActiveTab);
 
@@ -187,7 +187,7 @@ public class MultiOpenUiTests : IDisposable
         await UiHarness.WaitUntil(() => vm.Tabs.Count == 7, "1つ閉じる");
         list.OpenAt(8);
         await UiHarness.WaitUntil(() => vm.Tabs.Count == 8, "9番が開く");
-        Assert.Equal("9: f09.log", vm.Tabs[^1].DisplayName);
+        Assert.Equal("9:f09.log", vm.Tabs[^1].DisplayName);
     }
 
     [AvaloniaFact]
@@ -196,7 +196,7 @@ public class MultiOpenUiTests : IDisposable
         MakeFiles(2);
         var (view, vm) = await Start(await Handoff("-open", "*.log"));
         Assert.Null(view.MultiResultsViewModel);
-        Assert.Equal("1: f01.log", vm.Tabs[0].DisplayName);
+        Assert.Equal("1:f01.log", vm.Tabs[0].DisplayName);
         Assert.NotNull(FileListPopup.Current);
     }
 
