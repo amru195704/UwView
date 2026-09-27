@@ -33,27 +33,39 @@ public static class FileSet
     /// <param name="IgnoredFiles">除外したファイルの数（<c>--files</c> で知らせる）。</param>
     /// <param name="IgnoredFolders">除外したフォルダーの数（中は見ていないので、中のファイルは数えていない）。</param>
     /// <param name="MissingByIgnore"><paramref name="Missing"/> のうち、除外がなければ当たっていた断片。</param>
+    /// <param name="ExtraRules">
+    /// <c>--ignore-file</c> で足した規則が効いているか。効いているなら、知らせに <c>--no-ignore-files</c> も添える
+    /// （<c>--no-ignore</c> は足した規則を止めないため。外部レビュー 2026-09-27）。
+    /// </param>
     public readonly record struct Result(IReadOnlyList<string> Files, IReadOnlyList<string> Missing,
                                          int IgnoredFiles = 0, int IgnoredFolders = 0,
-                                         IReadOnlyList<string>? MissingByIgnore = null)
+                                         IReadOnlyList<string>? MissingByIgnore = null, bool ExtraRules = false)
     {
         public int Ignored => IgnoredFiles + IgnoredFolders;
+
+        private string HowToIncludeJa => ExtraRules
+            ? "--no-ignore で含めます。--ignore-file で足した規則は --no-ignore-files で止めます"
+            : "--no-ignore で含めます";
+
+        private string HowToIncludeEn => ExtraRules
+            ? "--no-ignore includes them; rules added with --ignore-file are stopped by --no-ignore-files"
+            : "--no-ignore includes them";
 
         /// <summary><c>--files</c> の最後に出す知らせ（何も外していなければ null）。</summary>
         public string? IgnoredNotice(bool ja, string tool)
             => Ignored == 0 ? null
              : ja ? $"{tool}: 除外 {IgnoredFiles:N0} 本"
                     + (IgnoredFolders > 0 ? $"・フォルダー {IgnoredFolders:N0} 個（中は見ていません）" : "")
-                    + "（.gitignore ほか。--no-ignore で含めます）"
+                    + $"（.gitignore ほか。{HowToIncludeJa}）"
                   : $"{tool}: {IgnoredFiles:N0} files excluded"
                     + (IgnoredFolders > 0 ? $" and {IgnoredFolders:N0} folders not entered" : "")
-                    + " (.gitignore and others; --no-ignore includes them)";
+                    + $" (.gitignore and others; {HowToIncludeEn})";
 
         /// <summary>1件も当たらなかった断片の知らせ（除外のせいなら、そう添える）。</summary>
         public string MissingNotice(string fragment, bool ja, string tool)
             => MissingByIgnore?.Contains(fragment) == true
-                ? ja ? $"{tool}: 1件も当たりません: {fragment}（.gitignore などで除外。--no-ignore で含めます）"
-                     : $"{tool}: nothing matched: {fragment} (excluded by .gitignore or the like; --no-ignore includes them)"
+                ? ja ? $"{tool}: 1件も当たりません: {fragment}（.gitignore などで除外。{HowToIncludeJa}）"
+                     : $"{tool}: nothing matched: {fragment} (excluded by .gitignore or the like; {HowToIncludeEn})"
                 : ja ? $"{tool}: 1件も当たりません: {fragment}" : $"{tool}: nothing matched: {fragment}";
     }
 
@@ -131,7 +143,9 @@ public static class FileSet
                 if (seen.Add(Path.GetFullPath(path, root)))
                     files.Add(AsWritten(path, separator));
         }
-        return new Result(files, missing, walk.IgnoredFiles.Count, walk.IgnoredFolders.Count, missingByIgnore);
+        var options = ignore ?? IgnoreOptions.Default;
+        bool extraRules = options.ExtraEnabled && options.ExtraFiles is { Count: > 0 };
+        return new Result(files, missing, walk.IgnoredFiles.Count, walk.IgnoredFolders.Count, missingByIgnore, extraRules);
     }
 
     /// <summary>1回の展開で共有するもの（除外ファイルはフォルダーごとに1回だけ読む）。</summary>

@@ -272,4 +272,23 @@ public class IgnoreRulesTests : IDisposable
         }
         finally { Directory.SetCurrentDirectory(previous); }
     }
+
+    /// <summary>--ignore-file を使ったときは、知らせに --no-ignore-files も添える（--no-ignore では足した規則が止まらないため）。</summary>
+    [Fact]
+    public void 足した規則があるときは知らせにno_ignore_filesを添える()
+    {
+        Touch("a.log");
+        Touch("b.txt");
+        string extra = Path.Combine(_dir, "..", Path.GetFileName(_dir) + ".extra2");
+        File.WriteAllText(extra, "*.log\n");
+        try
+        {
+            var with = FileSet.Expand("*.log,*.txt", _dir, new IgnoreOptions(ExtraFiles: [extra]));
+            Assert.Contains("--no-ignore-files", with.IgnoredNotice(ja: true, "uvf"));
+            Assert.Contains("--no-ignore-files", with.MissingNotice("*.log", ja: false, "uvf"));
+            var without = FileSet.Expand("*.log", _dir);
+            Assert.Null(without.IgnoredNotice(ja: true, "uvf"));
+        }
+        finally { File.Delete(extra); }
+    }
 }
