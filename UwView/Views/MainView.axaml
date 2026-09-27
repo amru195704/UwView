@@ -57,24 +57,42 @@
         <!-- タブストリップ（§4.7） -->
         <Border DockPanel.Dock="Top" Background="#E4E4E4" BorderBrush="#CCCCCC"
                 BorderThickness="0,0,0,1" IsVisible="{Binding HasTabs}">
-            <TabStrip ItemsSource="{Binding Tabs}"
-                      SelectedItem="{Binding ActiveTab, Mode=TwoWay}">
-                <TabStrip.ItemTemplate>
-                    <DataTemplate x:DataType="vm:DocumentTabViewModel">
-                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center"
-                                    ToolTip.Tip="{Binding FilePath}">
-                            <TextBlock Text="{Binding DisplayName}" Foreground="Black" VerticalAlignment="Center" />
-                            <TextBlock Text="{Binding IndexProgress, StringFormat='{}{0:P0}'}"
-                                       Foreground="Black" VerticalAlignment="Center"
-                                       IsVisible="{Binding IsIndexing}" />
-                            <Button Content="×" Padding="4,0" MinWidth="0" Background="Transparent"
-                                    Foreground="Black"
-                                    Command="{Binding CloseCommand}"
-                                    IsVisible="{Binding CanClose}" />
-                        </StackPanel>
-                    </DataTemplate>
-                </TabStrip.ItemTemplate>
-            </TabStrip>
+            <!-- 1行のまま。増えたら左右にスクロールする（オーナー指示 2026-09-27。折り返すと本文が下がる） -->
+            <ScrollViewer x:Name="TabScroll" HorizontalScrollBarVisibility="Auto"
+                          VerticalScrollBarVisibility="Disabled">
+                <TabStrip x:Name="TabStripControl" ItemsSource="{Binding Tabs}"
+                          SelectedItem="{Binding ActiveTab, Mode=TwoWay}">
+                    <TabStrip.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Orientation="Horizontal" />
+                        </ItemsPanelTemplate>
+                    </TabStrip.ItemsPanel>
+                    <TabStrip.Styles>
+                        <!-- 名前は本文と同じ大きさ（既定のタブは大きすぎる） -->
+                        <Style Selector="TabStripItem">
+                            <Setter Property="FontSize" Value="14" />
+                            <Setter Property="MinHeight" Value="0" />
+                            <Setter Property="Padding" Value="8,3" />
+                        </Style>
+                    </TabStrip.Styles>
+                    <TabStrip.ItemTemplate>
+                        <DataTemplate x:DataType="vm:DocumentTabViewModel">
+                            <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center"
+                                        Background="Transparent" ToolTip.Tip="{Binding TabToolTip}">
+                                <TextBlock Text="{Binding TabTitle}" FontSize="14" Foreground="Black"
+                                           VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding IndexProgress, StringFormat='{}{0:P0}'}" FontSize="14"
+                                           Foreground="Black" VerticalAlignment="Center"
+                                           IsVisible="{Binding IsIndexing}" />
+                                <Button Content="×" Padding="4,0" MinWidth="0" Background="Transparent"
+                                        Foreground="Black"
+                                        Command="{Binding CloseCommand}"
+                                        IsVisible="{Binding CanClose}" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </TabStrip.ItemTemplate>
+                </TabStrip>
+            </ScrollViewer>
         </Border>
 
         <!-- ツールバー -->

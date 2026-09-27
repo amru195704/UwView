@@ -15,9 +15,21 @@ public partial class DocumentTabViewModel : ObservableObject, IAsyncDisposable
     public string DisplayName => TitlePrefix + Session.DisplayName;
     public string FilePath => Session.FilePath;
 
-    /// <summary>タブ名の前に付ける番号（ファイル一覧から開いたタブは <c>3: </c>。どのファイルか分かるように）。</summary>
+    /// <summary>タブに出す名前の長さの上限（番号を含む。越えたら末尾を … にする）。</summary>
+    public const int MaxTabTitleLength = 27;
+
+    /// <summary>タブに出す名前（<c>番号:ファイル名</c> を 27 文字まで。オーナー指示 2026-09-27）。</summary>
+    public string TabTitle => DisplayName.Length <= MaxTabTitleLength
+        ? DisplayName
+        : DisplayName[..(MaxTabTitleLength - 3)] + "...";
+
+    /// <summary>タブにマウスを重ねたときの説明（ファイル名。切らずに出す。2行目は場所）。</summary>
+    public string TabToolTip => string.IsNullOrEmpty(FilePath) ? Session.DisplayName : $"{Session.DisplayName}\n{FilePath}";
+
+    /// <summary>タブ名の前に付ける番号（ファイル一覧から開いたタブは <c>3:</c>。どのファイルか分かるように）。</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(DisplayName))]
+    [NotifyPropertyChangedFor(nameof(TabTitle))]
     private string _titlePrefix = "";
 
     /// <summary>

@@ -29,6 +29,7 @@ public partial class MainView : UserControl
     {
         InitializeComponent();
 
+        UwView.Controls.TabStripScroll.Attach(TabScroll, TabStripControl);
         TextView.AttachScrollBar(VScroll);
         TextView.AttachHScrollBar(HScroll);
         TextView.StateChanged += (_, _) => UpdateStatus();

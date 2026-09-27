@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
-# 試験用ビルド（Wide Field）— UwView / UVF
+# 試験用ビルド（Wide Field の開発版）— UwView / UVF
 #
-# 本番の dist とは別物で、**既に入れてある版と並べて置ける**ように名前をすべて変える:
-#   配布物   UwViewWF-<ver>-…          アプリ  UwView (Wide Field).app
-#   実行体   UwView.DesktopWF          CLI     uvfWF
-#   bundle   net.y42u.uwview.wf        表示    題名・About・--version に (Wide Field)(v<ver>)
+# **名前は正式名**（オーナー指示 2026-09-27「uvfWF/uvpWF は正式名に戻す」）:
+#   配布物   UwView-<ver>-…            アプリ  UwView.app
+#   実行体   UwView.Desktop            CLI     uvf
+#   bundle   net.y42u.uwview           表示    題名・--version に (Wide Field) を付けない
+# 出力先だけは distWideField/ のまま（dist/ は公開した配布物として git に登録してあるので汚さない）。
+# 以前は並べて置けるよう uvfWF・UwViewWF.app などの別名にしていた（〜1.7.3）。
 #
 # **作る対象は3点だけ**（オーナー指示 2026-09-22）:
 #   mac arm64 ／ Linux arm64 ／ Windows x64
@@ -18,7 +20,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-export EDITION="${EDITION:-Wide Field}"
+export EDITION=""
 export MAC_SIGN_ID="${MAC_SIGN_ID:-9737970DAE0495030DFF12A5BB6B442C62B044F0}"
 export AC_PROFILE="${AC_PROFILE:-uwviewpro-notary}"
 
@@ -27,7 +29,7 @@ if [ ${#RIDS[@]} -eq 0 ]; then RIDS=(osx-arm64 linux-arm64 win-x64); fi
 
 if [ -z "${NO_BUMP:-}" ]; then build/bump-version.sh; fi
 
-SUFFIX=WF OUT=distWideField APP_NAME="UwView (Wide Field)" build/publish.sh "${RIDS[@]}"
+OUT=distWideField build/publish.sh "${RIDS[@]}"
 
 echo ""
 echo "==================== 試験用ビルド完了 ===================="
