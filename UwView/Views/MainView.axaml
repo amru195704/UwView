@@ -118,8 +118,11 @@
                 <ToggleButton x:Name="TailToggle" Classes="icon" ToolTip.Tip="{loc:Localize TailTip}">
                     <Image RenderOptions.BitmapInterpolationMode="HighQuality" Source="avares://UwView/Assets/Toolbar/tail.png" />
                 </ToggleButton>
-                <ToggleButton x:Name="FavoriteToggle" Content="{loc:Localize Favorite}"
-                              ToolTip.Tip="{loc:Localize FavoriteTip}" />
+                <ToggleButton x:Name="FavoriteToggle" Classes="icon"
+                              ToolTip.Tip="{loc:Localize FavoriteTip}"
+                        AutomationProperties.Name="{loc:Localize Favorite}">
+                    <Image RenderOptions.BitmapInterpolationMode="HighQuality" Source="avares://UwView/Assets/Toolbar/favorite.png" />
+                </ToggleButton>
                 <Rectangle Width="1" Fill="#CCCCCC" Margin="4,0" />
                 <Button x:Name="HighlighterButton" Classes="icon" ToolTip.Tip="{loc:Localize HighlighterTip}">
                     <Image RenderOptions.BitmapInterpolationMode="HighQuality" Source="avares://UwView/Assets/Toolbar/highlighter.png" />
@@ -184,8 +187,10 @@
                     <Image RenderOptions.BitmapInterpolationMode="HighQuality" Source="avares://UwView/Assets/Toolbar/results.png" />
                 </Button>
                 <!-- 複数ファイルの結果（uvf -open '*.log' 語）のときだけ出す -->
-                <Button x:Name="FileListButton" IsVisible="False"
-                        Content="{loc:Localize FileListButton}" ToolTip.Tip="{loc:Localize TipFileList}" />
+                <Button x:Name="FileListButton" Classes="icon" IsVisible="False" ToolTip.Tip="{loc:Localize TipFileList}"
+                        AutomationProperties.Name="{loc:Localize FileListButton}">
+                    <Image RenderOptions.BitmapInterpolationMode="HighQuality" Source="avares://UwView/Assets/Toolbar/filelist.png" />
+                </Button>
                 <TextBlock Text="{Binding SearchInfo}" VerticalAlignment="Center" Foreground="Black" />
             </StackPanel>
         </Border>

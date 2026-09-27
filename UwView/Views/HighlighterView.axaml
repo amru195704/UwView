@@ -19,18 +19,33 @@
         <Border DockPanel.Dock="Top" Background="#EEEEEE" BorderBrush="#CCCCCC"
                 BorderThickness="0,0,0,1" Padding="6">
             <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                <Button x:Name="AddButton" Content="{loc:Localize HlAddRule}" />
+                <Button x:Name="AddButton" 
+                        ToolTip.Tip="{loc:Localize HlAddRule}"
+                        AutomationProperties.Name="{loc:Localize HlAddRule}">
+                    <Image Width="22" Height="22" RenderOptions.BitmapInterpolationMode="HighQuality" Source="avares://UwView/Assets/Toolbar/add.png" />
+                </Button>
                 <Rectangle Width="1" Fill="#CCCCCC" Margin="2,0" />
                 <TextBlock Text="{loc:Localize HlPreset}" VerticalAlignment="Center" Foreground="Black" />
                 <ComboBox x:Name="PresetCombo" MinWidth="180"
                           PlaceholderText="{loc:Localize HlPresetPlaceholder}"
                           ItemsSource="{Binding Presets}"
                           SelectedItem="{Binding SelectedPreset, Mode=TwoWay}" />
-                <Button x:Name="ReloadButton" Content="{loc:Localize HlReload}"
-                        ToolTip.Tip="{loc:Localize HlReloadTip}" />
+                <Button x:Name="ReloadButton"
+                        ToolTip.Tip="{loc:Localize HlReloadTip}"
+                        AutomationProperties.Name="{loc:Localize HlReload}">
+                    <Image Width="22" Height="22" RenderOptions.BitmapInterpolationMode="HighQuality" Source="avares://UwView/Assets/Toolbar/refresh.png" />
+                </Button>
                 <Rectangle Width="1" Fill="#CCCCCC" Margin="2,0" />
-                <Button x:Name="ExportButton" Content="{loc:Localize HlExport}" />
-                <Button x:Name="ImportButton" Content="{loc:Localize HlImport}" />
+                <Button x:Name="ExportButton" 
+                        ToolTip.Tip="{loc:Localize HlExport}"
+                        AutomationProperties.Name="{loc:Localize HlExport}">
+                    <Image Width="22" Height="22" RenderOptions.BitmapInterpolationMode="HighQuality" Source="avares://UwView/Assets/Toolbar/export.png" />
+                </Button>
+                <Button x:Name="ImportButton" 
+                        ToolTip.Tip="{loc:Localize HlImport}"
+                        AutomationProperties.Name="{loc:Localize HlImport}">
+                    <Image Width="22" Height="22" RenderOptions.BitmapInterpolationMode="HighQuality" Source="avares://UwView/Assets/Toolbar/import.png" />
+                </Button>
             </StackPanel>
         </Border>
 
@@ -40,8 +55,11 @@
             <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
                 <Button x:Name="SaveButton" Content="{loc:Localize Save}"
                         ToolTip.Tip="{loc:Localize HlSaveTip}" />
-                <Button x:Name="ApplyButton" Content="{loc:Localize HlApply}"
-                        ToolTip.Tip="{loc:Localize HlApplyTip}" />
+                <Button x:Name="ApplyButton"
+                        ToolTip.Tip="{loc:Localize HlApplyTip}"
+                        AutomationProperties.Name="{loc:Localize HlApply}">
+                    <Image Width="22" Height="22" RenderOptions.BitmapInterpolationMode="HighQuality" Source="avares://UwView/Assets/Toolbar/apply.png" />
+                </Button>
                 <Button x:Name="CancelButton" Content="{loc:Localize Close}"
                         ToolTip.Tip="{loc:Localize HlCancelTip}" />
             </StackPanel>

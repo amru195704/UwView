@@ -239,15 +239,18 @@ public class TextView : Control
         root.Children.Add(new TextBlock { Text = word, FontWeight = FontWeight.Bold, Foreground = Brushes.Black });
 
         // コピー（先頭。着色メニューか copy か迷わないよう明示）
-        var copy = new Button { Content = l["MenuCopy"], HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch };
+        var copy = new Button { HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch };
+        ToolbarIcon.Apply(copy, "copy", l["MenuCopy"]);
         copy.Click += (_, _) => { _ = CopyWordAsync(word); CloseFlyout(); };
         root.Children.Add(copy);
 
         root.Children.Add(swatches);
 
-        var clear = new Button { Content = l["ColorClear"], HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch };
+        var clear = new Button { HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch };
+        ToolbarIcon.Apply(clear, "color-clear", l["ColorClear"]);
         clear.Click += (_, _) => { ColorLabelRequested?.Invoke(word, null); CloseFlyout(); };
-        var manage = new Button { Content = l["ColorManage"], HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch };
+        var manage = new Button { HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch };
+        ToolbarIcon.Apply(manage, "palette", l["ColorManage"]);
         manage.Click += (_, _) => { OpenHighlighterRequested?.Invoke(); CloseFlyout(); };
         root.Children.Add(clear);
         root.Children.Add(manage);
