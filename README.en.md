@@ -2,64 +2,157 @@
 
 *[日本語](README.md) ｜ English*
 
-**A tool for investigating huge logs and text files. Search in the terminal, read in the window.**
+**Search in the CLI, read in the GUI. A CLI/GUI tool for investigating huge logs and text files.**
+
+**The CLI (`uvf`) searches as fast as ripgrep, and the GUI opens files as fast as klogg.** The difference is that the two **connect in a single pass**. Type `uvf file 'word' -open` and the GUI opens the moment the search ends, with the hits already listed. **The GUI does not search again.**
 
 📥 **[Download (free)](https://github.com/amru195704/UwView/releases/latest)** · 🌐 **[Official site](https://uvp.y42u.net/en/)** · 🧪 **[Try it in your browser](https://amru195704.github.io/UwView/)**  
-📖 **[uvf command manual](2-doc/uvf_コマンド操作マニュアル.md)** · 🖥 **[Window (GUI) manual](2-doc/UwView_操作マニュアル.md)** ([PDF](2-doc/UwView_操作マニュアル.pdf)) — both in Japanese
+📖 **[uvf command manual](2-doc/uvf_コマンド操作マニュアル.md)** · 🖥 **[GUI manual](2-doc/UwView_操作マニュアル.md)** ([PDF](2-doc/UwView_操作マニュアル.pdf)) — both in Japanese · 🧾 **[v1.7.3.5 release notes](2-doc/release-body-v1.7.3.5.md#uwview-v1735--wide-field-english)**
 
-> **The latest release is v1.7.3.5 "Wide Field".** Search several files at once, mix plain text with seven compressed formats in a single run, and read the results right in the window.
-> → [What Wide Field does](#several-files-at-once--wide-field-v173) · [Release notes](2-doc/release-body-v1.7.3.5.md#uwview-v1735--wide-field-english)
+> **The latest release is v1.7.3.5 "Wide Field".** Search many files with a single wildcard. Mix plain text with **seven compressed formats** (gz, bz2, xz, lzma, zst, lz4, br) in one run — no external commands needed.
 
 ---
 
-## UwView is on par with ripgrep and on par with klogg. It does both in one pass, so end to end it is about 2× quicker.
+## UwView in numbers
 
-**Searching is on par with `ripgrep`. Opening is on par with `klogg`.** Compared one at a time, it is a tie.
+| When you want to… | The others | **UwView** |
+|---|---|---|
+| **Search a compressed log** (7 formats, 979 MB) | **On par** with ugrep and ripgrep; **up to 2.73× faster** than the standard grep tools (zgrep etc.) | **`uvf` is the fastest in all 7 formats** |
+| **Search the same compressed log again** | Every tool decompresses again (bz2 takes 7–8 s) | **`uvp` takes 0.11–0.12 s in every format** (**62×** `uvf` on bz2) |
+| **Search 12 gz/plain files, ~60 GB uncompressed** | zgrep 89.35 s | **`uvf` 17.60 s (5.08×)** |
+| **Search 50 GB and read the hits in the GUI** | klogg (open + search) 108.1 s | **`uvf … -open` 50.76 s (2.13×)** |
+| **Ask a 50 GB file a second question** | ripgrep 55.50 s | **`uvp` 6.47 s (8.6×)** |
+| **Search 258 GB / 4.5 billion lines and hand the hits to the GUI** | klogg needs 258 s just to finish opening | **`uvf … -open` 261.37 s**, search done and hit list shown |
 
-But what you actually want is to **find it and read the place it hit**. Search with `rg`, find the hit, then reopen the
-file in a viewer to read around it — **and the file has now been read twice.**
-With UwView you type `uvf <file> '<pattern>' -open`, and **a single read searches the file and puts the hits on screen.**
+**CLI and GUI, all of this is the free edition** (only `uvp` is [UwView Pro](https://uvp.y42u.net/en/pro-en/)).
 
-**That is where the 2× comes from** — not a cleverer algorithm, but **two passes over the file becoming one.**
+**Where we lose, first.**
 
-**One 51.25 GB file** (Mac M4, external USB SSD, every run cold with the cache dropped)
+- **Searching several plain-text files together, ripgrep was slightly faster** (5 plain files: `uvf` at 1/1.17 of ripgrep — under 1.5×, so on par).
+- **Searching a 3 GB file a second time in a row, ripgrep is slightly faster** (0.32 s vs 0.42 s — also on par). The file fits in memory, so the second run is a race to read from the cache.
+- **`uvp` takes 2.34× as long as `uvf` the first time it bundles several files** (12 files: 41.23 s vs 17.60 s), because it writes the bundled index. From the second search on it is 1.85× faster than `uvf`, so it pulls ahead after four searches in total.
 
-| Task | Against | Theirs | **UwView** | |
-|---|---|---:|---:|:---:|
-| **Search** (CLI, one term) | ripgrep 15.2.0 | 55.54 s | **`uvf … -open` 50.76 s** | level |
-| **Open** (GUI) | klogg 24.11.0 | 52.55 s | **50.44 s** | level |
-| **Search, then read the hit** | `rg` + klogg | 108.1 s | **`uvf … -open` 50.76 s** | **2.13×** |
+> A difference under 1.5× is written as "on par", never as a win. Timings are from one Mac (conditions at the [end of this page](#where-the-numbers-come-from)). **Do not compare seconds across machines.**
 
-**Rows 1 and 3 are the same command, the same single run.** Searching, and searching plus putting the hits on screen,
-take the same time.
+---
 
-**All of that is the free edition.**
+## CLI: against ripgrep and the grep family
 
-> The 108.1 s for `rg` + klogg is two measured figures added (55.54 s + 52.55 s). klogg alone (open + search) is also 108.14 s.
-> Term: `東京` (94,979 hits). `uvf … -open`'s 50.76 s is 51.25 GB ÷ 50.76 s = **963 MB/s** — exactly one pass over the file.
-> **[Conditions and full data →](https://uvp.y42u.net/en/benchmarks-en/)**
+### Search compressed logs as they are (7 formats)
 
-### By size
+The same 979 MB text, compressed in seven formats, searched for 東京 (hot, seconds). **Every tool's output matched `uvf` in line count and content.**
 
-| | 3 GB | 10 GB | 50 GB |
+| Format | Standard grep | ugrep 7.8.5 | ripgrep 15.2.0 | **`uvf`** | `uvp` 1st | **`uvp` 2nd** |
+|---|---:|---:|---:|---:|---:|---:|
+| gz | 0.90 (zgrep) | 0.45 | 0.43 | **0.33** | 0.42 | **0.12** |
+| bz2 | 8.03 (bzgrep) | 7.62 | 7.89 | **7.43** | 7.64 | **0.12** |
+| xz | 4.01 (xzgrep) | 3.64 | 4.21 | **3.37** | 3.44 | **0.11** |
+| lzma | 3.21 (xzgrep) | 2.83 | 3.40 | **2.57** | 2.64 | **0.12** |
+| zst | 0.63 (zstdgrep) | 0.65 | 0.54 | **0.50** | 0.57 | **0.12** |
+| lz4 | 0.65 (lz4 -dc \| grep) | 0.33 | 0.31 | **0.28** | 0.35 | **0.12** |
+| br | 1.33 (brotli -dc \| grep) | 0.91 | 0.87 | **0.74** | 0.85 | **0.12** |
+
+- **For a one-off search, `uvf` is the fastest in all seven formats.** Against ugrep and ripgrep, though, the gap is 1.03–1.36× — **on par**.
+- **Against the standard grep tools there is a real gap**: **2.73×** on gz, **2.32×** on lz4, **1.80×** on br (bz2, xz, lzma and zst are on par).
+- **`uvp`'s second search takes 0.11–0.12 s whatever the original format**, because it searches the index (`.uwvz`) it built the first time and the weight of the original format disappears. That is **2.3–62×** `uvf` (bz2 62×, xz 31×, lzma 21×). `uvp`'s first search, index-building included, is on par with `uvf`.
+- `uvf` **calls no external commands**. `rg -z` calls gzip, xz and so on for each format and silently skips the file when the command is missing.
+- ag (The Silver Searcher) could not decompress four of the formats and crashed on files over 2 GB uncompressed, so it was left out of the comparison.
+
+### Search many files at once
+
+| hot, seconds | zgrep | ugrep | ripgrep | **`uvf`** | `uvp` 1st (bundling) | **`uvp` 2nd** |
+|---|---:|---:|---:|---:|---:|---:|
+| 5 gz files (~7.4 GB uncompressed) | 9.43 | 2.56 | 1.34 | **1.04** | 3.04 | **0.73** |
+| 7 gz + 5 plain = 12 files (~60 GB uncompressed) | 89.35 | 25.38 | 24.62 | **17.60** | 41.23 | **9.52** |
+
+- With 12 files, `uvf` is **5.08× zgrep** and on par with ugrep and ripgrep (1.44×, 1.40×). Cold (cache dropped), `uvf` 21.35 s and ugrep 26.85 s were on par too.
+- **If you search the same 12 files again and again, use `uvp`.** It bundles them into one `.uwvz`, and from the second search on it is **1.85×** faster than `uvf`.
+
+```bash
+uvf '*.log' ERROR                    # every .log in this folder
+uvf '**/*.log' ERROR -open           # include subfolders and send the hits to the GUI
+uvf 'app.log,app.log.*.gz' ERROR     # plain and compressed together, in one run
+```
+
+Files are skipped by **the same rules as ripgrep** (`.ignore`, `.gitignore`, hidden files; use `--no-ignore` to keep them).
+
+### One large file
+
+Plain search for 東京 (seconds; cold = right after dropping the cache / hot = the second run straight after)
+
+| | ripgrep 15.2.0 | **`uvf`** (free) | **`uvp`** (Pro; 1st run includes building the index) |
 |---|---:|---:|---:|
-| ripgrep 15.2.0 (search, one term) | 3.29 s | **11.38 s** | 55.54 s |
-| klogg 24.11.0 (open) | 3.65 s | 10.98 s | 52.55 s |
-| **UwView CLI (`uvf … -open`, search and hand to the window)** | **3.40 s** | **10.42 s** | **50.76 s** |
-| **UwView GUI (open only)** | **2.99 s** | **10.13 s** | **50.44 s** |
+| 3 GB | 3.26 / 0.32 | **3.04** / 0.42 | 3.43 / **0.29** |
+| 10 GB | 10.91 / 0.99 | 11.08 / 1.33 | 11.79 / **0.95** |
+| 50 GB | 56.06 / 55.50 | **51.49 / 50.52** | 58.42 / **6.47** |
 
-**Every row is one pass over the file.** None of these tools keeps an index, so the disk's read speed is the limit.
+**`uvf` is on par with ripgrep at every size.** At 50 GB the file does not fit in memory, so neither ripgrep nor `uvf` gets faster the second time. **Only `uvp` does: 6.47 s on the second run** — **8.6×** ripgrep.
 
-**Compare the last two rows.** Opening in the window and nothing else takes 50.44 s; searching from the command line and
-putting the hits on screen takes 50.76 s. The difference is **+0.41 s / +0.29 s / +0.32 s** — **the file grows 17×, and
-searching still adds only 0.3–0.4 s.** The search happens during the read, so it needs no pass of its own.
+Seven searches (plain, `-i`, `-E`, `-E` anchored, `-E -i`, `-v`, `-E -v`), cold + hot total:
 
-**Ask the same file twice and ripgrep wins at 3 GB** — that size fits in RAM, so its second run comes from cache.
-Running seven searches twice each totals 32.30 s for rg against 33.31 s for `uvf` at 3 GB, 158.69 s against
-**147.01 s** at 10 GB, and 806.22 s against **735.97 s** at 50 GB.
+| | ripgrep | **`uvf`** | **`uvp`** |
+|---|---:|---:|---:|
+| 3 GB | 31.25 s | 30.03 s (on par) | **14.67 s (2.13×)** |
+| 10 GB | 89.59 s | 88.01 s (on par) | **30.25 s (2.96×)** |
+| 50 GB | 828.97 s | 749.14 s (on par) | **238.59 s (3.47×)** |
 
-> **If you run `rg` on Windows:** at 50 GB, adding `--no-mmap` makes it **2.89× faster**
-> → **[the write-up](https://uvp.y42u.net/en/blog/uvp-rg-no-mmap-50gb-en/)**
+Across all 96 items (searches plus filtering, counting, sorting, head/tail, writing out, gz input and more) against combinations of rg, sed, sort, uniq and gzip, the overall result is **2.46×**, with **zero mismatched results**.
+
+> **If you use `rg` on Windows:** on a 50 GB file, `--no-mmap` makes it **2.89×** faster → **[Article](https://uvp.y42u.net/en/blog/uvp-rg-no-mmap-50gb-en/)**
+
+---
+
+## GUI: against klogg
+
+| cold, seconds | 3 GB | 10 GB | 50 GB |
+|---|---:|---:|---:|
+| **Open**: klogg 24.11.0 | 3.65 | 10.98 | 52.55 |
+| **Open**: **UwView GUI** | **2.99** | **10.13** | **50.44** |
+| **Search**: klogg | 0.56 | 11.75 | 55.59 |
+| **Search**: **UwView GUI** | **0.32** (1.75×) | **10.15** | **53.50** |
+| **Find and read**: klogg (open + search) | 4.21 | 22.73 | 108.1 |
+| **Find and read**: **`uvf … -open`** | **3.40** | **10.42 (2.18×)** | **50.76 (2.13×)** |
+
+**Opening and searching are on par with klogg** (only the 3 GB search is 1.75×). **The gap opens up at "find it and read it."** klogg reads the file once to open it and again to search it. **`uvf … -open` reads it once, searching as it goes.**
+
+**The GUI "just opening" versus `uvf … -open` "searching and handing the hits to the GUI": +0.41 / +0.29 / +0.32 s.** The file grows 17×, and the cost of searching stays at 0.3–0.4 s. From the end of the command to the hit list appearing in the GUI takes **0.03–0.08 s**, because the GUI only lays out the positions it was given.
+
+### Even at 258 GB, the end of the file is there the moment it opens
+
+klogg **cannot scroll to the end until its index is built** — **4 min 18 s** at 258 GB, and until then you only see the start. UwView **makes the whole file navigable first** and builds the index in the background.
+
+| 258.68 GB, 4.5 billion lines | Until you can reach the end | What the GUI shows |
+|---|---|---|
+| klogg 24.11.0 | **4 min 18 s** | only the start, until the index is built |
+| **UwView (free)** | **no wait** | the text (line numbers once the index is built; finishes opening in 4 min 15.5 s) |
+| **UwView Pro, first time** | **no wait** | same as free (5 min 18 s, as it also saves the index) |
+| **UwView Pro, second time on** | **no wait** (opens in **0.01–0.07 s**) | the text + **line numbers** from the start |
+
+Mouse wheel, dragging the scroll bar or `Cmd/Ctrl+End` — all reach the end straight after opening. Jumping to a line number feels instant whatever the file size (0.003 ms at 890 million lines).
+
+---
+
+## UwView Pro — the second question is where the numbers change
+
+The first time, every tool has to read the whole file at least once. That is physics; there is no way round it. The difference is **what is left afterwards**.
+
+`uvp` builds a **`.uwvz`** (a compressed format plus an index, about 1/9 of the original) the first time, and **from then on never touches the original file.**
+
+| Same file, same word, second search (hot) | ripgrep | `uvf` (free) | **`uvp` (Pro)** |
+|---|---:|---:|---:|
+| 50 GB plain text | 55.50 s | 50.52 s | **6.47 s (8.6× ripgrep)** |
+| 979 MB bz2 | 7.89 s | 7.43 s | **0.12 s (62× `uvf`)** |
+| 12 gz + plain files (~60 GB uncompressed) | 24.62 s | 17.60 s | **9.52 s (2.59× ripgrep)** |
+
+- **The first time, it is on par**: 50 GB, `uvp` 58.42 s vs ripgrep 56.06 s (while building the index).
+- **The 16 things only `uvp` does** — filtering, counting, sorting and so on — finish **5.12–7.44×** faster than combinations of rg, sed, sort and friends.
+- **Delete the original and you can still search the `.uwvz`; `-extract` brings it back.** 51.25 GB becomes about 5.7 GB.
+- Text inside `.zip` files and OpenStreetMap `.pbf` files can be used as input too.
+- In the GUI, from the second time on it **opens in 0.01–0.07 s, with line numbers from the start**.
+
+**`uvp` pays off when you ask a file over 10 GB, or a compressed log, more than one question.** For a one-off, the free edition is enough.
+
+> **$129** one-time / **$9** a month (Edit Upgrade +$120 / +$8) · **14-day free trial** → **[UwView Pro](https://uvp.y42u.net/en/pro-en/)**
 
 ---
 
@@ -74,204 +167,57 @@ brew install --cask amru195704/uwview/uwview
 scoop bucket add uwview https://github.com/amru195704/scoop-uwview
 scoop install uwview
 ```
-**Linux, or by hand:** get the dmg / zip / tar.gz from [GitHub Releases](https://github.com/amru195704/UwView/releases/latest).
+**Linux, or to install by hand**: download the dmg / zip / tar.gz from [GitHub Releases](https://github.com/amru195704/UwView/releases/latest).
 
-Both Homebrew and Scoop download from the official GitHub Releases and check the SHA256. **The `uvf` command is ready to use right away.**
+Both Homebrew and Scoop fetch from the official GitHub Releases and check the SHA256. **The `uvf` command works straight away.**
 To update: `brew upgrade --cask uwview` / `scoop update uwview`.
 
 ---
 
-## How it works
+## Usage
 
 ```bash
-uvf japan-latest.osm 'pattern' -open
+uvf japan-latest.osm '東京' -open    # search, then read the hits in the GUI
+uvf app.log.zst ERROR                # compressed files are searched as they decompress (7 formats)
+uvf '**/*.log' ERROR --files         # list the files that would be searched, without searching
 ```
 
-**The window opens the moment the search finishes, with a line-numbered list of hits. It does not search again.**
-**From the command finishing to the list being on screen: 0.03–0.08 s** (0.03 s at 3 GB and 10 GB, 0.08 s at 50 GB) — the window only has to lay out
-the positions it was handed.
-From there: read the lines around a hit, jump from the list, colour several keywords at once, change the pattern and
-look again. Investigation is made of that back and forth.
+**The GUI opens the moment the search ends, with a hit list carrying line numbers.** From there you read the lines around a hit, jump from the list, colour several keywords, search again with other conditions — that back-and-forth is what investigating is. Results from several files can also be opened in extra tabs (up to 8) from the file list.
 
-**258.68 GB and 4.5 billion lines** behave the same way: `uvf … -open` takes **265.21 s**, while
-**klogg needs 258 s merely to finish opening that file** (7 s apart, 2.8%).
-
-**Several files and compressed files use the same form (v1.7.3+).** Always quote the pattern.
-
-```bash
-uvf '*.log' ERROR                    # every .log in this folder
-uvf '**/*.log' ERROR -open           # subfolders too, then read the hits in the window
-uvf 'app.log,app.log.*.gz' ERROR     # plain text and compressed, in one run
-uvf app.log.zst ERROR                # gz, bz2, xz, lzma, zst, lz4, br are searched as they decompress
-uvf '**/*.log' ERROR --files         # just list what would be searched
-```
-
-The rules, options, regular expressions, exit codes and a ripgrep cheat sheet are in the **[uvf command manual](2-doc/uvf_コマンド操作マニュアル.md)**;
-using the window (search, hit list, file list and tabs, highlighter, keys) is in the **[window manual](2-doc/UwView_操作マニュアル.md)** ([PDF](2-doc/UwView_操作マニュアル.pdf)). Both are in Japanese for now.
+Syntax, options, regular expressions, exit codes and a ripgrep cheat sheet are in the **[uvf command manual](2-doc/uvf_コマンド操作マニュアル.md)**;
+the GUI (search, hit list, file list and tabs, highlighter, keys) is covered in the **[GUI manual](2-doc/UwView_操作マニュアル.md)** ([PDF](2-doc/UwView_操作マニュアル.pdf)). Both are in Japanese.
 
 ---
 
-## Which one
+## Which one to use
 
-| Situation | Use |
+| You want to… | Use |
 |---|---|
-| Just searching, no window needed | **`uvf`** (free) |
-| **Several files, or compressed logs (7 formats), in one go** | **`uvf '*.log' <pattern>`** (free, v1.7.3+) |
-| **Search, then read the hit** | **`uvf … -open`** (free) — **the shortest path** |
-| You just want to open it and look | **the UwView window** (free) — **scroll to the end the moment it opens** (below) |
-| **Coming back to the same file / keeping it compressed** | **[UwView Pro](https://uvp.y42u.net/en/pro-en/)** |
-| **Editing** a huge file | **UwView Pro + Edit Upgrade** |
-| Up to 3 GB, nothing installed | **[browser build](https://amru195704.github.io/UwView/)** |
+| **Search in the CLI only** | **`uvf`** (free) — on par with ripgrep |
+| **Search many files or compressed logs together** | **`uvf '*.log' word`** (free, 7 compressed formats) |
+| **Search in the CLI and read the hits in the GUI** | **`uvf … -open`** (free) — **the shortest path** |
+| **Open a file in the GUI and look around** | **UwView GUI** (free) — scroll to the end the moment it opens |
+| **Keep coming back to the same file or logs / keep them compressed** | **[UwView Pro](https://uvp.y42u.net/en/pro-en/)** (`uvp`) |
+| **Edit** a huge file | **UwView Pro + Edit Upgrade** |
+| Up to ~3 GB, no install | **[Browser edition](https://amru195704.github.io/UwView/)** |
 
-**Both `uvf` and the GUI are in the free build.** Single executables, no installer, same on Windows, macOS and Linux.
-
-### Even at 258 GB, you can look at the end the moment it opens
-
-`klogg` **cannot scroll to the end until its index is built** — **4 min 18 s at 258 GB**,
-and until then you only see the top of the file.
-
-UwView makes the whole file navigable **first** and builds the index in the background.
-"Just show me the tail" and "let me skim the middle" involve **no waiting at all**.
-
-| 258.68 GB, 4.5 billion lines | Until you can reach the end | What is on screen |
-|---|---|---|
-| klogg 24.11.0 | **4 min 18 s** (258 s) | only the top of the file until the index is built |
-| **UwView (free)** | **no wait** | the text (**line numbers once the index is built**) |
-| **UwView Pro, 1st open** | **no wait** | same as the free edition |
-| **UwView Pro, 2nd open onward** | **no wait** (opens in 0.01–0.07 s) | the text **and line numbers**, from the start |
-
-**You simply scroll.** Mouse wheel, dragging the scrollbar, `Cmd/Ctrl+End` — you can reach the end
-of the file the moment it opens. **You do not have to type a ratio**; `50%` and the like are just a
-shortcut when you want to jump somewhere in one move.
-
-**The first open is the same in both editions.** The only difference is **when line numbers appear**:
-they show up once the index is built (about 4.5 minutes at 258 GB — much the same as klogg).
-**Scrolling works normally the whole time.**
-
-**The difference starts at the second open.** Pro keeps the index in its `.uwvz`, so line numbers are
-there **from the moment it opens** — type a line number and go.
-
-- The jump feels instant regardless of size (0.003 ms at 892 million lines, measured)
-
-> **What is fast here is not the index — it is the order.** Build the index and then let people use
-> the file, or let them move around first and build the index behind them. That is the whole difference.
-
-### UwView Pro — the order of magnitude changes at the second question
-
-On the first question klogg, `uvf` and `uvp` all have to read the whole file once. That is physics; there is no way
-around it. What differs is **what is left behind.** `uvp` builds a `.uwvz` on the first run (about one ninth of the
-original, with a line index) and **never touches the original again.**
-
-**Asking a second question of the same 51.25 GB file**
-
-| | Open | Search | Total | |
-|---|---:|---:|---:|:---:|
-| klogg 24.11.0 | 52.55 s (rebuilt every time) | 55.59 s | 108.14 s | |
-| **`uvf … -open`** (free) | — | — | **50.76 s** | 2.13× |
-| **`uvp`** (with `.uwvz`) | **0.01–0.07 s** | **6.34 s** | **6.41 s** | **16.9×** |
-
-**16.9× klogg, and 7.9× our own free `uvf`.** This is where the order of magnitude changes.
-klogg keeps no index, so it **rebuilds one every time you open the file**; `uvf` builds none, so **the second question
-costs the same as the first**. Only `uvp` **earns back what the first pass cost.**
-
-**It stays searchable with the original deleted, and `-extract` puts it back.** 51.25 GB becomes about 5.7 GB.
-
-**On the first question the free `uvf` is level with ripgrep, while `uvp` is 6–7% slower because it builds its `.uwvz`** (v1.6.6.1, 50 GB: 59.0 s vs 54.9–55.8 s).
-**`uvp` pays off past 10 GB, when you ask the same file more than one question.**
-
-> **$129** one-time / **$9** per month (Edit Upgrade +$120 / +$8), with a **14-day free trial**
-> → **[UwView Pro](https://uvp.y42u.net/en/pro-en/)**
+**Both `uvf` and the GUI are in the free edition.** A single executable, no installer, the same on Windows / macOS / Linux.
 
 ---
 
-## What it does
+## Features
 
-**Largest measured: 258.68 GB, 4.5 billion lines** (on the free edition) / the `uvf` command (`-i`, `-E`, `-v`,
-exit codes 0 / 1 / 2 (match / no match / error), `-open`, `--json`, `--tune`) / **searches several files at once** (wildcards, comma lists,
-`.ignore` / `.gitignore` handled with the same rules as ripgrep, v1.7.3+) / **searches 7 compressed formats directly** (gz, bz2, xz,
-lzma, zst, lz4, br — no external commands, v1.7.3+; gz since v1.6.6) / reads multi-file results in the window (file list, up to 8 tabs) / hit-list window
-(original line numbers, jump, surrounding context, save) / multi-keyword colouring (32 colour-blind-safe colours,
-7 presets, `.uwvhl`) / automatic encoding detection (UTF-8, Shift-JIS, EUC-JP, UTF-16) / real-time tail /
-opens gzip directly / tabs, bookmarks, horizontal scrolling, session restore / identical rendering on every OS
+**CLI (`uvf`)**: `-i`, `-E`, `-v`, exit codes 0/1/2 (hit / no hit / error, as grep), `-open`, `--json`, `--files`, `--tune` /
+**search many files at once** (wildcards, `**`, comma lists; `.ignore` / `.gitignore` follow ripgrep's rules) /
+**search 7 compressed formats as they are** (gz, bz2, xz, lzma, zst, lz4, br; no external commands; mix with plain text in one run)
 
-**Requirements**: .NET 10 / Avalonia UI 12.x / Windows, macOS, Linux
+**GUI**: **measured up to 258.68 GB / 4.5 billion lines** (with the free edition) / scroll to the end the moment it opens / hit list (original line numbers, jump, context, save) /
+read results from many files (file list, up to 8 tabs) / colour several keywords (32 colours, 7 presets, `.uwvhl`) / minimap /
+encoding detection (UTF-8, Shift-JIS, EUC-JP, UTF-16) / live tail / tabs, bookmarks, horizontal scroll, session restore / identical rendering on every OS
 
-### 🗜 Searching a `.gz` is faster than `zgrep` (v1.6.6+)
+**Runs on**: .NET 10 / Avalonia UI 12.x / Windows, macOS, Linux
 
-```bash
-uvf app.log.gz 'ERROR'          # no pipe to write
-uvf app.log.gz 'ERROR' -open    # hand the hits straight to the window
-```
-
-The decompressor now runs on the OS's own zlib, which pushed it **past `gzip -dc | rg`** (i.e. `zgrep`).
-
-| Searching a `.gz` (cold / hot) | `gzip -dc \| rg` | **`uvf`** | Ratio |
-|---|---:|---:|---:|
-| 3 GB of text (301 MB gz) | 1.18 s / 1.16 s | **1.16 s / 1.00 s** | 1.02× / 1.16× |
-| 10 GB of text (1.12 GB gz) | 4.38 s / 4.29 s | **3.66 s / 3.38 s** | 1.20× / 1.27× |
-| 50 GB of text (5.75 GB gz) | 22.06 s / 21.71 s | **17.20 s / 17.04 s** | **1.28× / 1.27×** |
-
-Beating the `gzip` command itself comes from **not going through a pipe between processes**.
-
-### Known limitation: extremely long lines inside a compressed file
-
-If a `.gz` contains **a single line longer than 64 MiB** (roughly 67 million ASCII characters) and a search
-matches that line, the search may stop with a message that the file "could not be read to the end". **The file is not actually damaged.**
-
-**This will not be fixed.** Logs and XML dumps essentially never contain a 64 MiB line, and removing the limit
-would require a design with no bound on line length — which **slows down every ordinary file as well**.
-UwView exists to look at huge files fast, so **speed wins**.
-
-If you have such a file, `gunzip` it first and open the plain text.
-
----
-
-## Several files at once — Wide Field (v1.7.3+)
-
-**Several files, treated as one input.** Released in v1.7.3.5 after testing on Mac, Linux and Windows.
-→ [Release notes](2-doc/release-body-v1.7.3.5.md#uwview-v1735--wide-field-english) · [uvf command manual (Japanese; ch. 4 file selection, ch. 6 compressed files, ch. 8 using the window)](2-doc/uvf_コマンド操作マニュアル.md)
-
-**In the free `uvf`**
-
-- **Search them together**: `uvf '*.log' ERROR`, `uvf '**/*.log' ERROR`, `uvf 'app.log,app.log.*.gz' ERROR`. Output is `file:line<TAB>text`.
-- **Files are left out the same way ripgrep leaves them out**: an expanded wildcard skips anything matched by `.ignore` / `.gitignore`, and hidden files (names starting with `.`) are skipped on every OS. `--no-ignore` turns that off; `--files` shows exactly what would be searched.
-- **Seven compressed formats, searched as they decompress**: gz, bz2, xz, lzma, zst, lz4, br — no external commands, and they can be mixed with plain text in one run.
-- **Read the results in the window**: `uvf '*.log' ERROR -open`. Hit line numbers read `file-number:line`, and the file list can open files in extra tabs (up to 8).
-
-**UwView Pro (`uvp`) only**
-
-Several files are bundled into **one `.uwvz`**, so from the second question on nothing is rebuilt. Text inside a `.zip`, and OpenStreetMap `.pbf`, can be used as input as well. With `-open`, the window moves to a hit **at once** inside the bundled text (the free `-open` reopens the original file before moving).
-
-**Losses first: for several plain-text files, ripgrep is faster** (five plain files: `uvf` at 1/1.17 of ripgrep).
-
-| OSM XML, 3 GB of text (first + second run) | Size | `rg -z` | `uvf` | |
-|---|---:|---:|---:|---|
-| gz | 318 MB | 2.62 s | 2.02 s | 1.30× |
-| bz2 | 251 MB | 44.98 s | 43.96 s | 1.02× |
-| xz | 253 MB | 3.41 s | 3.66 s | 1/1.07 |
-| lzma | 254 MB | 20.90 s | 16.83 s | 1.24× |
-| zst | 348 MB | 3.23 s | 3.01 s | 1.07× |
-| lz4 | 533 MB | 1.86 s | 1.67 s | 1.11× |
-| br | 292 MB | 4.89 s | 4.01 s | 1.22× |
-
-**All seven formats are level with `rg -z`** (every difference is under 1.5×). `rg -z` calls an external command for each format (gzip, xz and so on) and silently skips the file when that command is missing; `uvf` gets the same speed with no external commands.
-Searching seven `.gz` files together, `uvf` was 1.28× faster than ripgrep.
-
-**Bundled `uvp`** (test build 1.7.0.18, 8 files, first search plus the repeat right after): 4 plain + 4 `.gz` took 9.72 s with ripgrep (`-z`), 8.58 s with `uvf`, and **3.97 s with `uvp`**.
-**pbf** (Pro only): `japan-latest.osm.pbf`, 2.46 GB, becomes a searchable 5.74 GB `.uwvz` — the content of 51.3 GB of XML — in **24.4 s**. Element counts match `osmium fileinfo`.
-
-> Timings are from one Mac (Apple M4, 10 cores, external USB SSD, cache dropped before each run), `uvf` 1.7.2.7–1.7.2.8 against ripgrep 15.2.0. **Do not compare seconds across machines.** Conditions and full data are in the "performance" chapter of the [uvf command manual](2-doc/uvf_コマンド操作マニュアル.md).
-
----|---:|---:|---:|
-| 4 plain files (102 MB–1.03 GB) | **2.23 s** | 2.68 s | 3.45 s |
-| 4 `.gz` files (11 MB–1.12 GB) | 8.75 s | 7.17 s | **3.63 s** |
-| 4 plain + 4 `.gz` | 9.72 s | 8.58 s | **3.97 s** |
-
-**On plain text of this size, ripgrep is the fastest** (the test used four plain files of 102 MB–1.03 GB and the same four gzipped). Once `.gz` is in the mix, `uvf` is 1.13–1.22× and the bundled `uvp` is 2.41–2.45×. Seconds vary by machine.
-
-**pbf** (Pro only): `japan-latest.osm.pbf`, 2.46 GB, becomes a searchable 5.74 GB `.uwvz` — the content of 51.3 GB of XML — in **24.4 s**. Element counts match `osmium fileinfo`. Searching for 東京 took 6.81 s the first time and 5.08 s the second.
-
-Details of each change are posted on [Releases](https://github.com/amru195704/UwView/releases) and the [blog](https://uvp.y42u.net/en/blog-en/).
+**Known limitation**: if a compressed file contains **a single line longer than 64 MiB** and that line matches, the search may stop (the file is not damaged). We favour speed, so no fix is planned; decompress such files before opening them.
 
 ---
 
@@ -280,18 +226,25 @@ Details of each change are posted on [Releases](https://github.com/amru195704/Uw
 | | |
 |---|---|
 | 📖 **uvf command manual** (Japanese) | [2-doc/uvf_コマンド操作マニュアル.md](2-doc/uvf_コマンド操作マニュアル.md) — syntax, options, compressed files, regular expressions, exit codes, ripgrep cheat sheet, performance |
-| 🖥 **Window (GUI) manual** (Japanese) | [2-doc/UwView_操作マニュアル.md](2-doc/UwView_操作マニュアル.md) · [PDF](2-doc/UwView_操作マニュアル.pdf) — layout, search, hit list, file list and tabs, highlighter, keys |
+| 🖥 **GUI manual** (Japanese) | [2-doc/UwView_操作マニュアル.md](2-doc/UwView_操作マニュアル.md) · [PDF](2-doc/UwView_操作マニュアル.pdf) — layout, search, hit list, file list and tabs, highlighter, keys |
 | 🧾 **v1.7.3.5 Wide Field release notes** | [release-body-v1.7.3.5.md](2-doc/release-body-v1.7.3.5.md#uwview-v1735--wide-field-english) |
 | 📊 **All measurements and conditions** | [Benchmarks](https://uvp.y42u.net/en/benchmarks-en/) (EmEditor, klogg, 010 Editor, UltraEdit, Log Viewer, grep, ripgrep, amber, from 3 GB to 250 GB. **The numbers where we lose are published as they are.**) |
 | 📖 **An honest re-measurement against klogg** | [Article](https://uvp.y42u.net/en/blog/uvp-klogg-open-lose-flow-win-en/) |
 | 📖 **One 50 GB file, three arenas** | [Article](https://uvp.y42u.net/en/blog/uvp-three-arenas-50gb-en/) |
-| 📖 **The window catching up with the command** | [Article](https://uvp.y42u.net/en/blog/uvp-gui-catches-up-v166-en/) |
+| 📖 **Choosing a log compression format (7 formats measured)** | [Article](https://uvp.y42u.net/en/blog/log-compression-format-choice-en/) |
 | 📖 **ripgrep's `--no-mmap`** | [Article](https://uvp.y42u.net/en/blog/uvp-rg-no-mmap-50gb-en/) |
 | 🔧 **Full feature list, architecture, build and test instructions** | [Previous README (as of v1.6.5)](docs/README.en-v1.6.5.md) |
 | 📰 **Press kit** | [PRESSKIT.md](press-kit/PRESSKIT.md) |
 
-> **On versions:** the latest release is **v1.7.3.5 "Wide Field"**. The single-file timings near the top (3 GB–258 GB) were measured on **v1.6.6.1**; the timings in the Wide Field section on v1.7.2.x.
-> → [what changed in v1.7.3.5](2-doc/release-body-v1.7.3.5.md#uwview-v1735--wide-field-english) · [what changed in v1.6.6](2-doc/release-body-v1.6.6.md)
+---
+
+## Where the numbers come from
+
+- **Machine**: MacBook Air (Apple M4, 10 cores, 32 GB memory), external USB SSD. Data: OpenStreetMap (Japan) XML; search word 東京. **Timings vary by machine. Do not compare seconds across machines.**
+- **CLI, one large file**: `uvf` / `uvp` 1.7.3.1 (search code identical to v1.7.3.5), ripgrep 15.2.0, 2026-09-28. Cold = right after dropping the cache; hot = the second run straight after.
+- **CLI, 7 compressed formats and many files**: `uvf` 1.7.3.4 (search code identical to v1.7.3.5) / `uvp` 1.7.3.5, ugrep 7.8.5, ripgrep 15.2.0, macOS's standard zgrep / bzgrep / xzgrep / zstdgrep, 2026-09-28. **Hot** (faster of two runs each); only the 12-file cold figures were measured by the owner. Every run's output was checked for line count and content. The 5-plain-file comparison alone is `uvf` 1.7.2.7 (cold + hot).
+- **GUI vs klogg**: the latest comparison is v1.6.6, klogg 24.11.0, 2026-09-20, cold. 258 GB: v1.6.6, 2026-09-21.
+- A difference under 1.5× is written as "on par".
 
 ---
 
