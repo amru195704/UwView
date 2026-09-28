@@ -206,9 +206,9 @@ If you have such a file, `gunzip` it first and open the plain text.
 
 ---
 
-## Coming next — Wide Field (v1.7, in development)
+## Several files at once — Wide Field (v1.7.3+)
 
-**Several files, treated as one input.** Stages 1–7 are implemented in the test build **1.7.0.18** and verified on real data on a Mac. **It is not released yet** (Linux and Windows testing still to come).
+**Several files, treated as one input.** Released in v1.7.3.5 after testing on Mac, Linux and Windows.
 
 **In the free `uvf`**
 
@@ -233,7 +233,7 @@ Several files are bundled into **one `.uwvz`**, so from the second question on n
 
 **pbf** (Pro only): `japan-latest.osm.pbf`, 2.46 GB, becomes a searchable 5.74 GB `.uwvz` — the content of 51.3 GB of XML — in **24.4 s**. Element counts match `osmium fileinfo`. Searching for 東京 took 6.81 s the first time and 5.08 s the second.
 
-Progress will be posted on [Releases](https://github.com/amru195704/UwView/releases) and the [blog](https://uvp.y42u.net/en/blog-en/). **The version to use today is v1.6.6.1.**
+Details of each change are posted on [Releases](https://github.com/amru195704/UwView/releases) and the [blog](https://uvp.y42u.net/en/blog-en/).
 
 ---
 

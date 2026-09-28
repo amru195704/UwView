@@ -202,11 +202,11 @@ UwView は「巨大なファイルを速く見る」ことに全振りした道�
 
 ---
 
-## 次期バージョン予告 — Wide Field（v1.7・開発中）
+## 複数のファイルをまとめて扱う — Wide Field（v1.7.3〜）
 
-**複数のファイルを、1つの入力として扱えるようにしています。** 試験用ビルド **1.7.0.18** で段階1〜7 の実装が揃い、Mac の実データで確認できた段階です。**まだリリースしていません**（Linux・Windows での試験はこれから）。
+**複数のファイルを、1つの入力として扱えます。** v1.7.3.5 で Mac・Linux・Windows の試験を終えてリリースしました。
 
-**無料版 `uvf` でできるようになること**
+**無料版 `uvf` でできること**
 
 ```bash
 uvf '*.log' ERROR                    複数のファイルをまとめて探す（結果は標準出力）
@@ -229,7 +229,7 @@ uvf 'app.log,app.log.*.gz' ERROR     平文と .gz を混ぜて、1つのコマ�
 
 **pbf**（Pro のみ）: `japan-latest.osm.pbf` 2.46GB から、XML 51.3GB 相当の内容を **24.4秒**で検索できる `.uwvz`（5.74GB）にします。要素数は `osmium fileinfo` と一致。「東京」の検索は初回 6.81秒・2回目 5.08秒でした。
 
-進み具合は [Releases](https://github.com/amru195704/UwView/releases) と [ブログ](https://uvp.y42u.net/blog/) でお知らせします。**いま使えるのは v1.6.6.1 です。**
+変更の詳細は [Releases](https://github.com/amru195704/UwView/releases) と [ブログ](https://uvp.y42u.net/blog/) でお知らせします。
 
 ---
 
