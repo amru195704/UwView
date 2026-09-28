@@ -137,6 +137,12 @@ public sealed class AppSettings
     public bool FileListOpenInTab { get; set; }
 
     /// <summary>
+    /// ファイル一覧で、当たりのあったファイルだけを出すか（uvf の複数ファイルの結果。既定はオン）。
+    /// 指定が広いと当たらないファイルが何百本も並び、探したいものが埋もれる（オーナー指示 2026-09-29）。
+    /// </summary>
+    public bool FileListHitsOnly { get; set; } = true;
+
+    /// <summary>
     /// UVP: 1回の検索で保持する最大ヒット数（0＝無制限）。CLI（uvp）も同じ値を読む
     /// （指示書 2026-09-15「検索上限のパラメータ化」）。無料版では使わない。
     /// </summary>

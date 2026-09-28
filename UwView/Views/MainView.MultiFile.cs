@@ -136,6 +136,7 @@ public partial class MainView
             Open = (index, inTab) => _ = OpenFromFileListAsync(index, inTab),
             Placement = index => _multiGroup?.Placement(index),
             TabCount = () => _multiGroup?.Count ?? 0,
+            OffersHitsOnly = set.HasSearch,
         });
         _fileListWindow.Closed += (_, _) => _fileListWindow = null;
     }

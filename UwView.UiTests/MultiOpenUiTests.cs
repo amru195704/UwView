@@ -228,6 +228,35 @@ public class MultiOpenUiTests : IDisposable
         Assert.Null(view.MultiResultsViewModel);
         Assert.Equal("1:f01.log", vm.Tabs[0].DisplayName);
         Assert.NotNull(FileListPopup.Current);
+        Assert.Null(FileListPopup.Current!.HitsOnly);               // 当たりが無いので切り替えも出さない
+        Assert.Equal(["1", "2"], FileListPopup.Current.ShownLabels);
+    }
+
+    [AvaloniaFact]
+    public async Task ファイル一覧は当たりのあるファイルだけと全部を切り替えられる()
+    {
+        // 当たりのあるのは 1〜3 番、4・5 番（q で始まる）は当たらない（オーナー指示 2026-09-29）
+        MakeFiles(3);
+        foreach (string name in new[] { "q01.log", "q02.log" })
+            File.WriteAllText(Path.Combine(_dir, name), "INFO only\nINFO only\n");
+        var (view, vm) = await Start(await Handoff("*.log", "ERROR", "-open"));
+        view.OpenFileList();
+        await UiHarness.Pump();
+        var list = FileListPopup.Current!;
+
+        Assert.True(list.HitsOnly);                                  // 既定は当たりのあるものだけ
+        Assert.Equal(["1", "2", "3"], list.ShownLabels);             // 番号は --files と同じまま
+
+        list.HitsOnly = false;
+        Assert.False(AppSettingsRefCurrent().FileListHitsOnly);      // 設定に残る
+        Assert.Equal(["1", "2", "3", "4", "5"], list.ShownLabels);
+
+        // 当たりの無いファイルでも、タブで開いているあいだは残す
+        list.OpenInTab = true;
+        list.OpenAt(3);
+        await UiHarness.WaitUntil(() => vm.Tabs.Count == 2, "4番をタブで開く");
+        list.HitsOnly = true;
+        Assert.Equal(["1", "2", "3", "4"], list.ShownLabels);
     }
 
     [AvaloniaFact]

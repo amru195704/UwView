@@ -38,6 +38,9 @@ public sealed class FileListSource
 
     /// <summary>この組のタブの数（メインを含む。「タブ n / 8」）。</summary>
     public Func<int>? TabCount { get; init; }
+
+    /// <summary>「当たりのあるファイルだけ」の切り替えを出すか（uvf の複数ファイルの検索結果）。</summary>
+    public bool OffersHitsOnly { get; init; }
 }
 
 /// <summary>
@@ -52,6 +55,7 @@ public sealed class FileListPopup : Window
     private readonly List<Row> _rows;
     private readonly ListBox _list;
     private readonly CheckBox _inTab;
+    private readonly CheckBox? _hitsOnly;
     private readonly TextBlock _tabs;
 
     /// <summary>自動テスト用: いま開いている一覧（無ければ null）。</summary>
@@ -108,10 +112,30 @@ public sealed class FileListPopup : Window
             AppSettingsRef.Current.Save();
         };
 
+        if (source.OffersHitsOnly)
+        {
+            _hitsOnly = new CheckBox
+            {
+                Name = "FileListHitsOnly",
+                Content = L.Format("FileListHitsOnly",
+                                   _rows.Count(r => r.Item.Hits > 0).ToString("N0", L.Culture),
+                                   _rows.Count.ToString("N0", L.Culture)),
+                Foreground = Brushes.Black,
+                IsChecked = AppSettingsRef.Current.FileListHitsOnly,
+                HorizontalAlignment = HorizontalAlignment.Left,
+            };
+            ToolTip.SetTip(_hitsOnly, L["TipFileListHitsOnly"]);
+            _hitsOnly.IsCheckedChanged += (_, _) =>
+            {
+                AppSettingsRef.Current.FileListHitsOnly = _hitsOnly.IsChecked == true;
+                AppSettingsRef.Current.Save();
+                Refresh();
+            };
+        }
+
         _list = new ListBox
         {
             Name = "FileListRows",
-            ItemsSource = _rows,
             SelectionMode = SelectionMode.Single,
             // 行の入れ物を使い回すとき、中身の無い（null の）行で呼ばれることがある。
             // そのまま作ると落ちた（710 ファイルの一覧をスクロールして NullReferenceException・2026-09-28）
@@ -149,7 +173,9 @@ public sealed class FileListPopup : Window
         footer.Children.Add(_tabs);
 
         var top = new DockPanel();
+        DockPanel.SetDock(_inTab, Dock.Right);
         top.Children.Add(_inTab);
+        if (_hitsOnly is not null) top.Children.Add(_hitsOnly);
 
         var body = new DockPanel { Margin = new Thickness(12), LastChildFill = true };
         DockPanel.SetDock(top, Dock.Top);
@@ -176,7 +202,7 @@ public sealed class FileListPopup : Window
         return window;
     }
 
-    /// <summary>「メイン」「タブ」の印と「タブ n / 8」を今の状態に直す。</summary>
+    /// <summary>「メイン」「タブ」の印と「タブ n / 8」、出す行を今の状態に直す。</summary>
     public void Refresh()
     {
         foreach (var row in _rows)
@@ -186,6 +212,13 @@ public sealed class FileListPopup : Window
                 FileOpenAction.ShowTab => L["FileListTab"],
                 _ => "",
             };
+        // 当たりのあるファイルだけ（番号はそのまま）。いま開いているものは当たりが無くても残す
+        var shown = _hitsOnly?.IsChecked == true
+            ? _rows.Where(r => r.Item.Hits > 0 || r.Mark.Length > 0).ToList()
+            : _rows;
+        // 行が変わらないなら差し替えない（開いたあとの更新でスクロール位置が先頭へ戻らないように）
+        if (_list.ItemsSource is not IEnumerable<Row> current || !current.SequenceEqual(shown))
+            _list.ItemsSource = shown;
         _tabs.Text = _source.TabCount is { } count
             ? L.Format("FileListTabCount", count(), FileTabGroup<object>.MaxTabs)
             : "";
@@ -193,6 +226,17 @@ public sealed class FileListPopup : Window
 
     /// <summary>一覧の中身（自動テスト用）。</summary>
     internal IReadOnlyList<FileListItem> Items => _source.Items;
+
+    /// <summary>いま出している行の番号（自動テスト用）。</summary>
+    internal IReadOnlyList<string> ShownLabels
+        => ((IEnumerable<Row>)_list.ItemsSource!).Select(r => r.Item.Label).ToList();
+
+    /// <summary>「当たりのあるファイルだけ」（自動テスト用に外から切り替えられる。切り替えが無ければ null）。</summary>
+    internal bool? HitsOnly
+    {
+        get => _hitsOnly?.IsChecked;
+        set { if (_hitsOnly is not null) _hitsOnly.IsChecked = value; }
+    }
 
     /// <summary>その行の右端の印（自動テスト用）。</summary>
     internal string MarkAt(int index) => _rows[index].Mark;

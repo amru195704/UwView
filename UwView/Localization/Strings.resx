@@ -232,6 +232,8 @@
   <data name="FileListTitle" xml:space="preserve"><value>Files</value></data>
   <data name="FileListOpenInTab" xml:space="preserve"><value>Open in a tab</value></data>
   <data name="TipFileListOpenInTab" xml:space="preserve"><value>On: open in an extra tab (up to 8 tabs) / Off: open in the main view</value></data>
+  <data name="FileListHitsOnly" xml:space="preserve"><value>Files with hits only ({0} / {1})</value></data>
+  <data name="TipFileListHitsOnly" xml:space="preserve"><value>On: list only the files that had hits (files open in a tab stay) / Off: list every file</value></data>
   <data name="FileListNumber" xml:space="preserve"><value>No.</value></data>
   <data name="FileListFile" xml:space="preserve"><value>File</value></data>
   <data name="FileListHits" xml:space="preserve"><value>Hits</value></data>
