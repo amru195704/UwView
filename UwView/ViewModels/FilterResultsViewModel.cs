@@ -225,7 +225,7 @@ public sealed partial class FilterResultsViewModel : ObservableObject, IDisposab
     /// <summary>前後±N を UI で使えるか（MaxContext > 0）。</summary>
     public bool AllowContext => MaxContext > 0;
 
-    /// <summary>前後±N の上限（UVF=1 / UVP=1000）。0 でヒット行のみ。</summary>
+    /// <summary>前後±N の上限（UVF=1 / UVP=64）。0 でヒット行のみ。</summary>
     public int MaxContext { get; }
 
     public DocumentSession? Session => _session;

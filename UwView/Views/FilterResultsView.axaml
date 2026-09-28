@@ -35,7 +35,7 @@
                 <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center"
                             IsVisible="{Binding AllowContext}">
                     <TextBlock Text="{loc:Localize ContextLabel}" VerticalAlignment="Center" Foreground="Black" />
-                    <NumericUpDown Value="{Binding ContextN, Mode=TwoWay}" Minimum="0" Maximum="{Binding MaxContext}"
+                    <NumericUpDown x:Name="ContextBox" Value="{Binding ContextN, Mode=TwoWay}" Minimum="0" Maximum="{Binding MaxContext}"
                                    Increment="1" FormatString="0" Width="120" />
                     <TextBlock Text="{loc:Localize ContextLinesSuffix}" VerticalAlignment="Center" Foreground="Black" />
                 </StackPanel>
