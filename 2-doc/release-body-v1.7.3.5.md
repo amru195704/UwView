@@ -83,12 +83,12 @@ scoop install uwview                             # Windows（更新は scoop upd
 Linux の場合と、手で入れる場合は、下のファイルを使ってください。チェックサムは `SHA256SUMS-1.7.3.5.txt` にあります。
 
 ```
-fcf75c216097b9b084536cdbbd08402dda2d67568e6310c021d971042525b680  UwView-1.7.3.5-linux-aarch64.tar.gz
-ab424668a9c5f43503cf6712b984d5761d23da30d407b640b8858040d458af70  UwView-1.7.3.5-linux-x86_64.tar.gz
-b564220fcd5b7c06134831cecf5c2f49aceacd59b0b99e30411cbabf44ad599b  UwView-1.7.3.5-mac-arm64.dmg
-fceee70796c874bf2ff071bad4a9e7df6599c6a89cfe66873b37f4c87c081c55  UwView-1.7.3.5-mac-x64.dmg
-6f45702e4d5f825b46d18a59f392d562cd21b5471a6ce3598294a562be6f2e9d  UwView-1.7.3.5-win-arm64.zip
-c073e209bc6aa6e4c178f354794fd35a0f556ebb192b15bfb2ea126ab710039b  UwView-1.7.3.5-win-x64.zip
+5e57bfa1075460cc89508a3a0ddbbcaf39fd7211d76f15d38b4ff083ca0e30ea  UwView-1.7.3.5-linux-aarch64.tar.gz
+dfc69fabe73b3bd292c05841ae9552777de22621f3eac6dbda86a7649dde1162  UwView-1.7.3.5-linux-x86_64.tar.gz
+b8b2d1d7eb483b949e80e98010f974fc91f8154898e6c4f192beabc5568ff4a1  UwView-1.7.3.5-mac-arm64.dmg
+1fdd34aa5e893d6d99acd932df3abd7cfe0c963d31dae207b5c1c0be98093eb5  UwView-1.7.3.5-mac-x64.dmg
+a9f6c3fb1ad3046d1ac7692efd2109d62ca3702459b7d925110c086b78e8d833  UwView-1.7.3.5-win-arm64.zip
+acd905c10d2ad90cf91d96a2f6329d01884c5916f0f3a5a6212656ee11f2b028  UwView-1.7.3.5-win-x64.zip
 ```
 
 > **配布は GitHub Releases のみです。** Homebrew と Scoop も、ここからファイルを取得して SHA256 を照合します。操作説明と最新情報は blog サイト（https://uvp.y42u.net/）に載せています。
@@ -189,12 +189,12 @@ scoop install uwview                             # Windows (update: scoop update
 On Linux, or to install by hand, use the files below. Checksums are in `SHA256SUMS-1.7.3.5.txt`.
 
 ```
-fcf75c216097b9b084536cdbbd08402dda2d67568e6310c021d971042525b680  UwView-1.7.3.5-linux-aarch64.tar.gz
-ab424668a9c5f43503cf6712b984d5761d23da30d407b640b8858040d458af70  UwView-1.7.3.5-linux-x86_64.tar.gz
-b564220fcd5b7c06134831cecf5c2f49aceacd59b0b99e30411cbabf44ad599b  UwView-1.7.3.5-mac-arm64.dmg
-fceee70796c874bf2ff071bad4a9e7df6599c6a89cfe66873b37f4c87c081c55  UwView-1.7.3.5-mac-x64.dmg
-6f45702e4d5f825b46d18a59f392d562cd21b5471a6ce3598294a562be6f2e9d  UwView-1.7.3.5-win-arm64.zip
-c073e209bc6aa6e4c178f354794fd35a0f556ebb192b15bfb2ea126ab710039b  UwView-1.7.3.5-win-x64.zip
+5e57bfa1075460cc89508a3a0ddbbcaf39fd7211d76f15d38b4ff083ca0e30ea  UwView-1.7.3.5-linux-aarch64.tar.gz
+dfc69fabe73b3bd292c05841ae9552777de22621f3eac6dbda86a7649dde1162  UwView-1.7.3.5-linux-x86_64.tar.gz
+b8b2d1d7eb483b949e80e98010f974fc91f8154898e6c4f192beabc5568ff4a1  UwView-1.7.3.5-mac-arm64.dmg
+1fdd34aa5e893d6d99acd932df3abd7cfe0c963d31dae207b5c1c0be98093eb5  UwView-1.7.3.5-mac-x64.dmg
+a9f6c3fb1ad3046d1ac7692efd2109d62ca3702459b7d925110c086b78e8d833  UwView-1.7.3.5-win-arm64.zip
+acd905c10d2ad90cf91d96a2f6329d01884c5916f0f3a5a6212656ee11f2b028  UwView-1.7.3.5-win-x64.zip
 ```
 
 > **Distribution is GitHub Releases only.** Homebrew and Scoop download from here and check the SHA256. Guides and news are on the blog (https://uvp.y42u.net/en/).
