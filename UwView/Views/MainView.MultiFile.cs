@@ -44,8 +44,11 @@ public partial class MainView
         _multiHitsPerFile = set.HitsPerFile();
         FileListButton.IsVisible = true;
 
-        // 開いた直後は番号 1 をメインに出す（D4）。1 が zip などで開けなければ、開ける最初のもの
-        int first = Enumerable.Range(0, set.Files.Count).FirstOrDefault(i => set.Files[i].CanOpen, -1);
+        // 開いた直後は、ヒットした最初のファイルをメインに出す。番号 1 がヒット 0 件だと、
+        // 本文にも当たりが無く、「ヒットしたファイルだけ」の一覧にも 0 件の行が残った（オーナー報告 2026-09-29）。
+        // ヒットが無い・検索しないときは、開ける最初のもの（番号 1。zip などで開けなければその次。D4）
+        var openable = Enumerable.Range(0, set.Files.Count).Where(i => set.Files[i].CanOpen).ToList();
+        int first = openable.FirstOrDefault(i => _multiHitsPerFile[i] > 0, openable.FirstOrDefault(-1));
         if (first >= 0 && await OpenMultiTabAsync(first, CancellationToken.None) is { } main)
         {
             _multiGroup = new FileTabGroup<DocumentTabViewModel>(main) { MainFile = first };
