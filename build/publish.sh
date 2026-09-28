@@ -263,7 +263,9 @@ pack_linux() { # $1=rid  $2=arch-label(x86_64/aarch64)
   local rid="$1" arch="$2" pub; pub=$(publish_one "$rid")
   local out="$OUT/$NAME-$VER-linux-$arch.tar.gz"
   # COPYFILE_DISABLE: mac の tar が付ける ._* （拡張属性の退避ファイル）を入れない
-  rm -f "$out"; COPYFILE_DISABLE=1 tar -C "$pub" -czf "$out" .
+  # mac の拡張属性（com.apple.provenance など）・付加情報・ACL は入れない。入れると GNU tar で展開したとき
+  #「知らない見出し」と警告が出る（1.7.3.5 のリリースで直した・2026-09-28）
+  rm -f "$out"; COPYFILE_DISABLE=1 tar --no-xattrs --no-mac-metadata --no-acls -C "$pub" -czf "$out" .
   echo "  → $out"
 }
 
