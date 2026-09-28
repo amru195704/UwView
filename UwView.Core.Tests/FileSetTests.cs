@@ -196,9 +196,9 @@ public class FileSetTests : IDisposable
     [Fact]
     public void 隠しファイルと隠しフォルダーは対象外()
     {
+        // . で始まる名前はどの OS でも隠し（ripgrep と同じ）。Windows は属性の隠しも外す
         Make("v.log", ".hidden.log", ".git/h.log");
-        if (!OperatingSystem.IsWindows())   // Windows の隠しは属性で決まる（. で始まる名前ではない）
-            Assert.Equal(["v.log"], Expand("**/*.log"));
+        Assert.Equal(["v.log"], Expand("**/*.log"));
     }
 
     [Fact]
