@@ -253,10 +253,18 @@ public static class FileSet
         AttributesToSkip = FileAttributes.Hidden | FileAttributes.System,
     };
 
+    /// <summary>
+    /// 「.」で始まる名前は隠し（ripgrep と同じ・どの OS でも）。mac・Linux の .NET はこれに隠し属性を付けて
+    /// 見せるので <see cref="Listing"/> で外れるが、Windows は付けないので、.git などが対象に入っていた
+    /// （Windows の全体テスト 2026-09-28）。
+    /// </summary>
+    private static bool IsDotName(string name) => name.StartsWith('.');
+
     private static IEnumerable<string> Files(string directory, string pattern, WalkState walk)
     {
         foreach (string path in Directory.EnumerateFiles(directory, "*", Listing))
         {
+            if (IsDotName(Path.GetFileName(path))) continue;
             if (!FileSystemName.MatchesSimpleExpression(pattern, Path.GetFileName(path), IgnoreCase)) continue;
             if (walk.Ignore.IsIgnored(path, isDirectory: false, directory)) { walk.IgnoredFiles.Add(path); continue; }
             yield return path;
@@ -268,6 +276,7 @@ public static class FileSet
         foreach (var d in new DirectoryInfo(directory).EnumerateDirectories("*", Listing))
         {
             if ((d.Attributes & FileAttributes.ReparsePoint) != 0) continue;   // リンクは下りない
+            if (IsDotName(d.Name)) continue;
             if (!FileSystemName.MatchesSimpleExpression(pattern, d.Name, IgnoreCase)) continue;
             if (walk.Ignore.IsIgnored(d.FullName, isDirectory: true, directory)) { walk.IgnoredFolders.Add(d.FullName); continue; }
             yield return d.FullName;

@@ -32,8 +32,12 @@ public static class CompressedWriters
             CompressedKind.Zstd => new ZstdSharp.CompressionStream(output, ZstdLevel, leaveOpen: leaveOpen),
             CompressedKind.Lz4 => K4os.Compression.LZ4.Streams.LZ4Stream.Encode(
                 output, K4os.Compression.LZ4.LZ4Level.L00_FAST, leaveOpen: leaveOpen),
+            // OS に libbz2 が無ければ（Windows）SharpCompress で書く。遅いが書けないよりよい
+            //（Windows の全体テストで .bz2 の書き出しが3件失敗・2026-09-28）
             CompressedKind.Bzip2 => (Stream?)SystemBzip2WriteStream.TryCreate(output, leaveOpen)
-                                    ?? throw Unavailable("bz2", "bzip2"),
+                                    ?? SharpCompress.Compressors.BZip2.BZip2Stream.Create(
+                                        output, SharpCompress.Compressors.CompressionMode.Compress,
+                                        decompressConcatenated: false, leaveOpen: leaveOpen),
             CompressedKind.Xz => (Stream?)SystemLzmaWriteStream.TryCreate(output, xz: true, leaveOpen,
                                                                          threads > 0 ? threads : CompressedFormats.DecodeThreads)
                                  ?? throw Unavailable("xz", "liblzma"),
