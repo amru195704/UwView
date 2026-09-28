@@ -2,6 +2,7 @@
 # Linux 向けの CLI（uvf・uvp）を NativeAOT でビルドする（UwView・UwView Pro の publish.sh から呼ぶ）。
 #
 # NativeAOT はその OS の上でしかビルドできないので、Mac の中の Linux（Colima＋Docker・arm64）で作る。
+# x86_64（linux-x64）も同じ arm64 の中からクロスでつなぐ。
 # 環境は /Volumes/BIWIN/Docker に置いてある（env.sh・colima-start.sh・dotnet-aot/Dockerfile）。
 # Linux でも起動が「起動アプリ → 本体（JIT）」の約 0.3 秒から、rg と同じ 0.01 秒前後になる（2026-09-25 の切り分け）。
 #
@@ -28,6 +29,11 @@ if ! docker image inspect "${IMAGE}" >/dev/null 2>&1; then
   docker build -t "${IMAGE}" "${DOCKER_DIR}/dotnet-aot" 1>&2
 fi
 
+# x86_64 は arm64 の中からクロスでつなぐ。後処理の objcopy も x86_64 用を使う（arm64 用は x86_64 を扱えない）。
+# リンカー・C ライブラリはイメージ（dotnet-aot/Dockerfile）に入れてある（1.7.3.5 のリリースで追加・2026-09-28）
+CROSS=""
+[ "${RID}" = linux-x64 ] && CROSS="-p:ObjCopyName=x86_64-linux-gnu-objcopy"
+
 mkdir -p "${OUTDIR}" "${DOCKER_DIR}/nuget"
 docker run --rm \
   -v "${GIT}:/src:ro" -v "${OUTDIR}:/out" -v "${DOCKER_DIR}/nuget:/root/.nuget/packages" \
@@ -42,6 +48,6 @@ docker run --rm \
         UwViewPro/Directory.Packages.props UwViewPro/global.json \
         UwViewPro/src/UwView.Pro.Core UwViewPro/src/UwView.Pro.Cli \
       | tar -C /work -xf -
-    dotnet publish '/work/${PROJ}' -c Release -r '${RID}' -p:DebugType=none -o /tmp/pub 1>&2
+    dotnet publish '/work/${PROJ}' -c Release -r '${RID}' -p:DebugType=none ${CROSS} -o /tmp/pub 1>&2
     cp /tmp/pub/* /out/
   "
