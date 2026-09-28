@@ -2,39 +2,10 @@
 
 ## UwView v1.7.3.6 — Wide Field
 
-**v1.7.3.5（Wide Field）に、キー操作とブックマークを残す機能を足した版です。**
-（前回は v1.7.3.5 です → [v1.7.3.5 で何が変わったか](https://github.com/amru195704/UwView/blob/main/2-doc/release-body-v1.7.3.5.md)。
-その前の v1.6.6.1 から変わったことは、下の「v1.7（Wide Field）で変わったこと」にまとめています）
-
-### 🆕 v1.7.3.6 で変わったこと
-
-**⌨ キー操作**（Mac は Ctrl を Cmd に読み替えます）
-
-| キー | 動き |
-|---|---|
-| Ctrl+F | 検索欄へ移る（文字を全部選んだ状態） |
-| F3 ／ Shift+F3 | 次の当たり／前の当たり（Mac は Cmd+G ／ Cmd+Shift+G も） |
-| Ctrl+L | ジャンプ欄へ移る。**ジャンプ欄で Enter を押すと移動します** |
-| Ctrl+B ／ `[` ・ `]` | ブックマークを付ける・外す／前・次のブックマークへ |
-| Ctrl+Shift+F | 末尾追従のオン・オフ |
-| F5 | ファイルを読み直す（同じ位置・同じタブの並びで開き直します） |
-| Esc | 検索欄・ジャンプ欄から本文へ戻る |
-
-- 検索欄・ジャンプ欄に文字を打っている間は、`[` `]` は文字として入ります。
-- 複数ファイルの結果のタブ（`uvf -open`）は、F5 で読み直しません。
-
-**🔖 ブックマークを残す**
-
-- ブックマークをファイルごとに覚えて、同じファイルを開くと戻します（前回の続きを開かなくても戻ります）。
-- 追記されただけのファイルなら戻します。中身が変わっていたら（作り直された・先頭が変わった）戻さずに、そう知らせます。見分けるのに読むのは、先頭と前回の末尾の手前の数 KB だけです。
-- ファイルメニュー「**ブックマークを書き出す…**」：`名前-bookmarks.txt` に「行番号<TAB>本文」で書き出します。
-
----
-
-## v1.7（Wide Field）で変わったこと
-
 **1本ずつだったのが、まとめて探せるようになりました。**
 複数のファイルを一度に探し、平文と圧縮ファイルを混ぜても1回で済みます。その結果は、そのまま画面で読めます。
+（前回の無料版は v1.6.6.1 です → [v1.6.6 で何が変わったか](https://github.com/amru195704/UwView/blob/main/2-doc/release-body-v1.6.6.md)。
+直前に出した v1.7.3.5 は取り下げ、この版に置き換えました。v1.7.3.5 から足したのは、下の「キー操作」「ブックマークを残す」と Pro 側の修正です）
 
 > **Wide Field（広視野）**：空の広い範囲を一度に写す望遠鏡やカメラを、天文学ではこう呼びます。
 > v1.6.6「First Light」で1本のファイルを待たずに見られるようになりました。v1.7 では、その視野を複数のファイルに広げます。
@@ -84,6 +55,29 @@ uvf -open '*.log' ERROR
   - 結果のメインのタブは灰色にして、ほかのタブと見分けられるようにしました。
 - 無料版 `uvf` は、元のファイルを開き直してから該当の行へ移ります。大きいファイルでは少し待ちます。Pro の `uvp` は、束ねた索引の中をすぐに移ります。
 
+### ⌨ キー操作
+
+Mac は Ctrl を Cmd に読み替えます。
+
+| キー | 動き |
+|---|---|
+| Ctrl+F | 検索欄へ移る（文字を全部選んだ状態） |
+| F3 ／ Shift+F3 | 次の当たり／前の当たり（Mac は Cmd+G ／ Cmd+Shift+G も） |
+| Ctrl+L | ジャンプ欄へ移る。**ジャンプ欄で Enter を押すと移動します** |
+| Ctrl+B ／ `[` ・ `]` | ブックマークを付ける・外す／前・次のブックマークへ |
+| Ctrl+Shift+F | 末尾追従のオン・オフ |
+| F5 | ファイルを読み直す（同じ位置・同じタブの並びで開き直します） |
+| Esc | 検索欄・ジャンプ欄から本文へ戻る |
+
+- 検索欄・ジャンプ欄に文字を打っている間は、`[` `]` は文字として入ります。
+- 複数ファイルの結果のタブ（`uvf -open`）は、F5 で読み直しません。
+
+### 🔖 ブックマークを残す
+
+- ブックマークをファイルごとに覚えて、同じファイルを開くと戻します（前回の続きを開かなくても戻ります）。
+- 追記されただけのファイルなら戻します。中身が変わっていたら（作り直された・先頭が変わった）戻さずに、そう知らせます。見分けるのに読むのは、先頭と前回の末尾の手前の数 KB だけです。
+- ファイルメニュー「**ブックマークを書き出す…**」：`名前-bookmarks.txt` に「行番号<TAB>本文」で書き出します。
+
 ### 🎛 画面のそのほかの変更
 
 - **漢字で書いていたボタンを、アイコンにしました。** ボタンの名前は、マウスを乗せると出ます。はい／いいえ・開く／閉じる・保存・中止は、今までどおり文字のままです。
@@ -132,10 +126,10 @@ d1ceadc10559906614414701e8ae09cd1040e3917a1ad7fa5208a9886945162b  UwView-1.7.3.6
 | 平文4本＋`.gz` 4本 | 9.72秒 | 8.58秒 | **3.97秒** |
 
 `japan-latest.osm.pbf`（2.46GB）は、XML にして 51.3GB 分の内容になります。`uvp` はこれを、検索できる `.uwvz` に **21.6秒**で変えます。続けて「東京」（94,979件）を探し終えるまで、キャッシュを捨てた状態から合計 **27.34秒**。2回目からは `.uwvz` を使うので **5.01秒**（キャッシュを捨てた直後でも 6.43秒）です（`uvp` 1.7.3.5・2026年9月28日）。
-**v1.7.3.6 の Pro 側の変更**
+
+- `uvp x.osm.pbf 語 -open` では、画面に変換した `.uwvz`（OSM の XML）が開きます。`.gz` などの圧縮ファイル 1 本も同じです。変換していない pbf を画面で開くと、「先に変換してください」と知らせます（v1.7.3.5 では、画面に元の pbf のバイナリが出ていました）。
+- 結果の窓の前後 ±N は、**最大 64 行**です（多段階の窓も同じ。無料版は ±1 行）。
 - 上のキー操作とブックマークは、Pro でも同じです（束ねた索引でもブックマークを覚えます）。編集中の本文では `[` `]` は文字として入り、F5 では読み直しません。
-- 結果の窓の前後 ±N の上限を、**32 行から 64 行**にしました（多段階の窓も同じ）。
-- **`uvp x.osm.pbf 語 -open` で、画面に pbf のバイナリが出ていたのを直しました。** 画面には変換した `.uwvz`（OSM の XML）が開きます。`.gz` などの圧縮ファイル 1 本の `-open` も同じく直しました。変換していない pbf を画面で開くと、バイナリを出さずに「先に変換してください」と知らせます。
 
 → [UwView Pro](https://uvp.y42u.net/pro/)（買い切り $129 ／ 月額 $9・**14日間の無料試用**つき）
 
@@ -143,39 +137,10 @@ d1ceadc10559906614414701e8ae09cd1040e3917a1ad7fa5208a9886945162b  UwView-1.7.3.6
 
 ## UwView v1.7.3.6 — Wide Field (English)
 
-**v1.7.3.5 (Wide Field) plus keyboard shortcuts and bookmarks that are remembered.**
-(The previous release was v1.7.3.5 → [what changed in v1.7.3.5](https://github.com/amru195704/UwView/blob/main/2-doc/release-body-v1.7.3.5.md).
-What changed since v1.6.6.1 is summarized under "What changed in v1.7 (Wide Field)" below.)
-
-### 🆕 What changed in v1.7.3.6
-
-**⌨ Keyboard shortcuts** (on a Mac, read Ctrl as Cmd)
-
-| Key | Action |
-|---|---|
-| Ctrl+F | Go to the search box (with its text selected) |
-| F3 / Shift+F3 | Next hit / previous hit (on a Mac, also Cmd+G / Cmd+Shift+G) |
-| Ctrl+L | Go to the jump box. **Press Enter in the jump box to jump** |
-| Ctrl+B / `[` · `]` | Toggle a bookmark / go to the previous · next bookmark |
-| Ctrl+Shift+F | Turn follow-the-end on or off |
-| F5 | Reload the file (reopens it at the same position, in the same tab order) |
-| Esc | Leave the search box or jump box and return to the text |
-
-- While typing in the search box or jump box, `[` and `]` are typed as characters.
-- Tabs opened from a multi-file result (`uvf -open`) are not reloaded by F5.
-
-**🔖 Bookmarks are remembered**
-
-- Bookmarks are remembered per file and come back when you open the same file again (even without restoring the last session).
-- If the file has only grown, they come back. If its contents changed (recreated, or the start changed), they are not restored and you are told so. Only a few KB at the start and just before the previous end are read to tell the difference.
-- File menu → **Export bookmarks…** writes `name-bookmarks.txt` as `line number<TAB>text`.
-
----
-
-## What changed in v1.7 (Wide Field)
-
 **UwView used to take one file at a time. Now it searches many at once.**
 You can search several files in one go and mix plain text with compressed files in the same run. The results can be read right in the window.
+(The previous free release was v1.6.6.1 → [what changed in v1.6.6](https://github.com/amru195704/UwView/blob/main/2-doc/release-body-v1.6.6.md).
+v1.7.3.5, released just before, has been withdrawn and replaced by this release. What was added since v1.7.3.5: "Keyboard shortcuts", "Bookmarks are remembered" and the Pro fixes below.)
 
 > **Wide Field** is what astronomers call a telescope or camera that takes in a broad patch of sky at once.
 > With v1.6.6 "First Light", a single file could be viewed without waiting. v1.7 widens that view to many files.
@@ -225,6 +190,29 @@ uvf -open '*.log' ERROR
   - The main tab of a result set is gray, so it stands out from the others.
 - The free `uvf` reopens the original file before jumping, so a large file takes a moment. Pro's `uvp` jumps at once inside its bundled index.
 
+### ⌨ Keyboard shortcuts
+
+On a Mac, read Ctrl as Cmd.
+
+| Key | Action |
+|---|---|
+| Ctrl+F | Go to the search box (with its text selected) |
+| F3 / Shift+F3 | Next hit / previous hit (on a Mac, also Cmd+G / Cmd+Shift+G) |
+| Ctrl+L | Go to the jump box. **Press Enter in the jump box to jump** |
+| Ctrl+B / `[` · `]` | Toggle a bookmark / go to the previous · next bookmark |
+| Ctrl+Shift+F | Turn follow-the-end on or off |
+| F5 | Reload the file (reopens it at the same position, in the same tab order) |
+| Esc | Leave the search box or jump box and return to the text |
+
+- While typing in the search box or jump box, `[` and `]` are typed as characters.
+- Tabs opened from a multi-file result (`uvf -open`) are not reloaded by F5.
+
+### 🔖 Bookmarks are remembered
+
+- Bookmarks are remembered per file and come back when you open the same file again (even without restoring the last session).
+- If the file has only grown, they come back. If its contents changed (recreated, or the start changed), they are not restored and you are told so. Only a few KB at the start and just before the previous end are read to tell the difference.
+- File menu → **Export bookmarks…** writes `name-bookmarks.txt` as `line number<TAB>text`.
+
 ### 🎛 Other changes in the window
 
 - **Buttons that were labeled in Japanese are now icons.** Hover to see what a button does. Yes / No, Open / Close, Save and Cancel keep their text labels.
@@ -273,9 +261,9 @@ The paid `uvp` bundles several files into **one `.uwvz`**, and does not rebuild 
 | 4 plain + 4 `.gz` | 9.72 s | 8.58 s | **3.97 s** |
 
 `japan-latest.osm.pbf` (2.46 GB) holds 51.3 GB of content as XML. `uvp` turns it into a searchable `.uwvz` in **21.6 s**. Finding 東京 (94,979 hits) takes **27.34 s** in total from a dropped cache; from the second search on it uses the `.uwvz` and takes **5.01 s** (6.43 s right after dropping the cache) (`uvp` 1.7.3.5, 28 September 2026).
-**Pro changes in v1.7.3.6**
+
+- `uvp x.osm.pbf term -open` opens the converted `.uwvz` (the OSM XML) in the window. A single compressed file such as `.gz` works the same way. Opening an unconverted pbf in the window asks you to convert it first (in v1.7.3.5 the window showed the pbf's binary).
+- The ±N context in the results window goes up to **64 lines** (the drill-down window too; the free edition allows ±1).
 - The shortcuts and remembered bookmarks above work the same in Pro (bookmarks are remembered in a bundled index too). While editing, `[` and `]` are typed as characters and F5 does not reload.
-- The ±N context limit in the results window went from **32 to 64 lines** (the drill-down window too).
-- **Fixed `uvp x.osm.pbf term -open` showing the pbf's binary in the window.** The window now opens the converted `.uwvz` (the OSM XML). A single compressed file such as `.gz` with `-open` is fixed the same way. Opening an unconverted pbf in the window no longer shows binary; it asks you to convert it first.
 
 → [UwView Pro](https://uvp.y42u.net/en/pro-en/) ($129 one-time or $9/month, with a **14-day free trial**)
