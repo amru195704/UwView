@@ -232,11 +232,11 @@
   <data name="FileListTitle" xml:space="preserve"><value>ファイル一覧</value></data>
   <data name="FileListOpenInTab" xml:space="preserve"><value>タブで開く</value></data>
   <data name="TipFileListOpenInTab" xml:space="preserve"><value>オン: 追加のタブで開く（タブは最大 8 個）／オフ: メインで開く</value></data>
-  <data name="FileListHitsOnly" xml:space="preserve"><value>当たりのあるファイルだけ（{0} / {1}）</value></data>
-  <data name="TipFileListHitsOnly" xml:space="preserve"><value>オン: 当たりのあったファイルだけを出す（タブで開いているものは残す）／オフ: 全部のファイルを出す</value></data>
+  <data name="FileListHitsOnly" xml:space="preserve"><value>ヒットしたファイルだけ（{0} / {1}）</value></data>
+  <data name="TipFileListHitsOnly" xml:space="preserve"><value>オン: ヒットしたファイルだけを出す（タブで開いているものは残す）／オフ: 全部のファイルを出す</value></data>
   <data name="FileListNumber" xml:space="preserve"><value>番号</value></data>
   <data name="FileListFile" xml:space="preserve"><value>ファイル</value></data>
-  <data name="FileListHits" xml:space="preserve"><value>当たり</value></data>
+  <data name="FileListHits" xml:space="preserve"><value>ヒット数</value></data>
   <data name="FileListSize" xml:space="preserve"><value>大きさ</value></data>
   <data name="FileListMain" xml:space="preserve"><value>メイン</value></data>
   <data name="FileListTab" xml:space="preserve"><value>タブ</value></data>
