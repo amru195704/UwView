@@ -4,7 +4,11 @@
 
 **A tool for investigating huge logs and text files. Search in the terminal, read in the window.**
 
-📥 **[Download (free)](https://github.com/amru195704/UwView/releases/latest)** · 🌐 **[Official site](https://uvp.y42u.net/en/)** · 🧪 **[Try it in your browser](https://amru195704.github.io/UwView/)**
+📥 **[Download (free)](https://github.com/amru195704/UwView/releases/latest)** · 🌐 **[Official site](https://uvp.y42u.net/en/)** · 🧪 **[Try it in your browser](https://amru195704.github.io/UwView/)**  
+📖 **[uvf command manual](2-doc/uvf_コマンド操作マニュアル.md)** · 🖥 **[Window (GUI) manual](2-doc/UwView_操作マニュアル.md)** ([PDF](2-doc/UwView_操作マニュアル.pdf)) — both in Japanese
+
+> **The latest release is v1.7.3.5 "Wide Field".** Search several files at once, mix plain text with seven compressed formats in a single run, and read the results right in the window.
+> → [What Wide Field does](#several-files-at-once--wide-field-v173) · [Release notes](2-doc/release-body-v1.7.3.5.md#uwview-v1735--wide-field-english)
 
 ---
 
@@ -92,6 +96,19 @@ look again. Investigation is made of that back and forth.
 **258.68 GB and 4.5 billion lines** behave the same way: `uvf … -open` takes **265.21 s**, while
 **klogg needs 258 s merely to finish opening that file** (7 s apart, 2.8%).
 
+**Several files and compressed files use the same form (v1.7.3+).** Always quote the pattern.
+
+```bash
+uvf '*.log' ERROR                    # every .log in this folder
+uvf '**/*.log' ERROR -open           # subfolders too, then read the hits in the window
+uvf 'app.log,app.log.*.gz' ERROR     # plain text and compressed, in one run
+uvf app.log.zst ERROR                # gz, bz2, xz, lzma, zst, lz4, br are searched as they decompress
+uvf '**/*.log' ERROR --files         # just list what would be searched
+```
+
+The rules, options, regular expressions, exit codes and a ripgrep cheat sheet are in the **[uvf command manual](2-doc/uvf_コマンド操作マニュアル.md)**;
+using the window (search, hit list, file list and tabs, highlighter, keys) is in the **[window manual](2-doc/UwView_操作マニュアル.md)** ([PDF](2-doc/UwView_操作マニュアル.pdf)). Both are in Japanese for now.
+
 ---
 
 ## Which one
@@ -99,6 +116,7 @@ look again. Investigation is made of that back and forth.
 | Situation | Use |
 |---|---|
 | Just searching, no window needed | **`uvf`** (free) |
+| **Several files, or compressed logs (7 formats), in one go** | **`uvf '*.log' <pattern>`** (free, v1.7.3+) |
 | **Search, then read the hit** | **`uvf … -open`** (free) — **the shortest path** |
 | You just want to open it and look | **the UwView window** (free) — **scroll to the end the moment it opens** (below) |
 | **Coming back to the same file / keeping it compressed** | **[UwView Pro](https://uvp.y42u.net/en/pro-en/)** |
@@ -169,7 +187,9 @@ costs the same as the first**. Only `uvp` **earns back what the first pass cost.
 ## What it does
 
 **Largest measured: 258.68 GB, 4.5 billion lines** (on the free edition) / the `uvf` command (`-i`, `-E`, `-v`,
-exit codes 0 / 1 / 2 (match / no match / error), `-open`) / **searches `.gz` directly** (v1.6.6+, below) / hit-list window
+exit codes 0 / 1 / 2 (match / no match / error), `-open`, `--json`, `--tune`) / **searches several files at once** (wildcards, comma lists,
+`.ignore` / `.gitignore` handled with the same rules as ripgrep, v1.7.3+) / **searches 7 compressed formats directly** (gz, bz2, xz,
+lzma, zst, lz4, br — no external commands, v1.7.3+; gz since v1.6.6) / reads multi-file results in the window (file list, up to 8 tabs) / hit-list window
 (original line numbers, jump, surrounding context, save) / multi-keyword colouring (32 colour-blind-safe colours,
 7 presets, `.uwvhl`) / automatic encoding detection (UTF-8, Shift-JIS, EUC-JP, UTF-16) / real-time tail /
 opens gzip directly / tabs, bookmarks, horizontal scrolling, session restore / identical rendering on every OS
@@ -209,22 +229,40 @@ If you have such a file, `gunzip` it first and open the plain text.
 ## Several files at once — Wide Field (v1.7.3+)
 
 **Several files, treated as one input.** Released in v1.7.3.5 after testing on Mac, Linux and Windows.
+→ [Release notes](2-doc/release-body-v1.7.3.5.md#uwview-v1735--wide-field-english) · [uvf command manual (Japanese; ch. 4 file selection, ch. 6 compressed files, ch. 8 using the window)](2-doc/uvf_コマンド操作マニュアル.md)
 
 **In the free `uvf`**
 
-```bash
-uvf '*.log' ERROR                    search several files in one go (results on stdout)
-uvf 'app.log,app.log.*.gz' ERROR     plain text and .gz in a single command
-```
+- **Search them together**: `uvf '*.log' ERROR`, `uvf '**/*.log' ERROR`, `uvf 'app.log,app.log.*.gz' ERROR`. Output is `file:line<TAB>text`.
+- **Files are left out the same way ripgrep leaves them out**: an expanded wildcard skips anything matched by `.ignore` / `.gitignore`, and hidden files (names starting with `.`) are skipped on every OS. `--no-ignore` turns that off; `--files` shows exactly what would be searched.
+- **Seven compressed formats, searched as they decompress**: gz, bz2, xz, lzma, zst, lz4, br — no external commands, and they can be mixed with plain text in one run.
+- **Read the results in the window**: `uvf '*.log' ERROR -open`. Hit line numbers read `file-number:line`, and the file list can open files in extra tabs (up to 8).
 
 **UwView Pro (`uvp`) only**
 
-Several files are bundled into **one `.uwvz`**, so from the second question on nothing is rebuilt. Text inside a `.zip`, and OpenStreetMap `.pbf`, can be used as input as well. With `-open`, the window moves to a hit **at once** inside the bundled text (the free `-open` handles several files too, but reopens the original file before moving).
+Several files are bundled into **one `.uwvz`**, so from the second question on nothing is rebuilt. Text inside a `.zip`, and OpenStreetMap `.pbf`, can be used as input as well. With `-open`, the window moves to a hit **at once** inside the bundled text (the free `-open` reopens the original file before moving).
 
-**Measured** (Mac, 8 logical CPUs, the 8 files in `UwTest/osm17`, first search plus the repeat right after, 1.7.0.18)
+**Losses first: for several plain-text files, ripgrep is faster** (five plain files: `uvf` at 1/1.17 of ripgrep).
 
-| Target | ripgrep 15.2.0 (`-z`) | `uvf` | `uvp` (bundled `.uwvz`) |
-|---|---:|---:|---:|
+| OSM XML, 3 GB of text (first + second run) | Size | `rg -z` | `uvf` | |
+|---|---:|---:|---:|---|
+| gz | 318 MB | 2.62 s | 2.02 s | 1.30× |
+| bz2 | 251 MB | 44.98 s | 43.96 s | 1.02× |
+| xz | 253 MB | 3.41 s | 3.66 s | 1/1.07 |
+| lzma | 254 MB | 20.90 s | 16.83 s | 1.24× |
+| zst | 348 MB | 3.23 s | 3.01 s | 1.07× |
+| lz4 | 533 MB | 1.86 s | 1.67 s | 1.11× |
+| br | 292 MB | 4.89 s | 4.01 s | 1.22× |
+
+**All seven formats are level with `rg -z`** (every difference is under 1.5×). `rg -z` calls an external command for each format (gzip, xz and so on) and silently skips the file when that command is missing; `uvf` gets the same speed with no external commands.
+Searching seven `.gz` files together, `uvf` was 1.28× faster than ripgrep.
+
+**Bundled `uvp`** (test build 1.7.0.18, 8 files, first search plus the repeat right after): 4 plain + 4 `.gz` took 9.72 s with ripgrep (`-z`), 8.58 s with `uvf`, and **3.97 s with `uvp`**.
+**pbf** (Pro only): `japan-latest.osm.pbf`, 2.46 GB, becomes a searchable 5.74 GB `.uwvz` — the content of 51.3 GB of XML — in **24.4 s**. Element counts match `osmium fileinfo`.
+
+> Timings are from one Mac (Apple M4, 10 cores, external USB SSD, cache dropped before each run), `uvf` 1.7.2.7–1.7.2.8 against ripgrep 15.2.0. **Do not compare seconds across machines.** Conditions and full data are in the "performance" chapter of the [uvf command manual](2-doc/uvf_コマンド操作マニュアル.md).
+
+---|---:|---:|---:|
 | 4 plain files (102 MB–1.03 GB) | **2.23 s** | 2.68 s | 3.45 s |
 | 4 `.gz` files (11 MB–1.12 GB) | 8.75 s | 7.17 s | **3.63 s** |
 | 4 plain + 4 `.gz` | 9.72 s | 8.58 s | **3.97 s** |
@@ -241,6 +279,9 @@ Details of each change are posted on [Releases](https://github.com/amru195704/Uw
 
 | | |
 |---|---|
+| 📖 **uvf command manual** (Japanese) | [2-doc/uvf_コマンド操作マニュアル.md](2-doc/uvf_コマンド操作マニュアル.md) — syntax, options, compressed files, regular expressions, exit codes, ripgrep cheat sheet, performance |
+| 🖥 **Window (GUI) manual** (Japanese) | [2-doc/UwView_操作マニュアル.md](2-doc/UwView_操作マニュアル.md) · [PDF](2-doc/UwView_操作マニュアル.pdf) — layout, search, hit list, file list and tabs, highlighter, keys |
+| 🧾 **v1.7.3.5 Wide Field release notes** | [release-body-v1.7.3.5.md](2-doc/release-body-v1.7.3.5.md#uwview-v1735--wide-field-english) |
 | 📊 **All measurements and conditions** | [Benchmarks](https://uvp.y42u.net/en/benchmarks-en/) (EmEditor, klogg, 010 Editor, UltraEdit, Log Viewer, grep, ripgrep, amber, from 3 GB to 250 GB. **The numbers where we lose are published as they are.**) |
 | 📖 **An honest re-measurement against klogg** | [Article](https://uvp.y42u.net/en/blog/uvp-klogg-open-lose-flow-win-en/) |
 | 📖 **One 50 GB file, three arenas** | [Article](https://uvp.y42u.net/en/blog/uvp-three-arenas-50gb-en/) |
@@ -249,9 +290,8 @@ Details of each change are posted on [Releases](https://github.com/amru195704/Uw
 | 🔧 **Full feature list, architecture, build and test instructions** | [Previous README (as of v1.6.5)](docs/README.en-v1.6.5.md) |
 | 📰 **Press kit** | [PRESSKIT.md](press-kit/PRESSKIT.md) |
 
-> **On versions:** the timings on this page are measured on **v1.6.6.1** (the window and `uvf` are unchanged from v1.6.6;
-> v1.6.6.1 changes the `uvp` command's first question to "search while building").
-> → [what changed in v1.6.6](2-doc/release-body-v1.6.6.md)
+> **On versions:** the latest release is **v1.7.3.5 "Wide Field"**. The single-file timings near the top (3 GB–258 GB) were measured on **v1.6.6.1**; the timings in the Wide Field section on v1.7.2.x.
+> → [what changed in v1.7.3.5](2-doc/release-body-v1.7.3.5.md#uwview-v1735--wide-field-english) · [what changed in v1.6.6](2-doc/release-body-v1.6.6.md)
 
 ---
 
