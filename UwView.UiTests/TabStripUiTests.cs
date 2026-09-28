@@ -62,6 +62,14 @@ public class TabStripUiTests : IDisposable
     }
 
     [AvaloniaFact]
+    public void 題名にペット名と版数が出る()
+    {
+        var (window, _, _) = UiHarness.OpenMainWindow();
+        try { Assert.Matches(@"^UwView\(uvf\)-Wide Field(\(v[0-9.]+\))?$", window.Title); }
+        finally { window.Close(); }
+    }
+
+    [AvaloniaFact]
     public async Task タブが増えても1行のままで本文と同じ大きさ()
     {
         var (window, view, vm) = UiHarness.OpenMainWindow();

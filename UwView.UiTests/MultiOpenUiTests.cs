@@ -1,4 +1,5 @@
 using System.Text;
+using Avalonia.LogicalTree;
 using Avalonia.Headless.XUnit;
 using UwView.Controls;
 using UwView.Core;
@@ -146,6 +147,16 @@ public class MultiOpenUiTests : IDisposable
         Assert.True(added.CanClose);
         Assert.Same(added, vm.ActiveTab);
 
+        // メインのタブだけ灰色（追加タブはいつもどおり）
+        await UiHarness.Pump();
+        var strip = UiHarness.Find<Avalonia.Controls.Primitives.TabStrip>(view, "TabStripControl");
+        var mainItem = (Avalonia.Controls.Primitives.TabStripItem)strip.ContainerFromIndex(0)!;
+        var addedItem = (Avalonia.Controls.Primitives.TabStripItem)strip.ContainerFromIndex(1)!;
+        Assert.True(vm.Tabs[0].IsResultMain);
+        Assert.Contains("resultMain", mainItem.Classes);
+        Assert.DoesNotContain("resultMain", addedItem.Classes);
+        Assert.Equal(Avalonia.Media.Color.Parse("#C8C8C8"), ((Avalonia.Media.ISolidColorBrush)mainItem.Background!).Color);
+
         // 同じファイルをもう一度開いても、そのタブに切り替えるだけ
         vm.ActiveTab = vm.Tabs[0];
         list.OpenAt(1);
@@ -158,6 +169,25 @@ public class MultiOpenUiTests : IDisposable
         list.OpenAt(2);
         await UiHarness.WaitUntil(() => vm.Tabs[0].FilePath == F("f03.log"), "メインが3番になる");
         Assert.Equal(2, vm.Tabs.Count);
+    }
+
+    [AvaloniaFact]
+    public async Task ファイルが多い一覧をスクロールしても落ちない()
+    {
+        // 行の入れ物の使い回しで中身の無い行が来て落ちた（710 ファイルの一覧・2026-09-28）
+        MakeFiles(9);
+        for (int f = 10; f <= 200; f++) File.WriteAllText(Path.Combine(_dir, $"f{f:D3}.log"), "INFO\nERROR\n");
+        var (view, _) = await Start(await Handoff("*.log", "ERROR", "-open"));
+        view.OpenFileList();
+        await UiHarness.Pump();
+        var list = FileListPopup.Current!;
+        var rows = list.GetLogicalDescendants().OfType<Avalonia.Controls.ListBox>().Single(b => b.Name == "FileListRows");
+        Assert.Equal(200, list.Items.Count);
+
+        for (int i = 0; i < 200; i += 20) { rows.ScrollIntoView(i); list.UpdateLayout(); await UiHarness.Pump(2); }
+        rows.ScrollIntoView(199); list.UpdateLayout();
+        rows.ScrollIntoView(0); list.UpdateLayout();
+        await UiHarness.Pump();
     }
 
     [AvaloniaFact]

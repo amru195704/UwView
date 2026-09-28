@@ -19,14 +19,15 @@ public class AppEditionTests : IDisposable
     }
 
     [Fact]
-    public void 本番ビルドでは何も足さない()
+    public void 正式名のビルドでも題名にはペット名と版数を出す()
     {
         AppEdition.Name = "";
-        AppEdition.Version = "1.7.0.1";
+        AppEdition.Version = "1.7.3.3";
 
         Assert.False(AppEdition.IsTestBuild);
-        Assert.Equal("UwView(uvf)", AppEdition.TitleFor("UwView(uvf)"));
-        Assert.Equal("UwView", AppEdition.Decorate("UwView"));
+        Assert.Equal("UwView(uvf)-Wide Field(v1.7.3.3)", AppEdition.TitleFor("UwView(uvf)"));
+        Assert.Equal("UwView Pro(uvp)-Wide Field(v1.7.3.3)", AppEdition.TitleFor("UwView Pro(uvp)"));
+        Assert.Equal("UwView", AppEdition.Decorate("UwView"));             // 題名以外（About・--version）は足さない
     }
 
     [Fact]
@@ -36,8 +37,8 @@ public class AppEditionTests : IDisposable
         AppEdition.Version = "1.7.0.1";
 
         Assert.True(AppEdition.IsTestBuild);
-        Assert.Equal("UwView(uvf) - Wide Field(v1.7.0.1)", AppEdition.TitleFor("UwView(uvf)"));
-        Assert.Equal("UwView Pro(uvp) - Wide Field(v1.7.0.1)", AppEdition.TitleFor("UwView Pro(uvp)"));
+        Assert.Equal("UwView(uvf)-Wide Field(v1.7.0.1)", AppEdition.TitleFor("UwView(uvf)"));
+        Assert.Equal("UwView Pro(uvp)-Wide Field(v1.7.0.1)", AppEdition.TitleFor("UwView Pro(uvp)"));
         Assert.Equal("UwView (Wide Field)", AppEdition.Decorate("UwView"));
     }
 
@@ -47,6 +48,6 @@ public class AppEditionTests : IDisposable
         AppEdition.Name = "Wide Field";
         AppEdition.Version = "";
 
-        Assert.Equal("UwView(uvf) - Wide Field", AppEdition.TitleFor("UwView(uvf)"));
+        Assert.Equal("UwView(uvf)-Wide Field", AppEdition.TitleFor("UwView(uvf)"));
     }
 }
