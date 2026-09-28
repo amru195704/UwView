@@ -29,18 +29,20 @@ uvf '**/*.log' ERROR --files         探さずに、対象になるファイル�
 これまでの `.gz` に加えて、**`.bz2`・`.xz`・`.lzma`・`.zst`・`.lz4`・`.br`** も、展開しながらそのまま探せます。外部のコマンドは使いません。
 xz のうち複数ブロックで作られたもの（xz 5.6 以降の既定）は、複数のスレッドで展開します。
 
-| 3G 相当の OSM XML（1回目＋2回目の合計） | 大きさ | `rg -z` | **`uvf`** | 倍率 |
+| 979MB の OSM XML を各形式で圧縮（hot・秒） | 標準の grep | ugrep | ripgrep | **`uvf`** |
 |---|---:|---:|---:|---:|
-| gz | 318 MB | 2.62秒 | **2.02秒** | **1.30倍** |
-| bz2 | 251 MB | 44.98秒 | **43.96秒** | **1.02倍** |
-| xz | 253 MB | **3.41秒** | 3.66秒 | 1/1.07 |
-| lzma | 254 MB | 20.90秒 | **16.83秒** | **1.24倍** |
-| zst | 348 MB | 3.23秒 | **3.01秒** | **1.07倍** |
-| lz4 | 533 MB | 1.86秒 | **1.67秒** | **1.11倍** |
-| br | 292 MB | 4.89秒 | **4.01秒** | **1.22倍** |
+| gz | 0.90（zgrep） | 0.45 | 0.43 | **0.33** |
+| bz2 | 8.03（bzgrep） | 7.62 | 7.89 | **7.43** |
+| xz | 4.01（xzgrep） | 3.64 | 4.21 | **3.37** |
+| lzma | 3.21（xzgrep） | 2.83 | 3.40 | **2.57** |
+| zst | 0.63（zstdgrep） | 0.65 | 0.54 | **0.50** |
+| lz4 | 0.65（lz4 -dc｜grep） | 0.33 | 0.31 | **0.28** |
+| br | 1.33（brotli -dc｜grep） | 0.91 | 0.87 | **0.74** |
 
-**7形式のうち6形式で `uvf` が速い結果でした。** 外部のコマンドを起動せず、展開と照合を1つの処理の中で重ねられるからです。
-**xz だけは ripgrep が 7% 速い**という結果でした。5回くり返しても同じだったので、測定の揺れではありません。
+**7形式とも、ugrep・ripgrep と同等でした**（差は 1.03〜1.36倍。1.5倍未満は差と呼びません）。差がつくのは各形式の標準の grep で、gz 2.73倍・lz4 2.32倍・br 1.80倍です。
+`rg -z` は形式ごとに外部のコマンドを呼び、そのコマンドが無いと黙って飛ばしますが、`uvf` は外部のコマンドを使いません。
+
+複数のファイル（gz 7本＋平文5本＝12本・展開後 約60GB・hot）では、`uvf` 17.60秒・ripgrep 24.62秒・ugrep 25.38秒・zgrep 89.35秒でした。ripgrep・ugrep とは同等（1.40倍・1.44倍）、zgrep より 5.08倍速い結果です。
 
 ### 🪟 複数ファイルの結果を、画面で読む
 
@@ -70,13 +72,15 @@ Mac は Ctrl を Cmd に読み替えます。
 | Esc | 検索欄・ジャンプ欄から本文へ戻る |
 
 - 検索欄・ジャンプ欄に文字を打っている間は、`[` `]` は文字として入ります。
-- 複数ファイルの結果のタブ（`uvf -open`）は、F5 で読み直しません。
+- 複数ファイルの結果のタブ（`uvf -open`）は、F5 で読み直しません（「このタブは読み直せません」と出ます）。
+- キーの割り当ては、今の版では変えられません。
 
 ### 🔖 ブックマークを残す
 
 - ブックマークをファイルごとに覚えて、同じファイルを開くと戻します（前回の続きを開かなくても戻ります）。
 - 追記されただけのファイルなら戻します。中身が変わっていたら（作り直された・先頭が変わった）戻さずに、そう知らせます。見分けるのに読むのは、先頭と前回の末尾の手前の数 KB だけです。
-- ファイルメニュー「**ブックマークを書き出す…**」：`名前-bookmarks.txt` に「行番号<TAB>本文」で書き出します。
+- ブックマークを全部外すと、そのファイルの記録も消えます。覚えるのは最近の 500 ファイルまでです。
+- ファイルメニュー「**ブックマークを書き出す…**」：`名前-bookmarks.txt` に「行番号<TAB>本文」で書き出します（行番号を数え終わってから使えます）。
 
 ### 🎛 画面のそのほかの変更
 
@@ -92,10 +96,10 @@ Mac は Ctrl を Cmd に読み替えます。
 
 ### ⚠️ 注意
 
-- 平文を複数まとめて探すときは、**ripgrep の方が速い**という結果でした。平文5本では、`uvf` の時間が ripgrep の 1.17倍でした。gz を含むと `uvf` が速くなります（gz 7本では、ripgrep より 1.28倍速い結果でした）。
+- 平文を複数まとめて探すときは、**ripgrep の方が少し速い**という結果でした（平文5本で、`uvf` の時間が ripgrep の 1.17倍。1.5倍未満なので同等の範囲です。uvf 1.7.2.7・cold＋hot）。
 - 無料版で扱えないもの：`.zip`・`.tar.gz`・OSM の `.pbf`（展開してから探してください。zip と pbf は UwView Pro が扱います）。
 - 画面の検索欄が探すのは、メインに出ている1ファイルだけです。複数のファイルを探し直すときは、コマンドから探してください。
-- 秒数は、ある1台の Mac（arm64・論理 CPU 10・キャッシュを捨ててから測定）で測った値で、uvf 1.7.2.7〜1.7.2.8、ripgrep 15.2.0 と比べたものです。**秒数を環境をまたいで比べないでください。** 条件と全データは [uvf コマンド操作マニュアル](https://github.com/amru195704/UwView/blob/main/2-doc/uvf_コマンド操作マニュアル.md) の「性能」の章にあります。
+- 秒数は、ある1台の Mac（Apple M4・10コア・外付け USB SSD）で 2026年9月28日に測った値です。圧縮7形式と12本は hot（各2回の速い方）で、uvf 1.7.3.4・uvp 1.7.3.5（検索の処理は 1.7.3.6 と同じ）、ugrep 7.8.5、ripgrep 15.2.0、macOS 標準の zgrep などと比べました。**秒数を環境をまたいで比べないでください。** 条件と全データは [uvf コマンド操作マニュアル](https://github.com/amru195704/UwView/blob/main/2-doc/uvf_コマンド操作マニュアル.md) の「性能」の章にあります。
 
 ### 📥 インストール・ダウンロード
 
@@ -121,15 +125,17 @@ d1ceadc10559906614414701e8ae09cd1040e3917a1ad7fa5208a9886945162b  UwView-1.7.3.6
 
 有償版の `uvp` は、複数のファイルを **1本の `.uwvz` に束ねます**。束ねた `.uwvz` は、2回目からは作り直しません。`.zip` の中のテキストや OSM の `.pbf` も入力にできます。
 
-| 8本・初回と直後の再検索の合計（試験用ビルド 1.7.0.18） | ripgrep（`-z`） | `uvf` | **`uvp`** |
-|---|---:|---:|---:|
-| 平文4本＋`.gz` 4本 | 9.72秒 | 8.58秒 | **3.97秒** |
+| gz 7本＋平文5本＝12本（hot） | ripgrep（`-z`） | `uvf` | `uvp` 1回目（束ねる） | **`uvp` 2回目** |
+|---|---:|---:|---:|---:|
+| 秒 | 24.62秒 | 17.60秒 | 41.23秒 | **9.52秒** |
 
-`japan-latest.osm.pbf`（2.46GB）は、XML にして 51.3GB 分の内容になります。`uvp` はこれを、検索できる `.uwvz` に **21.6秒**で変えます。続けて「東京」（94,979件）を探し終えるまで、キャッシュを捨てた状態から合計 **27.34秒**。2回目からは `.uwvz` を使うので **5.01秒**（キャッシュを捨てた直後でも 6.43秒）です（`uvp` 1.7.3.5・2026年9月28日）。
+1回目は束ねた索引を書くので `uvf` の 2.34倍かかりますが、2回目からは `uvf` の 1.85倍速く、合計4回でほぼ並び、5回目から差がつきます。圧縮ファイル1本なら、2回目は形式によらず 0.11〜0.12秒です（bz2 で `uvf` より 62倍速い）。
+
+`japan-latest.osm.pbf`（2.46GB）は、XML にして 51.3GB 分の内容になります。`uvp` はこれを、検索できる `.uwvz` に **21.6秒**で変えます。続けて「東京」（94,979件）を探し終えるまで、キャッシュを捨てた状態から合計 **27.34秒**。2回目からは `.uwvz` を使うので **5.01秒**（キャッシュを捨てた直後でも 6.43秒）です（2026年9月28日の実測・`uvp` 1.7.3.5。変換と検索の処理は 1.7.3.6 と同じ）。
 
 - `uvp x.osm.pbf 語 -open` では、画面に変換した `.uwvz`（OSM の XML）が開きます。`.gz` などの圧縮ファイル 1 本も同じです。変換していない pbf を画面で開くと、「先に変換してください」と知らせます（v1.7.3.5 では、画面に元の pbf のバイナリが出ていました）。
 - 結果の窓の前後 ±N は、**最大 64 行**です（多段階の窓も同じ。無料版は ±1 行）。
-- 上のキー操作とブックマークは、Pro でも同じです（束ねた索引でもブックマークを覚えます）。編集中の本文では `[` `]` は文字として入り、F5 では読み直しません。
+- 上のキー操作とブックマークは、Pro でも同じです（束ねた索引でもブックマークを覚えます）。編集中の本文では `[` `]` は文字として入り、F5 では読み直しません（束ねた索引とそこから開いたタブも読み直しません）。Pro には末尾追従が無いので、Ctrl+Shift+F は何もしません。
 
 → [UwView Pro](https://uvp.y42u.net/pro/)（買い切り $129 ／ 月額 $9・**14日間の無料試用**つき）
 
@@ -164,18 +170,20 @@ uvf '**/*.log' ERROR --files         just list what would be searched
 On top of `.gz`, **`.bz2`, `.xz`, `.lzma`, `.zst`, `.lz4` and `.br`** can now be searched as they decompress, with no external commands.
 An xz file made of several blocks (the default since xz 5.6) is decompressed on several threads.
 
-| OSM XML, 3 GB of text (first + second run) | Size | `rg -z` | **`uvf`** | Ratio |
+| 979 MB of OSM XML in each format (hot, seconds) | Standard grep | ugrep | ripgrep | **`uvf`** |
 |---|---:|---:|---:|---:|
-| gz | 318 MB | 2.62 s | **2.02 s** | **1.30×** |
-| bz2 | 251 MB | 44.98 s | **43.96 s** | **1.02×** |
-| xz | 253 MB | **3.41 s** | 3.66 s | 1/1.07 |
-| lzma | 254 MB | 20.90 s | **16.83 s** | **1.24×** |
-| zst | 348 MB | 3.23 s | **3.01 s** | **1.07×** |
-| lz4 | 533 MB | 1.86 s | **1.67 s** | **1.11×** |
-| br | 292 MB | 4.89 s | **4.01 s** | **1.22×** |
+| gz | 0.90 (zgrep) | 0.45 | 0.43 | **0.33** |
+| bz2 | 8.03 (bzgrep) | 7.62 | 7.89 | **7.43** |
+| xz | 4.01 (xzgrep) | 3.64 | 4.21 | **3.37** |
+| lzma | 3.21 (xzgrep) | 2.83 | 3.40 | **2.57** |
+| zst | 0.63 (zstdgrep) | 0.65 | 0.54 | **0.50** |
+| lz4 | 0.65 (lz4 -dc \| grep) | 0.33 | 0.31 | **0.28** |
+| br | 1.33 (brotli -dc \| grep) | 0.91 | 0.87 | **0.74** |
 
-**`uvf` was faster in six of the seven formats.** It starts no external command, so decompression and matching overlap inside one process.
-**On xz, ripgrep was 7% faster.** Five repeated runs gave the same result, so this is not measurement noise.
+**In all seven formats `uvf` is on par with ugrep and ripgrep** (1.03–1.36× apart; under 1.5× is not called a difference). The gap is with each format's standard grep: 2.73× on gz, 2.32× on lz4, 1.80× on br.
+`rg -z` calls an external command for each format and silently skips the file when that command is missing; `uvf` uses no external commands.
+
+On many files (7 gz + 5 plain = 12 files, about 60 GB expanded, hot): `uvf` 17.60 s, ripgrep 24.62 s, ugrep 25.38 s, zgrep 89.35 s — on par with ripgrep and ugrep (1.40×, 1.44×), 5.08× faster than zgrep.
 
 ### 🪟 Read multi-file results in the window
 
@@ -205,13 +213,15 @@ On a Mac, read Ctrl as Cmd.
 | Esc | Leave the search box or jump box and return to the text |
 
 - While typing in the search box or jump box, `[` and `]` are typed as characters.
-- Tabs opened from a multi-file result (`uvf -open`) are not reloaded by F5.
+- Tabs opened from a multi-file result (`uvf -open`) are not reloaded by F5 ("This tab cannot be reloaded").
+- Key assignments cannot be changed in this release.
 
 ### 🔖 Bookmarks are remembered
 
 - Bookmarks are remembered per file and come back when you open the same file again (even without restoring the last session).
 - If the file has only grown, they come back. If its contents changed (recreated, or the start changed), they are not restored and you are told so. Only a few KB at the start and just before the previous end are read to tell the difference.
-- File menu → **Export bookmarks…** writes `name-bookmarks.txt` as `line number<TAB>text`.
+- Removing every bookmark from a file also removes its record. The last 500 files are remembered.
+- File menu → **Export bookmarks…** writes `name-bookmarks.txt` as `line number<TAB>text` (available once line numbering has finished).
 
 ### 🎛 Other changes in the window
 
@@ -227,10 +237,10 @@ On a Mac, read Ctrl as Cmd.
 
 ### ⚠️ Notes
 
-- When searching several plain-text files, **ripgrep was faster**: on five plain files, `uvf` took 1.17× as long as ripgrep. Once gz files are included, `uvf` is ahead (1.28× faster than ripgrep on seven gz files).
+- When searching several plain-text files, **ripgrep was slightly faster**: on five plain files, `uvf` took 1.17× as long as ripgrep — under 1.5×, so on par (uvf 1.7.2.7, cold + hot).
 - The free edition does not read `.zip`, `.tar.gz` or OSM `.pbf` (extract them first; UwView Pro handles zip and pbf).
 - The search box in the window searches only the file in the main tab. To search several files again, use the command.
-- All timings come from one Mac (arm64, 10 logical CPUs, cache dropped before each run), comparing uvf 1.7.2.7–1.7.2.8 with ripgrep 15.2.0. **Do not compare seconds across machines.** Conditions and full data are in the "性能" (performance) chapter of the [uvf command manual](https://github.com/amru195704/UwView/blob/main/2-doc/uvf_コマンド操作マニュアル.md) (Japanese).
+- All timings come from one Mac (Apple M4, 10 cores, external USB SSD), measured on 28 September 2026. The seven formats and the 12 files are hot (faster of two runs), with uvf 1.7.3.4 and uvp 1.7.3.5 (same search code as 1.7.3.6) against ugrep 7.8.5, ripgrep 15.2.0 and the macOS standard zgrep and friends. **Do not compare seconds across machines.** Conditions and full data are in the "性能" (performance) chapter of the [uvf command manual](https://github.com/amru195704/UwView/blob/main/2-doc/uvf_コマンド操作マニュアル.md) (Japanese).
 
 ### 📥 Install / download
 
@@ -256,14 +266,16 @@ d1ceadc10559906614414701e8ae09cd1040e3917a1ad7fa5208a9886945162b  UwView-1.7.3.6
 
 The paid `uvp` bundles several files into **one `.uwvz`**, and does not rebuild it on later searches. It also reads text inside `.zip` files and OSM `.pbf`.
 
-| 8 files, first search + immediate repeat (test build 1.7.0.18) | ripgrep (`-z`) | `uvf` | **`uvp`** |
-|---|---:|---:|---:|
-| 4 plain + 4 `.gz` | 9.72 s | 8.58 s | **3.97 s** |
+| 7 gz + 5 plain = 12 files (hot) | ripgrep (`-z`) | `uvf` | `uvp` 1st (bundling) | **`uvp` 2nd** |
+|---|---:|---:|---:|---:|
+| Seconds | 24.62 s | 17.60 s | 41.23 s | **9.52 s** |
 
-`japan-latest.osm.pbf` (2.46 GB) holds 51.3 GB of content as XML. `uvp` turns it into a searchable `.uwvz` in **21.6 s**. Finding 東京 (94,979 hits) takes **27.34 s** in total from a dropped cache; from the second search on it uses the `.uwvz` and takes **5.01 s** (6.43 s right after dropping the cache) (`uvp` 1.7.3.5, 28 September 2026).
+The first run writes the bundled index, so it takes 2.34× as long as `uvf`; from the second run it is 1.85× faster than `uvf`, level at four searches in total and ahead from the fifth. For a single compressed file, the second search takes 0.11–0.12 s whatever the format (62× faster than `uvf` on bz2).
+
+`japan-latest.osm.pbf` (2.46 GB) holds 51.3 GB of content as XML. `uvp` turns it into a searchable `.uwvz` in **21.6 s**. Finding 東京 (94,979 hits) takes **27.34 s** in total from a dropped cache; from the second search on it uses the `.uwvz` and takes **5.01 s** (6.43 s right after dropping the cache) (measured 28 September 2026 with `uvp` 1.7.3.5; conversion and search code as in 1.7.3.6).
 
 - `uvp x.osm.pbf term -open` opens the converted `.uwvz` (the OSM XML) in the window. A single compressed file such as `.gz` works the same way. Opening an unconverted pbf in the window asks you to convert it first (in v1.7.3.5 the window showed the pbf's binary).
 - The ±N context in the results window goes up to **64 lines** (the drill-down window too; the free edition allows ±1).
-- The shortcuts and remembered bookmarks above work the same in Pro (bookmarks are remembered in a bundled index too). While editing, `[` and `]` are typed as characters and F5 does not reload.
+- The shortcuts and remembered bookmarks above work the same in Pro (bookmarks are remembered in a bundled index too). While editing, `[` and `]` are typed as characters and F5 does not reload (nor does it reload a bundled index or the tabs opened from it). Pro has no follow-the-end, so Ctrl+Shift+F does nothing.
 
 → [UwView Pro](https://uvp.y42u.net/en/pro-en/) ($129 one-time or $9/month, with a **14-day free trial**)

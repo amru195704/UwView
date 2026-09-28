@@ -7,9 +7,9 @@
 **CLI（`uvf`）は ripgrep と同等の速さで探し、GUI は klogg と同等の速さで開きます。** 違うのは、その2つが**1回でつながる**ことです。`uvf ファイル '語' -open` と打てば、探し終えた瞬間に GUI が開き、当たった行が並びます。**GUI はもう一度探しません。**
 
 📥 **[ダウンロード（無料）](https://github.com/amru195704/UwView/releases/latest)** ・ 🌐 **[公式サイト](https://uvp.y42u.net/)** ・ 🧪 **[ブラウザで試す](https://amru195704.github.io/UwView/)**  
-📖 **[uvf コマンド操作マニュアル](2-doc/uvf_コマンド操作マニュアル.md)** ・ 🖥 **[GUI の操作マニュアル](2-doc/UwView_操作マニュアル.md)**（[PDF](2-doc/UwView_操作マニュアル.pdf)） ・ 🧾 **[v1.7.3.5 リリースノート](2-doc/release-body-v1.7.3.5.md)**
+📖 **[uvf コマンド操作マニュアル](2-doc/uvf_コマンド操作マニュアル.md)** ・ 🖥 **[GUI の操作マニュアル](2-doc/UwView_操作マニュアル.md)**（[PDF](2-doc/UwView_操作マニュアル.pdf)） ・ 🧾 **[v1.7.3.6 リリースノート](2-doc/release-body-v1.7.3.6.md)**
 
-> **最新版は v1.7.3.5「Wide Field」。** 複数のファイルを、ワイルドカード1つでまとめて探せます。平文と **7 種類の圧縮ファイル**（gz・bz2・xz・lzma・zst・lz4・br）を混ぜても1回で済み、外部のコマンドは要りません。
+> **最新版は v1.7.3.6「Wide Field」。** 複数のファイルを、ワイルドカード1つでまとめて探せます。平文と **7 種類の圧縮ファイル**（gz・bz2・xz・lzma・zst・lz4・br）を混ぜても1回で済み、外部のコマンドは要りません。
 
 ---
 
@@ -231,7 +231,7 @@ GUI の使い方（検索・結果一覧・ファイル一覧とタブ・ハイ�
 |---|---|
 | 📖 **uvf コマンド操作マニュアル** | [2-doc/uvf_コマンド操作マニュアル.md](2-doc/uvf_コマンド操作マニュアル.md)（書き方・オプション・圧縮・正規表現・終了コード・ripgrep との対応表・性能） |
 | 🖥 **GUI の操作マニュアル** | [2-doc/UwView_操作マニュアル.md](2-doc/UwView_操作マニュアル.md) ・ [PDF](2-doc/UwView_操作マニュアル.pdf)（GUI の構成・検索・結果一覧・ファイル一覧とタブ・ハイライタ・キー操作） |
-| 🧾 **v1.7.3.5 Wide Field のリリースノート** | [release-body-v1.7.3.5.md](2-doc/release-body-v1.7.3.5.md) |
+| 🧾 **v1.7.3.6 Wide Field のリリースノート** | [release-body-v1.7.3.6.md](2-doc/release-body-v1.7.3.6.md) |
 | 📊 **実測の全データと条件** | [ベンチマーク一覧](https://uvp.y42u.net/benchmarks/)（EmEditor・klogg・010 Editor・UltraEdit・Log Viewer・grep・ripgrep・amber を 3GB〜250GB で実測。**負けている数字もそのまま載せています**） |
 | 📖 **klogg と正直に比べ直した話** | [記事](https://uvp.y42u.net/blog/uvp-klogg-open-lose-flow-win/) |
 | 📖 **同じ 50GB を 3 つの土俵で測った** | [記事](https://uvp.y42u.net/blog/uvp-three-arenas-50gb/) |
@@ -245,8 +245,8 @@ GUI の使い方（検索・結果一覧・ファイル一覧とタブ・ハイ�
 ## 数字の条件
 
 - **機械**：MacBook Air（Apple M4・10 コア・メモリ 32GB）・外付け USB SSD。データは OpenStreetMap（日本）の XML、語は「東京」。**秒数は環境によって変わります。環境をまたいで秒数を比べないでください。**
-- **CLI・1本の大きなファイル**：`uvf`／`uvp` 1.7.3.1（検索の処理は v1.7.3.5 と同じ）・ripgrep 15.2.0・2026-09-28。cold＝キャッシュを捨てた直後、hot＝続けて2回目。
-- **CLI・圧縮 7 形式と複数ファイル**：`uvf` 1.7.3.4（検索の処理は v1.7.3.5 と同じ）／`uvp` 1.7.3.5・ugrep 7.8.5・ripgrep 15.2.0・macOS 標準の zgrep／bzgrep／xzgrep／zstdgrep・2026-09-28。**hot**（各 2 回の速い方）。12 本の cold だけはオーナー計測。すべての測定で、出力の行数と中身を突き合わせています。平文 5 本の比較だけは `uvf` 1.7.2.7（cold＋hot）。
+- **CLI・1本の大きなファイル**：`uvf`／`uvp` 1.7.3.1（検索の処理は v1.7.3.6 と同じ）・ripgrep 15.2.0・2026-09-28。cold＝キャッシュを捨てた直後、hot＝続けて2回目。
+- **CLI・圧縮 7 形式と複数ファイル**：`uvf` 1.7.3.4（検索の処理は v1.7.3.6 と同じ）／`uvp` 1.7.3.5（検索の処理は 1.7.3.6 と同じ）・ugrep 7.8.5・ripgrep 15.2.0・macOS 標準の zgrep／bzgrep／xzgrep／zstdgrep・2026-09-28。**hot**（各 2 回の速い方）。12 本の cold だけはオーナー計測。すべての測定で、出力の行数と中身を突き合わせています。平文 5 本の比較だけは `uvf` 1.7.2.7（cold＋hot）。
 - **GUI と klogg**：最新の比較は v1.6.6・klogg 24.11.0・2026-09-20・cold。258GB は v1.6.6・2026-09-21。
 - 1.5 倍未満の差は「同等」と書いています。
 

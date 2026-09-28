@@ -29,7 +29,7 @@ table{border-collapse:collapse;width:100%;font-size:12.5px} td,th{padding:4px 10
 """
 def ic(g,n): return f'<span class="ic"><b>{g}</b><i>{n}</i></span>'
 main=f"""<div class="win" id="w">
-<div class="title"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span>&nbsp; UwView(uvf)-Wide Field(v1.7.3.5)</div>
+<div class="title"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span>&nbsp; UwView(uvf)-Wide Field(v1.7.3.6)</div>
 <div class="row"><span class="lab">メニュー</span>ファイル　ヘルプ</div>
 <div class="row" style="padding-bottom:0"><span class="lab">タブ</span><span class="tab on">app.log ×</span><span class="tab">app-0902.log ×</span><span class="tab">…</span><span style="font-size:11px;color:#777;margin-left:8px">多いときは横にスクロール</span></div>
 <div class="row"><span class="lab">ツールバー</span>{ic('📂','開く')}{ic('✕','閉じる')}{ic('文','文字コード')}{ic('#','行番号')}{ic('↦','ジャンプ')}<span class="inp" style="min-width:70px">50% / 行</span>{ic('🔖','ブックマーク')}{ic('◀','前')}{ic('▶','次')}{ic('⤓','末尾追従')}{ic('♡','お気に入り')}{ic('🎨','ハイライタ')}{ic('あ','言語')}</div>
