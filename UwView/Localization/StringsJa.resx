@@ -246,4 +246,11 @@
   <data name="MergedSourceMissing" xml:space="preserve"><value>元のファイルがありません。中身はメインの束ねた本文で見られます: {0}</value></data>
   <data name="MergedZipEntryNoTab" xml:space="preserve"><value>zip の中のファイルはタブで開けません。中身はメインの束ねた本文で見られます: {0}</value></data>
   <data name="MainTabCannotClose" xml:space="preserve"><value>メインのタブは閉じられません（結果の一覧・ファイル一覧のもとになっています）</value></data>
+  <data name="ExportBookmarksMenu" xml:space="preserve"><value>ブックマークを書き出す…</value></data>
+  <data name="BookmarksNotRestored" xml:space="preserve"><value>{0} は前回から変わっているので、ブックマークを戻しませんでした</value></data>
+  <data name="BookmarksNone" xml:space="preserve"><value>このファイルにはブックマークがありません</value></data>
+  <data name="BookmarksWaitIndex" xml:space="preserve"><value>行番号を数えている途中です。数え終わってから書き出してください</value></data>
+  <data name="BookmarksExported" xml:space="preserve"><value>ブックマークを {0} 件書き出しました</value></data>
+  <data name="Reloaded" xml:space="preserve"><value>ファイルを読み直しました</value></data>
+  <data name="ReloadNotAvailable" xml:space="preserve"><value>このタブは読み直せません</value></data>
 </root>

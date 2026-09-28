@@ -246,4 +246,11 @@
   <data name="MergedSourceMissing" xml:space="preserve"><value>The original file is gone; its contents are in the bundled text of the main tab: {0}</value></data>
   <data name="MergedZipEntryNoTab" xml:space="preserve"><value>Files inside a zip cannot be opened in a tab; their contents are in the bundled text of the main tab: {0}</value></data>
   <data name="MainTabCannotClose" xml:space="preserve"><value>The main tab cannot be closed (the result list and the file list are based on it)</value></data>
+  <data name="ExportBookmarksMenu" xml:space="preserve"><value>Export bookmarks…</value></data>
+  <data name="BookmarksNotRestored" xml:space="preserve"><value>{0} has changed since it was last opened, so its bookmarks were not restored</value></data>
+  <data name="BookmarksNone" xml:space="preserve"><value>This file has no bookmarks</value></data>
+  <data name="BookmarksWaitIndex" xml:space="preserve"><value>Line numbers are still being counted. Export again when they are done</value></data>
+  <data name="BookmarksExported" xml:space="preserve"><value>Exported {0} bookmarks</value></data>
+  <data name="Reloaded" xml:space="preserve"><value>Reloaded the file</value></data>
+  <data name="ReloadNotAvailable" xml:space="preserve"><value>This tab cannot be reloaded</value></data>
 </root>

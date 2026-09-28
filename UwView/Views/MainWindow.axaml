@@ -19,6 +19,8 @@
                 <NativeMenuItem.Menu>
                     <NativeMenu>
                         <NativeMenuItem Header="{loc:Localize Open}" Click="OnMenuOpen" />
+                        <NativeMenuItem Header="{loc:Localize ExportBookmarksMenu}" Click="OnMenuExportBookmarks" />
+                        <NativeMenuItemSeparator />
                         <NativeMenuItem Header="{loc:Localize CloseTabMenu}" Click="OnMenuClose" />
                         <NativeMenuItem Header="{loc:Localize CloseAll}" Click="OnMenuCloseAll" />
                     </NativeMenu>
@@ -46,6 +48,8 @@
         <Menu x:Name="WinMenu" DockPanel.Dock="Top">
             <MenuItem Header="{loc:Localize FileMenu}">
                 <MenuItem Header="{loc:Localize Open}" Click="OnWinOpen" />
+                <MenuItem Header="{loc:Localize ExportBookmarksMenu}" Click="OnWinExportBookmarks" />
+                <Separator />
                 <MenuItem Header="{loc:Localize CloseTabMenu}" Click="OnWinClose" />
                 <MenuItem Header="{loc:Localize CloseAll}" Click="OnWinCloseAll" />
             </MenuItem>

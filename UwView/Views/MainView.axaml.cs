@@ -100,15 +100,10 @@ public partial class MainView : UserControl
         };
 
         // ブックマーク（§11-④）
-        BookmarkToggleButton.Click += (_, _) =>
-        {
-            if (_vm?.ActiveTab is not { } t) return;
-            t.Session.ToggleBookmark(TextView.CurrentOffset);
-            TextView.Refresh();
-            Minimap.InvalidateVisual();
-        };
+        BookmarkToggleButton.Click += (_, _) => ToggleBookmarkHere();
         NextBookmarkButton.Click += (_, _) => GoToBookmark(next: true);
         PrevBookmarkButton.Click += (_, _) => GoToBookmark(next: false);
+        AttachShortcuts();
 
         // リアルタイム Tail（§11-③）
         TailToggle.IsCheckedChanged += (_, _) =>
@@ -983,6 +978,7 @@ public partial class MainView : UserControl
         foreach (var session in sessions)
         {
             var tab = new DocumentTabViewModel(session, t => _vm!.RequestClose(t));
+            AttachBookmarkMemory(session);
             // 開いてから行索引ができるまでを測る（大きなファイルではここが一番待たされる）
             var watch = System.Diagnostics.Stopwatch.StartNew();
             session.IndexCompleted += (_, _) => OnIndexCompleted(tab, watch);

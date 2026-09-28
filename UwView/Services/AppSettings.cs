@@ -31,6 +31,10 @@ public sealed class PerFileState
     public bool IsTailing { get; set; }
     public List<long> Bookmarks { get; set; } = new();
     public string? ActiveSetId { get; set; }     // 色分けハイライタのアクティブセット
+
+    /// <summary>先頭と、記録したときの末尾の手前の指紋（追記だけかを見分ける。<see cref="BookmarkMemory"/>）。</summary>
+    public string? HeadHash { get; set; }
+    public string? TailHash { get; set; }
 }
 
 /// <summary>最近使ったファイルの1件（V1.1.1 §2-2）。</summary>

@@ -122,4 +122,24 @@ public class TailAndBookmarkTests
         }
         finally { File.Delete(path); }
     }
+
+    [Fact]
+    public async Task Bookmarks_SetAll_SortsAndDedupes()
+    {
+        string path = NewTempPath();
+        await File.WriteAllTextAsync(path, "a\nb\nc\n", new UTF8Encoding(false));
+        try
+        {
+            await using var session = DocumentSession.Open(path);
+            int changed = 0;
+            session.BookmarksChanged += (_, _) => changed++;
+
+            session.SetBookmarks([4, 0, 4, 2]);
+
+            Assert.Equal(new long[] { 0, 2, 4 }, session.Bookmarks);
+            Assert.Equal(1, changed);
+            Assert.Equal(2L, session.NextBookmark(0));
+        }
+        finally { File.Delete(path); }
+    }
 }

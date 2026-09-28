@@ -224,6 +224,7 @@ public partial class App : Application
     public static System.Action? RequestOpenFile;
     public static System.Action? RequestCloseTab;
     public static System.Action? RequestCloseAll;
+    public static System.Action? RequestExportBookmarks;
     /// <summary>終了時に現在のタブ構成・表示位置を LastSession へ記録する（MainView が設定）。</summary>
     public static System.Action? RequestSaveSession;
 

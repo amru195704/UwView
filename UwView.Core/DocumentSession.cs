@@ -433,6 +433,14 @@ public sealed class DocumentSession : IAsyncDisposable
         return added;
     }
 
+    /// <summary>ブックマークをまとめて入れ直す（前回の分を戻すとき。重複は1つに、並びは昇順にする）。</summary>
+    public void SetBookmarks(IEnumerable<long> lineStartOffsets)
+    {
+        _bookmarks.Clear();
+        _bookmarks.AddRange(lineStartOffsets.Distinct().Order());
+        BookmarksChanged?.Invoke(this, EventArgs.Empty);
+    }
+
     public bool HasBookmark(long lineStartOffset)
     {
         int i = LowerBound(_bookmarks, lineStartOffset);
