@@ -74,6 +74,10 @@
                             <Setter Property="MinHeight" Value="0" />
                             <Setter Property="Padding" Value="8,3" />
                         </Style>
+                        <!-- 複数ファイルの結果のメイン（uvf の結果セット・uvp の束ねた本文）は灰色 -->
+                        <Style Selector="TabStripItem.resultMain">
+                            <Setter Property="Background" Value="#C8C8C8" />
+                        </Style>
                     </TabStrip.Styles>
                     <TabStrip.ItemTemplate>
                         <DataTemplate x:DataType="vm:DocumentTabViewModel">

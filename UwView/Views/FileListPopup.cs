@@ -113,7 +113,10 @@ public sealed class FileListPopup : Window
             Name = "FileListRows",
             ItemsSource = _rows,
             SelectionMode = SelectionMode.Single,
-            ItemTemplate = new FuncDataTemplate<Row>((row, _) => RowView(row), supportsRecycling: false),
+            // 行の入れ物を使い回すとき、中身の無い（null の）行で呼ばれることがある。
+            // そのまま作ると落ちた（710 ファイルの一覧をスクロールして NullReferenceException・2026-09-28）
+            ItemTemplate = new FuncDataTemplate<Row>((row, _) => row is null ? new Panel() : RowView(row),
+                                                     supportsRecycling: false),
         };
         _list.DoubleTapped += (_, _) => OpenSelected();
         _list.KeyDown += (_, e) =>

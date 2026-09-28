@@ -10,10 +10,14 @@ namespace UwView.Controls;
 /// <summary>
 /// タブを1行のまま左右にスクロールさせる（オーナー指示 2026-09-27）。
 /// ホイールの縦の回転で横に送り、選んだタブは見える位置まで送る（開いたタブが端に隠れないように）。
+/// あわせて、複数ファイルの結果のメインのタブに印（resultMain）を付ける。
 /// </summary>
 public static class TabStripScroll
 {
     private const double WheelStep = 48;
+
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<Control, object> Bound = new();
+    private static readonly object Marker = new();
 
     public static void Attach(ScrollViewer scroll, TabStrip tabs)
     {
@@ -26,6 +30,14 @@ public static class TabStripScroll
             scroll.Offset = new Vector(x, scroll.Offset.Y);
             e.Handled = true;
         }, RoutingStrategies.Tunnel | RoutingStrategies.Bubble);
+
+        // 複数ファイルの結果のメインは灰色（TabStripItem.resultMain のスタイル）。入れ物ごとに一度だけ結ぶ
+        tabs.ContainerPrepared += (_, e) =>
+        {
+            if (!Bound.TryAdd(e.Container, Marker)) return;
+            e.Container.BindClass("resultMain",
+                new Avalonia.Data.Binding(nameof(ViewModels.DocumentTabViewModel.IsResultMain)), null!);
+        };
 
         tabs.SelectionChanged += (_, _) => Dispatcher.UIThread.Post(() =>
         {

@@ -38,6 +38,12 @@ public partial class DocumentTabViewModel : ObservableObject, IAsyncDisposable
     /// </summary>
     [ObservableProperty] private bool _canClose = true;
 
+    /// <summary>
+    /// 複数ファイルの結果のメインか（uvf の結果セットのメイン・uvp の束ねた本文）。
+    /// タブを灰色にして、ほかのタブと見分けられるようにする（オーナー指示 2026-09-28）。
+    /// </summary>
+    [ObservableProperty] private bool _isResultMain;
+
     [ObservableProperty] private double _indexProgress;
     [ObservableProperty] private bool _isIndexing;
 

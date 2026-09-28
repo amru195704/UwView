@@ -33,13 +33,16 @@ public static class AppEdition
     /// <summary>名前に呼び名を添える（<c>UwView</c> → <c>UwView (Wide Field)</c>）。本番はそのまま。</summary>
     public static string Decorate(string name) => IsTestBuild ? $"{name} ({Name})" : name;
 
+    /// <summary>この系列の呼び名（ペット名）。1.7 系は Wide Field。</summary>
+    public const string PetName = "Wide Field";
+
     /// <summary>
-    /// ウィンドウの題名（<c>UwView(uvf)</c> → <c>UwView(uvf) - Wide Field(v1.7.0.1)</c>）。本番はそのまま。
+    /// ウィンドウの題名（<c>UwView(uvf)</c> → <c>UwView(uvf)-Wide Field(v1.7.3.3)</c>）。
+    /// 正式名のビルドでもペット名と版数を出す（オーナー指示 2026-09-28。どの版を見ているか題名で分かるように）。
+    /// 試験用の呼び名が焼き込まれていれば、ペット名の代わりにそれを出す。
     /// </summary>
     public static string TitleFor(string name)
-        => IsTestBuild
-            ? $"{name} - {Name}" + (Version.Length > 0 ? $"(v{Version})" : "")
-            : name;
+        => $"{name}-{(IsTestBuild ? Name : PetName)}" + (Version.Length > 0 ? $"(v{Version})" : "");
 
     private static string Read()
     {

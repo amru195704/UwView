@@ -228,6 +228,7 @@ public partial class MainView
     private static void MakeMain(DocumentTabViewModel tab, int index)
     {
         tab.CanClose = false;
+        tab.IsResultMain = true;
         tab.TitlePrefix = $"{index + 1}:";
     }
 
