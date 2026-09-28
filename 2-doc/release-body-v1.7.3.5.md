@@ -101,7 +101,7 @@ acd905c10d2ad90cf91d96a2f6329d01884c5916f0f3a5a6212656ee11f2b028  UwView-1.7.3.5
 |---|---:|---:|---:|
 | 平文4本＋`.gz` 4本 | 9.72秒 | 8.58秒 | **3.97秒** |
 
-`japan-latest.osm.pbf`（2.46GB）は、XML にして 51.3GB 分の内容になります。`uvp` はこれを、検索できる `.uwvz` に **24.4秒**で変えます。
+`japan-latest.osm.pbf`（2.46GB）は、XML にして 51.3GB 分の内容になります。`uvp` はこれを、検索できる `.uwvz` に **21.6秒**で変えます。続けて「東京」（94,979件）を探し終えるまで、キャッシュを捨てた状態から合計 **27.34秒**。2回目からは `.uwvz` を使うので **5.01秒**（キャッシュを捨てた直後でも 6.43秒）です（`uvp` 1.7.3.5・2026年9月28日）。
 → [UwView Pro](https://uvp.y42u.net/pro/)（買い切り $129 ／ 月額 $9・**14日間の無料試用**つき）
 
 ---
@@ -207,5 +207,5 @@ The paid `uvp` bundles several files into **one `.uwvz`**, and does not rebuild 
 |---|---:|---:|---:|
 | 4 plain + 4 `.gz` | 9.72 s | 8.58 s | **3.97 s** |
 
-`japan-latest.osm.pbf` (2.46 GB) holds 51.3 GB of content as XML. `uvp` turns it into a searchable `.uwvz` in **24.4 s**.
+`japan-latest.osm.pbf` (2.46 GB) holds 51.3 GB of content as XML. `uvp` turns it into a searchable `.uwvz` in **21.6 s**. Finding 東京 (94,979 hits) takes **27.34 s** in total from a dropped cache; from the second search on it uses the `.uwvz` and takes **5.01 s** (6.43 s right after dropping the cache) (`uvp` 1.7.3.5, 28 September 2026).
 → [UwView Pro](https://uvp.y42u.net/en/pro-en/) ($129 one-time or $9/month, with a **14-day free trial**)
