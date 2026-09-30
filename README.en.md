@@ -7,7 +7,8 @@
 **The CLI (`uvf`) searches as fast as ripgrep, and the GUI opens files as fast as klogg.** The difference is that the two **connect in a single pass**. Type `uvf file 'word' -open` and the GUI opens the moment the search ends, with the hits already listed. **The GUI does not search again.**
 
 📥 **[Download (free)](https://github.com/amru195704/UwView/releases/latest)** · 🌐 **[Official site](https://uvp.y42u.net/en/)** · 🧪 **[Try it in your browser](https://amru195704.github.io/UwView/)**  
-📖 **[uvf command manual](2-doc/uvf_コマンド操作マニュアル.md)** · 🖥 **[GUI manual](2-doc/UwView_操作マニュアル.md)** ([PDF](2-doc/UwView_操作マニュアル.pdf)) — both in Japanese · 🧾 **[v1.7.3.6 release notes](2-doc/release-body-v1.7.3.6.md#uwview-v1736--wide-field-english)**
+📖 **[uvf command manual](2-doc/uvf_コマンド操作マニュアル.md)** · 🖥 **[GUI manual](2-doc/UwView_操作マニュアル.md)** ([PDF](2-doc/UwView_操作マニュアル.pdf)) — both in Japanese · 🧾 **[v1.7.3.6 release notes](2-doc/release-body-v1.7.3.6.md#uwview-v1736--wide-field-english)**  
+▶ **[Watch on YouTube (English)](https://www.youtube.com/playlist?list=PLBJs4svTLd_w)** · [Japanese](https://www.youtube.com/playlist?list=PLVa-Z1XEnkKs) · [Channel @uwviewapp](https://www.youtube.com/@uwviewapp)
 
 > **The latest release is v1.7.3.6 "Wide Field".** Search many files with a single wildcard. Mix plain text with **seven compressed formats** (gz, bz2, xz, lzma, zst, lz4, br) in one run — no external commands needed.
 
@@ -228,6 +229,7 @@ encoding detection (UTF-8, Shift-JIS, EUC-JP, UTF-16) / live tail / tabs, bookma
 | 📖 **uvf command manual** (Japanese) | [2-doc/uvf_コマンド操作マニュアル.md](2-doc/uvf_コマンド操作マニュアル.md) — syntax, options, compressed files, regular expressions, exit codes, ripgrep cheat sheet, performance |
 | 🖥 **GUI manual** (Japanese) | [2-doc/UwView_操作マニュアル.md](2-doc/UwView_操作マニュアル.md) · [PDF](2-doc/UwView_操作マニュアル.pdf) — layout, search, hit list, file list and tabs, highlighter, keys |
 | 🧾 **v1.7.3.6 Wide Field release notes** | [release-body-v1.7.3.6.md](2-doc/release-body-v1.7.3.6.md#uwview-v1736--wide-field-english) |
+| ▶ **Videos (YouTube)** | [Playlist "UwView\|English"](https://www.youtube.com/playlist?list=PLBJs4svTLd_w) · [Japanese](https://www.youtube.com/playlist?list=PLVa-Z1XEnkKs) · [Channel @uwviewapp](https://www.youtube.com/@uwviewapp) — how to use v1.7.3.6 in 8 topics, plus an overview video |
 | 📊 **All measurements and conditions** | [Benchmarks](https://uvp.y42u.net/en/benchmarks-en/) (EmEditor, klogg, 010 Editor, UltraEdit, Log Viewer, grep, ripgrep, amber, from 3 GB to 250 GB. **The numbers where we lose are published as they are.**) |
 | 📖 **An honest re-measurement against klogg** | [Article](https://uvp.y42u.net/en/blog/uvp-klogg-open-lose-flow-win-en/) |
 | 📖 **One 50 GB file, three arenas** | [Article](https://uvp.y42u.net/en/blog/uvp-three-arenas-50gb-en/) |
