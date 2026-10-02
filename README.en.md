@@ -25,7 +25,7 @@
 | **Ask a 50 GB file a second question** | ripgrep 55.50 s | **`uvp` 6.47 s (8.6×)** |
 | **Search 258 GB / 4.5 billion lines and hand the hits to the GUI** | klogg needs 258 s just to finish opening | **`uvf … -open` 261.37 s**, search done and hit list shown |
 
-**CLI and GUI, all of this is the free edition** (only `uvp` is [UwView Pro](https://uvp.y42u.net/en/pro-en/)).
+**`uvf` (CLI) and the GUI are the free edition.** Only the `uvp` rows (2nd and 5th) are the paid [UwView Pro](https://uvp.y42u.net/en/pro-en/) (14-day free trial).
 
 **Where we lose, first.**
 
