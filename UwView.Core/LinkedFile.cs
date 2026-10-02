@@ -16,7 +16,9 @@ public static class LinkedFile
     {
         // 相対パスのままだと相対リンク（ln -s real.log link.log）の解決先が狂うので絶対パスにする
         var info = new FileInfo(Path.GetFullPath(path));
-        return info.LinkTarget is not null
+        // リンクかどうかは属性で先に見る（LinkTarget はリンクでなくても1本ずつ問い合わせる。8.6 万本の確認で効く）
+        return (info.Attributes & FileAttributes.ReparsePoint) != 0
+               && info.LinkTarget is not null
                && File.ResolveLinkTarget(info.FullName, returnFinalTarget: true) is FileInfo target
             ? target
             : info;

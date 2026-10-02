@@ -77,6 +77,32 @@ public class IgnoreRulesTests : IDisposable
         Assert.Equal(IgnoreMatch.Include, file.Match(Path.Combine(_dir, "keep.log"), false));
     }
 
+    [Theory]
+    // 名前・拡張子の規則は辞書で引き、ほかの規則とあわせて「後の行が勝つ」（v1.7.3.6.3）
+    [InlineData("*.log\n!keep.log", "keep.log", IgnoreMatch.Include)]
+    [InlineData("!keep.log\n*.log", "keep.log", IgnoreMatch.Ignore)]
+    [InlineData("keep.log\n!*.log", "keep.log", IgnoreMatch.Include)]
+    [InlineData("!*.log\nkeep.log", "deep/keep.log", IgnoreMatch.Ignore)]
+    [InlineData("*.log\n!k*.log", "keep.log", IgnoreMatch.Include)]
+    [InlineData("!k*.log\n*.log", "keep.log", IgnoreMatch.Ignore)]
+    [InlineData("*.gz\n!a.tar.gz", "a.tar.gz", IgnoreMatch.Include)]
+    [InlineData("*.o\nbuild/", "build", IgnoreMatch.None)]              // フォルダー専用はファイルに当てない
+    [InlineData("!build\nbuild/", "build", IgnoreMatch.Include)]
+    [InlineData("*.o", "x.o.txt", IgnoreMatch.None)]
+    [InlineData("*.o", ".o", IgnoreMatch.Ignore)]
+    [InlineData("*.mod.c", "a.mod.c", IgnoreMatch.Ignore)]
+    [InlineData("Makefile", "sub/Makefile", IgnoreMatch.Ignore)]
+    public void 名前と拡張子の規則も後の行が勝つ(string rules, string relative, IgnoreMatch expected)
+        => Assert.Equal(expected, Match(rules, relative));
+
+    [Fact]
+    public void フォルダー専用の規則はフォルダーに当てる()
+    {
+        Assert.Equal(IgnoreMatch.Ignore, Match("!build\nbuild/", "build", isDirectory: true));
+        Assert.Equal(IgnoreMatch.Ignore, Match("*.d/", "x.d", isDirectory: true));
+        Assert.Equal(IgnoreMatch.None, Match("*.d/", "x.d"));
+    }
+
     [Fact]
     public void フォルダーの外はパス全体で照らす()
     {

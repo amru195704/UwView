@@ -53,7 +53,11 @@ public enum IgnoreMatch { None, Ignore, Include }
 /// </summary>
 public sealed class IgnoreFile
 {
-    private sealed record Rule(string[] Segments, bool Negate, bool DirectoryOnly);
+    private sealed record Rule(string[] Segments, bool Negate, bool DirectoryOnly)
+    {
+        /// <summary>名前だけの規則（<c>*.o</c> → <c>**/*.o</c>）なら、その名前の形。最後の段とだけ比べればよい。</summary>
+        public string? NameOnly { get; } = Segments is ["**", var name] && name != "**" ? name : null;
+    }
 
     private readonly Rule[] _rules;
 
@@ -62,11 +66,39 @@ public sealed class IgnoreFile
 
     public bool IsEmpty => _rules.Length == 0;
 
+    // 名前だけの規則のうち、名前そのもの（Makefile）と「*.拡張子」（*.o）は辞書で引く。値は規則の番号（大きい順）。
+    // 1本ごとに全部の規則をワイルドカードで照らすと、カーネル（106 規則）の 8.6 万本で約 0.2 秒かかった（2026-10-02）
+    private readonly Dictionary<string, int[]> _byName;
+    private readonly Dictionary<string, int[]>.AlternateLookup<ReadOnlySpan<char>> _byExtension;
+    private readonly int[] _others;   // それ以外の規則の番号（大きい順）
+
     private IgnoreFile(string root, Rule[] rules)
     {
         Root = Slash(root).TrimEnd('/') + "/";
         _rules = rules;
+        var byName = new Dictionary<string, List<int>>(StringComparer.Ordinal);
+        var byExtension = new Dictionary<string, List<int>>(StringComparer.Ordinal);
+        var others = new List<int>();
+        for (int i = rules.Length - 1; i >= 0; i--)
+        {
+            string? only = rules[i].NameOnly;
+            if (only is not null && IsLiteral(only)) Add(byName, only, i);
+            else if (only is ['*', '.', .. var ext] && ext.Length > 0 && IsLiteral(ext) && !ext.Contains('.')) Add(byExtension, ext, i);
+            else others.Add(i);
+        }
+        _byName = byName.ToDictionary(kv => kv.Key, kv => kv.Value.ToArray(), StringComparer.Ordinal);
+        _byExtension = byExtension.ToDictionary(kv => kv.Key, kv => kv.Value.ToArray(), StringComparer.Ordinal)
+                                  .GetAlternateLookup<ReadOnlySpan<char>>();
+        _others = [.. others];
+
+        static void Add(Dictionary<string, List<int>> map, string key, int index)
+        {
+            if (!map.TryGetValue(key, out var list)) map[key] = list = [];
+            list.Add(index);
+        }
     }
+
+    private static bool IsLiteral(string pattern) => pattern.AsSpan().IndexOfAny("*?[\\") < 0;
 
     /// <summary>ファイルを読む（無い・読めないなら null）。</summary>
     public static IgnoreFile? Load(string path, string? root = null)
@@ -116,17 +148,37 @@ public sealed class IgnoreFile
     public IgnoreMatch Match(string fullPath, bool isDirectory)
     {
         string path = Slash(fullPath);
-        string relative = path.StartsWith(Root, StringComparison.Ordinal) ? path[Root.Length..] : path;
-        string[] parts = relative.Split('/', StringSplitOptions.RemoveEmptyEntries);
-        if (parts.Length == 0) return IgnoreMatch.None;
-        for (int i = _rules.Length - 1; i >= 0; i--)
+        var relative = path.AsSpan(path.StartsWith(Root, StringComparison.Ordinal) ? Root.Length : 0).TrimEnd('/');
+        if (relative.TrimStart('/').IsEmpty) return IgnoreMatch.None;
+        // 名前だけの規則が大半なので、段に分けるのは要るときだけ（8.6 万本で 1 本ずつ分けると約 0.5 秒。2026-10-02）
+        string name = relative[(relative.LastIndexOf('/') + 1)..].ToString();
+        // 後の行ほど強いので、当たった規則のうち番号のいちばん大きいものを採る
+        int best = -1;
+        if (_byName.TryGetValue(name, out var named)) best = First(named, isDirectory);
+        int dot = name.LastIndexOf('.');
+        if (dot >= 0 && _byExtension.TryGetValue(name.AsSpan(dot + 1), out var extended))
+            best = Math.Max(best, First(extended, isDirectory));
+        string[]? parts = null;
+        foreach (int i in _others)
         {
+            if (i <= best) break;
             var rule = _rules[i];
             if (rule.DirectoryOnly && !isDirectory) continue;
-            if (Segments(rule.Segments, 0, parts, 0))
-                return rule.Negate ? IgnoreMatch.Include : IgnoreMatch.Ignore;
+            bool hit = rule.NameOnly is { } only
+                ? Wildcard(only, name)
+                : Segments(rule.Segments, 0, parts ??= relative.ToString().Split('/', StringSplitOptions.RemoveEmptyEntries), 0);
+            if (hit) { best = i; break; }
         }
-        return IgnoreMatch.None;
+        if (best < 0) return IgnoreMatch.None;
+        return _rules[best].Negate ? IgnoreMatch.Include : IgnoreMatch.Ignore;
+    }
+
+    /// <summary>番号（大きい順）のうち、このパスに使える最初のもの（フォルダー専用の規則はファイルに使わない）。無ければ -1。</summary>
+    private int First(int[] indices, bool isDirectory)
+    {
+        foreach (int i in indices)
+            if (!_rules[i].DirectoryOnly || isDirectory) return i;
+        return -1;
     }
 
     private static string Slash(string path) => OperatingSystem.IsWindows() ? path.Replace('\\', '/') : path;
@@ -237,6 +289,8 @@ public sealed class IgnoreTree
     private readonly IgnoreFile? _global;
     private readonly IgnoreFile[] _extra;
     private readonly bool _enabled;
+    private string? _lastDirectory;
+    private Node? _lastNode;
 
     public IgnoreTree(IgnoreOptions options, string? workingDirectory = null)
     {
@@ -255,7 +309,17 @@ public sealed class IgnoreTree
     public bool IsIgnored(string fullPath, bool isDirectory, string parentDirectory)
     {
         if (!_enabled && _extra.Length == 0) return false;
-        var node = _enabled ? NodeFor(parentDirectory) : null;
+        Node? node = null;
+        if (_enabled)
+        {
+            // 同じフォルダーのファイルが続けて来るので、直前のものを使い回す（毎回パスを正規化しない）
+            if (!ReferenceEquals(parentDirectory, _lastDirectory) && parentDirectory != _lastDirectory)
+            {
+                _lastNode = NodeFor(parentDirectory);
+                _lastDirectory = parentDirectory;
+            }
+            node = _lastNode;
+        }
         if (node is { AnyRules: false } && _global is null && _extra.Length == 0) return false;
 
         IgnoreMatch ignore = IgnoreMatch.None, git = IgnoreMatch.None, exclude = IgnoreMatch.None;

@@ -9,7 +9,7 @@
     <!-- コマンド名は uvf（無料版 UwView の CLI。オーナー指示 2026-09-14） -->
     <AssemblyName>uvf</AssemblyName>
     <Version>1.7.3.6</Version>
-    <InformationalVersion>1.7.3.6.2</InformationalVersion>
+    <InformationalVersion>1.7.3.6.3</InformationalVersion>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
 
     <!-- 中身は「UwView 本体を CLI モードで起動する」だけの起動アプリ。

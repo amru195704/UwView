@@ -148,10 +148,10 @@ public static class FileSet
                 continue;
             }
             char separator = SeparatorOf(fragment);
-            foreach (string path in matched)
+            foreach (var (full, path) in matched)
                 // 重複は先に出た側を採る。突き合わせは<b>展開の起点</b>から見た絶対パスで行う
                 //（カレントから見ると、別の場所を起点に展開したときに同じものを二重に数える）
-                if (seen.Add(Path.GetFullPath(path, root)))
+                if (seen.Add(full))
                     files.Add(AsWritten(path, separator));
         }
         var options = ignore ?? IgnoreOptions.Default;
@@ -167,6 +167,8 @@ public static class FileSet
         public HashSet<string> IgnoredFiles { get; } = new(StringComparer.Ordinal);
         public HashSet<string> IgnoredFolders { get; } = new(StringComparer.Ordinal);
         public HashSet<string> LinkedFiles { get; } = new(StringComparer.Ordinal);
+        /// <summary>読んだ（読みかけの）フォルダー。下のフォルダーは見つけた時点で別スレッドで先に読み始める。</summary>
+        public System.Collections.Concurrent.ConcurrentDictionary<string, Lazy<Listing>> Listings { get; } = new(StringComparer.Ordinal);
     }
 
     /// <summary>
@@ -186,15 +188,15 @@ public static class FileSet
     private static string AsWritten(string path, char separator)
         => separator == '/' ? path.Replace('\\', '/') : path.Replace('/', '\\');
 
-    /// <summary>断片1つぶん。ワイルドカードが無ければそのファイル、あれば名前順に展開する。</summary>
-    private static List<string> ExpandOne(string fragment, string root, WalkState walk)
+    /// <summary>断片1つぶん（絶対パスと、返す形のパス）。ワイルドカードが無ければそのファイル、あれば名前順に展開する。</summary>
+    private static List<(string Full, string Path)> ExpandOne(string fragment, string root, WalkState walk)
     {
         string spec = fragment.Replace('\\', Path.DirectorySeparatorChar)
                               .Replace('/', Path.DirectorySeparatorChar);
         if (!HasWildcard(spec))
         {
             string path = Path.IsPathRooted(spec) ? spec : Path.Combine(root, spec);
-            return File.Exists(path) ? [spec] : [];
+            return File.Exists(path) ? [(Path.GetFullPath(spec, root), spec)] : [];
         }
 
         // 起点（絶対パスならその根、相対なら root）と、段ごとの形に分ける。
@@ -215,9 +217,13 @@ public static class FileSet
         try { Walk(Path.GetFullPath(start), segments, first, found, walk); }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException) { }
 
-        // 自分たちが作った派生ファイル（.uwvz など）は、ワイルドカードの対象にしない
-        var list = found.Where(path => !IsDerived(path)).Select(path => Relative(path, root)).ToList();
-        list.Sort(StringComparer.Ordinal);   // 名前順（ロケールに依存しないバイト順）
+        // 自分たちが作った派生ファイル（.uwvz など）は、ワイルドカードの対象にしない。
+        // 拾ったパスは列挙で作った絶対パスなので、正規化し直さない（8.6 万本で1本ずつ GetFullPath すると重い）
+        string prefix = Path.TrimEndingDirectorySeparator(Path.GetFullPath(root)) + Path.DirectorySeparatorChar;
+        var list = found.Where(path => !IsDerived(path))
+                        .Select(path => (path, path.StartsWith(prefix, StringComparison.Ordinal) ? path[prefix.Length..] : path))
+                        .ToList();
+        list.Sort((a, b) => string.CompareOrdinal(a.Item2, b.Item2));   // 名前順（ロケールに依存しないバイト順）
         return list;
     }
 
@@ -259,51 +265,110 @@ public static class FileSet
         foreach (string sub in Directories(directory, segment, walk)) Walk(sub, segments, index + 1, found, walk);
     }
 
-    private static readonly EnumerationOptions Listing = new()
+    /// <summary>1つのフォルダーの中身（名前と絶対パス）。隠し・リンクは除いてある。</summary>
+    private sealed class Listing
+    {
+        public readonly List<(string Name, string Path)> Files = [];
+        public readonly List<(string Name, string Path)> Directories = [];
+        public readonly List<(string Name, string Path)> LinkedFiles = [];
+    }
+
+    /// <summary>
+    /// リンクを外して読む。mac・Linux ではリンクかどうかをフォルダーの一覧（d_type）だけで見分けられるので、
+    /// ファイルごとに属性を読まない（属性を読むと1本ずつ lstat が走る。8.6 万本で約 0.4 秒。2026-10-02）。
+    /// </summary>
+    private static readonly EnumerationOptions WithoutLinks = new()
     {
         RecurseSubdirectories = false,
         IgnoreInaccessible = true,
-        MatchCasing = MatchCasing.PlatformDefault,
-        AttributesToSkip = FileAttributes.Hidden | FileAttributes.System,
+        AttributesToSkip = OperatingSystem.IsWindows()
+            ? FileAttributes.ReparsePoint | FileAttributes.Hidden | FileAttributes.System
+            : FileAttributes.ReparsePoint,
+    };
+
+    /// <summary>リンクも含めて数える（件数が違えば、そのフォルダーにリンクがある）。</summary>
+    private static readonly EnumerationOptions WithLinks = new()
+    {
+        RecurseSubdirectories = false,
+        IgnoreInaccessible = true,
+        AttributesToSkip = OperatingSystem.IsWindows() ? FileAttributes.Hidden | FileAttributes.System : 0,
     };
 
     /// <summary>
-    /// 「.」で始まる名前は隠し（ripgrep と同じ・どの OS でも）。mac・Linux の .NET はこれに隠し属性を付けて
-    /// 見せるので <see cref="Listing"/> で外れるが、Windows は付けないので、.git などが対象に入っていた
-    /// （Windows の全体テスト 2026-09-28）。
+    /// 「.」で始まる名前は隠し（ripgrep と同じ・どの OS でも）。Windows はこれに隠し属性を付けないので、
+    /// 属性だけで外すと .git などが対象に入る（Windows の全体テスト 2026-09-28）。
     /// </summary>
-    private static bool IsDotName(string name) => name.StartsWith('.');
+    private static bool IsDotName(ReadOnlySpan<char> name) => name.Length > 0 && name[0] == '.';
+
+    /// <summary>
+    /// フォルダーを1回だけ読む（<c>**</c> では同じフォルダーを段ごとに何度も見るので覚えておく）。
+    /// 除外の判定は順に行うが、一覧を読むのは先読みで並列にする（8.6 万本で約 0.4 秒かかっていた。2026-10-02）。
+    /// </summary>
+    private static Listing Read(string directory, WalkState walk) => ListingOf(directory, walk).Value;
+
+    private static Lazy<Listing> ListingOf(string directory, WalkState walk)
+        => walk.Listings.GetOrAdd(directory, d => new Lazy<Listing>(() => ReadNow(d)));
+
+    /// <summary>あとで下りるフォルダーを、別スレッドで先に読んでおく。</summary>
+    private static void Prefetch(string directory, WalkState walk)
+    {
+        var lazy = ListingOf(directory, walk);
+        if (!lazy.IsValueCreated) ThreadPool.UnsafeQueueUserWorkItem(l => _ = l.Value, lazy, preferLocal: false);
+    }
+
+    private static Listing ReadNow(string directory)
+    {
+        var listing = new Listing();
+        int count = 0;
+        try
+        {
+            var entries = new FileSystemEnumerable<(string Name, string Path, bool IsDirectory)>(directory,
+                (ref FileSystemEntry e) => (e.FileName.ToString(), e.ToFullPath(), e.IsDirectory), WithoutLinks)
+            { ShouldIncludePredicate = (ref FileSystemEntry e) => !IsDotName(e.FileName) };
+            foreach (var (name, path, isDirectory) in entries)
+            {
+                count++;
+                (isDirectory ? listing.Directories : listing.Files).Add((name, path));
+            }
+            var all = new FileSystemEnumerable<byte>(directory, (ref FileSystemEntry _) => 0, WithLinks)
+            { ShouldIncludePredicate = (ref FileSystemEntry e) => !IsDotName(e.FileName) };
+            if (all.Count() != count) AddLinkedFiles(directory, listing);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
+        return listing;
+    }
+
+    /// <summary>リンクがあるフォルダーだけ、属性を読んでリンクのファイルを拾う（お知らせの件数に使う）。</summary>
+    private static void AddLinkedFiles(string directory, Listing listing)
+    {
+        foreach (var info in new DirectoryInfo(directory).EnumerateFiles("*", WithLinks))
+            if (!IsDotName(info.Name) && (info.Attributes & FileAttributes.ReparsePoint) != 0)
+                listing.LinkedFiles.Add((info.Name, info.FullName));
+    }
 
     private static IEnumerable<string> Files(string directory, string pattern, WalkState walk)
     {
-        foreach (var file in new DirectoryInfo(directory).EnumerateFiles("*", Listing))
+        var listing = Read(directory, walk);
+        foreach (var (name, path) in listing.LinkedFiles)
+            if (FileSystemName.MatchesSimpleExpression(pattern, name, IgnoreCase)) walk.LinkedFiles.Add(path);
+        foreach (var (name, path) in listing.Files)
         {
-            string path = file.FullName;
-            if (IsDotName(file.Name)) continue;
-            if (!FileSystemName.MatchesSimpleExpression(pattern, file.Name, IgnoreCase)) continue;
-            if ((file.Attributes & FileAttributes.ReparsePoint) != 0) { walk.LinkedFiles.Add(path); continue; }
+            if (!FileSystemName.MatchesSimpleExpression(pattern, name, IgnoreCase)) continue;
             if (walk.Ignore.IsIgnored(path, isDirectory: false, directory)) { walk.IgnoredFiles.Add(path); continue; }
             yield return path;
         }
     }
 
-    private static IEnumerable<string> Directories(string directory, string pattern, WalkState walk)
+    private static List<string> Directories(string directory, string pattern, WalkState walk)
     {
-        foreach (var d in new DirectoryInfo(directory).EnumerateDirectories("*", Listing))
+        var result = new List<string>();
+        foreach (var (name, path) in Read(directory, walk).Directories)   // リンクのフォルダーは入っていない（下りない）
         {
-            if ((d.Attributes & FileAttributes.ReparsePoint) != 0) continue;   // リンクは下りない
-            if (IsDotName(d.Name)) continue;
-            if (!FileSystemName.MatchesSimpleExpression(pattern, d.Name, IgnoreCase)) continue;
-            if (walk.Ignore.IsIgnored(d.FullName, isDirectory: true, directory)) { walk.IgnoredFolders.Add(d.FullName); continue; }
-            yield return d.FullName;
+            if (!FileSystemName.MatchesSimpleExpression(pattern, name, IgnoreCase)) continue;
+            if (walk.Ignore.IsIgnored(path, isDirectory: true, directory)) { walk.IgnoredFolders.Add(path); continue; }
+            result.Add(path);
+            Prefetch(path, walk);
         }
-    }
-
-    private static string Relative(string path, string root)
-    {
-        string full = Path.GetFullPath(path);
-        string prefix = Path.GetFullPath(root);
-        return full.StartsWith(prefix + Path.DirectorySeparatorChar, StringComparison.Ordinal)
-            ? full[(prefix.Length + 1)..] : full;
+        return result;
     }
 }

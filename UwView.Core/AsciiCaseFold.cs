@@ -1,4 +1,7 @@
 using System.Buffers;
+using System.Numerics;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 using System.Text;
 
 namespace UwView.Core;
@@ -102,6 +105,8 @@ public static class AsciiCaseFold
     public static int IndexOf(ReadOnlySpan<byte> haystack, ReadOnlySpan<byte> lower,
                               SearchValues<byte> anchor, int anchorIndex)
     {
+        if (lower.Length >= 2 && haystack.Length >= 64 && Vector128.IsHardwareAccelerated)
+            return IndexOfTwoAnchors(haystack, lower, anchorIndex);
         int from = anchorIndex;
         while (from <= haystack.Length - (lower.Length - anchorIndex))
         {
@@ -114,6 +119,62 @@ public static class AsciiCaseFold
         }
         return -1;
     }
+
+    /// <summary>
+    /// 目印を2つ（いちばん珍しい位置と、次に珍しい別の位置）にして、16 バイトずつ同時に確かめる。
+    /// 目印1つだと、ふつうの英単語（spinlock の p など）はソースの中で何度も当たり、そのたびに語全体を比べて
+    /// 大小を区別する検索の約3倍かかった（Linux カーネル・2026-10-02）。2つ同時に合う位置はずっと少ない。
+    /// 返すのは<b>いちばん前の一致</b>（目印1つの道と同じ）。
+    /// </summary>
+    private static int IndexOfTwoAnchors(ReadOnlySpan<byte> haystack, ReadOnlySpan<byte> lower, int a)
+    {
+        int b = SecondRarestIndex(lower, a);
+        var aLo = Vector128.Create(lower[a]);
+        var aUp = Vector128.Create(UpperOf(lower[a]));
+        var bLo = Vector128.Create(lower[b]);
+        var bUp = Vector128.Create(UpperOf(lower[b]));
+        ref byte start = ref MemoryMarshal.GetReference(haystack);
+
+        int lastStart = haystack.Length - lower.Length;   // 語が始まれる最後の位置
+        int i = 0;
+        // 16 個の始まり位置 i..i+15 を一度に見る。読むのは i+a・i+b から 16 バイトずつ（語の内側なので範囲に収まる）
+        for (; i <= lastStart - 15; i += 16)
+        {
+            var va = Vector128.LoadUnsafe(ref start, (nuint)(i + a));
+            var vb = Vector128.LoadUnsafe(ref start, (nuint)(i + b));
+            var both = (Vector128.Equals(va, aLo) | Vector128.Equals(va, aUp))
+                     & (Vector128.Equals(vb, bLo) | Vector128.Equals(vb, bUp));
+            uint bits = both.ExtractMostSignificantBits();
+            while (bits != 0)
+            {
+                int at = i + BitOperations.TrailingZeroCount(bits);
+                if (EqualsFolded(haystack.Slice(at, lower.Length), lower)) return at;
+                bits &= bits - 1;
+            }
+        }
+        for (; i <= lastStart; i++)
+            if (EqualsFolded(haystack.Slice(i, lower.Length), lower)) return i;
+        return -1;
+    }
+
+    /// <summary><paramref name="first"/> 以外で、いちばん珍しいバイトの位置。</summary>
+    private static int SecondRarestIndex(ReadOnlySpan<byte> lower, int first)
+    {
+        const int NonLetterRank = 8;
+        int best = first == 0 ? 1 : 0, bestRank = int.MaxValue;
+        for (int i = 0; i < lower.Length; i++)
+        {
+            if (i == first) continue;
+            int idx = RarityOrder.IndexOf(lower[i]);
+            int rank = idx >= 0 ? idx : NonLetterRank;
+            // 同じ文字なら、目印1つ目から離れた位置を選ぶ（隣り合う同じ文字はあまり絞り込めない）
+            if (rank < bestRank || (rank == bestRank && Math.Abs(i - first) > Math.Abs(best - first)))
+            { bestRank = rank; best = i; }
+        }
+        return best;
+    }
+
+    private static byte UpperOf(byte lower) => lower is >= (byte)'a' and <= (byte)'z' ? (byte)(lower & ~0x20) : lower;
 
     /// <summary>文字列版（本文をすでに読み込んである場合）。</summary>
     public static bool Contains(string text, string lower)
