@@ -591,16 +591,19 @@ public static class UvfCli
         int requested = files.Count;     // 名前を前に付けるかは<b>指定が何件に当たったか</b>で決める
         var compressed = new List<string>();
         var searchable = new List<string>();
-        foreach (string file in files)
+        var searchableKinds = new List<CompressedKind>();
+        var looks = Survey(files);
+        for (int i = 0; i < files.Count; i++)
         {
-            if (OsmPbfFile.Is(file))
+            string file = files[i];
+            if (looks[i].Pbf)
             {
                 compressed.Add(file);
                 env.StdErr.WriteLine(t($"{env.ToolName}: pbf は対象外です（UwView Pro が扱います）: {file}",
                                        $"{env.ToolName}: pbf files are not searched (UwView Pro handles them): {file}"));
                 continue;
             }
-            var probe = CompressedInput.Probe(file);
+            var probe = looks[i].Probe;
             if (probe.Kind == CompressedKind.Zip || probe.IsRejected)
             {
                 compressed.Add(file);
@@ -609,14 +612,13 @@ public static class UvfCli
                         $"{env.ToolName}: zip files are not searched (extract them first): {file}")
                     : RejectText(probe.Reject, file, env.ToolName, t));
             }
-            else searchable.Add(file);
+            else
+            {
+                searchable.Add(file);
+                searchableKinds.Add(probe.Kind);
+            }
         }
-        if (searchable.Count == 0)
-        {
-            env.StdErr.WriteLine(t($"{env.ToolName}: 探せるファイルがありません",
-                                   $"{env.ToolName}: no searchable files"));
-            return UvfExit.Error;
-        }
+        if (searchable.Count == 0) return NoSearchable();
         files = searchable;
 
         var options = new SearchOptions(inv.Pattern!, UseRegex: inv.Regex, IgnoreCase: inv.IgnoreCase);
@@ -632,7 +634,21 @@ public static class UvfCli
                 files, options, inv.Invert, inv.Json, lineNumbers: true,
                 // 外したファイルがあっても出力の形を変えない（grep と同じく、当たった件数で決める）
                 withFileName: inv.FileNames ?? requested > 1,
-                threads, w, ct);
+                threads, w, ct, searchableKinds, verifyPlain: true);
+
+        // 開いてみたら平文でなかったもの（中身が pbf・zip・受け付けない圧縮）を、並びどおりに知らせる
+        foreach (var (file, pbf, probe) in outcome.Skipped ?? [])
+        {
+            compressed.Add(file);
+            env.StdErr.WriteLine(pbf
+                ? t($"{env.ToolName}: pbf は対象外です（UwView Pro が扱います）: {file}",
+                    $"{env.ToolName}: pbf files are not searched (UwView Pro handles them): {file}")
+                : probe.Kind == CompressedKind.Zip && !probe.IsRejected
+                    ? t($"{env.ToolName}: zip は検索の対象外です（展開してから検索してください）: {file}",
+                        $"{env.ToolName}: zip files are not searched (extract them first): {file}")
+                    : RejectText(probe.Reject, file, env.ToolName, t));
+        }
+        if (outcome.Skipped is { Count: > 0 } && outcome.Skipped.Count == files.Count) return NoSearchable();
 
         env.StdErr.WriteLine(t(
             $"{env.ToolName}: {outcome.Hits:N0} 件（{files.Count:N0} ファイル・{watch.Elapsed.TotalSeconds:F2} 秒）",
@@ -653,6 +669,48 @@ public static class UvfCli
         // 圧縮ファイルを飛ばしたときも同じ（探せなかったものがある、と分かるように）
         if (outcome.Failed.Count > 0 || compressed.Count > 0) return UvfExit.Error;
         return outcome.Hits > 0 ? UvfExit.Found : UvfExit.NotFound;
+
+        int NoSearchable()
+        {
+            env.StdErr.WriteLine(t($"{env.ToolName}: 探せるファイルがありません",
+                                   $"{env.ToolName}: no searchable files"));
+            return UvfExit.Error;
+        }
+    }
+
+    /// <summary>
+    /// 検索の前に「pbf か・圧縮か」を見る。名前が圧縮・zip・pbf らしいものだけ開いて確かめ、ほかは平文として
+    /// 検索で開いたときに先頭で確かめる（<see cref="MultiFileSearch"/> の verifyPlain）。
+    /// pbf の判定・圧縮の判定・検索の前の判定で 1本ずつ順に3回開いていて、カーネル 8.6 万本で検索の前に
+    /// 約 22 秒かかった（2026-10-02）。開くこと自体が重い（8.6 万本を1回開くだけで約 2 秒）ので、1回で済ませる。
+    /// </summary>
+    private static (bool Pbf, CompressedProbe Probe)[] Survey(IReadOnlyList<string> files)
+    {
+        var looks = new (bool Pbf, CompressedProbe Probe)[files.Count];
+        Parallel.For(0, files.Count, new ParallelOptions { MaxDegreeOfParallelism = Math.Max(8, Environment.ProcessorCount * 2) }, i =>
+        {
+            string file = files[i];
+            if (!CompressedInput.NameLooksCompressed(file) && !file.EndsWith(".pbf", StringComparison.OrdinalIgnoreCase))
+            {
+                looks[i] = (false, CompressedProbe.Plain);   // 検索で開いたときに確かめる
+                return;
+            }
+            Span<byte> head = stackalloc byte[OsmPbfFile.HeadBytes];
+            int got;
+            try
+            {
+                using var stream = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete, 1);
+                got = stream.ReadAtLeast(head, head.Length, throwOnEndOfStream: false);
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+                looks[i] = (false, CompressedInput.Probe(file));   // 読めない理由は従来の判定で出す
+                return;
+            }
+            if (OsmPbfFile.IsHead(head[..got])) { looks[i] = (true, CompressedProbe.Plain); return; }
+            looks[i] = (false, CompressedInput.PlainFromHead(file, head[..got]) ?? CompressedInput.Probe(file));
+        });
+        return looks;
     }
 
     /// <summary>

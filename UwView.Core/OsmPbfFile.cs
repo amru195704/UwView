@@ -11,19 +11,27 @@ namespace UwView.Core;
 /// </summary>
 public static class OsmPbfFile
 {
+    /// <summary>判定に読む先頭の大きさ。</summary>
+    public const int HeadBytes = 64;
+
+    /// <summary>読み込み済みの先頭（<see cref="HeadBytes"/> まで）で判定する（たくさんのファイルを1回ずつ開いて見るとき用）。</summary>
+    public static bool IsHead(ReadOnlySpan<byte> head)
+    {
+        if (head.Length < 16) return false;
+        int headerLength = BinaryPrimitives.ReadInt32BigEndian(head);
+        if (headerLength is < 9 or > 64) return false;      // BlobHeader は小さい
+        return head[4..Math.Min(head.Length, HeadBytes)].IndexOf("OSMHeader"u8) >= 0;
+    }
+
     /// <summary>先頭が <c>[長さ4バイト][BlobHeader("OSMHeader")]</c> なら pbf。</summary>
     public static bool Is(string path)
     {
         try
         {
             using var file = File.OpenRead(path);
-            Span<byte> head = stackalloc byte[64];
+            Span<byte> head = stackalloc byte[HeadBytes];
             int got = file.ReadAtLeast(head, head.Length, throwOnEndOfStream: false);
-            if (got < 16) return false;
-
-            int headerLength = BinaryPrimitives.ReadInt32BigEndian(head);
-            if (headerLength is < 9 or > 64) return false;      // BlobHeader は小さい
-            return head[4..got].IndexOf("OSMHeader"u8) >= 0;
+            return IsHead(head[..got]);
         }
         catch (IOException) { return false; }
         catch (UnauthorizedAccessException) { return false; }

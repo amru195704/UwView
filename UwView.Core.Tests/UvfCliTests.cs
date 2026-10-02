@@ -422,6 +422,30 @@ public class UvfCliTests : IDisposable
     }
 
     /// <summary>
+    /// 名前は普通でも中身が圧縮・pbf のものは、検索で開いたときに先頭で見分ける（v1.7.3.6.5 で検索の前の判定を省いた）。
+    /// 圧縮はその場で展開して探し、出力は並びどおり。pbf は断って exit 2。
+    /// </summary>
+    [Fact]
+    public async Task 名前が普通でも中身で圧縮とpbfを見分ける()
+    {
+        File.WriteAllText(P("a.log"), "a seq=7 first\n");
+        File.Copy(Path.Combine(AppContext.BaseDirectory, "TestData", "sample.log.zst"), P("b.log.1"));   // zstd の中身
+        var header = new byte[] { 0, 0, 0, 14, 0x0A, 9 };
+        File.WriteAllBytes(P("c.dat"), [.. header, .. "OSMHeader"u8, .. new byte[32]]);                  // pbf の中身
+        File.WriteAllText(P("d.log"), "d seq=7 last\n");
+        string expectedB = File.ReadLines(Path.Combine(AppContext.BaseDirectory, "TestData", "sample.log"))
+            .Select((line, i) => (line, i)).Where(x => x.line.Contains("seq=7 ")).Select(x => $"b.log.1:{x.i + 1}\t{x.line}\n")
+            .Aggregate("", (a, b) => a + b);
+
+        var run = await InDir("*", "seq=7 ");
+
+        Assert.Equal(UvfExit.Error, run.Exit);
+        Assert.Equal("a.log:1\ta seq=7 first\n" + expectedB + "d.log:1\td seq=7 last\n", run.Out);
+        Assert.Contains("c.dat", run.Err);
+        Assert.Contains("pbf", run.Err);
+    }
+
+    /// <summary>
     /// gz は「テキストを圧縮したもの」だけを扱う（オーナー指摘 2026-09-24）。
     /// 画像やデータベースを gzip したものを索引にしても探せず、時間とディスクだけを使う。
     /// ただし UTF-16 は 0 バイトを含むがテキストなので、BOM があれば通す。

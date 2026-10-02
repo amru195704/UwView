@@ -139,11 +139,14 @@ public static class CompressedInput
     /// </summary>
     public static CompressedProbe? PlainFromHead(string path, ReadOnlySpan<byte> head)
     {
-        if (HasExtension(path, ".tgz") || HasExtension(path, GzipExtension) || HasExtension(path, ZipExtension)
-            || NewFormatExtensions.Any(e => HasExtension(path, e)))
-            return null;
+        if (NameLooksCompressed(path)) return null;
         return CompressedFormats.Sniff(head, path) == CompressedKind.None ? CompressedProbe.Plain : null;
     }
+
+    /// <summary>名前が圧縮・zip のもの（中身を見なくても詳しく確かめる対象）。</summary>
+    public static bool NameLooksCompressed(string path)
+        => HasExtension(path, ".tgz") || HasExtension(path, GzipExtension) || HasExtension(path, ZipExtension)
+           || NewFormatExtensions.Any(e => HasExtension(path, e));
 
     /// <summary>v1.7.1 で足した形式の拡張子（名前と中身の食い違いを見つけるため）。</summary>
     private static readonly string[] NewFormatExtensions =

@@ -29,14 +29,24 @@ public static class MultiFileSearch
     /// <param name="Hits">全ファイル合計のヒット行数。</param>
     /// <param name="Truncated">上限で打ち切ったファイルがあったか。</param>
     /// <param name="Failed">読めなかったファイルと理由。</param>
-    public readonly record struct Result(long Hits, bool Truncated, IReadOnlyList<(string File, string Reason)> Failed);
+    /// <param name="Skipped">
+    /// 開いてみたら平文でなかったので探さなかったもの（<c>verifyPlain</c> のときだけ。並びは指定順）。
+    /// Pbf なら pbf、そうでなければ <c>Probe</c> が zip か断る理由を持つ。
+    /// </param>
+    public readonly record struct Result(long Hits, bool Truncated, IReadOnlyList<(string File, string Reason)> Failed,
+                                         IReadOnlyList<(string File, bool Pbf, CompressedProbe Probe)>? Skipped = null);
 
     /// <param name="withFileName">各行の先頭にファイル名を付ける（grep 互換）。</param>
     /// <param name="threads">同時に走らせる本数（<see cref="ThreadBudget"/> で決めた値）。</param>
     public static async Task<Result> RunAsync(
         IReadOnlyList<string> files, SearchOptions options, bool invert, bool json, bool lineNumbers,
-        bool withFileName, int threads, TextWriter output, CancellationToken ct)
+        bool withFileName, int threads, TextWriter output, CancellationToken ct,
+        IReadOnlyList<CompressedKind>? kinds = null, bool verifyPlain = false)
     {
+        // verifyPlain: kinds で平文としたものを、開いたときに先頭で確かめる（下調べで全部を開き直さないため。
+        // 開くこと自体が重く、カーネル 8.6 万本を1回開くだけで約 2 秒かかる。2026-10-02）。
+        // 中身が圧縮ならその場で展開して探し（並びは変えない）、pbf・zip・断るものは探さずに Skipped へ
+        var skipped = new (bool Pbf, CompressedProbe Probe)?[files.Count];
         long hits = 0;
         bool truncated = false;
         var failed = new List<(string, string)>();
@@ -51,7 +61,8 @@ public static class MultiFileSearch
         // xz の並列展開に回せる本数は、xz の部品の数で割る。ほかの形式は1スレッドで展開するので数に入れない。
         // ファイル数で割ると、gz＋xz＋zst＋gz では xz が 2 本しかもらえず、ほかが先に終わったあとも
         // xz だけが 2 本で走り続けて全体を待たせた（管理部の混在テスト 2026-09-24: rg -z の 1/1.85）
-        var kinds = files.Select(f => CompressedInput.Probe(f).Kind).ToArray();
+        // 呼び手が下調べ済みなら、その結果を使う（1本ずつ開き直すと 8.6 万本で約 7 秒。2026-10-02）
+        kinds ??= files.Select(f => CompressedInput.Probe(f).Kind).ToArray();
         int decodeThreads = DecodeThreadsFor(kinds, threads);
 
         // 枠は<b>指定順に</b>取る。順番待ち（turn）は前のファイルの完了を待つので、
@@ -76,7 +87,8 @@ public static class MultiFileSearch
                 try
                 {
                     var one = await OneFileAsync(file, kinds[index], options, invert, json, lineNumbers,
-                                                 withFileName ? file : null, index, turn, output, ct, decodeThreads);
+                                                 withFileName ? file : null, index, turn, output, ct, decodeThreads,
+                                                 verifyPlain ? skipped : null);
                     Interlocked.Add(ref hits, one.Hits);
                     if (one.Truncated) truncated = true;
                     if (one.Reason is { } reason) lock (failedLock) failed.Add((file, reason));
@@ -86,7 +98,10 @@ public static class MultiFileSearch
         }
 
         await Task.WhenAll(tasks);
-        return new Result(hits, truncated, failed);
+        var notSearched = new List<(string File, bool Pbf, CompressedProbe Probe)>();
+        for (int i = 0; i < files.Count; i++)
+            if (skipped[i] is { } s) notSearched.Add((files[i], s.Pbf, s.Probe));
+        return new Result(hits, truncated, failed, notSearched);
     }
 
     /// <summary>xz の部品1本あたりの展開スレッド数（全体の本数を、xz の部品の数で割る）。</summary>
@@ -95,7 +110,8 @@ public static class MultiFileSearch
 
     private static async Task<(long Hits, bool Truncated, string? Reason)> OneFileAsync(
         string file, CompressedKind kind, SearchOptions options, bool invert, bool json, bool lineNumbers, string? name,
-        int index, TaskCompletionSource[] turn, TextWriter output, CancellationToken ct, int decodeThreads)
+        int index, TaskCompletionSource[] turn, TextWriter output, CancellationToken ct, int decodeThreads,
+        (bool Pbf, CompressedProbe Probe)?[]? skipped = null)
     {
         var buffer = new StringWriter { NewLine = "\n" };
         TextWriter writer = buffer;   // 自分の番が来るまでは手元に貯める
@@ -118,9 +134,29 @@ public static class MultiFileSearch
         {
             // 圧縮（gz・bz2・xz・lzma・zstd）は展開しながら探す（1ファイルのときと同じ読み口。
             // 切れていれば読み終えたところで気づく）
-            await using IByteSource source = CompressedFormats.IsSingleStream(kind)
+            IByteSource source = CompressedFormats.IsSingleStream(kind)
                 ? new CompressedStreamByteSource(file, kind, decodeThreads)
                 : new SequentialFileByteSource(file);
+            if (skipped is not null && kind == CompressedKind.None)
+            {
+                Span<byte> head = stackalloc byte[OsmPbfFile.HeadBytes];
+                int got = source.Read(0, head);
+                bool pbf = OsmPbfFile.IsHead(head[..got]);
+                if (pbf || CompressedInput.PlainFromHead(file, head[..got]) is null)
+                {
+                    await source.DisposeAsync();
+                    var probe = pbf ? CompressedProbe.Plain : CompressedInput.Probe(file);
+                    if (pbf || probe.Kind == CompressedKind.Zip || probe.IsRejected)
+                    {
+                        skipped[index] = (pbf, probe);
+                        source = new EmptyByteSource();     // 探さない（空として順番だけ通す）
+                    }
+                    else source = CompressedFormats.IsSingleStream(probe.Kind)
+                        ? new CompressedStreamByteSource(file, probe.Kind, decodeThreads)
+                        : new SequentialFileByteSource(file);
+                }
+            }
+            await using var _ = source;
             var detected = EncodingDetector.Detect(source);
             var encoding = detected.Encoding;
 
@@ -148,6 +184,14 @@ public static class MultiFileSearch
         await output.FlushAsync(ct);
         turn[index + 1].TrySetResult();
         return (hits, truncated, reason);
+    }
+
+    /// <summary>探さないと決めたファイルの代わり（開いたものは閉じてある）。</summary>
+    private sealed class EmptyByteSource : IByteSource
+    {
+        public long Length => 0;
+        public int Read(long offset, Span<byte> buffer) => 0;
+        public ValueTask DisposeAsync() => ValueTask.CompletedTask;
     }
 
     /// <summary>テキスト1行（grep 互換: 複数ファイルのときだけファイル名を前置する）。</summary>
