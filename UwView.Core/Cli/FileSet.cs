@@ -37,9 +37,13 @@ public static class FileSet
     /// <c>--ignore-file</c> で足した規則が効いているか。効いているなら、知らせに <c>--no-ignore-files</c> も添える
     /// （<c>--no-ignore</c> は足した規則を止めないため。外部レビュー 2026-09-27）。
     /// </param>
+    /// <param name="LinkedFiles">
+    /// 外したシンボリックリンクのファイルの数。<c>--no-ignore</c> でも含めない（ripgrep も同じ。たどるのは <c>-L</c>）。
+    /// </param>
     public readonly record struct Result(IReadOnlyList<string> Files, IReadOnlyList<string> Missing,
                                          int IgnoredFiles = 0, int IgnoredFolders = 0,
-                                         IReadOnlyList<string>? MissingByIgnore = null, bool ExtraRules = false)
+                                         IReadOnlyList<string>? MissingByIgnore = null, bool ExtraRules = false,
+                                         int LinkedFiles = 0)
     {
         public int Ignored => IgnoredFiles + IgnoredFolders;
 
@@ -53,13 +57,20 @@ public static class FileSet
 
         /// <summary><c>--files</c> の最後に出す知らせ（何も外していなければ null）。</summary>
         public string? IgnoredNotice(bool ja, string tool)
-            => Ignored == 0 ? null
-             : ja ? $"{tool}: 除外 {IgnoredFiles:N0} 本"
-                    + (IgnoredFolders > 0 ? $"・フォルダー {IgnoredFolders:N0} 個（中は見ていません）" : "")
-                    + $"（.gitignore ほか。{HowToIncludeJa}）"
-                  : $"{tool}: {IgnoredFiles:N0} files excluded"
-                    + (IgnoredFolders > 0 ? $" and {IgnoredFolders:N0} folders not entered" : "")
-                    + $" (.gitignore and others; {HowToIncludeEn})";
+        {
+            var parts = new List<string>();
+            if (Ignored > 0)
+                parts.Add(ja ? $"除外 {IgnoredFiles:N0} 本"
+                               + (IgnoredFolders > 0 ? $"・フォルダー {IgnoredFolders:N0} 個（中は見ていません）" : "")
+                               + $"（.gitignore ほか。{HowToIncludeJa}）"
+                             : $"{IgnoredFiles:N0} files excluded"
+                               + (IgnoredFolders > 0 ? $" and {IgnoredFolders:N0} folders not entered" : "")
+                               + $" (.gitignore and others; {HowToIncludeEn})");
+            if (LinkedFiles > 0)
+                parts.Add(ja ? $"シンボリックリンク {LinkedFiles:N0} 本は対象にしません（ripgrep と同じ。名前で書けば探します）"
+                             : $"{LinkedFiles:N0} symbolic links skipped (as ripgrep does; name a link to search it)");
+            return parts.Count == 0 ? null : $"{tool}: " + string.Join(ja ? "／" : "; ", parts);
+        }
 
         /// <summary>1件も当たらなかった断片の知らせ（除外のせいなら、そう添える）。</summary>
         public string MissingNotice(string fragment, bool ja, string tool)
@@ -145,7 +156,8 @@ public static class FileSet
         }
         var options = ignore ?? IgnoreOptions.Default;
         bool extraRules = options.ExtraEnabled && options.ExtraFiles is { Count: > 0 };
-        return new Result(files, missing, walk.IgnoredFiles.Count, walk.IgnoredFolders.Count, missingByIgnore, extraRules);
+        return new Result(files, missing, walk.IgnoredFiles.Count, walk.IgnoredFolders.Count, missingByIgnore, extraRules,
+                          walk.LinkedFiles.Count);
     }
 
     /// <summary>1回の展開で共有するもの（除外ファイルはフォルダーごとに1回だけ読む）。</summary>
@@ -154,6 +166,7 @@ public static class FileSet
         public IgnoreTree Ignore { get; } = ignore;
         public HashSet<string> IgnoredFiles { get; } = new(StringComparer.Ordinal);
         public HashSet<string> IgnoredFolders { get; } = new(StringComparer.Ordinal);
+        public HashSet<string> LinkedFiles { get; } = new(StringComparer.Ordinal);
     }
 
     /// <summary>
@@ -214,7 +227,8 @@ public static class FileSet
     /// 1段ずつ照合する（<c>*</c> <c>?</c> は1段の中だけ・<c>**</c> は0段以上）。
     ///
     /// 隠しファイル・隠しフォルダーは見ない（.NET の既定。Unix は <c>.</c> で始まる名前）。
-    /// シンボリックリンクのフォルダーは下りない（ループを避ける）。リンクのファイルは対象にする。
+    /// シンボリックリンクは、フォルダーには下りず（ループを避ける）、ファイルも対象にしない
+    /// （ripgrep と同じ。同じ中身を2回数えない。名前で書いたリンクは探す。2026-10-02）。
     /// </summary>
     /// 除外（.ignore・.gitignore）に当たるファイルは拾わず、当たるフォルダーには降りない（指示書 §12）。
     /// </summary>
@@ -262,10 +276,12 @@ public static class FileSet
 
     private static IEnumerable<string> Files(string directory, string pattern, WalkState walk)
     {
-        foreach (string path in Directory.EnumerateFiles(directory, "*", Listing))
+        foreach (var file in new DirectoryInfo(directory).EnumerateFiles("*", Listing))
         {
-            if (IsDotName(Path.GetFileName(path))) continue;
-            if (!FileSystemName.MatchesSimpleExpression(pattern, Path.GetFileName(path), IgnoreCase)) continue;
+            string path = file.FullName;
+            if (IsDotName(file.Name)) continue;
+            if (!FileSystemName.MatchesSimpleExpression(pattern, file.Name, IgnoreCase)) continue;
+            if ((file.Attributes & FileAttributes.ReparsePoint) != 0) { walk.LinkedFiles.Add(path); continue; }
             if (walk.Ignore.IsIgnored(path, isDirectory: false, directory)) { walk.IgnoredFiles.Add(path); continue; }
             yield return path;
         }

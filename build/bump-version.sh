@@ -16,7 +16,15 @@ cd "$(dirname "$0")/.."
 # 版数を書いてあるところ（GUI 本体と CLI。両方そろえる）
 FILES=(UwView/UwView.csproj UwView.Cli/UwView.Cli.csproj)
 
-current() { grep -oE '<Version>[^<]+' "${FILES[0]}" | sed 's/<Version>//' | head -1; }
+# 表示する版数。.NET の <Version> は数字 4 つまでなので、5 つ目まで使う版（1.7.3.6.2 のような修正版）は
+# <InformationalVersion> に全部を書き、<Version> には先頭 4 つを書く（UVP と同じ。2026-10-02）。
+# build/publish.sh も表示する版数をファイル名に使う
+current() {
+  local v
+  v="$(grep -oE '<InformationalVersion>[^<]+' "${FILES[0]}" | sed 's/<InformationalVersion>//' | head -1)"
+  [ -n "$v" ] || v="$(grep -oE '<Version>[^<]+' "${FILES[0]}" | sed 's/<Version>//' | head -1)"
+  echo "$v"
+}
 
 case "${1:-}" in
   --show) current; exit 0 ;;
@@ -26,7 +34,7 @@ import sys
 parts = sys.argv[1].split('.')
 while len(parts) < 3: parts.append('0')
 if len(parts) == 3: parts.append('1')          # 1.7.0 → 1.7.0.1
-else: parts[3] = str(int(parts[3]) + 1)        # 1.7.0.1 → 1.7.0.2
+else: parts[-1] = str(int(parts[-1]) + 1)      # 1.7.0.1 → 1.7.0.2・1.7.3.6.1 → 1.7.3.6.2
 print('.'.join(parts))
 PY
 )" ;;
@@ -39,8 +47,18 @@ for f in "${FILES[@]}"; do
 import re, sys
 path, version = sys.argv[1], sys.argv[2]
 text = open(path, encoding='utf-8-sig').read()
-new, n = re.subn(r'<Version>[^<]+</Version>', f'<Version>{version}</Version>', text, count=1)
+four = '.'.join(version.split('.')[:4])          # .NET の版数（数字 4 つまで）
+new, n = re.subn(r'<Version>[^<]+</Version>', f'<Version>{four}</Version>', text, count=1)
 if n != 1: raise SystemExit(f'{path}: <Version> が見つかりません')
+# 表示する版数（そのまま）。無ければ <Version> の次の行に足す。.NET が付けるコミット番号（+abc）は付けない
+if '<InformationalVersion>' in new:
+    new = re.sub(r'<InformationalVersion>[^<]+</InformationalVersion>',
+                 f'<InformationalVersion>{version}</InformationalVersion>', new, count=1)
+else:
+    new = re.sub(r'(\n(\s*)<Version>[^<]+</Version>)',
+                 lambda m: f'{m.group(1)}\n{m.group(2)}<InformationalVersion>{version}</InformationalVersion>'
+                           f'\n{m.group(2)}<IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>',
+                 new, count=1)
 open(path, 'w', encoding='utf-8-sig').write(new)
 PY
 done

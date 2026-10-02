@@ -160,6 +160,11 @@ namespace UwView.Cli
         /// </summary>
         private static string VersionText()
         {
+            // 5つ目まで使う版（1.7.3.6.2）は InformationalVersion から（本体の App.VersionText と同じ）
+            string? info = System.Reflection.CustomAttributeExtensions
+                .GetCustomAttribute<System.Reflection.AssemblyInformationalVersionAttribute>(typeof(InProcess).Assembly)
+                ?.InformationalVersion?.Split('+')[0];
+            if (info is not null && System.Text.RegularExpressions.Regex.IsMatch(info, @"^\d+(\.\d+){4,}$")) return info;
             var v = typeof(InProcess).Assembly.GetName().Version;
             if (v is null) return "1.0";
             return v.Revision > 0 ? v.ToString(4) : v.ToString(3);

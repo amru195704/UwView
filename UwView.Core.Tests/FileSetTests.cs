@@ -234,4 +234,43 @@ public class FileSetTests : IDisposable
         }
         finally { Directory.Delete(dir, recursive: true); }
     }
+
+    /// <summary>リンクを作る（Windows で権限が無ければ作れないので false）。</summary>
+    private bool TryLink(string link, string target, bool directory)
+    {
+        string path = Path.Combine(_dir, link.Replace('/', Path.DirectorySeparatorChar));
+        try
+        {
+            if (directory) Directory.CreateSymbolicLink(path, target);
+            else File.CreateSymbolicLink(path, target);
+            return true;
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { return false; }
+    }
+
+    [Fact]
+    public void ワイルドカードではシンボリックリンクのファイルを外し名前で書けば探す()
+    {
+        // ripgrep と同じ（同じ中身を2回数えない）。フォルダーへのリンクには、もともと下りない（2026-10-02）
+        Make("real/a.log", "real/sub/b.log", "other/c.log");
+        if (!TryLink("real/link-a.log", Path.Combine(_dir, "real", "a.log"), directory: false)) return;
+        if (!TryLink("real/link-dir", Path.Combine(_dir, "other"), directory: true)) return;
+
+        var found = FileSet.Expand("real/**/*.log", _dir);
+        Assert.Equal(["real/a.log", "real/sub/b.log"], found.Files.Select(p => p.Replace('\\', '/')));
+        Assert.Equal(1, found.LinkedFiles);
+        Assert.Equal(0, found.Ignored);
+        Assert.Contains("シンボリックリンク 1 本は対象にしません", found.IgnoredNotice(ja: true, "uvf"));
+        Assert.Contains("1 symbolic links skipped", found.IgnoredNotice(ja: false, "uvf"));
+
+        Assert.Equal(["real/link-a.log"], Expand("real/link-a.log"));   // 名前で書いたリンクは探す
+        Assert.Equal(0, FileSet.Expand("real/link-a.log", _dir).LinkedFiles);
+    }
+
+    [Fact]
+    public void リンクも除外も無ければ知らせは出さない()
+    {
+        Make("a.log");
+        Assert.Null(FileSet.Expand("*.log", _dir).IgnoredNotice(ja: true, "uvf"));
+    }
 }

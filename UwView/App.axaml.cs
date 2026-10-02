@@ -239,9 +239,13 @@ public partial class App : Application
     /// <summary>
     /// 表示する版数。4つ目まで使っている版（1.6.6.1 のような修正版）は4つ目まで出す
     /// （3つで切っていたため 1.6.6.1 が「1.6.6」と表示されていた。オーナー指摘 2026-09-21）。
+    /// 5つ目まで使う版（1.7.3.6.2）は .NET の版数に入らないので、csproj の InformationalVersion から出す。
     /// </summary>
     public static string VersionText(System.Reflection.Assembly assembly)
     {
+        string? info = System.Reflection.CustomAttributeExtensions
+            .GetCustomAttribute<System.Reflection.AssemblyInformationalVersionAttribute>(assembly)?.InformationalVersion?.Split('+')[0];
+        if (info is not null && System.Text.RegularExpressions.Regex.IsMatch(info, @"^\d+(\.\d+){4,}$")) return info;
         var v = assembly.GetName().Version;
         if (v is null) return "1.0";
         return v.Revision > 0 ? v.ToString(4) : v.ToString(3);

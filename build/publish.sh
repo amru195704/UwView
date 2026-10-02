@@ -17,7 +17,9 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 APP_PROJ="UwView.Desktop/UwView.Desktop.csproj"
-VER=$(grep -oE '<Version>[^<]+' UwView/UwView.csproj | sed 's/<Version>//' | head -1)
+# 表示する版数（<InformationalVersion>。5 つ目まで使う版のため。無ければ <Version>）
+VER=$(grep -oE '<InformationalVersion>[^<]+' UwView/UwView.csproj | sed 's/<InformationalVersion>//' | head -1)
+[ -n "$VER" ] || VER=$(grep -oE '<Version>[^<]+' UwView/UwView.csproj | sed 's/<Version>//' | head -1)
 : "${VER:=0.0.0}"
 OUT="${OUT:-dist}"   # 試験用に別フォルダへ出せる（例: OUT=distWideField ./build/publish.sh）
 
