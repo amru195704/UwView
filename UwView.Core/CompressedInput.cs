@@ -133,6 +133,18 @@ public static class CompressedInput
         }
     }
 
+    /// <summary>
+    /// 読み込み済みの先頭だけで「ただの平文」と決まるなら <see cref="CompressedProbe.Plain"/>、決まらなければ null
+    /// （そのときは <see cref="Probe"/> で確かめる）。たくさんのファイルを束ねるとき、1本につき開くのを1回で済ませる。
+    /// </summary>
+    public static CompressedProbe? PlainFromHead(string path, ReadOnlySpan<byte> head)
+    {
+        if (HasExtension(path, ".tgz") || HasExtension(path, GzipExtension) || HasExtension(path, ZipExtension)
+            || NewFormatExtensions.Any(e => HasExtension(path, e)))
+            return null;
+        return CompressedFormats.Sniff(head, path) == CompressedKind.None ? CompressedProbe.Plain : null;
+    }
+
     /// <summary>v1.7.1 で足した形式の拡張子（名前と中身の食い違いを見つけるため）。</summary>
     private static readonly string[] NewFormatExtensions =
         [".bz2", ".bzip2", ".xz", ".lzma", ".zst", ".zstd", ".lz4", ".br", ".tbz2", ".txz"];
