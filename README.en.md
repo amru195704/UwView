@@ -7,10 +7,11 @@
 **The CLI (`uvf`) searches as fast as ripgrep, and the GUI opens files as fast as klogg.** The difference is that the two **connect in a single pass**. Type `uvf file 'word' -open` and the GUI opens the moment the search ends, with the hits already listed. **The GUI does not search again.**
 
 📥 **[Download (free)](https://github.com/amru195704/UwView/releases/latest)** · 🌐 **[Official site](https://uvp.y42u.net/en/)** · 🧪 **[Try it in your browser](https://amru195704.github.io/UwView/)**  
-📖 **[uvf command manual](2-doc/uvf_コマンド操作マニュアル.md)** · 🖥 **[GUI manual](2-doc/UwView_操作マニュアル.md)** ([PDF](2-doc/UwView_操作マニュアル.pdf)) — both in Japanese · 🧾 **[v1.7.3.6.7 release notes](2-doc/release-body-v1.7.3.6.7.md#uwview-v17367--wide-field-english)**  
+📖 **[uvf command manual](2-doc/uvf_コマンド操作マニュアル.md)** · 🖥 **[GUI manual](2-doc/UwView_操作マニュアル.md)** ([PDF](2-doc/UwView_操作マニュアル.pdf)) — both in Japanese · 🧾 **[v1.7.3.6.9 release notes](2-doc/release-body-v1.7.3.6.9.md#uwview-v17369--wide-field-english)**  
 ▶ **[Watch on YouTube (English)](https://www.youtube.com/playlist?list=PLBJs4svTLd_w)** · [Japanese](https://www.youtube.com/playlist?list=PLVa-Z1XEnkKs) · [Channel @uwviewapp](https://www.youtube.com/@uwviewapp)
 
-> **The latest release is v1.7.3.6.7 "Wide Field".** Search many files with a single wildcard. Mix plain text with **seven compressed formats** (gz, bz2, xz, lzma, zst, lz4, br) in one run — no external commands needed.
+> **The latest release is v1.7.3.6.9 "Wide Field".** Search many files with a single wildcard. Mix plain text with **seven compressed formats** (gz, bz2, xz, lzma, zst, lz4, br) in one run — no external commands needed.
+> In v1.7.3.6.9 the second search of a cached file is at or above ripgrep, and **on macOS, Windows and Linux the overall result is 2.49× / 3.42× / 1.88×** the combinations of ripgrep and friends ([results on three systems](#results-on-three-operating-systems)).
 
 ---
 
@@ -22,16 +23,16 @@
 | **Search the same compressed log again** | Every tool decompresses again (bz2 takes 7–8 s) | **`uvp` takes 0.11–0.12 s in every format** (**62×** `uvf` on bz2) |
 | **Search 12 gz/plain files, ~60 GB uncompressed** | zgrep 89.35 s | **`uvf` 17.60 s (5.08×)** |
 | **Search 50 GB and read the hits in the GUI** | klogg (open + search) 108.1 s | **`uvf … -open` 50.76 s (2.13×)** |
-| **Ask a 50 GB file a second question** | ripgrep 55.50 s | **`uvp` 6.47 s (8.6×)** |
+| **Ask a 50 GB file a second question** | ripgrep 70.33 s | **`uvp` 6.45 s (10.9×)** |
 | **Search 258 GB / 4.5 billion lines and hand the hits to the GUI** | klogg needs 258 s just to finish opening | **`uvf … -open` 261.37 s**, search done and hit list shown |
 
 **`uvf` (CLI) and the GUI are the free edition.** Only the `uvp` rows (2nd and 5th) are the paid [UwView Pro](https://uvp.y42u.net/en/pro-en/) (14-day free trial).
 
 **Where we lose, first.**
 
-- **Searching several plain-text files together, ripgrep was slightly faster** (5 plain files: `uvf` at 1/1.17 of ripgrep — under 1.5×, so on par).
-- **Searching a 3 GB file a second time in a row, ripgrep is slightly faster** (0.32 s vs 0.42 s — also on par). The file fits in memory, so the second run is a race to read from the cache.
-- **`uvp` takes 2.34× as long as `uvf` the first time it bundles several files** (12 files: 41.23 s vs 17.60 s), because it writes the bundled index. From the second search on it is 1.85× faster than `uvf`, so it pulls ahead after four searches in total.
+- **On many small files, ripgrep is slightly faster** (Linux kernel source, 86,000 files, five searches combined: `uvf` at 1/1.20 of ripgrep — under 1.5×, so on par).
+- **On Windows, ripgrep was faster for some compressed formats** (xz, zst and lz4 at 1/1.5–1/2.1; on par or better on macOS and Linux). We are still looking into why.
+- **Because `uvp` builds an index the first time, a one-off search can be slower than ripgrep** (bundling 12 files: 42.45 s vs ripgrep 28.19 s). From the second search on it is 2.3× faster than ripgrep, so two searches come out even and the gap opens from the third.
 
 > A difference under 1.5× is written as "on par", never as a win. Timings are from one Mac (conditions at the [end of this page](#where-the-numbers-come-from)). **Do not compare seconds across machines.**
 
@@ -83,21 +84,49 @@ Plain search for 東京 (seconds; cold = right after dropping the cache / hot = 
 
 | | ripgrep 15.2.0 | **`uvf`** (free) | **`uvp`** (Pro; 1st run includes building the index) |
 |---|---:|---:|---:|
-| 3 GB | 3.26 / 0.32 | **3.04** / 0.42 | 3.43 / **0.29** |
-| 10 GB | 10.91 / 0.99 | 11.08 / 1.33 | 11.79 / **0.95** |
-| 50 GB | 56.06 / 55.50 | **51.49 / 50.52** | 58.42 / **6.47** |
+| 3 GB | 3.26 / 0.31 | **3.04 / 0.29** | 3.43 / **0.29** |
+| 10 GB | 10.94 / 0.97 | **10.15 / 0.88** | 11.82 / 1.00 |
+| 50 GB | 64.68 / 70.33 | **50.66 / 55.94** | 58.81 / **6.45** |
 
-**`uvf` is on par with ripgrep at every size.** At 50 GB the file does not fit in memory, so neither ripgrep nor `uvf` gets faster the second time. **Only `uvp` does: 6.47 s on the second run** — **8.6×** ripgrep.
+**`uvf` is on par with ripgrep or better at every size, on both the first and the second run** (v1.7.3.6.9 made counting newlines for line numbers 5× faster, which put the second run ahead of ripgrep too). At 50 GB the file does not fit in memory, so neither ripgrep nor `uvf` gets faster the second time (ripgrep's second run varies between 55 and 70 s from one measurement to the next). **Only `uvp` does: 6.45 s on the second run** — **10.9×** ripgrep.
 
 Seven searches (plain, `-i`, `-E`, `-E` anchored, `-E -i`, `-v`, `-E -v`), cold + hot total:
 
 | | ripgrep | **`uvf`** | **`uvp`** |
 |---|---:|---:|---:|
-| 3 GB | 31.25 s | 30.03 s (on par) | **14.67 s (2.13×)** |
-| 10 GB | 89.59 s | 88.01 s (on par) | **30.25 s (2.96×)** |
-| 50 GB | 828.97 s | 749.14 s (on par) | **238.59 s (3.47×)** |
+| 3 GB | 33.63 s | 33.55 s (on par) | **14.05 s (2.39×)** |
+| 10 GB | 95.41 s | 81.99 s (on par) | **29.07 s (3.28×)** |
+| 50 GB | 870.64 s | 768.93 s (on par) | **232.98 s (3.74×)** |
 
-Across all 96 items (searches plus filtering, counting, sorting, head/tail, writing out, gz input and more) against combinations of rg, sed, sort, uniq and gzip, the overall result is **2.46×**, with **zero mismatched results**.
+Across all 96 items (searches plus filtering, counting, sorting, head/tail, writing out, gz input and more) against combinations of rg, sed, sort, uniq and gzip, the overall result is **2.49×**, with **zero mismatched results**.
+
+### Many small files
+
+The Linux kernel source (86,602 files, about 22 KB on average) searched with `uvf 'src/linux/**' word -H`. Five searches (0 to 38,253 matching lines), totals in seconds:
+
+| | First (cold) | Second (hot) | Total |
+|---|---:|---:|---:|
+| ripgrep 15.2.0 | 22.76 | 7.47 | 30.22 |
+| **`uvf`** (free) | 26.49 | 9.72 | 36.21 (1/1.20, on par) |
+| **`uvp`** (Pro; the first search bundles all 86,000 files into one `.uwvz`) | 10.76 | **1.42** | **12.19 (2.48×)** |
+
+This is where **ripgrep is slightly faster** (under 1.5×, so on par). In v1.7.3.6.5 the second run took about 18× as long as ripgrep, and in v1.7.3.6.8 still about 2.2×. If you search the same place again and again, use `uvp`: from the second search on, about 0.3 s.
+
+### Results on three operating systems
+
+The same suite was run on macOS, Windows and Linux. **All correctness tests (66 input types, 36 multi-file, 43 exclusion) passed on all three, and the speed runs had zero mismatched results.** Figures are ratios to ripgrep (above 1 = `uvf`/`uvp` faster); **seconds are never compared across systems**.
+
+| | macOS | Windows | Linux |
+|---|---|---|---|
+| Machine | Apple M4, 10 cores, 32 GB | x64, 8 logical cores, 16 GB | aarch64, **2 logical cores**, 7 GB |
+| `uvf`, one large file, seven searches (3 GB / 10 GB / 50 GB) | 1.00 / 1.16 / 1.13 | 1.48 / 1.90 / **2.47** | 1.31 / 1.13 / 1.33 |
+| `uvp`, the same seven (including building the index) | 2.39 / 3.28 / 3.74 | 2.22 / 2.81 / 3.44 | 1.62 / 2.45 / 1.99 |
+| `uvf`, many files (5 plain / 7 gz / 12 mixed) | 1.02 / 1.31 / 1.29 | 1.86 / 1.54 / 1.58 | 2.22 / 1.67 / 1.67 |
+| **Overall, 96 items** | **2.49** | **3.42** | **1.88** |
+
+- **The gap is larger on Windows and Linux than on the Mac.** On Windows ripgrep's first run is slow; on Linux (2 cores) `rg -z` pays for calling external decompressors.
+- **Weak spots**: on Windows, `uvf` is 1.5–2.1× slower than ripgrep on compressed xz, zst and lz4. On Linux, `uvp`'s first run (building the index) is heavy for fast-to-decompress zst and lz4 and for plain text, giving 1/1.2–1/1.4 over two runs.
+- Windows and Linux were measured with 1.7.3.6.8 (1.7.3.6.9 only changes searching many small files).
 
 > **If you use `rg` on Windows:** on a 50 GB file, `--no-mmap` makes it **2.89×** faster → **[Article](https://uvp.y42u.net/en/blog/uvp-rg-no-mmap-50gb-en/)**
 
@@ -141,12 +170,12 @@ The first time, every tool has to read the whole file at least once. That is phy
 
 | Same file, same word, second search (hot) | ripgrep | `uvf` (free) | **`uvp` (Pro)** |
 |---|---:|---:|---:|
-| 50 GB plain text | 55.50 s | 50.52 s | **6.47 s (8.6× ripgrep)** |
+| 50 GB plain text | 70.33 s | 55.94 s | **6.45 s (10.9× ripgrep)** |
 | 979 MB bz2 | 7.89 s | 7.43 s | **0.12 s (62× `uvf`)** |
 | 12 gz + plain files (~60 GB uncompressed) | 24.62 s | 17.60 s | **9.52 s (2.59× ripgrep)** |
 
-- **The first time, it is on par**: 50 GB, `uvp` 58.42 s vs ripgrep 56.06 s (while building the index).
-- **The 16 things only `uvp` does** — filtering, counting, sorting and so on — finish **5.12–7.44×** faster than combinations of rg, sed, sort and friends.
+- **The first time, it is on par**: 50 GB, `uvp` 58.81 s vs ripgrep 64.68 s (while building the index).
+- **The 16 things only `uvp` does** — filtering, counting, sorting and so on — finish **5.15–7.49×** faster than combinations of rg, sed, sort and friends.
 - **Delete the original and you can still search the `.uwvz`; `-extract` brings it back.** 51.25 GB becomes about 5.7 GB.
 - Text inside `.zip` files and OpenStreetMap `.pbf` files can be used as input too.
 - In the GUI, from the second time on it **opens in 0.01–0.07 s, with line numbers from the start**.
@@ -228,7 +257,7 @@ encoding detection (UTF-8, Shift-JIS, EUC-JP, UTF-16) / live tail / tabs, bookma
 |---|---|
 | 📖 **uvf command manual** (Japanese) | [2-doc/uvf_コマンド操作マニュアル.md](2-doc/uvf_コマンド操作マニュアル.md) — syntax, options, compressed files, regular expressions, exit codes, ripgrep cheat sheet, performance |
 | 🖥 **GUI manual** (Japanese) | [2-doc/UwView_操作マニュアル.md](2-doc/UwView_操作マニュアル.md) · [PDF](2-doc/UwView_操作マニュアル.pdf) — layout, search, hit list, file list and tabs, highlighter, keys |
-| 🧾 **v1.7.3.6.7 Wide Field release notes** | [release-body-v1.7.3.6.7.md](2-doc/release-body-v1.7.3.6.7.md#uwview-v17367--wide-field-english) (previous: [v1.7.3.6](2-doc/release-body-v1.7.3.6.md#uwview-v1736--wide-field-english)) |
+| 🧾 **v1.7.3.6.9 Wide Field release notes** | [release-body-v1.7.3.6.9.md](2-doc/release-body-v1.7.3.6.9.md#uwview-v17369--wide-field-english) (previous: [v1.7.3.6.7](2-doc/release-body-v1.7.3.6.7.md#uwview-v17367--wide-field-english), [v1.7.3.6](2-doc/release-body-v1.7.3.6.md#uwview-v1736--wide-field-english)) |
 | ▶ **Videos (YouTube)** | [Playlist "UwView\|English"](https://www.youtube.com/playlist?list=PLBJs4svTLd_w) · [Japanese](https://www.youtube.com/playlist?list=PLVa-Z1XEnkKs) · [Channel @uwviewapp](https://www.youtube.com/@uwviewapp) — how to use v1.7.3.6 in 8 topics, plus an overview video |
 | 📊 **All measurements and conditions** | [Benchmarks](https://uvp.y42u.net/en/benchmarks-en/) (EmEditor, klogg, 010 Editor, UltraEdit, Log Viewer, grep, ripgrep, amber, from 3 GB to 250 GB. **The numbers where we lose are published as they are.**) |
 | 📖 **An honest re-measurement against klogg** | [Article](https://uvp.y42u.net/en/blog/uvp-klogg-open-lose-flow-win-en/) |
@@ -243,7 +272,8 @@ encoding detection (UTF-8, Shift-JIS, EUC-JP, UTF-16) / live tail / tabs, bookma
 ## Where the numbers come from
 
 - **Machine**: MacBook Air (Apple M4, 10 cores, 32 GB memory), external USB SSD. Data: OpenStreetMap (Japan) XML; search word 東京. **Timings vary by machine. Do not compare seconds across machines.**
-- **CLI, one large file**: `uvf` / `uvp` 1.7.3.1 (search code identical to v1.7.3.6), ripgrep 15.2.0, 2026-09-28. Cold = right after dropping the cache; hot = the second run straight after.
+- **CLI, one large file and many small files**: `uvf` / `uvp` 1.7.3.6.9, ripgrep 15.2.0, 2026-10-04. Cold = right after dropping the cache (`sudo purge` + 10 s wait); hot = the second run straight after.
+- **Three systems**: the Mac as above. Windows (x64, 8 logical cores, 15.6 GB) and Linux (aarch64, 2 logical cores, 7.0 GB): `uvf` / `uvp` 1.7.3.6.8, ripgrep 15.2.0 (15.1.0 on Linux), 2026-10-03. On Windows `uvf` was set to 4 threads (`uvp` used 8).
 - **CLI, 7 compressed formats and many files**: `uvf` 1.7.3.4 (search code identical to v1.7.3.6) / `uvp` 1.7.3.5 (same search code as 1.7.3.6), ugrep 7.8.5, ripgrep 15.2.0, macOS's standard zgrep / bzgrep / xzgrep / zstdgrep, 2026-09-28. **Hot** (faster of two runs each); only the 12-file cold figures were measured by the owner. Every run's output was checked for line count and content. The 5-plain-file comparison alone is `uvf` 1.7.2.7 (cold + hot).
 - **GUI vs klogg**: the latest comparison is v1.6.6, klogg 24.11.0, 2026-09-20, cold. 258 GB: v1.6.6, 2026-09-21.
 - A difference under 1.5× is written as "on par".
