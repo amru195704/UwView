@@ -7,10 +7,10 @@
 **CLI（`uvf`）は ripgrep と同等の速さで探し、GUI は klogg と同等の速さで開きます。** 違うのは、その2つが**1回でつながる**ことです。`uvf ファイル '語' -open` と打てば、探し終えた瞬間に GUI が開き、当たった行が並びます。**GUI はもう一度探しません。**
 
 📥 **[ダウンロード（無料）](https://github.com/amru195704/UwView/releases/latest)** ・ 🌐 **[公式サイト](https://uvp.y42u.net/)** ・ 🧪 **[ブラウザで試す](https://amru195704.github.io/UwView/)**  
-📖 **[uvf コマンド操作マニュアル](2-doc/uvf_コマンド操作マニュアル.md)** ・ 🖥 **[GUI の操作マニュアル](2-doc/UwView_操作マニュアル.md)**（[PDF](2-doc/UwView_操作マニュアル.pdf)） ・ 🧾 **[v1.7.3.6 リリースノート](2-doc/release-body-v1.7.3.6.md)**  
+📖 **[uvf コマンド操作マニュアル](2-doc/uvf_コマンド操作マニュアル.md)** ・ 🖥 **[GUI の操作マニュアル](2-doc/UwView_操作マニュアル.md)**（[PDF](2-doc/UwView_操作マニュアル.pdf)） ・ 🧾 **[v1.7.3.6.7 リリースノート](2-doc/release-body-v1.7.3.6.7.md)**  
 ▶ **[動画で見る（YouTube・日本語）](https://www.youtube.com/playlist?list=PLVa-Z1XEnkKs)** ・ [English](https://www.youtube.com/playlist?list=PLBJs4svTLd_w) ・ [チャンネル @uwviewapp](https://www.youtube.com/@uwviewapp)
 
-> **最新版は v1.7.3.6「Wide Field」。** 複数のファイルを、ワイルドカード1つでまとめて探せます。平文と **7 種類の圧縮ファイル**（gz・bz2・xz・lzma・zst・lz4・br）を混ぜても1回で済み、外部のコマンドは要りません。
+> **最新版は v1.7.3.6.7「Wide Field」。** 複数のファイルを、ワイルドカード1つでまとめて探せます。平文と **7 種類の圧縮ファイル**（gz・bz2・xz・lzma・zst・lz4・br）を混ぜても1回で済み、外部のコマンドは要りません。
 
 ---
 
@@ -232,7 +232,7 @@ GUI の使い方（検索・結果一覧・ファイル一覧とタブ・ハイ�
 |---|---|
 | 📖 **uvf コマンド操作マニュアル** | [2-doc/uvf_コマンド操作マニュアル.md](2-doc/uvf_コマンド操作マニュアル.md)（書き方・オプション・圧縮・正規表現・終了コード・ripgrep との対応表・性能） |
 | 🖥 **GUI の操作マニュアル** | [2-doc/UwView_操作マニュアル.md](2-doc/UwView_操作マニュアル.md) ・ [PDF](2-doc/UwView_操作マニュアル.pdf)（GUI の構成・検索・結果一覧・ファイル一覧とタブ・ハイライタ・キー操作） |
-| 🧾 **v1.7.3.6 Wide Field のリリースノート** | [release-body-v1.7.3.6.md](2-doc/release-body-v1.7.3.6.md) |
+| 🧾 **v1.7.3.6.7 Wide Field のリリースノート** | [release-body-v1.7.3.6.7.md](2-doc/release-body-v1.7.3.6.7.md)（前の版 [v1.7.3.6](2-doc/release-body-v1.7.3.6.md)） |
 | ▶ **動画（YouTube）** | [再生リスト「UwView:日本語」](https://www.youtube.com/playlist?list=PLVa-Z1XEnkKs) ・ [English](https://www.youtube.com/playlist?list=PLBJs4svTLd_w) ・ [チャンネル @uwviewapp](https://www.youtube.com/@uwviewapp)（v1.7.3.6 の使い方 全8テーマと、まとめの1本） |
 | 📊 **実測の全データと条件** | [ベンチマーク一覧](https://uvp.y42u.net/benchmarks/)（EmEditor・klogg・010 Editor・UltraEdit・Log Viewer・grep・ripgrep・amber を 3GB〜250GB で実測。**負けている数字もそのまま載せています**） |
 | 📖 **klogg と正直に比べ直した話** | [記事](https://uvp.y42u.net/blog/uvp-klogg-open-lose-flow-win/) |
