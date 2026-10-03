@@ -44,9 +44,15 @@ namespace UwView.Cli
             // Ctrl+C は本体にも同時に届く（同じコンソール／プロセスグループ）。本体の後始末を待ってから終わる
             Console.CancelKeyPress += (_, e) => e.Cancel = true;
 
+#if IN_PROCESS_CLI
+            UwView.Core.Cli.CompiledRegexRoute.MarkSpawn(psi);
+#endif
             using var process = Process.Start(psi);
             if (process is null) return 2;
             process.WaitForExit();
+#if IN_PROCESS_CLI
+            UwView.Core.Cli.CompiledRegexRoute.TraceHandoffFinished("uvf", gui);
+#endif
             return process.ExitCode;
         }
     }

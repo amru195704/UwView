@@ -26,6 +26,7 @@ sealed class Program
 
     private static int RunCli(string[] args)
     {
+        CompiledRegexRoute.TraceChildStarted("uvf");
         CliHost.PrepareConsole();
         UwView.Core.EncodingDetector.EnsureCodePagesRegistered();
 

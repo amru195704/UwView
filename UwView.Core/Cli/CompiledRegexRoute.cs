@@ -19,6 +19,38 @@ public static class CompiledRegexRoute
     /// </summary>
     public const long MinTextBytes = 256L << 20;
 
+    /// <summary>調べる用：これが "1" なら本体に任せない（uvf は UVF_NO_HANDOFF・uvp は UVP_NO_HANDOFF）。</summary>
+    public static bool HandoffDisabled(string variable) => Environment.GetEnvironmentVariable(variable) == "1";
+
+    /// <summary>計測用（<c>UV_TRACE=1</c>）。任せたときに、親が子へ「起動した時刻」を渡す環境変数。</summary>
+    public const string SpawnAtVariable = "UV_TRACE_SPAWN_AT";
+
+    public static bool Tracing => Environment.GetEnvironmentVariable("UV_TRACE") == "1";
+
+    /// <summary>親（NativeAOT の CLI）：子を起動する直前に時刻を渡す。</summary>
+    public static void MarkSpawn(System.Diagnostics.ProcessStartInfo psi)
+    {
+        if (Tracing) psi.Environment[SpawnAtVariable] = DateTime.UtcNow.Ticks.ToString(System.Globalization.CultureInfo.InvariantCulture);
+    }
+
+    /// <summary>子（本体の CLI モード）：起動されてから CLI に入るまでの時間を出す（t_spawn）。</summary>
+    public static void TraceChildStarted(string tool)
+    {
+        if (!Tracing || Environment.GetEnvironmentVariable(SpawnAtVariable) is not { } at
+            || !long.TryParse(at, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out long ticks))
+            return;
+        Console.Error.WriteLine($"uv_trace: {tool} handoff child_started t_spawn={(DateTime.UtcNow.Ticks - ticks) / 1e7:F3} "
+                                + $"jit={System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeCompiled}");
+    }
+
+    /// <summary>親：子が終わったときに全体の時間を出す（t_total。この実行ファイルが起動してから）。</summary>
+    public static void TraceHandoffFinished(string tool, string gui)
+    {
+        if (!Tracing) return;
+        double total = (DateTime.Now - System.Diagnostics.Process.GetCurrentProcess().StartTime).TotalSeconds;
+        Console.Error.WriteLine($"uv_trace: {tool} handoff=yes gui={gui} t_total={total:F3}");
+    }
+
     /// <summary>この実行ファイルは正規表現をコンパイルできない（NativeAOT）。</summary>
     public static bool Interpreted => !RuntimeFeature.IsDynamicCodeCompiled;
 
@@ -29,7 +61,7 @@ public static class CompiledRegexRoute
     /// <summary>uvf の引数から判断する。</summary>
     public static bool ForUvf(IReadOnlyList<string> argv)
     {
-        if (!Interpreted) return false;
+        if (!Interpreted || HandoffDisabled("UVF_NO_HANDOFF")) return false;
         var (inv, _, _) = UvfCli.Parse(argv);
         return inv is { Regex: true, Pattern: { } pattern, File: { Length: > 0 } file }
                && ScansEveryLine(pattern)
