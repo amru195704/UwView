@@ -405,6 +405,54 @@ public class RawGrepTests : IDisposable
         Assert.NotEqual("", output);
     }
 
+    /// <summary>OSM の属性に似た行（ほぼすべての行に <c>="</c> がある。A5 の目印が記号だと候補だらけになった）。</summary>
+    private string WriteOsmLike(string name)
+    {
+        var sb = new StringBuilder();
+        for (int i = 0; i < 6_000; i++)
+            sb.Append((i % 8) switch
+            {
+                0 => $"    <tag k=\"name\" v=\"駅{i}\"/>\n",
+                1 => $"    <tag K=\"NAME:en\" v=\"Station {i}\"/>\n",
+                2 => $"    <tag \u212A=\"Name\" v=\"kelvin {i}\"/>\n",          // U+212A（ケルビン記号）の K
+                3 => $"    <tag k=\"highway\" v=\"primary\"/>\n",
+                4 => $"    <node id=\"{i}\" lat=\"35.{i}\" lon=\"139.{i}\">\n",
+                5 => $"    <tag k=\"name\"/>\n",
+                6 => $"    <tag k=\"spinlock\" v=\"SpinLock_{i}\"/>\n",
+                _ => $"  </node>\n",
+            });
+        File.WriteAllText(P(name), sb.ToString());
+        return P(name);
+    }
+
+    [Theory]
+    // T1・T2: A5 の式（ケルビン記号の K の行も、.NET・rg と同じく当たる）。T3: 手がかりが記号だけになる式
+    [InlineData("K=\"NAME[^\"]*\"")]
+    [InlineData("=\"[^\"]*\"")]
+    [InlineData("NAME[^\"]*\"")]
+    public async Task 大小無視の正規表現は目印の選び方を変えても参照実装と一致する(string pattern)
+    {
+        string path = WriteOsmLike("osm.xml");
+        var (_, output) = await Search(path, pattern, "-E", "-i");
+        Assert.Equal(Reference(path, pattern, icase: true, regex: true, invert: false), output);
+        Assert.NotEqual("", output);
+        if (pattern.StartsWith('K')) Assert.Contains("\u212A=\"Name\"", output);
+    }
+
+    [Theory]
+    // T4: 素の文字列の -i（目印を変えても結果は同じ）
+    [InlineData("HIGHWAY")]
+    [InlineData("spinlock")]
+    [InlineData("=\"name")]
+    [InlineData("lat=\"35.1")]
+    public async Task 大小無視の素の文字列は目印の選び方を変えても参照実装と一致する(string pattern)
+    {
+        string path = WriteOsmLike("osm2.xml");
+        var (_, output) = await Search(path, pattern, "-i");
+        Assert.Equal(Reference(path, pattern, icase: true, regex: false, invert: false), output);
+        Assert.NotEqual("", output);
+    }
+
     [Fact]
     public async Task 大小無視の_v_も参照実装と一致する()
     {

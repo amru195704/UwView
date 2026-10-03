@@ -54,11 +54,36 @@ public static class AsciiCaseFold
         return bestLen == 0 ? "" : text.Substring(bestAt, bestLen);
     }
 
+    /// <summary>
+    /// 計測用（<c>UV_TRACE=1</c>）：目印が合って語全体を比べた回数を数えるか、とその数。
+    /// 数えないときは分岐1つだけで、速さに響かない。
+    /// </summary>
+    public static bool CountChecks;
+    public static long Checks;
+
     /// <summary>探す語を小文字のバイト列にする（比較の基準）。</summary>
     public static byte[] ToLowerBytes(string pattern) => Encoding.ASCII.GetBytes(pattern.ToLowerInvariant());
 
-    /// <summary>英語・XML での出現頻度が低い順（希少が先頭）。ここに無いバイト（記号・数字）は中程度とみなす。</summary>
+    /// <summary>英語・XML での出現頻度が低い順（希少が先頭）。</summary>
     private static ReadOnlySpan<byte> RarityOrder => "zqxjkvbwpygfmucldrhsnioate"u8;
+
+    /// <summary>
+    /// XML・ログ・ソースコードで<b>どの英字よりもよく出る</b>記号と数字。目印にすると候補だらけになる。
+    /// 以前は記号をすべて「p 並みに珍しい」とみなしていたので、<c>K="NAME</c> の手がかり <c>="name</c> では
+    /// <c>=</c> と <c>"</c> が目印になり、OSM のほぼすべての属性 <c>="</c> に当たって、3G で 1 億 2,600 万回も
+    /// 語全体を比べていた（rg の 1.84 倍遅い。実装指示書 2026-10-03）。
+    /// </summary>
+    private static ReadOnlySpan<byte> CommonSymbols => " =\"<>/:.,-_'\t;()[]0123456789"u8;
+
+    /// <summary>目印としての珍しさ（小さいほど珍しい）。</summary>
+    private static int Rank(byte b)
+    {
+        int idx = RarityOrder.IndexOf(b);
+        if (idx >= 0) return idx;
+        int common = CommonSymbols.IndexOf(b);
+        if (common >= 0) return RarityOrder.Length + CommonSymbols.Length - common;   // どの英字より後ろ
+        return 8;   // ほかの記号（@ # $ % など）は 'p' 並みに珍しいとみなす
+    }
 
     /// <summary>
     /// 語の中で<b>いちばん珍しいバイト</b>の位置。そこを目印に探すと、拾う候補が減って照合の手間が下がる
@@ -66,12 +91,10 @@ public static class AsciiCaseFold
     /// </summary>
     public static int PickRarestIndex(ReadOnlySpan<byte> lower)
     {
-        const int NonLetterRank = 8;   // 'p' 相当の希少さとみなす
         int best = 0, bestRank = int.MaxValue;
         for (int i = 0; i < lower.Length; i++)
         {
-            int idx = RarityOrder.IndexOf(lower[i]);
-            int rank = idx >= 0 ? idx : NonLetterRank;
+            int rank = Rank(lower[i]);
             if (rank < bestRank) { bestRank = rank; best = i; }
         }
         return best;
@@ -113,6 +136,7 @@ public static class AsciiCaseFold
             int rel = haystack[from..].IndexOfAny(anchor);
             if (rel < 0) return -1;
             int at = from + rel - anchorIndex;
+            if (CountChecks) Interlocked.Increment(ref Checks);
             if (at >= 0 && at + lower.Length <= haystack.Length && EqualsFolded(haystack.Slice(at, lower.Length), lower))
                 return at;
             from += rel + 1;
@@ -148,6 +172,7 @@ public static class AsciiCaseFold
             while (bits != 0)
             {
                 int at = i + BitOperations.TrailingZeroCount(bits);
+                if (CountChecks) Interlocked.Increment(ref Checks);
                 if (EqualsFolded(haystack.Slice(at, lower.Length), lower)) return at;
                 bits &= bits - 1;
             }
@@ -157,16 +182,21 @@ public static class AsciiCaseFold
         return -1;
     }
 
+    /// <summary>計測用：目印 2 つの位置（<see cref="IndexOf"/> が SIMD で使うもの）。</summary>
+    public static (int First, int Second) AnchorPositions(ReadOnlySpan<byte> lower)
+    {
+        int a = PickRarestIndex(lower);
+        return (a, lower.Length >= 2 ? SecondRarestIndex(lower, a) : a);
+    }
+
     /// <summary><paramref name="first"/> 以外で、いちばん珍しいバイトの位置。</summary>
     private static int SecondRarestIndex(ReadOnlySpan<byte> lower, int first)
     {
-        const int NonLetterRank = 8;
         int best = first == 0 ? 1 : 0, bestRank = int.MaxValue;
         for (int i = 0; i < lower.Length; i++)
         {
             if (i == first) continue;
-            int idx = RarityOrder.IndexOf(lower[i]);
-            int rank = idx >= 0 ? idx : NonLetterRank;
+            int rank = Rank(lower[i]);
             // 同じ文字なら、目印1つ目から離れた位置を選ぶ（隣り合う同じ文字はあまり絞り込めない）
             if (rank < bestRank || (rank == bestRank && Math.Abs(i - first) > Math.Abs(best - first)))
             { bestRank = rank; best = i; }

@@ -90,6 +90,14 @@ public static class RawGrep
 
         bool hasClue = prefilter is not null || icaseClue.Length > 0;
 
+        // 計測用（UV_TRACE=1）：どこに時間がかかっているかを標準エラーに出す（実装指示書 2026-10-03 §3.1）
+        var trace = Environment.GetEnvironmentVariable("UV_TRACE") == "1" ? new Trace() : null;
+        if (trace is not null)
+        {
+            AsciiCaseFold.CountChecks = true;
+            Interlocked.Exchange(ref AsciiCaseFold.Checks, 0);
+        }
+
         long fileLength = src.Length;
         long limit = options.HitLimit;
         long hits = 0;
@@ -179,6 +187,9 @@ public static class RawGrep
             }
 
             index?.Finish(fileLength, lineNo);
+            trace?.Report(icaseClue.Length > 0 ? icaseClue : literal ? (bytePath ? needle : folded) : [],
+                          prefilter is not null ? "prefilter" : icaseClue.Length > 0 ? "icase-clue" : literal ? "literal" : "none",
+                          regex is not null);
             return new RawGrepOutcome(hits, truncated);
 
             // region は行頭から始まる完結行の集まり。改行を数えながら出すべき行を出し、次の行番号を返す
@@ -199,8 +210,11 @@ public static class RawGrep
 
                 while (cursor < region.Length)
                 {
+                    long t0 = trace is null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
                     int clueAt = FindClue(region, cursor);
+                    if (trace is not null) trace.Scan += System.Diagnostics.Stopwatch.GetTimestamp() - t0;
                     if (clueAt < 0) break;
+                    if (trace is not null) trace.ClueLines++;
 
                     // cursor から手がかりの位置までの改行を数えて、その行の先頭を求める。
                     // 1本ずつ IndexOf で進むのではなく、まとめて数える（SIMD が効いて 5 倍速い）
@@ -227,7 +241,10 @@ public static class RawGrep
                     cursorLine = line + 1;
                 }
 
-                return cursorLine + CountNewlines(region[cursor..]);
+                long tc = trace is null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
+                long rest = CountNewlines(region[cursor..]);
+                if (trace is not null) trace.Scan += System.Diagnostics.Stopwatch.GetTimestamp() - tc;
+                return cursorLine + rest;
             }
 
             // cursor 以降で次の手がかりの位置（無ければ -1）
@@ -288,7 +305,9 @@ public static class RawGrep
             void Emit(long line, long lineStart, ReadOnlySpan<byte> text, bool stripped = false)
             {
                 if (!stripped && text.Length > 0 && text[^1] == (byte)'\r') text = text[..^1];
+                long t0 = trace is null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
                 sink(line, lineStart, text);
+                if (trace is not null) { trace.Output += System.Diagnostics.Stopwatch.GetTimestamp() - t0; trace.MatchLines++; }
                 if (++hits >= limit) truncated = true;
             }
 
@@ -304,9 +323,17 @@ public static class RawGrep
                 if (icaseClue.Length > 0 && AsciiCaseFold.IndexOf(probe, icaseClue, clueAnchor!, clueAt) < 0)
                     return false;
 
+                long t0 = trace is null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
                 decoder!.Reset();
                 int n = decoder.GetChars(probe, chars, flush: true);
-                return regex!.IsMatch(chars.AsSpan(0, n));
+                long t1 = trace is null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
+                bool matched = regex!.IsMatch(chars.AsSpan(0, n));
+                if (trace is not null)
+                {
+                    trace.Decode += t1 - t0;
+                    trace.Regex += System.Diagnostics.Stopwatch.GetTimestamp() - t1;
+                }
+                return matched;
             }
 
             // 素の文字列（-i も）を探す。見つからなければ -1
@@ -317,6 +344,28 @@ public static class RawGrep
         {
             ArrayPool<byte>.Shared.Return(buf);
             if (chars.Length > 0) ArrayPool<char>.Shared.Return(chars);
+        }
+    }
+
+    /// <summary>計測の積算（<c>UV_TRACE=1</c> のときだけ作る）。時間は Stopwatch の刻み。</summary>
+    private sealed class Trace
+    {
+        private readonly long _start = System.Diagnostics.Stopwatch.GetTimestamp();
+        public long Scan, Decode, Regex, Output, ClueLines, MatchLines;
+
+        public void Report(ReadOnlySpan<byte> clue, string kind, bool usesRegex)
+        {
+            static double S(long ticks) => ticks / (double)System.Diagnostics.Stopwatch.Frequency;
+            var (a, b) = clue.Length > 0 ? AsciiCaseFold.AnchorPositions(clue) : (-1, -1);
+            string text = Encoding.ASCII.GetString(clue);
+            string anchors = a < 0 ? "-" : $"'{(char)clue[a]}'@{a},'{(char)clue[b]}'@{b}";
+            Console.Error.WriteLine(
+                $"uv_trace: clue={kind}:\"{text}\" anchors={anchors} anchor_hits={Interlocked.Read(ref AsciiCaseFold.Checks)} "
+                + $"clue_lines={ClueLines} match_lines={MatchLines} "
+                + $"t_scan={S(Scan):F3} t_decode={S(Decode):F3} t_regex={S(Regex):F3} t_output={S(Output):F3} "
+                + $"t_total={S(System.Diagnostics.Stopwatch.GetTimestamp() - _start):F3} "
+                + $"regex_mode={(usesRegex ? (System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeCompiled ? "compiled" : "interpreted") : "-")}");
+            AsciiCaseFold.CountChecks = false;
         }
     }
 

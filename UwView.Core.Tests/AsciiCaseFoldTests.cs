@@ -48,6 +48,18 @@ public class AsciiCaseFoldTests
         }
     }
 
+    [Theory]
+    // 手がかりに英字があれば、目印は英字から選ぶ（= や " や数字は XML・ログでよく出るので目印にしない）
+    [InlineData("=\"name", 'm', 'n')]
+    [InlineData("lat=\"35", 'l', 'a')]
+    [InlineData("spinlock", 'k', 'p')]
+    public void AnchorsPreferLettersOverCommonSymbols(string word, char first, char second)
+    {
+        byte[] lower = AsciiCaseFold.ToLowerBytes(word);
+        var (a, b) = AsciiCaseFold.AnchorPositions(lower);
+        Assert.Equal((first, second), ((char)lower[a], (char)lower[b]));
+    }
+
     [Fact]
     public void ReturnsEarliestOfSeveralMatchesInOneBlock()
     {
