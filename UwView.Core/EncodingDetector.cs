@@ -37,6 +37,10 @@ public static class EncodingDetector
         return DetectFromBuffer(buf.AsSpan(0, read));
     }
 
+    /// <summary>読み込み済みのバイト列から判定する（先頭 <paramref name="sampleBytes"/> まで。小さいファイルを 1 回だけ読むとき用）。</summary>
+    public static DetectedEncoding Detect(ReadOnlySpan<byte> data, int sampleBytes = 256 * 1024)
+        => DetectFromBuffer(data[..Math.Min(data.Length, sampleBytes)]);
+
     /// <summary>非同期版（WASM の Blob など async I/O 実装用）。判定ロジックは同一。</summary>
     public static async ValueTask<DetectedEncoding> DetectAsync(IByteSource src, int sampleBytes = 256 * 1024, CancellationToken ct = default)
     {
@@ -77,15 +81,21 @@ public static class EncodingDetector
             : new DetectedEncoding(ShiftJis, "Shift-JIS", false, 0);
     }
 
-    /// <summary>末尾の未完マルチバイト列は「切れただけ」とみなし妥当扱いする。</summary>
+    /// <summary>
+    /// 末尾の未完マルチバイト列は「切れただけ」とみなし妥当扱いする。
+    /// ASCII が続くところは SIMD で読み飛ばす（1 バイトずつ見ていたので、1MB のファイル 1,000 本の検索で
+    /// 判定が検索そのものより重かった。2026-10-03）。判定の規則は変えていない。
+    /// </summary>
     private static bool IsValidUtf8(ReadOnlySpan<byte> s, out bool hasMultibyte)
     {
         hasMultibyte = false;
         int i = 0;
         while (i < s.Length)
         {
+            int rel = s[i..].IndexOfAnyExceptInRange((byte)0x00, (byte)0x7F);
+            if (rel < 0) return true;
+            i += rel;
             byte b = s[i];
-            if (b < 0x80) { i++; continue; }
 
             int n;
             if ((b & 0xE0) == 0xC0)

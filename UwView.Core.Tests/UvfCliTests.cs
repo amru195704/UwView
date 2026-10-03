@@ -335,6 +335,41 @@ public class UvfCliTests : IDisposable
         Assert.StartsWith("a.log:2\t", run.Out);
     }
 
+    [Theory]
+    [InlineData(1)]
+    [InlineData(3)]
+    [InlineData(8)]
+    public async Task 出力が多くても指定順のまま止まらない(int threads)
+    {
+        // v1.7.3.6.9 で作業役が番号を取りに行く形にした。貯める上限を小さくして、
+        // 「自分の番を待って直接書く」道と「預かりすぎて先へ進むのを待つ」道を通す。到着順も入れ替える
+        var expected = new System.Text.StringBuilder();
+        for (int f = 0; f < 12; f++)
+        {
+            var body = new System.Text.StringBuilder();
+            int lines = f == 4 ? 400 : 30;                          // 4 番だけ出力が上限を超える
+            for (int i = 0; i < lines; i++)
+            {
+                body.Append($"{i} f{f} ERROR line\n");
+                expected.Append($"m{f:D2}.log:{i + 1}\t{i} f{f} ERROR line\n");
+            }
+            File.WriteAllText(P($"m{f:D2}.log"), body.ToString());
+        }
+        MultiFileSearch.BufferLimitForTests = 2000;
+        MultiFileSearch.ArrivalDelayForTests = i => Task.Delay(5 * (12 - i));
+        try
+        {
+            var run = await WithThreads(threads, () => InDir("m*.log", "ERROR")).WaitAsync(TimeSpan.FromSeconds(30));
+            Assert.Equal(UvfExit.Found, run.Exit);
+            Assert.Equal(expected.ToString(), run.Out);
+        }
+        finally
+        {
+            MultiFileSearch.BufferLimitForTests = null;
+            MultiFileSearch.ArrivalDelayForTests = null;
+        }
+    }
+
     /// <summary>スレッド数を指定して走らせる（環境変数は後で必ず戻す）。</summary>
     private static async Task<Result> WithThreads(int threads, Func<Task<Result>> run)
     {

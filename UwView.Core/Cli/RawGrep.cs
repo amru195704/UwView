@@ -32,6 +32,9 @@ public static class RawGrep
     // 4MB ブロック（1MB より 1 割ほど速い）。調べる用に UV_BLOCK=256K・1M・16M などで変えられる
     private static readonly int BufSize = BlockSizeFromEnvironment() ?? 4 << 20;
 
+    /// <summary>複数ファイルの検索中は 1 本ごとの計測を出さない（全体の 1 行は <see cref="MultiFileSearch"/> が出す）。</summary>
+    public static bool QuietTrace;
+
     /// <summary>調べる用：UV_NOCOUNT=1 なら改行を数えない（行番号は正しくなくなる。速さを測るためだけ）。</summary>
     private static readonly bool SkipCounting = Environment.GetEnvironmentVariable("UV_NOCOUNT") == "1";
 
@@ -103,7 +106,7 @@ public static class RawGrep
         bool hasClue = prefilter is not null || icaseClue.Length > 0;
 
         // 計測用（UV_TRACE=1）：どこに時間がかかっているかを標準エラーに出す（実装指示書 2026-10-03 §3.1）
-        var trace = Environment.GetEnvironmentVariable("UV_TRACE") == "1" ? new Trace() : null;
+        var trace = Environment.GetEnvironmentVariable("UV_TRACE") == "1" && !QuietTrace ? new Trace() : null;
         if (trace is not null)
         {
             AsciiCaseFold.CountChecks = true;

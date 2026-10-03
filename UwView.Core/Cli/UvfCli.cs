@@ -356,7 +356,12 @@ public static class UvfCli
         if (inv.File is { Length: > 0 } specification
             && (FileSet.IsMultiple(specification) || inv.FileNames == true || inv.ListFiles))
         {
+            long te = Stopwatch.GetTimestamp();
             var found = FileSet.Expand(specification, ignore: inv.Ignore);
+            if (Environment.GetEnvironmentVariable("UV_TRACE") == "1")
+                env.StdErr.WriteLine($"uv_trace: multi files={found.Files.Count} t_expand={Stopwatch.GetElapsedTime(te).TotalSeconds:F3}");
+            // 調べる用：UV_LISTONLY=1 なら広げるだけで探さない（広げる時間だけを測る）
+            if (Environment.GetEnvironmentVariable("UV_LISTONLY") == "1") return UvfExit.Found;
             foreach (string miss in found.Missing)
                 env.StdErr.WriteLine(found.MissingNotice(miss, ja, tool));
             ignoredNotice = found.IgnoredNotice(ja, tool);
