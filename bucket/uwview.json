@@ -1,16 +1,16 @@
 {
-    "version": "1.7.3.6",
+    "version": "1.7.3.6.7",
     "description": "巨大なログ・テキストを調べるビューア（GUI本体 + CLIの uvf を同梱）",
     "homepage": "https://uvp.y42u.net/",
     "license": "Proprietary",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/amru195704/UwView/releases/download/v1.7.3.6/UwView-1.7.3.6-win-x64.zip",
-            "hash": "d63bd80233e00bc610b241abe1a9a66ab1dd060900980794d022bba6ce3a6948"
+            "url": "https://github.com/amru195704/UwView/releases/download/v1.7.3.6.7/UwView-1.7.3.6.7-win-x64.zip",
+            "hash": "7c9671e0d5b96d99ae312cf04f859d8c396d1748db56ee4c0b27ea4349f47145"
         },
         "arm64": {
-            "url": "https://github.com/amru195704/UwView/releases/download/v1.7.3.6/UwView-1.7.3.6-win-arm64.zip",
-            "hash": "f3c4982b6268d061c80a4343a6eacf93d28a4a1c160dfa0b7add5ab0718d79bb"
+            "url": "https://github.com/amru195704/UwView/releases/download/v1.7.3.6.7/UwView-1.7.3.6.7-win-arm64.zip",
+            "hash": "8d13094f164eb90464a6eba067aeb79415799a9b429cd69f2b58d5dd7678e870"
         }
     },
     "bin": ["uvf.exe", "UwView.Desktop.exe"],
