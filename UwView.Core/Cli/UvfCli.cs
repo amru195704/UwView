@@ -972,6 +972,8 @@ public static class UvfCli
         var watch = Stopwatch.StartNew();
         await using IByteSource src = compressed != CompressedKind.None
             ? new CompressedStreamByteSource(path, compressed)
+            // 調べる用：UV_SOURCE=mmap なら mmap で読む（既定は pread。実装指示書 2026-10-03「hot の読み速度」）
+            : Environment.GetEnvironmentVariable("UV_SOURCE") == "mmap" ? new MmapByteSource(path)
             : new SequentialFileByteSource(path);
         var detected = EncodingDetector.Detect(src);
         var encoding = detected.Encoding;

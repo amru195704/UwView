@@ -29,7 +29,19 @@ public readonly record struct RawGrepOutcome(long Hits, bool Truncated);
 /// </summary>
 public static class RawGrep
 {
-    private const int BufSize = 4 << 20;              // 4MB ブロック（1MB より 1 割ほど速い）
+    // 4MB ブロック（1MB より 1 割ほど速い）。調べる用に UV_BLOCK=256K・1M・16M などで変えられる
+    private static readonly int BufSize = BlockSizeFromEnvironment() ?? 4 << 20;
+
+    /// <summary>調べる用：UV_NOCOUNT=1 なら改行を数えない（行番号は正しくなくなる。速さを測るためだけ）。</summary>
+    private static readonly bool SkipCounting = Environment.GetEnvironmentVariable("UV_NOCOUNT") == "1";
+
+    private static int? BlockSizeFromEnvironment()
+    {
+        if (Environment.GetEnvironmentVariable("UV_BLOCK") is not { Length: > 0 } text) return null;
+        int unit = char.ToUpperInvariant(text[^1]) switch { 'K' => 1 << 10, 'M' => 1 << 20, _ => 1 };
+        string digits = unit == 1 ? text : text[..^1];
+        return int.TryParse(digits, out int n) && n > 0 ? Math.Clamp(n * unit, 64 << 10, 64 << 20) : null;
+    }
     private const int MaxLineMatchBytes = 64 * 1024; // 長大行はこの範囲でマッチ判定（SearchService と同じ）
 
     /// <summary>
@@ -117,7 +129,9 @@ public static class RawGrep
             {
                 ct.ThrowIfCancellationRequested();
                 int want = (int)Math.Min(BufSize, fileLength - pos);
+                long tr = trace is null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
                 int got = want <= 0 ? 0 : await src.ReadAsync(pos, buf.AsMemory(carry, want), ct);
+                if (trace is not null) { trace.Read += System.Diagnostics.Stopwatch.GetTimestamp() - tr; trace.Bytes += got; }
                 if (got > 0) observer?.Invoke(pos, buf.AsSpan(carry, got));   // 読んだそばから渡す
                 pos += got;
                 int filled = carry + got;
@@ -126,7 +140,9 @@ public static class RawGrep
                 bool isEof = pos >= fileLength || (want > 0 && got == 0);
 
                 var span = buf.AsSpan(0, filled);
+                long tl = trace is null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
                 int lastNl = span.LastIndexOf((byte)'\n');
+                if (trace is not null) trace.Count += System.Diagnostics.Stopwatch.GetTimestamp() - tl;
                 int region;
                 if (lastNl >= 0) region = lastNl + 1;
                 else if (isEof) region = filled;
@@ -212,15 +228,17 @@ public static class RawGrep
                 {
                     long t0 = trace is null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
                     int clueAt = FindClue(region, cursor);
-                    if (trace is not null) trace.Scan += System.Diagnostics.Stopwatch.GetTimestamp() - t0;
+                    if (trace is not null) trace.Find += System.Diagnostics.Stopwatch.GetTimestamp() - t0;
                     if (clueAt < 0) break;
                     if (trace is not null) trace.ClueLines++;
 
                     // cursor から手がかりの位置までの改行を数えて、その行の先頭を求める。
                     // 1本ずつ IndexOf で進むのではなく、まとめて数える（SIMD が効いて 5 倍速い）
                     var before = region[cursor..clueAt];
-                    long line = cursorLine + before.Count((byte)'\n');
+                    long tb = trace is null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
+                    long line = cursorLine + CountNewlines(before);
                     int lastNlBefore = before.LastIndexOf((byte)'\n');
+                    if (trace is not null) trace.Count += System.Diagnostics.Stopwatch.GetTimestamp() - tb;
                     int lineStart = lastNlBefore < 0 ? cursor : cursor + lastNlBefore + 1;
 
                     int nlAfter = region[clueAt..].IndexOf((byte)'\n');
@@ -243,7 +261,7 @@ public static class RawGrep
 
                 long tc = trace is null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
                 long rest = CountNewlines(region[cursor..]);
-                if (trace is not null) trace.Scan += System.Diagnostics.Stopwatch.GetTimestamp() - tc;
+                if (trace is not null) trace.Count += System.Diagnostics.Stopwatch.GetTimestamp() - tc;
                 return cursorLine + rest;
             }
 
@@ -351,7 +369,7 @@ public static class RawGrep
     private sealed class Trace
     {
         private readonly long _start = System.Diagnostics.Stopwatch.GetTimestamp();
-        public long Scan, Decode, Regex, Output, ClueLines, MatchLines;
+        public long Read, Find, Count, Decode, Regex, Output, Bytes, ClueLines, MatchLines;
 
         public void Report(ReadOnlySpan<byte> clue, string kind, bool usesRegex)
         {
@@ -362,8 +380,9 @@ public static class RawGrep
             Console.Error.WriteLine(
                 $"uv_trace: clue={kind}:\"{text}\" anchors={anchors} anchor_hits={Interlocked.Read(ref AsciiCaseFold.Checks)} "
                 + $"clue_lines={ClueLines} match_lines={MatchLines} "
-                + $"t_scan={S(Scan):F3} t_decode={S(Decode):F3} t_regex={S(Regex):F3} t_output={S(Output):F3} "
-                + $"t_total={S(System.Diagnostics.Stopwatch.GetTimestamp() - _start):F3} "
+                + $"t_read={S(Read):F3} t_find={S(Find):F3} t_count={S(Count):F3} t_decode={S(Decode):F3} t_regex={S(Regex):F3} "
+                + $"t_emit={S(Output):F3} t_total={S(System.Diagnostics.Stopwatch.GetTimestamp() - _start):F3} "
+                + $"bytes={Bytes} block={BufSize >> 10}K count={(SkipCounting ? "skipped" : "on")} "
                 + $"regex_mode={(usesRegex ? (System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeCompiled ? "compiled" : "interpreted") : "-")}");
             AsciiCaseFold.CountChecks = false;
         }
@@ -407,7 +426,7 @@ public static class RawGrep
     /// 1本ずつ IndexOf で進むより 5 倍以上速い（1GB・改行3,350万本で 0.302秒 → 0.055秒）。
     /// 索引を持たない uvf はここを全バイトに対して通るため、この差がそのまま検索時間に出る。
     /// </summary>
-    private static long CountNewlines(ReadOnlySpan<byte> span) => span.Count((byte)'\n');
+    private static long CountNewlines(ReadOnlySpan<byte> span) => SkipCounting ? 0 : NewlineCounter.Count(span);
 
     /// <summary>from 以降で最初の '\n' の位置（無ければファイル末尾）。</summary>
     private static async Task<long> LineEndAsync(IByteSource src, long from, long fileLength, CancellationToken ct,
