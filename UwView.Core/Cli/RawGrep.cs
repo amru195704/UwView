@@ -83,7 +83,7 @@ public static class RawGrep
         // 判定の道具立て（探し方は SearchService・uvp と同じところで決める）
         var plan = (prepared ?? PreparedSearch.Create(options)).For(encoding);
         bool literal = plan.IsLiteral;
-        Regex? regex = literal ? null : plan.Regex;
+        Regex? regex = literal ? null : plan.Prepared.RentRegex();   // 多数ファイルの作業役どうしで Regex を共有しない
         Decoder? decoder = literal ? null : encoding.GetDecoder();
         // 手がかり（必須リテラル・短い手がかり・大小無視の手がかり）。あれば、そこへ飛びながら見る
         var clues = plan.NewClueFinder();
@@ -335,6 +335,7 @@ public static class RawGrep
         {
             ArrayPool<byte>.Shared.Return(buf);
             if (chars.Length > 0) ArrayPool<char>.Shared.Return(chars);
+            plan.Prepared.ReturnRegex(regex);
         }
     }
 

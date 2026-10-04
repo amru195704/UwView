@@ -33,6 +33,7 @@ public sealed class PreparedSearch
     private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<SearchOptions, PreparedSearch> Shared = new();
 
     private readonly Lazy<Regex> _regex;
+    private readonly System.Collections.Concurrent.ConcurrentBag<Regex> _spare = new();
     private readonly bool _prefilter, _shortClues;     // 作ったときの切り替え（Of が使い回してよいかを見る）
     private SearchPlan? _lastPlan;
 
@@ -100,6 +101,25 @@ public sealed class PreparedSearch
     /// 書き間違いの式は、最初に使ったところで <see cref="ArgumentException"/>。
     /// </summary>
     public Regex Regex => _regex.Value;
+
+    /// <summary>
+    /// 作業役が自分だけで使う正規表現を借りる（使い終わったら <see cref="ReturnRegex"/>）。返されたものを使い回し、
+    /// 足りなければコンパイルして足す（同時に走る作業役の数まで）。
+    /// 1 つの Regex を何本もの作業役で同時に使うと、.NET は呼ぶたびに照合の係（runner）を作り直す。
+    /// uvp の 10 並列で 9,200 万行の <c>-E -v '^ +&lt;'</c> が 1.37 → 11.5 秒になった（テスト一式 2026-10-05）。
+    /// </summary>
+    public Regex RentRegex()
+    {
+        if (_spare.TryTake(out var regex)) return regex;
+        _ = Regex;                                   // 書き間違いの式はここで知らせる（1 回だけ読む）
+        return BuildScanRegex(Options);
+    }
+
+    /// <summary>借りた正規表現を返す。</summary>
+    public void ReturnRegex(Regex? regex)
+    {
+        if (regex is not null) _spare.Add(regex);
+    }
 
     /// <summary>この文字コードのファイルを探す方式（同じ文字コードが続く間は同じものを返す）。</summary>
     public SearchPlan For(Encoding encoding)
@@ -187,7 +207,10 @@ public sealed class SearchPlan
     /// </summary>
     public byte[] Literal { get; } = [];
 
-    /// <summary>正規表現（<see cref="SearchMethod.CandidateLines"/>・<see cref="SearchMethod.EveryLine"/> で使う）。</summary>
+    /// <summary>
+    /// 正規表現（<see cref="SearchMethod.CandidateLines"/>・<see cref="SearchMethod.EveryLine"/> で使う）。
+    /// 何本もの作業役で同時に当てるときは、<see cref="PreparedSearch.RentRegex"/> でそれぞれ借りること。
+    /// </summary>
     public Regex Regex => Prepared.Regex;
 
     /// <summary>計測の表示用（<c>UV_TRACE=1</c>）：手がかりの種類とバイト列。</summary>

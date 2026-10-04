@@ -69,6 +69,21 @@ public class SearchPlanTests : IDisposable
     }
 
     [Fact]
+    public void 作業役ごとに別の正規表現を貸して_返されたものを使い回す()
+    {
+        // 1 つの Regex を何本もの作業役で同時に使うと、.NET は呼ぶたびに照合の係を作り直す（uvp の -E -v が 8 倍遅くなった。2026-10-05）
+        var prepared = PreparedSearch.Create(new SearchOptions("^ +<", UseRegex: true));
+        var a = prepared.RentRegex();
+        var b = prepared.RentRegex();
+        Assert.NotSame(a, b);
+        Assert.Equal(prepared.Regex.ToString(), a.ToString());
+        Assert.Equal(prepared.Regex.Options, a.Options);
+        prepared.ReturnRegex(a);
+        Assert.Same(a, prepared.RentRegex());
+        Assert.Throws<RegexParseException>(() => PreparedSearch.Create(new SearchOptions("(x", UseRegex: true)).RentRegex());
+    }
+
+    [Fact]
     public void MayMatch_は当たる行で必ず真()
     {
         var plan = PreparedSearch.Create(new SearchOptions("k=\"name:(en|ja)\"", UseRegex: true)).For(Encoding.UTF8);

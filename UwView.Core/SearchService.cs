@@ -103,7 +103,7 @@ public static class SearchService
         var plan = (prepared ?? PreparedSearch.Create(options)).For(encoding);
         bool literal = plan.IsLiteral;
         int literalLength = plan.Literal.Length;
-        Regex? regex = literal ? null : plan.Regex;
+        Regex? regex = literal ? null : plan.Prepared.RentRegex();   // 同時に走るほかの検索と Regex を共有しない
         Decoder? decoder = literal ? null : encoding.GetDecoder();
         var prefilter = plan.NewClueFinder();
         long limit = options.HitLimit;
@@ -199,6 +199,7 @@ public static class SearchService
         {
             ArrayPool<byte>.Shared.Return(buf);
             if (chars.Length > 0) ArrayPool<char>.Shared.Return(chars);
+            plan.Prepared.ReturnRegex(regex);
         }
 
         void Flush()
