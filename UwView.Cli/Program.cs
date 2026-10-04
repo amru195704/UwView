@@ -129,6 +129,7 @@ namespace UwView.Cli
                 StdErr = Console.Error,
                 Japanese = UwView.Core.Cli.CliLanguage.IsJapanese(UwView.Core.Cli.CliLanguage.FreeSettingsFolder),
                 AppVersion = VersionText(),
+                BuildNumber = UwView.Core.AppEdition.BuildNumberOf(typeof(InProcess).Assembly),
                 // -open: 画面が要るので本体を起動する（検索パターンとファイル、CLI が見つけた結果の置き場所を渡す）
                 LaunchGui = (file, pattern) => LaunchGui(
                     (pattern is not null && file is not null

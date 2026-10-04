@@ -607,6 +607,15 @@ public class UvfCliTests : IDisposable
     }
 
     [Fact]
+    public async Task 版数の後ろにビルド番号を出す()
+    {
+        using var stdout = new MemoryStream();
+        var env = new UvfEnvironment { StdOut = stdout, StdErr = new StringWriter(), AppVersion = "1.7.3.6.9", BuildNumber = "26.10.04.19" };
+        Assert.Equal(UvfExit.Found, await UvfCli.RunAsync(["--version"], env));
+        Assert.Equal("uvf 1.7.3.6.9 (build 26.10.04.19)\n", Encoding.UTF8.GetString(stdout.ToArray()));
+    }
+
+    [Fact]
     public async Task 版数の指定と一緒に他の引数があれば従来どおり断る()
     {
         var r = await Uvf("--version", "extra");

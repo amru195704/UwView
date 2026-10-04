@@ -23,6 +23,17 @@ public static class AppEdition
     /// <summary>試験用ビルドか。</summary>
     public static bool IsTestBuild => Name.Length > 0;
 
+    /// <summary>ビルド番号（csproj の <c>AssemblyMetadata("BuildNumber")</c>＝コンパイル日時 yy.MM.dd.HH）。無ければ空。</summary>
+    public static string BuildNumberOf(Assembly assembly)
+        => assembly.GetCustomAttributes<AssemblyMetadataAttribute>().FirstOrDefault(m => m.Key == "BuildNumber")?.Value ?? "";
+
+    /// <summary>
+    /// <c>--version</c> の 1 行（<c>uvf 1.7.3.6.9 (build 26.10.04.19)</c>）。版数は 2 つ目の語のまま（読むスクリプトを壊さない）。
+    /// ビルド番号は画面の About と同じ値（オーナー指示 2026-10-04）。
+    /// </summary>
+    public static string VersionLine(string tool, string version, string buildNumber)
+        => Decorate($"{tool} {version}") + (buildNumber.Length > 0 ? $" (build {buildNumber})" : "");
+
     /// <summary>
     /// 版数（本体が起動時に入れる。例 <c>1.7.0.1</c>）。
     /// <b>dist を作るたびに上げる</b>ので、これが題名に出ていれば試験物を取り違えない

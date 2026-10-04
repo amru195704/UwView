@@ -70,6 +70,9 @@ public sealed class UvfEnvironment
     /// <summary><c>--version</c> で出す版数（本体が渡す。uvp と同じ形で出す）。</summary>
     public string AppVersion { get; init; } = "";
 
+    /// <summary><c>--version</c> で版数の後ろに出すビルド番号（画面の About と同じ値。無ければ出さない）。</summary>
+    public string BuildNumber { get; init; } = "";
+
     /// <summary>設定ファイルの置き場（<c>--tune --apply</c> の保存先）。uvp は自分のフォルダを渡す。</summary>
     public string SettingsFolder { get; init; } = CliLanguage.FreeSettingsFolder;
 
@@ -333,7 +336,7 @@ public static class UvfCli
             {
                 case "--version" or "-version" or "--Version":
                     await WriteLineAsync(env.StdOut,
-                        AppEdition.Decorate($"{tool} {(env.AppVersion.Length > 0 ? env.AppVersion : "?")}"), ct);
+                        AppEdition.VersionLine(tool, env.AppVersion.Length > 0 ? env.AppVersion : "?", env.BuildNumber), ct);
                     return UvfExit.Found;
                 case "--help" or "-h" or "-help" or "--Help":
                     await WriteLineAsync(env.StdOut, Usage(ja, tool), ct);

@@ -11,6 +11,10 @@
     <Version>1.7.3.6</Version>
     <InformationalVersion>1.7.3.6.9</InformationalVersion>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <!-- ビルド番号＝コンパイル日時（ローカル時刻）を yy.MM.dd.HH に。版数の表示（version）に出す（本体の About と同じ値。オーナー指示 2026-10-04）。
+         指定したいときは環境変数 UV_BUILD_NUMBER=26.10.04.16 のように渡す -->
+    <BuildNumber>$([System.DateTime]::Now.ToString("yy.MM.dd.HH"))</BuildNumber>
+    <BuildNumber Condition="'$(UV_BUILD_NUMBER)' != ''">$(UV_BUILD_NUMBER)</BuildNumber>
 
     <!-- 中身は「UwView 本体を CLI モードで起動する」だけの起動アプリ。
          .NET 一式を抱えると 36MB になるので、使わない部分を削って小さくする（オーナー指摘 2026-09-14） -->
@@ -39,6 +43,10 @@
   </PropertyGroup>
   <ItemGroup Condition="$(RuntimeIdentifier.StartsWith('osx-')) Or $(RuntimeIdentifier.StartsWith('linux-'))">
     <ProjectReference Include="../UwView.Core/UwView.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AssemblyMetadata Include="BuildNumber" Value="$(BuildNumber)" />
   </ItemGroup>
 
 </Project>
