@@ -416,13 +416,24 @@ public static class RawGrep
 
 
     /// <summary>全行に当てる正規表現（<see cref="SearchService"/> の全文検索と同じ作り方）。</summary>
+    /// <remarks>
+    /// 直前に作ったものを使い回す（Regex は複数のスレッドから同時に当ててよい）。複数ファイルの検索は
+    /// 1 ファイルごとにここを通り、JIT の本体ではそのたびにコンパイルが走っていた（カーネル 8.6 万本の
+    /// <c>-E '[0-9]{4}-[0-9]{2}'</c> で 2 回目 12.9 秒。オーナーの grix テスト 2026-10-04）。
+    /// </remarks>
     private static Regex BuildRegex(SearchOptions options)
     {
+        var key = (options.Pattern, options.UseRegex, options.IgnoreCase);
+        if (Volatile.Read(ref _lastRegex) is { } last && last.Key == key) return last.Regex;
         var regex = SearchService.BuildRegex(options);
-        return OperatingSystem.IsBrowser()
-            ? regex
-            : new Regex(regex.ToString(), regex.Options | RegexOptions.Compiled, regex.MatchTimeout);
+        if (!OperatingSystem.IsBrowser())
+            regex = new Regex(regex.ToString(), regex.Options | RegexOptions.Compiled, regex.MatchTimeout);
+        Volatile.Write(ref _lastRegex, new CachedRegex(key, regex));
+        return regex;
     }
+
+    private sealed record CachedRegex((string Pattern, bool UseRegex, bool IgnoreCase) Key, Regex Regex);
+    private static CachedRegex? _lastRegex;
 
     /// <summary>
     /// 改行の本数（行番号づけの土台）。<see cref="MemoryExtensions.Count{T}"/> は SIMD で数えるので、

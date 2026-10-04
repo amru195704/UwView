@@ -54,9 +54,14 @@ public static class CompiledRegexRoute
     /// <summary>この実行ファイルは正規表現をコンパイルできない（NativeAOT）。</summary>
     public static bool Interpreted => !RuntimeFeature.IsDynamicCodeCompiled;
 
-    /// <summary>必須の文字列で候補行を絞れない正規表現か（全行に正規表現を当てることになる）。</summary>
-    public static bool ScansEveryLine(string pattern)
-        => RegexLiterals.Extract(pattern, ignoreCase: false) is null;
+    /// <summary>
+    /// 必須の文字列で候補行を絞れない正規表現か（全行に正規表現を当てることになる）。
+    /// 短い手がかり（<see cref="RegexClues"/>・大小を区別するときだけ使う）で絞れる式は、当てる行が減るので任せない。
+    /// 任せると、本体の起動と、ファイルごとの正規表現のコンパイルが乗るだけだった（カーネル 8.6 万本で 2 回目 12.9 秒。2026-10-04）。
+    /// </summary>
+    public static bool ScansEveryLine(string pattern, bool ignoreCase = false)
+        => RegexLiterals.Extract(pattern, ignoreCase: false) is null
+           && (ignoreCase || !SearchService.UseShortClues || RegexClues.Extract(pattern) is null);
 
     /// <summary>uvf の引数から判断する。</summary>
     public static bool ForUvf(IReadOnlyList<string> argv)
@@ -64,7 +69,7 @@ public static class CompiledRegexRoute
         if (!Interpreted || HandoffDisabled("UVF_NO_HANDOFF")) return false;
         var (inv, _, _) = UvfCli.Parse(argv);
         return inv is { Regex: true, Pattern: { } pattern, File: { Length: > 0 } file }
-               && ScansEveryLine(pattern)
+               && ScansEveryLine(pattern, inv.IgnoreCase)
                && TextBytes(file) >= MinTextBytes;
     }
 

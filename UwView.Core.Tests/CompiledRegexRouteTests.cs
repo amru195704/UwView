@@ -21,13 +21,22 @@ public class CompiledRegexRouteTests : IDisposable
 
     [Theory]
     [InlineData("^ +<", true)]                 // 必須の文字列が1文字（ほぼ全行に当たる）
-    [InlineData("[0-9]{4}-[0-9]{2}", true)]
+    [InlineData("[0-9]{4}-[0-9]{2}", false)]  // 短い手がかり - で絞れる（RegexClues）
+    [InlineData("[ぁ-ん]{3,}", false)]          // 短い手がかり E3 81・E3 82 で絞れる
+    [InlineData(@"[A-Z][a-z]+ [A-Z][a-z]+", true)]   // 手がかりは空白だけ（使わない）
     [InlineData(".*", true)]
     [InlineData("k=\"highway[^\"]*\"", false)] // k="highway で先に絞れる
     [InlineData("^ *<tag k=\"name\"", false)]
     [InlineData("k=\"(name|addr:city)\"", false)]
     public void 必須の文字列で絞れない正規表現だけが全行に当たる(string pattern, bool expected)
         => Assert.Equal(expected, CompiledRegexRoute.ScansEveryLine(pattern));
+
+    [Fact]
+    public void 大小無視では短い手がかりを使わないので全行に当たる()
+    {
+        Assert.True(CompiledRegexRoute.ScansEveryLine("[0-9]{4}-[0-9]{2}", ignoreCase: true));
+        Assert.False(CompiledRegexRoute.ScansEveryLine("k=\"highway[^\"]*\"", ignoreCase: true));
+    }
 
     [Fact]
     public void 大きさの目安は平文はそのまま圧縮は8倍で複数ファイルは足す()
