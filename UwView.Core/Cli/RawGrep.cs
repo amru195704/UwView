@@ -99,7 +99,7 @@ public static class RawGrep
 
         // -i（正規表現でも素の文字列でも）の手がかり。`RegexLiterals` は大小無視だと必須リテラルを
         // 出さない（`LiteralFinder` がバイト一致でしか探せないため）ので、こちらで用意する。
-        byte[] icaseClue = prefilter is null && !literal ? IcaseClue(options, encoding) : [];
+        byte[] icaseClue = prefilter is null && !literal ? SearchService.IcaseClue(options, encoding) : [];
         int clueAt = 0;
         var clueAnchor = icaseClue.Length > 0 ? AsciiCaseFold.Anchor(icaseClue, out clueAt) : null;
 
@@ -390,30 +390,6 @@ public static class RawGrep
             AsciiCaseFold.CountChecks = false;
         }
     }
-
-    /// <summary>
-    /// <c>-E -i</c> の手がかり（当たる行には必ず入っている文字列を、ASCII の大小を畳んだ小文字で返す）。
-    ///
-    /// <see cref="RegexLiterals.Extract"/> は大小無視のとき null を返す（<see cref="LiteralFinder"/> が
-    /// バイト一致しかできないため）。ここでは同じ抽出を大小を区別する形で1回行い、得られた必須リテラルを
-    /// <see cref="AsciiCaseFold.IndexOf"/> で大小を畳んで探す。当たる行は必ずそのリテラルの大小どれかを含むので
-    /// 取りこぼしは無い。ただし <c>k</c>/<c>K</c> を含むリテラルは U+212A とも一致しうるので使わない。
-    /// 候補が複数（選択肢）のときは、どれが入るか決められないので手がかりにしない。
-    /// </summary>
-    private static byte[] IcaseClue(SearchOptions options, Encoding encoding)
-    {
-        if (options is not { IgnoreCase: true } || !AsciiCaseFold.IsAsciiCompatible(encoding)) return [];
-
-        // 当たる行に必ず入っている文字列。素の文字列ならそれ自身、正規表現なら必須リテラル
-        string? required = options.UseRegex
-            ? RegexLiterals.Extract(options.Pattern, ignoreCase: false) is [string only] ? only : null
-            : options.Pattern;
-        if (required is null) return [];
-
-        string run = AsciiCaseFold.LongestFoldableRun(required);
-        return run.Length == 0 ? [] : AsciiCaseFold.ToLowerBytes(run);
-    }
-
 
     /// <summary>全行に当てる正規表現（<see cref="SearchService"/> の全文検索と同じ作り方）。</summary>
     /// <remarks>

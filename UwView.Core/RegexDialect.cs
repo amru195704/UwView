@@ -16,15 +16,37 @@ namespace UwView.Core;
 /// </summary>
 public static class RegexDialect
 {
-    /// <summary><c>(?P&lt;</c> を <c>(?&lt;</c> に読み替える（<c>\(</c> のように逃がした括弧は触らない）。</summary>
+    /// <summary>
+    /// <c>(?P&lt;</c> を <c>(?&lt;</c> に読み替える（<c>\(</c> のように逃がした括弧と、文字クラスの中は触らない）。
+    /// <c>[(?P&lt;]</c> は 4 文字のどれかに当たる文字クラスで、中の P を消すと別の式になる（外部レビュー 2026-10-04 の指摘4）。
+    /// </summary>
     public static string Normalize(string pattern)
     {
         if (!pattern.Contains("(?P<", StringComparison.Ordinal)) return pattern;
         var sb = new StringBuilder(pattern.Length);
+        int classDepth = 0;          // 文字クラスの入れ子（.NET の減算 [a-z-[aeiou]] で 2 以上）
+        bool dash = false;           // クラスの中で直前が - だった
         for (int i = 0; i < pattern.Length; i++)
         {
             char c = pattern[i];
-            if (c == '\\' && i + 1 < pattern.Length) { sb.Append(c).Append(pattern[++i]); continue; }
+            if (c == '\\' && i + 1 < pattern.Length) { sb.Append(c).Append(pattern[++i]); dash = false; continue; }
+            if (classDepth > 0)
+            {
+                if (c == '[' && dash) classDepth++;
+                else if (c == ']') classDepth--;
+                dash = c == '-';
+                sb.Append(c);
+                continue;
+            }
+            if (c == '[')
+            {
+                classDepth = 1;
+                dash = false;
+                sb.Append(c);
+                if (i + 1 < pattern.Length && pattern[i + 1] == '^') sb.Append(pattern[++i]);
+                if (i + 1 < pattern.Length && pattern[i + 1] == ']') sb.Append(pattern[++i]);   // 先頭の ] は文字
+                continue;
+            }
             if (c == '(' && string.CompareOrdinal(pattern, i, "(?P<", 0, 4) == 0)
             {
                 sb.Append("(?<");

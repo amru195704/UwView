@@ -38,13 +38,24 @@ public static class RegexLiterals
             var parser = new Parser(pattern);
             var result = parser.ParseAlternation(topLevel: true);
             if (parser.Failed || !parser.AtEnd || result.Best is not { } best) return null;
-            if (best.Count > MaxAlternatives || best.Any(s => s.Length < MinLength || s.Contains('�'))) return null;
+            if (best.Count > MaxAlternatives || best.Any(s => s.Length < MinLength || s.Contains('�') || HasLoneSurrogate(s))) return null;
             return best.Distinct(StringComparer.Ordinal).ToList();
         }
         catch (Exception e) when (e is ArgumentException or IndexOutOfRangeException or InvalidOperationException)
         {
             return null;
         }
+    }
+
+    /// <summary>対になっていないサロゲートを含むか（UTF-8 にすると EF BF BD になり、元のデータに無い）。</summary>
+    private static bool HasLoneSurrogate(string s)
+    {
+        for (int i = 0; i < s.Length; i++)
+        {
+            if (char.IsHighSurrogate(s[i]) && i + 1 < s.Length && char.IsLowSurrogate(s[i + 1])) { i++; continue; }
+            if (char.IsSurrogate(s[i])) return true;
+        }
+        return false;
     }
 
     /// <summary>
@@ -182,8 +193,17 @@ public static class RegexLiterals
                         Failed = true;
                         return (null, null);
                     default:
-                        literal = c.ToString();
-                        _i++;
+                        if (!char.IsSurrogate(c)) { literal = c.ToString(); _i++; break; }
+                        // 絵文字など（UTF-16 で 2 つ）。.NET の量指定子は後ろの 1 つだけに掛かるので、
+                        // 量指定子の付かない対だけを 1 文字として取る。それ以外は切れ目にする
+                        //（a😀? で a と上位サロゲートだけを必須と取り、UTF-8 にできず行を捨てた。外部レビュー 2026-10-04 の指摘3）
+                        if (char.IsHighSurrogate(c) && _i + 1 < p.Length && char.IsLowSurrogate(p[_i + 1])
+                            && !(_i + 2 < p.Length && p[_i + 2] is '*' or '+' or '?' or '{'))
+                        {
+                            literal = p.Substring(_i, 2);
+                            _i += 2;
+                        }
+                        else { breaks = true; _i++; }
                         break;
                 }
 

@@ -60,7 +60,7 @@ public static class RegexClues
                     case '\\':
                         if (i + 1 >= pattern.Length) return null;
                         char e = pattern[i + 1];
-                        if (!char.IsLetterOrDigit(e) && e != '_') set = [Utf8(e)];
+                        if (!char.IsLetterOrDigit(e) && e != '_') set = Clue(e);
                         else if (e == 't') set = [[(byte)'\t']];
                         i += 2;
                         // 引数の付くもの（\p{..} \k<..> \x41 A \cX・後方参照の数字）は引数ごと飛ばす
@@ -86,7 +86,7 @@ public static class RegexClues
                         break;
                     default:
                         if (char.IsSurrogate(c)) return null;
-                        set = [Utf8(c)];
+                        set = Clue(c);
                         i++;
                         break;
                 }
@@ -124,6 +124,12 @@ public static class RegexClues
 
     private static byte[] Utf8(char c) => Encoding.UTF8.GetBytes(c.ToString());
 
+    /// <summary>
+    /// 1 文字の手がかり。U+FFFD（置換文字）は使わない：壊れたバイト（FF など）をデコードしたときにも現れ、
+    /// 元のバイト列には EF BF BD が無いので、行を捨ててしまう（外部レビュー 2026-10-04 の指摘1）。
+    /// </summary>
+    private static List<byte[]>? Clue(char c) => c == '\uFFFD' ? null : [Utf8(c)];
+
     /// <summary>( から対応する ) の次の位置（文字クラス・逃がした括弧は数えない）。合わなければ -1。</summary>
     private static int SkipGroup(string p, int i)
     {
@@ -133,7 +139,14 @@ public static class RegexClues
             char c = p[i];
             if (c == '\\') { i++; continue; }
             if (c == '[') { int e = ClassEnd(p, i); if (e < 0) return -1; i = e; continue; }
-            if (c == '(') depth++;
+            if (c == '(')
+            {
+                // 中のオプション（(?x) の # コメントは ) を含められる）・コメント・条件式は読めないので取らない
+                //（外部レビュー 2026-10-04 の指摘2：(?:(?x)#)Z(改行) の Z を必須と取り違えた）
+                if (i + 2 < p.Length && p[i + 1] == '?' && p[i + 2] is not (':' or '<' or '\'' or '=' or '!' or '>'))
+                    return -1;
+                depth++;
+            }
             else if (c == ')' && --depth == 0) return i + 1;
         }
         return -1;
@@ -188,6 +201,7 @@ public static class RegexClues
         foreach (var (lo, hi) in ranges)
         {
             if (hi - lo > 0x10000) return null;
+            if (lo <= 0xFFFD && 0xFFFD <= hi) return null;   // 置換文字（Clue を参照）
             for (int cp = lo; cp <= hi; cp++)
             {
                 byte[] prefix = cp < 0x80 ? [(byte)cp]

@@ -334,14 +334,49 @@ public static class SearchService
     /// 正規表現の必須リテラルで候補行を探す係（使えないときは null＝全行を見る）。
     /// 大小無視・UTF-8 以外・リテラルが取れない式では使わない。
     /// </summary>
+    /// <remarks>
+    /// 候補のバイト列は直前の式の分を使い回す（多数ファイルの検索はファイルごとにここを通り、毎回式を読み直していた。
+    /// 外部レビュー 2026-10-04 の指摘6）。<see cref="LiteralFinder"/> は探した位置を覚えるので、毎回新しく作って渡す。
+    /// </remarks>
     public static LiteralFinder? CreatePrefilter(SearchOptions options, Encoding encoding)
     {
         if (!UseLiteralPrefilter || !options.UseRegex || options.IgnoreCase || !LiteralFinder.Supports(encoding))
             return null;
-        if (RegexLiterals.Extract(options.Pattern, ignoreCase: false) is { } literals)
-            return new LiteralFinder(literals, encoding);
-        // 2 文字以上の必須リテラルが無い式は、1 文字・文字クラスのバイトの並びで絞る（RegexClues）
-        return UseShortClues && RegexClues.Extract(options.Pattern) is { } clues ? new LiteralFinder(clues) : null;
+        bool shortClues = UseShortClues;
+        if (Volatile.Read(ref _lastNeedles) is not { } cached || cached.Pattern != options.Pattern || cached.ShortClues != shortClues)
+        {
+            byte[][]? needles = RegexLiterals.Extract(options.Pattern, ignoreCase: false) is { } literals
+                ? literals.Select(Encoding.UTF8.GetBytes).ToArray()
+                // 2 文字以上の必須リテラルが無い式は、1 文字・文字クラスのバイトの並びで絞る（RegexClues）
+                : shortClues && RegexClues.Extract(options.Pattern) is { } clues ? clues.ToArray() : null;
+            cached = new CachedNeedles(options.Pattern, shortClues, needles);
+            Volatile.Write(ref _lastNeedles, cached);
+        }
+        return cached.Needles is { } n ? new LiteralFinder(n) : null;
+    }
+
+    private sealed record CachedNeedles(string Pattern, bool ShortClues, byte[][]? Needles);
+    private static CachedNeedles? _lastNeedles;
+
+    /// <summary>
+    /// 大小無視（<c>-i</c>）の手がかり：当たる行には必ず入っている文字列を、ASCII の大小を畳んだ小文字のバイト列で返す（無ければ空）。
+    ///
+    /// <see cref="RegexLiterals.Extract"/> は大小無視のとき null を返す（<see cref="LiteralFinder"/> が
+    /// バイト一致しかできないため）。ここでは同じ抽出を大小を区別する形で1回行い、得られた必須リテラルを
+    /// <see cref="AsciiCaseFold.IndexOf"/> で大小を畳んで探す。当たる行は必ずそのリテラルの大小どれかを含むので
+    /// 取りこぼしは無い。<c>k</c>/<c>K</c> を含む部分と非 ASCII は <see cref="AsciiCaseFold.LongestFoldableRun"/> で避ける。
+    /// 候補が複数（選択肢）のときは、どれが入るか決められないので手がかりにしない。
+    /// 素の文字列（-E なし）の大小無視でも使う。uvf の RawGrep・uvp の並列検索・本体に任せる判断で同じものを使う。
+    /// </summary>
+    public static byte[] IcaseClue(SearchOptions options, Encoding encoding)
+    {
+        if (options is not { IgnoreCase: true } || !AsciiCaseFold.IsAsciiCompatible(encoding)) return [];
+        string? required = options.UseRegex
+            ? RegexLiterals.Extract(options.Pattern, ignoreCase: false) is [string only] ? only : null
+            : options.Pattern;
+        if (required is null) return [];
+        string run = AsciiCaseFold.LongestFoldableRun(required);
+        return run.Length == 0 ? [] : AsciiCaseFold.ToLowerBytes(run);
     }
 
     /// <summary>from から次の区切りの直後までファイル位置を進める（長大行の読み飛ばし）。</summary>

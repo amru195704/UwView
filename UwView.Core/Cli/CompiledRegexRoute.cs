@@ -1,3 +1,4 @@
+using System.Text;
 using System.Runtime.CompilerServices;
 
 namespace UwView.Core.Cli;
@@ -58,10 +59,16 @@ public static class CompiledRegexRoute
     /// 必須の文字列で候補行を絞れない正規表現か（全行に正規表現を当てることになる）。
     /// 短い手がかり（<see cref="RegexClues"/>・大小を区別するときだけ使う）で絞れる式は、当てる行が減るので任せない。
     /// 任せると、本体の起動と、ファイルごとの正規表現のコンパイルが乗るだけだった（カーネル 8.6 万本で 2 回目 12.9 秒。2026-10-04）。
+    /// 判断は実際の検索が使う手がかり（<see cref="SearchService.CreatePrefilter"/>・<see cref="SearchService.IcaseClue"/>）で行う。
+    /// 別の規則で見ると、<c>-i 'foo|bar'</c> <c>-i 東京</c> のように実際は全行に当てる式を「絞れる」と取り違えた（外部レビュー 2026-10-04 の指摘5）。
     /// </summary>
     public static bool ScansEveryLine(string pattern, bool ignoreCase = false)
-        => RegexLiterals.Extract(pattern, ignoreCase: false) is null
-           && (ignoreCase || !SearchService.UseShortClues || RegexClues.Extract(pattern) is null);
+    {
+        var options = new SearchOptions(pattern, UseRegex: true, IgnoreCase: ignoreCase);
+        return ignoreCase
+            ? SearchService.IcaseClue(options, Encoding.UTF8).Length == 0
+            : SearchService.CreatePrefilter(options, Encoding.UTF8) is null;
+    }
 
     /// <summary>uvf の引数から判断する。</summary>
     public static bool ForUvf(IReadOnlyList<string> argv)
