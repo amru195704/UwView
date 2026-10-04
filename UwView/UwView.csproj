@@ -9,6 +9,8 @@
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <!-- ビルド番号＝コンパイル日時（ローカル時刻）を yy.MM.dd.HH に。例: 26.07.21.21 -->
     <BuildNumber>$([System.DateTime]::Now.ToString("yy.MM.dd.HH"))</BuildNumber>
+    <!-- 指定したいとき（About に出す日時をそろえる）は環境変数 UV_BUILD_NUMBER=26.10.04.16 のように渡す（オーナー指示 2026-10-04） -->
+    <BuildNumber Condition="'$(UV_BUILD_NUMBER)' != ''">$(UV_BUILD_NUMBER)</BuildNumber>
   </PropertyGroup>
 
   <ItemGroup>
