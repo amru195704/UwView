@@ -8,8 +8,8 @@
     <RootNamespace>UwView.Cli</RootNamespace>
     <!-- コマンド名は uvf（無料版 UwView の CLI。オーナー指示 2026-09-14） -->
     <AssemblyName>uvf</AssemblyName>
-    <Version>1.7.3.6</Version>
-    <InformationalVersion>1.7.3.6.9</InformationalVersion>
+    <Version>1.7.3.7</Version>
+    <InformationalVersion>1.7.3.7</InformationalVersion>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <!-- ビルド番号＝コンパイル日時（ローカル時刻）を yy.MM.dd.HH に。版数の表示（version）に出す（本体の About と同じ値。オーナー指示 2026-10-04）。
          指定したいときは環境変数 UV_BUILD_NUMBER=26.10.04.16 のように渡す -->
