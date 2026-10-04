@@ -50,6 +50,12 @@ public static class SearchService
     /// 効果の測定（切ったときと比べる）と、万一の不具合時に元の動きへ戻すための切り替え。
     /// </summary>
     public static bool UseLiteralPrefilter { get; set; } = true;
+
+    /// <summary>
+    /// 必須リテラルが取れない式を、短い手がかり（<see cref="RegexClues"/>）で絞るか（既定 true）。
+    /// 調べる用に UV_NOSHORTCLUE=1 で切れる（直す前と比べるため）。
+    /// </summary>
+    public static bool UseShortClues { get; set; } = Environment.GetEnvironmentVariable("UV_NOSHORTCLUE") != "1";
     /// <summary>
     /// 読み込み単位。<see cref="Cli.RawGrep"/> と<b>同じ値にしておく</b>——
     /// 改行の無い長大行の扱いがこの大きさで決まるので、違うと同じ検索でも結果が変わる
@@ -332,9 +338,10 @@ public static class SearchService
     {
         if (!UseLiteralPrefilter || !options.UseRegex || options.IgnoreCase || !LiteralFinder.Supports(encoding))
             return null;
-        return RegexLiterals.Extract(options.Pattern, ignoreCase: false) is { } literals
-            ? new LiteralFinder(literals, encoding)
-            : null;
+        if (RegexLiterals.Extract(options.Pattern, ignoreCase: false) is { } literals)
+            return new LiteralFinder(literals, encoding);
+        // 2 文字以上の必須リテラルが無い式は、1 文字・文字クラスのバイトの並びで絞る（RegexClues）
+        return UseShortClues && RegexClues.Extract(options.Pattern) is { } clues ? new LiteralFinder(clues) : null;
     }
 
     /// <summary>from から次の区切りの直後までファイル位置を進める（長大行の読み飛ばし）。</summary>

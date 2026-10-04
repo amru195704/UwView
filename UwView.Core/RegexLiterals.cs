@@ -308,8 +308,12 @@ public sealed class LiteralFinder
     private readonly int[] _next;
 
     public LiteralFinder(IReadOnlyList<string> literals, Encoding encoding)
+        : this(literals.Select(encoding.GetBytes).ToArray()) { }
+
+    /// <summary>バイト列で渡す（<see cref="RegexClues"/> の短い手がかり。文字の途中までのバイト列もある）。</summary>
+    public LiteralFinder(IReadOnlyList<byte[]> needles)
     {
-        _needles = literals.Select(encoding.GetBytes).Where(b => b.Length > 0).ToArray();
+        _needles = needles.Where(b => b.Length > 0).ToArray();
         _next = new int[_needles.Length];
     }
 

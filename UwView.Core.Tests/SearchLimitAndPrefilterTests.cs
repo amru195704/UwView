@@ -43,6 +43,11 @@ public class SearchLimitAndPrefilterTests : IDisposable
     [InlineData(@"\d{4}-\d{2}")]
     [InlineData(@"^\d+ 東京")]
     [InlineData(@"(bus_stop""|東京都) \d{4}-\d{2}$")]
+    // 短い手がかり（RegexClues）で絞る式
+    [InlineData(@"[0-9]{4}-[0-9]{2}$")]
+    [InlineData(@"\d+ [東京]")]
+    [InlineData(@"[ぁ-ん駅]+")]
+    [InlineData(@"^\d+ k=.name:")]
     public async Task 前置フィルタの有無で結果が同じ(string pattern)
     {
         byte[] data = Tricky();
