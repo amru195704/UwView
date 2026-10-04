@@ -71,39 +71,23 @@ public static class RawGrep
     /// 読んだバイトを<b>順番どおり・隙間なく</b>受け取る係（Pro の CLI が .uwvz を同時に作るのに使う）。
     /// 一度渡したところをもう一度渡すことはある（受け手が重なりを捨てる約束。<c>SidecarAppender</c> と同じ規約）。
     /// </param>
+    /// <param name="prepared">
+    /// 検索の準備（正規表現・手がかり）。多数ファイルの検索は 1 つ作って全ファイルに渡す
+    /// （ファイルごとに式を読み直し、正規表現をコンパイルし直さないように）。省略時はここで作る。
+    /// </param>
     public static async Task<RawGrepOutcome> RunAsync(
         IByteSource src, int bomLength, Encoding encoding, SearchOptions options, bool invert,
         LineSink sink, CancellationToken ct = default, IndexMarks? index = null,
-        LongLine.Observer? observer = null)
+        LongLine.Observer? observer = null, PreparedSearch? prepared = null)
     {
-        // 判定の道具立て（素の文字列は SearchService と同じ選び方）
-        // バイト列のまま探せる文字コードに限る（同 指摘5）
-        bool bytePath = options is { UseRegex: false, IgnoreCase: false } && options.Pattern.Length > 0
-                        && AsciiCaseFold.IsAsciiCompatible(encoding);
-        byte[] needle = bytePath ? encoding.GetBytes(options.Pattern) : [];
-        if (bytePath && needle.Length == 0) bytePath = false;
-
-        // -i の素の文字列は、条件が合えばバイトのまま大小無視で探す（デコードも正規表現も要らない）
-        bool byteIcase = !bytePath
-            && options is { UseRegex: false, IgnoreCase: true }
-            && AsciiCaseFold.IsFoldable(options.Pattern)
-            && AsciiCaseFold.IsAsciiCompatible(encoding);
-        byte[] folded = byteIcase ? AsciiCaseFold.ToLowerBytes(options.Pattern) : [];
-        int foldAt = 0;
-        var foldAnchor = byteIcase ? AsciiCaseFold.Anchor(folded, out foldAt) : null;
-
-        bool literal = bytePath || byteIcase;
-        Regex? regex = literal ? null : BuildRegex(options);
+        // 判定の道具立て（探し方は SearchService・uvp と同じところで決める）
+        var plan = (prepared ?? PreparedSearch.Create(options)).For(encoding);
+        bool literal = plan.IsLiteral;
+        Regex? regex = literal ? null : plan.Regex;
         Decoder? decoder = literal ? null : encoding.GetDecoder();
-        LiteralFinder? prefilter = SearchService.CreatePrefilter(options, encoding);
-
-        // -i（正規表現でも素の文字列でも）の手がかり。`RegexLiterals` は大小無視だと必須リテラルを
-        // 出さない（`LiteralFinder` がバイト一致でしか探せないため）ので、こちらで用意する。
-        byte[] icaseClue = prefilter is null && !literal ? SearchService.IcaseClue(options, encoding) : [];
-        int clueAt = 0;
-        var clueAnchor = icaseClue.Length > 0 ? AsciiCaseFold.Anchor(icaseClue, out clueAt) : null;
-
-        bool hasClue = prefilter is not null || icaseClue.Length > 0;
+        // 手がかり（必須リテラル・短い手がかり・大小無視の手がかり）。あれば、そこへ飛びながら見る
+        var clues = plan.NewClueFinder();
+        bool hasClue = clues is not null;
 
         // 計測用（UV_TRACE=1）：どこに時間がかかっているかを標準エラーに出す（実装指示書 2026-10-03 §3.1）
         var trace = Environment.GetEnvironmentVariable("UV_TRACE") == "1" && !QuietTrace ? new Trace() : null;
@@ -160,7 +144,7 @@ public static class RawGrep
                         // 素の文字列は行の最後まで探す（先頭の1回ぶんで諦めると、後ろの一致を見落とす。
                         // 再々レビュー 2026-09-19 の指摘6）。読みの境目をまたぐ一致も拾う
                         bool found = FindFrom(span[..filled]) >= 0;
-                        int overlap = Math.Min(filled, (bytePath ? needle.Length : folded.Length) - 1);
+                        int overlap = Math.Min(filled, plan.Literal.Length - 1);
                         var (contentEnd, foundRest) = await LongLine.ScanRestAsync(
                             src, bufBase + filled, fileLength, (byte)'\n',
                             found ? ReadOnlyMemory<byte>.Empty : buf.AsMemory(filled - overlap, overlap),
@@ -206,9 +190,7 @@ public static class RawGrep
             }
 
             index?.Finish(fileLength, lineNo);
-            trace?.Report(icaseClue.Length > 0 ? icaseClue : literal ? (bytePath ? needle : folded) : [],
-                          prefilter is not null ? "prefilter" : icaseClue.Length > 0 ? "icase-clue" : literal ? "literal" : "none",
-                          regex is not null);
+            trace?.Report(plan.Clue, plan.ClueKind, regex is not null);
             return new RawGrepOutcome(hits, truncated);
 
             // region は行頭から始まる完結行の集まり。改行を数えながら出すべき行を出し、次の行番号を返す
@@ -223,7 +205,7 @@ public static class RawGrep
 
             long ScanByClue(ReadOnlySpan<byte> region, long regionBase, long firstLine)
             {
-                prefilter?.Reset();
+                clues?.Reset();
                 int cursor = 0;            // まだ見ていない範囲の先頭（必ず行頭）
                 long cursorLine = firstLine;
 
@@ -276,20 +258,14 @@ public static class RawGrep
                     int rel = FindFrom(region[cursor..]);
                     return rel < 0 ? -1 : cursor + rel;
                 }
-                if (prefilter is not null) return prefilter.IndexOf(region, cursor);
-                if (icaseClue.Length > 0)
-                {
-                    int rel = AsciiCaseFold.IndexOf(region[cursor..], icaseClue, clueAnchor!, clueAt);
-                    return rel < 0 ? -1 : cursor + rel;
-                }
-                return -1;
+                return clues?.IndexOf(region, cursor) ?? -1;
             }
 
-            // -v・手がかりの無い正規表現: 1行ずつ見る
+            // -v・手がかりの無い正規表現: 1行ずつ見る（手がかりがあれば、その位置を先回りして控え、無い行はデコードしない）
             long ScanLines(ReadOnlySpan<byte> region, long regionBase, long firstLine)
             {
-                prefilter?.Reset();
-                int candidate = prefilter is null ? -1 : prefilter.IndexOf(region, 0);
+                clues?.Reset();
+                int candidate = clues is null ? -1 : clues.IndexOf(region, 0);
 
                 long line = firstLine;
                 int start = 0;
@@ -299,10 +275,10 @@ public static class RawGrep
                     int end = nl < 0 ? region.Length : start + nl;
 
                     bool maybe = true;
-                    if (prefilter is not null)
+                    if (clues is not null)
                     {
                         while (candidate >= 0 && candidate < start)
-                            candidate = prefilter.IndexOf(region, candidate + 1);
+                            candidate = clues.IndexOf(region, candidate + 1);
                         maybe = candidate >= 0 && candidate < end;
                     }
 
@@ -339,11 +315,6 @@ public static class RawGrep
                 if (literal) return FindFrom(line) >= 0;
                 var probe = line.Length > MaxLineMatchBytes ? line[..MaxLineMatchBytes] : line;
 
-                // 前チェック: 当たるなら必ず入っている手がかりが無ければ、デコードせずに外す
-                // （-v はここを通る。手がかりで飛ぶ道が使えないため）
-                if (icaseClue.Length > 0 && AsciiCaseFold.IndexOf(probe, icaseClue, clueAnchor!, clueAt) < 0)
-                    return false;
-
                 long t0 = trace is null ? 0 : System.Diagnostics.Stopwatch.GetTimestamp();
                 decoder!.Reset();
                 int n = decoder.GetChars(probe, chars, flush: true);
@@ -358,8 +329,7 @@ public static class RawGrep
             }
 
             // 素の文字列（-i も）を探す。見つからなければ -1
-            int FindFrom(ReadOnlySpan<byte> hay)
-                => bytePath ? hay.IndexOf(needle) : AsciiCaseFold.IndexOf(hay, folded, foldAnchor!, foldAt);
+            int FindFrom(ReadOnlySpan<byte> hay) => plan.FindLiteral(hay);
         }
         finally
         {
@@ -390,26 +360,6 @@ public static class RawGrep
             AsciiCaseFold.CountChecks = false;
         }
     }
-
-    /// <summary>全行に当てる正規表現（<see cref="SearchService"/> の全文検索と同じ作り方）。</summary>
-    /// <remarks>
-    /// 直前に作ったものを使い回す（Regex は複数のスレッドから同時に当ててよい）。複数ファイルの検索は
-    /// 1 ファイルごとにここを通り、JIT の本体ではそのたびにコンパイルが走っていた（カーネル 8.6 万本の
-    /// <c>-E '[0-9]{4}-[0-9]{2}'</c> で 2 回目 12.9 秒。オーナーの grix テスト 2026-10-04）。
-    /// </remarks>
-    private static Regex BuildRegex(SearchOptions options)
-    {
-        var key = (options.Pattern, options.UseRegex, options.IgnoreCase);
-        if (Volatile.Read(ref _lastRegex) is { } last && last.Key == key) return last.Regex;
-        var regex = SearchService.BuildRegex(options);
-        if (!OperatingSystem.IsBrowser())
-            regex = new Regex(regex.ToString(), regex.Options | RegexOptions.Compiled, regex.MatchTimeout);
-        Volatile.Write(ref _lastRegex, new CachedRegex(key, regex));
-        return regex;
-    }
-
-    private sealed record CachedRegex((string Pattern, bool UseRegex, bool IgnoreCase) Key, Regex Regex);
-    private static CachedRegex? _lastRegex;
 
     /// <summary>
     /// 改行の本数（行番号づけの土台）。<see cref="MemoryExtensions.Count{T}"/> は SIMD で数えるので、

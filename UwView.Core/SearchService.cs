@@ -25,9 +25,10 @@ public sealed record SearchOutcome(long TotalHits, bool Truncated, bool Complete
 /// 文字列検索（§11-①）。索引と独立に IByteSource を直接スキャンする背景処理。
 /// ヒットは「マッチを含む行の行頭バイトオフセット」（昇順・1行1件）。
 /// バイトオフセット基準なのでエンコード切替・索引未完了（ページモード）でも一貫して有効。
-/// - literal（大小区別あり）: エンコード済みバイト列の SIMD IndexOf 高速パス
-/// - regex / 大小無視: 行単位デコード + Regex.IsMatch(Span) パス。
-///   正規表現に必須リテラルがあれば（<see cref="RegexLiterals"/>）、先にそのバイト列で候補行を探し、候補行だけをデコードして当てる
+/// 探し方（<see cref="SearchMethod"/>）は <see cref="PreparedSearch"/>／<see cref="SearchPlan"/> が決める（uvf・uvp と同じ）:
+/// - 素の文字列: バイト列の SIMD IndexOf（-i で畳める語は ASCII の大小を畳んで）
+/// - 正規表現など: 行単位デコード + Regex.IsMatch(Span)。手がかり（必須リテラル・短い手がかり・大小無視の手がかり）があれば、
+///   先にそのバイト列で候補行を探し、候補行だけをデコードして当てる
 /// </summary>
 public static class SearchService
 {
@@ -73,62 +74,38 @@ public static class SearchService
         return new Regex(pattern, opts, TimeSpan.FromSeconds(5));
     }
 
-    /// <summary>
-    /// 全文検索で全行に当てる正規表現。意味は <see cref="BuildRegex"/> と同じで、コンパイルする
-    /// （3GB の実測で指定なしより最大 1.6 倍速く、NonBacktracking は 3 割遅かった）。ブラウザ（WASM）はコンパイルしない。
-    /// </summary>
-    private static Regex BuildScanRegex(SearchOptions options)
-    {
-        var regex = BuildRegex(options);
-        return OperatingSystem.IsBrowser()
-            ? regex
-            : new Regex(regex.ToString(), regex.Options | RegexOptions.Compiled, regex.MatchTimeout);
-    }
-
     /// <param name="hitBatches">ヒットのバッチ通知。背景スレッドから同期的に呼ばれる
     /// （完了 await 前にすべての呼び出しが終わることを保証）。UI へのマーシャリングは呼び出し側で行う。</param>
     /// <param name="separator">行の区切り（文字コード・改行種別で決まる）。省略時は 1バイトの LF。
     /// 索引・表示と同じものを渡すこと（再レビュー 2026-09-19 の指摘A。UTF-16 や CR 単独で結果がずれていた）。</param>
+    /// <param name="prepared">同じ検索をいくつものファイルに当てるときの準備（省略時はここで作る）。</param>
     public static Task<SearchOutcome> SearchAsync(
         IByteSource src, int bomLength, Encoding encoding, SearchOptions options,
         Action<IReadOnlyList<long>>? hitBatches = null,
         IProgress<double>? progress = null,
         CancellationToken ct = default,
-        LineSeparator? separator = null)
-        => Task.Run(() => SearchCore(src, bomLength, encoding, options, hitBatches, progress, ct, separator), ct);
+        LineSeparator? separator = null,
+        PreparedSearch? prepared = null)
+        => Task.Run(() => SearchCore(src, bomLength, encoding, options, hitBatches, progress, ct, separator, prepared), ct);
 
     private static async Task<SearchOutcome> SearchCore(
         IByteSource src, int bomLength, Encoding encoding, SearchOptions options,
         Action<IReadOnlyList<long>>? hitBatches, IProgress<double>? progress, CancellationToken ct,
-        LineSeparator? separator = null)
+        LineSeparator? separator, PreparedSearch? prepared)
     {
         var sep = separator ?? new LineSeparator((byte)'\n', 1, 0);
         long fileLength = src.Length;
         long contentBytes = Math.Max(1, fileLength - bomLength);
 
-        // バイト列のまま探せるのは、ASCII がそのまま現れて1対1に対応する文字コードだけ
-        //（Shift-JIS 等は2バイト文字の後半に当たる。ソースレビュー 2026-09-19 の指摘5）
-        bool bytePath = options is { UseRegex: false, IgnoreCase: false } && options.Pattern.Length > 0
-                        && AsciiCaseFold.IsAsciiCompatible(encoding);
-        byte[] needle = bytePath ? encoding.GetBytes(options.Pattern) : [];
-        if (bytePath && needle.Length == 0) bytePath = false;
-
-        // -i の素の文字列も、条件が合えばバイトのまま大小無視で探す（RawGrep と同じ選び方）。
-        // デコード＋正規表現だと長大行を先頭 64KB までしか見られず、索引ありと索引なしで
-        // 同じファイルの答えが変わっていた（再レビュー 2026-09-19 の指摘E）
-        bool byteIcase = !bytePath
-            && options is { UseRegex: false, IgnoreCase: true }
-            && AsciiCaseFold.IsFoldable(options.Pattern)
-            && AsciiCaseFold.IsAsciiCompatible(encoding);
-        byte[] folded = byteIcase ? AsciiCaseFold.ToLowerBytes(options.Pattern) : [];
-        int foldAt = 0;
-        var foldAnchor = byteIcase ? AsciiCaseFold.Anchor(folded, out foldAt) : null;
-
-        bool literal = bytePath || byteIcase;
-        int literalLength = bytePath ? needle.Length : folded.Length;
-        Regex? regex = literal ? null : BuildScanRegex(options);
+        // 探し方は uvf・uvp と同じところで決める。-i の素の文字列もバイトのまま畳める語ならバイトで探す
+        //（デコード＋正規表現だと長大行を先頭 64KB までしか見られず、索引ありと索引なしで
+        // 同じファイルの答えが変わっていた。再レビュー 2026-09-19 の指摘E）
+        var plan = (prepared ?? PreparedSearch.Create(options)).For(encoding);
+        bool literal = plan.IsLiteral;
+        int literalLength = plan.Literal.Length;
+        Regex? regex = literal ? null : plan.Regex;
         Decoder? decoder = literal ? null : encoding.GetDecoder();
-        LiteralFinder? prefilter = CreatePrefilter(options, encoding);
+        var prefilter = plan.NewClueFinder();
         long limit = options.HitLimit;
 
         long totalHits = 0;
@@ -244,9 +221,7 @@ public static class SearchService
             int searchFrom = 0;
             while (searchFrom < region.Length)
             {
-                int rel = bytePath
-                    ? region[searchFrom..].IndexOf(needle)
-                    : AsciiCaseFold.IndexOf(region[searchFrom..], folded, foldAnchor!, foldAt);
+                int rel = plan.FindLiteral(region[searchFrom..]);
                 if (rel < 0) break;
                 int hitAt = searchFrom + rel;
 
@@ -284,7 +259,7 @@ public static class SearchService
             }
         }
 
-        // regex パス（必須リテラルあり）: リテラルの現れる行だけをデコードして当てる。判定は上と同じ
+        // regex パス（手がかりあり）: 手がかりの現れる行だけをデコードして当てる。判定は上と同じ
         void ProcessCandidateLines(ReadOnlySpan<byte> region, long regionBase)
         {
             prefilter!.Reset();
@@ -317,9 +292,7 @@ public static class SearchService
             => sep.EndsWithCarriageReturn(line) ? line[..^sep.UnitSize] : line;
 
         // 素の文字列を探す（大小を区別する／ASCII の大小を畳む）。長大行の残りを読むときにも使う
-        int FindLiteral(ReadOnlySpan<byte> hay) => bytePath
-            ? hay.IndexOf(needle)
-            : AsciiCaseFold.IndexOf(hay, folded, foldAnchor!, foldAt);
+        int FindLiteral(ReadOnlySpan<byte> hay) => plan.FindLiteral(hay);
 
         bool AddHit(long lineOffset)
         {
@@ -328,55 +301,6 @@ public static class SearchService
             if (totalHits >= limit) { truncated = true; Flush(); return true; }
             return false;
         }
-    }
-
-    /// <summary>
-    /// 正規表現の必須リテラルで候補行を探す係（使えないときは null＝全行を見る）。
-    /// 大小無視・UTF-8 以外・リテラルが取れない式では使わない。
-    /// </summary>
-    /// <remarks>
-    /// 候補のバイト列は直前の式の分を使い回す（多数ファイルの検索はファイルごとにここを通り、毎回式を読み直していた。
-    /// 外部レビュー 2026-10-04 の指摘6）。<see cref="LiteralFinder"/> は探した位置を覚えるので、毎回新しく作って渡す。
-    /// </remarks>
-    public static LiteralFinder? CreatePrefilter(SearchOptions options, Encoding encoding)
-    {
-        if (!UseLiteralPrefilter || !options.UseRegex || options.IgnoreCase || !LiteralFinder.Supports(encoding))
-            return null;
-        bool shortClues = UseShortClues;
-        if (Volatile.Read(ref _lastNeedles) is not { } cached || cached.Pattern != options.Pattern || cached.ShortClues != shortClues)
-        {
-            byte[][]? needles = RegexLiterals.Extract(options.Pattern, ignoreCase: false) is { } literals
-                ? literals.Select(Encoding.UTF8.GetBytes).ToArray()
-                // 2 文字以上の必須リテラルが無い式は、1 文字・文字クラスのバイトの並びで絞る（RegexClues）
-                : shortClues && RegexClues.Extract(options.Pattern) is { } clues ? clues.ToArray() : null;
-            cached = new CachedNeedles(options.Pattern, shortClues, needles);
-            Volatile.Write(ref _lastNeedles, cached);
-        }
-        return cached.Needles is { } n ? new LiteralFinder(n) : null;
-    }
-
-    private sealed record CachedNeedles(string Pattern, bool ShortClues, byte[][]? Needles);
-    private static CachedNeedles? _lastNeedles;
-
-    /// <summary>
-    /// 大小無視（<c>-i</c>）の手がかり：当たる行には必ず入っている文字列を、ASCII の大小を畳んだ小文字のバイト列で返す（無ければ空）。
-    ///
-    /// <see cref="RegexLiterals.Extract"/> は大小無視のとき null を返す（<see cref="LiteralFinder"/> が
-    /// バイト一致しかできないため）。ここでは同じ抽出を大小を区別する形で1回行い、得られた必須リテラルを
-    /// <see cref="AsciiCaseFold.IndexOf"/> で大小を畳んで探す。当たる行は必ずそのリテラルの大小どれかを含むので
-    /// 取りこぼしは無い。<c>k</c>/<c>K</c> を含む部分と非 ASCII は <see cref="AsciiCaseFold.LongestFoldableRun"/> で避ける。
-    /// 候補が複数（選択肢）のときは、どれが入るか決められないので手がかりにしない。
-    /// 素の文字列（-E なし）の大小無視でも使う。uvf の RawGrep・uvp の並列検索・本体に任せる判断で同じものを使う。
-    /// </summary>
-    public static byte[] IcaseClue(SearchOptions options, Encoding encoding)
-    {
-        if (options is not { IgnoreCase: true } || !AsciiCaseFold.IsAsciiCompatible(encoding)) return [];
-        string? required = options.UseRegex
-            ? RegexLiterals.Extract(options.Pattern, ignoreCase: false) is [string only] ? only : null
-            : options.Pattern;
-        if (required is null) return [];
-        string run = AsciiCaseFold.LongestFoldableRun(required);
-        return run.Length == 0 ? [] : AsciiCaseFold.ToLowerBytes(run);
     }
 
     /// <summary>from から次の区切りの直後までファイル位置を進める（長大行の読み飛ばし）。</summary>

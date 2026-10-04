@@ -15,6 +15,11 @@
     <PackageReference Include="K4os.Compression.LZ4.Streams" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- 正規表現の字句の読み取り（RegexSyntax）を直接試すため -->
+    <InternalsVisibleTo Include="UwView.Core.Tests" />
+  </ItemGroup>
+
   <!-- 試験用ビルドの呼び名。EDITION="Wide Field" を与えたときだけ焼き込む（AppEdition が読む）。
        本番ビルドでは何も足さない。UVP もこのプロジェクトを参照しているので、ここ1か所で両製品に効く。 -->
   <ItemGroup Condition="'$(EDITION)' != ''">

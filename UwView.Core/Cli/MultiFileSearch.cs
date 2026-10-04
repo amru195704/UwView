@@ -96,6 +96,8 @@ public static class MultiFileSearch
         // 開くときは絶対パスにする（相対パスのままだと、.NET が開くたびに今いるフォルダーを OS に問い合わせて
         // 作り直す。カーネル 8.6 万本を 8 並列で開いて読むだけで 2.33 秒 → 1.59 秒。2026-10-03）。出力の名前は書いたとおり
         string root = Directory.GetCurrentDirectory();
+        // 式の準備（正規表現のコンパイル・手がかり）は 1 回だけ。全ファイル・全作業役で使い回す
+        var prepared = PreparedSearch.Create(options);
         var order = new OrderedOutput(output, files.Count);
         var results = new (long Hits, bool Truncated, string? Reason)[files.Count];
         int taken = -1;
@@ -117,7 +119,7 @@ public static class MultiFileSearch
                     if (trace is not null) Interlocked.Add(ref trace.Wait, Trace.Now - w0);
                     string file = files[index];
                     string path = Path.IsPathRooted(file) ? file : Path.Join(root, file);
-                    results[index] = await OneFileAsync(path, kinds[index], options, invert, json, lineNumbers,
+                    results[index] = await OneFileAsync(path, kinds[index], prepared, invert, json, lineNumbers,
                                                         withFileName ? file : null, index, order, ct, decodeThreads,
                                                         small, verifyPlain ? skipped : null, trace);
                 }
@@ -223,7 +225,7 @@ public static class MultiFileSearch
     }
 
     private static async Task<(long Hits, bool Truncated, string? Reason)> OneFileAsync(
-        string file, CompressedKind kind, SearchOptions options, bool invert, bool json, bool lineNumbers, string? name,
+        string file, CompressedKind kind, PreparedSearch prepared, bool invert, bool json, bool lineNumbers, string? name,
         int index, OrderedOutput order, CancellationToken ct, int decodeThreads, byte[] small,
         (bool Pbf, CompressedProbe Probe)?[]? skipped = null, Trace? trace = null)
     {
@@ -296,7 +298,7 @@ public static class MultiFileSearch
 
             long t2 = trace is null ? 0 : Trace.Now;
             var outcome = await RawGrep.RunAsync(
-                source, detected.BomLength, encoding, options, invert,
+                source, detected.BomLength, encoding, prepared.Options, invert,
                 (line, _, text) =>
                 {
                     hits++;
@@ -305,7 +307,7 @@ public static class MultiFileSearch
                         ? (lineNumbers ? JsonLines.Hit(name, line + 1, body) : JsonLines.HitWithoutNumber(name, body))
                         : Text(name, lineNumbers, line, body));
                     if (!direct && buffer.GetStringBuilder().Length >= BufferLimit) GoDirect();
-                }, ct);
+                }, ct, prepared: prepared);
             if (trace is not null) Interlocked.Add(ref trace.Search, Trace.Now - t2);
             truncated = outcome.Truncated;
         }

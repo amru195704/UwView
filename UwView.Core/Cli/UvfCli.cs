@@ -73,6 +73,12 @@ public sealed class UvfEnvironment
     /// <summary><c>--version</c> で版数の後ろに出すビルド番号（画面の About と同じ値。無ければ出さない）。</summary>
     public string BuildNumber { get; init; } = "";
 
+    /// <summary>
+    /// 本体に任せるかを決めるときに広げた入力（<see cref="CompiledRegexRoute.ForUvf(IReadOnlyList{string}, out CompiledRegexRoute.ExpandedInput?)"/>）。
+    /// 同じ指定なら、もう一度広げずに使う（8.6 万本で 1 回ぶんの列挙を省く）。
+    /// </summary>
+    public CompiledRegexRoute.ExpandedInput? Expanded { get; init; }
+
     /// <summary>設定ファイルの置き場（<c>--tune --apply</c> の保存先）。uvp は自分のフォルダを渡す。</summary>
     public string SettingsFolder { get; init; } = CliLanguage.FreeSettingsFolder;
 
@@ -360,7 +366,9 @@ public static class UvfCli
             && (FileSet.IsMultiple(specification) || inv.FileNames == true || inv.ListFiles))
         {
             long te = Stopwatch.GetTimestamp();
-            var found = FileSet.Expand(specification, ignore: inv.Ignore);
+            var found = env.Expanded is { } pre && pre.Specification == specification
+                ? pre.Result
+                : FileSet.Expand(specification, ignore: inv.Ignore);
             if (Environment.GetEnvironmentVariable("UV_TRACE") == "1")
                 env.StdErr.WriteLine($"uv_trace: multi files={found.Files.Count} t_expand={Stopwatch.GetElapsedTime(te).TotalSeconds:F3}");
             // 調べる用：UV_LISTONLY=1 なら広げるだけで探さない（広げる時間だけを測る）

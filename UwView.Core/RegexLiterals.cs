@@ -18,44 +18,37 @@ namespace UwView.Core;
 /// <item><c>?</c> <c>*</c> <c>{0,…}</c> の付いた要素は必須でない。<c>+</c> <c>{1,…}</c> は1回分だけ必須</item>
 /// <item>選択肢がすべてリテラルのグループ <c>(bus_stop|traffic_signals)</c> は、候補の集合として前後とつなぐ</item>
 /// <item>全体が <c>a|b</c> のときは、枝ごとの必須リテラルの和集合（1つでも取れない枝があれば null）</item>
+/// <item>オプション <c>(?i)</c>・コメント・条件式は、グループの中にあっても読まない（null）</item>
 /// </list>
+/// 字句の読み取りは <see cref="RegexSyntax"/>（RegexClues・RegexDialect と共用）。
+/// 長さ・数の上限（速さの都合）は <see cref="SearchTuning.AcceptLiterals"/>。
 /// </summary>
 public static class RegexLiterals
 {
-    /// <summary>候補の数の上限（多すぎると1つずつ探す手間が勝つ）。</summary>
-    public const int MaxAlternatives = 16;
-
-    /// <summary>この長さ未満のリテラルは絞り込みに使わない（1文字はほぼ全行に当たる）。</summary>
-    public const int MinLength = 2;
-
-    /// <summary>必須リテラルの集合。取れなければ null。</summary>
+    /// <summary>必須リテラルの集合（使える長さ・数のもの）。取れなければ null。</summary>
     public static IReadOnlyList<string>? Extract(string pattern, bool ignoreCase)
+        => ignoreCase ? null : Required(pattern) is { } best && SearchTuning.AcceptLiterals(best) ? best : null;
+
+    /// <summary>
+    /// 当たる行が必ずどれかを含む文字列の集合（長さ・数を問わない）。式を読めない・バイト列で探せない文字を含むなら null。
+    /// ここは<b>答えを守る条件</b>だけを見る。
+    /// </summary>
+    internal static IReadOnlyList<string>? Required(string pattern)
     {
-        if (ignoreCase || string.IsNullOrEmpty(pattern)) return null;
+        if (string.IsNullOrEmpty(pattern)) return null;
         pattern = RegexDialect.Normalize(pattern);   // 照合と同じ読み替え（(?P< のまま読むと必須の文字を取り違える）
         try
         {
             var parser = new Parser(pattern);
             var result = parser.ParseAlternation(topLevel: true);
             if (parser.Failed || !parser.AtEnd || result.Best is not { } best) return null;
-            if (best.Count > MaxAlternatives || best.Any(s => s.Length < MinLength || s.Contains('�') || HasLoneSurrogate(s))) return null;
+            if (best.Count == 0 || best.Any(s => s.Length == 0 || !RegexSyntax.IsByteSafe(s))) return null;
             return best.Distinct(StringComparer.Ordinal).ToList();
         }
         catch (Exception e) when (e is ArgumentException or IndexOutOfRangeException or InvalidOperationException)
         {
             return null;
         }
-    }
-
-    /// <summary>対になっていないサロゲートを含むか（UTF-8 にすると EF BF BD になり、元のデータに無い）。</summary>
-    private static bool HasLoneSurrogate(string s)
-    {
-        for (int i = 0; i < s.Length; i++)
-        {
-            if (char.IsHighSurrogate(s[i]) && i + 1 < s.Length && char.IsLowSurrogate(s[i + 1])) { i++; continue; }
-            if (char.IsSurrogate(s[i])) return true;
-        }
-        return false;
     }
 
     /// <summary>
@@ -67,6 +60,7 @@ public static class RegexLiterals
 
     private sealed class Parser(string p)
     {
+        private const int MaxAlternatives = SearchTuning.MaxLiteralAlternatives;   // 組み合わせが増えすぎないように
         private int _i;
         public bool Failed { get; private set; }
         public bool AtEnd => _i >= p.Length;
@@ -122,67 +116,40 @@ public static class RegexLiterals
                 switch (c)
                 {
                     case '\\':
-                        if (_i + 1 >= p.Length) { Failed = true; return (null, null); }
-                        char e = p[_i + 1];
-                        if (!char.IsLetterOrDigit(e) && e != '_') { literal = e.ToString(); _i += 2; }
-                        else if (e == 't') { literal = "\t"; _i += 2; }
-                        else
-                        {
-                            // \d \w \s \b \p{..} \x.. \u.... \1 \k<..> など: 切れ目として読み飛ばす。
-                            // 引数の付くものは引数ごと飛ばす（\x41 の "41" をリテラルと読まないように）
-                            breaks = true;
-                            _i += 2;
-                            if ((e is 'p' or 'P' or 'k') && _i < p.Length && p[_i] is '{' or '<' or '\'')
-                            {
-                                char close = p[_i] == '{' ? '}' : p[_i] == '<' ? '>' : '\'';
-                                int end = p.IndexOf(close, _i);
-                                if (end < 0) { Failed = true; return (null, null); }
-                                _i = end + 1;
-                            }
-                            else if (e == 'x') _i += 2;
-                            else if (e == 'u') _i += 4;
-                            else if (e == 'c') _i += 1;
-                            else if (char.IsDigit(e)) while (_i < p.Length && char.IsDigit(p[_i])) _i++;
-                            if (_i > p.Length) { Failed = true; return (null, null); }
-                        }
+                        // \d \w \s \b \p{..} \x.. \u.... \1 \k<..> など（Other）は切れ目として読み飛ばす
+                        var kind = RegexSyntax.ReadEscape(p, ref _i, out char escaped);
+                        if (kind == RegexSyntax.EscapeKind.Broken) { Failed = true; return (null, null); }
+                        if (kind == RegexSyntax.EscapeKind.Literal) literal = escaped.ToString();
+                        else breaks = true;
                         break;
                     case '[':
-                        SkipClass();
-                        if (Failed) return (null, null);
+                        int classEnd = RegexSyntax.ClassEnd(p, _i);
+                        if (classEnd < 0) { Failed = true; return (null, null); }
+                        _i = classEnd + 1;
                         breaks = true;
                         break;
                     case '(':
-                        _i++;
-                        if (_i < p.Length && p[_i] == '?')
+                        switch (RegexSyntax.OpenGroup(p, _i, out int body))
                         {
-                            if (_i + 1 < p.Length && p[_i + 1] == ':') _i += 2;
-                            else if (_i + 1 < p.Length && p[_i + 1] == '>') _i += 2;
-                            else if (_i + 2 < p.Length && p[_i + 1] == '<' && p[_i + 2] is not ('=' or '!')
-                                     || _i + 1 < p.Length && p[_i + 1] == '\'')
-                            {
-                                char close = p[_i + 1] == '<' ? '>' : '\'';
-                                int end = p.IndexOf(close, _i + 2);
-                                if (end < 0) { Failed = true; return (null, null); }
-                                _i = end + 1;
-                            }
-                            else if (_i + 1 < p.Length && p[_i + 1] is '=' or '!'
-                                     || _i + 2 < p.Length && p[_i + 1] == '<' && p[_i + 2] is '=' or '!')
-                            {
+                            case RegexSyntax.GroupKind.Unsupported:
+                                Failed = true;                       // (?i) などのオプション・コメント・条件式は扱わない
+                                return (null, null);
+                            case RegexSyntax.GroupKind.Lookaround:
                                 // 先読み・後読み: 本文を消費しないので必須リテラルにしない
-                                _i--;                                  // '(' から読み直して対応する ')' まで飛ばす
-                                SkipGroup();
-                                if (Failed) return (null, null);
-                                breaks = true;
+                                _i = RegexSyntax.SkipGroup(p, _i);
+                                if (_i < 0) { Failed = true; return (null, null); }
                                 isPure = false;
                                 Flush();
+                                if (RegexSyntax.ReadQuantifier(p, ref _i).Min < 0) { Failed = true; return (null, null); }
                                 continue;
-                            }
-                            else { Failed = true; return (null, null); }   // (?i) などのオプション・条件式は扱わない
+                            default:
+                                _i = body;
+                                var inner = ParseAlternation(topLevel: false);
+                                if (Failed) return (null, null);
+                                groupSet = inner.PureLiterals;
+                                groupBest = inner.Best;
+                                break;
                         }
-                        var inner = ParseAlternation(topLevel: false);
-                        if (Failed) return (null, null);
-                        groupSet = inner.PureLiterals;
-                        groupBest = inner.Best;
                         break;
                     case '.' or '^' or '$':
                         _i++;
@@ -193,23 +160,15 @@ public static class RegexLiterals
                         Failed = true;
                         return (null, null);
                     default:
-                        if (!char.IsSurrogate(c)) { literal = c.ToString(); _i++; break; }
-                        // 絵文字など（UTF-16 で 2 つ）。.NET の量指定子は後ろの 1 つだけに掛かるので、
-                        // 量指定子の付かない対だけを 1 文字として取る。それ以外は切れ目にする
-                        //（a😀? で a と上位サロゲートだけを必須と取り、UTF-8 にできず行を捨てた。外部レビュー 2026-10-04 の指摘3）
-                        if (char.IsHighSurrogate(c) && _i + 1 < p.Length && char.IsLowSurrogate(p[_i + 1])
-                            && !(_i + 2 < p.Length && p[_i + 2] is '*' or '+' or '?' or '{'))
-                        {
-                            literal = p.Substring(_i, 2);
-                            _i += 2;
-                        }
-                        else { breaks = true; _i++; }
+                        // サロゲートの対は 2 つまとめて 1 文字。量指定子の付く対・片側だけのものは切れ目
+                        literal = RegexSyntax.ReadLiteral(p, ref _i);
+                        if (literal is null) breaks = true;
                         break;
                 }
 
                 // 量指定子
-                var (min, quantified) = ReadQuantifier();
-                if (Failed) return (null, null);
+                var (min, quantified) = RegexSyntax.ReadQuantifier(p, ref _i);
+                if (min < 0) { Failed = true; return (null, null); }
 
                 if (quantified) isPure = false;
                 if (breaks) { isPure = false; Flush(); continue; }
@@ -245,75 +204,6 @@ public static class RegexLiterals
                 .ThenBy(set => set.Count)
                 .FirstOrDefault();
             return (best, isPure ? pure.ToString() : null);
-        }
-
-        /// <summary>量指定子を読む。返り値は最小回数（無ければ 1）と、量指定子があったか。</summary>
-        private (int Min, bool Quantified) ReadQuantifier()
-        {
-            if (_i >= p.Length) return (1, false);
-            int min;
-            switch (p[_i])
-            {
-                case '*': min = 0; _i++; break;
-                case '?': min = 0; _i++; break;
-                case '+': min = 1; _i++; break;
-                case '{':
-                {
-                    int end = p.IndexOf('}', _i);
-                    if (end < 0) { Failed = true; return (1, false); }
-                    string body = p[(_i + 1)..end];
-                    string first = body.Split(',')[0];
-                    if (!int.TryParse(first, out min)) { Failed = true; return (1, false); }
-                    _i = end + 1;
-                    break;
-                }
-                default: return (1, false);
-            }
-            if (_i < p.Length && p[_i] is '?' or '+') _i++;   // 最短一致・強欲
-            return (min, true);
-        }
-
-        private void SkipClass()
-        {
-            _i++;                                      // '['
-            if (_i < p.Length && p[_i] == '^') _i++;
-            if (_i < p.Length && p[_i] == ']') _i++;   // 先頭の ] は文字
-            while (_i < p.Length && p[_i] != ']')
-            {
-                if (p[_i] == '\\') _i++;
-                else if (p[_i] == '[' && _i + 1 < p.Length && p[_i + 1] == ':')   // [:alpha:] 形式
-                {
-                    int end = p.IndexOf(":]", _i + 2, StringComparison.Ordinal);
-                    if (end > 0) _i = end + 1;
-                }
-                // .NET の文字クラス減算 [a-z-[aeiou]]。内側のクラスごと飛ばさないと、
-                // 内側の ] でクラスが終わったと誤解し、余った ] を必須文字列として拾ってしまう
-                //（ソースレビュー 2026-09-19 の指摘6。絞り込みで一致する行を捨てていた）
-                else if (p[_i] == '-' && _i + 1 < p.Length && p[_i + 1] == '[')
-                {
-                    _i++;
-                    SkipClass();
-                    if (Failed) return;
-                    continue;
-                }
-                _i++;
-            }
-            if (_i >= p.Length) { Failed = true; return; }
-            _i++;                                      // ']'
-        }
-
-        private void SkipGroup()
-        {
-            int depth = 0;
-            for (; _i < p.Length; _i++)
-            {
-                char c = p[_i];
-                if (c == '\\') { _i++; continue; }
-                if (c == '[') { SkipClass(); if (Failed) return; _i--; continue; }
-                if (c == '(') depth++;
-                else if (c == ')' && --depth == 0) { _i++; return; }
-            }
-            Failed = true;
         }
     }
 }

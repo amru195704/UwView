@@ -114,7 +114,7 @@ namespace UwView.Cli
         {
             // 必須の文字列で絞れない正規表現を大きな入力に当てるときは、JIT で動く本体に任せる
             //（NativeAOT は正規表現をコンパイルできず約 2 倍遅い。CompiledRegexRoute）
-            if (UwView.Core.Cli.CompiledRegexRoute.ForUvf(args) && GuiLocator.Find() is { } gui)
+            if (UwView.Core.Cli.CompiledRegexRoute.ForUvf(args, out var expanded) && GuiLocator.Find() is { } gui)
                 return MainApp.Run(gui, args);
 
             UwView.Core.EncodingDetector.EnsureCodePagesRegistered();
@@ -130,6 +130,7 @@ namespace UwView.Cli
                 Japanese = UwView.Core.Cli.CliLanguage.IsJapanese(UwView.Core.Cli.CliLanguage.FreeSettingsFolder),
                 AppVersion = VersionText(),
                 BuildNumber = UwView.Core.AppEdition.BuildNumberOf(typeof(InProcess).Assembly),
+                Expanded = expanded,     // 任せる判断で広げた一覧（同じ指定なら広げ直さない）
                 // -open: 画面が要るので本体を起動する（検索パターンとファイル、CLI が見つけた結果の置き場所を渡す）
                 LaunchGui = (file, pattern) => LaunchGui(
                     (pattern is not null && file is not null

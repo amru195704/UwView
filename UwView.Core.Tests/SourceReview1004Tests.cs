@@ -91,7 +91,7 @@ public class SourceReview1004Tests : IDisposable
         Assert.Equal("(?<n>[a-z-[aeiou]])(?<m>y)", RegexDialect.Normalize("(?P<n>[a-z-[aeiou]])(?P<m>y)"));
     }
 
-    // 指摘5: 大小無視の「絞れる」判断を、実際の検索が使う手がかりで行う
+    // 指摘5: 大小無視の「絞れる」判断を、実際の検索が使う方式で行う
     [Theory]
     [InlineData("foo|bar", true)]                  // 候補が2つ：-i の手がかりにならない
     [InlineData("東京", true)]                      // ASCII の部分が無い
@@ -100,23 +100,25 @@ public class SourceReview1004Tests : IDisposable
     public void 指摘5_大小無視の判断が実際の検索と同じ(string pattern, bool scansEveryLine)
     {
         Assert.Equal(scansEveryLine, CompiledRegexRoute.ScansEveryLine(pattern, ignoreCase: true));
-        var options = new SearchOptions(pattern, UseRegex: true, IgnoreCase: true);
-        Assert.Equal(scansEveryLine, SearchService.IcaseClue(options, Encoding.UTF8).Length == 0);
+        var plan = PreparedSearch.Create(new SearchOptions(pattern, UseRegex: true, IgnoreCase: true)).For(Encoding.UTF8);
+        Assert.Equal(scansEveryLine, plan.Method == SearchMethod.EveryLine);
     }
 
-    // 指摘6: 同じ式の手がかりを、ファイルごとに作り直さない（探した位置を覚える係だけ新しく作る）
+    // 指摘6: 同じ検索の準備を、ファイルごとに作り直さない（探した位置を覚える係だけ新しく作る）
     [Fact]
-    public void 指摘6_同じ式なら手がかりを使い回す()
+    public void 指摘6_同じ検索なら準備を使い回す()
     {
-        var options = new SearchOptions("[ぁ-ん]{3,}", UseRegex: true);
-        var first = SearchService.CreatePrefilter(options, Encoding.UTF8);
-        long before = GC.GetAllocatedBytesForCurrentThread();
-        for (int i = 0; i < 100; i++) SearchService.CreatePrefilter(options, Encoding.UTF8);
-        long perCall = (GC.GetAllocatedBytesForCurrentThread() - before) / 100;
+        var prepared = PreparedSearch.Create(new SearchOptions("[ぁ-ん]{3,}", UseRegex: true));
+        var plan = prepared.For(Encoding.UTF8);
+        Assert.Same(plan, prepared.For(new UTF8Encoding(true)));   // 同じ文字コードなら同じ方式
+        Assert.Same(prepared.Regex, prepared.Regex);               // 正規表現のコンパイルは 1 回
+        Assert.Equal(SearchMethod.CandidateLines, plan.Method);
 
-        var second = SearchService.CreatePrefilter(options, Encoding.UTF8);
-        Assert.NotNull(first);
-        Assert.NotSame(first, second);
-        Assert.True(perCall < 1024, $"1 回 {perCall} バイト");
+        var first = plan.NewClueFinder();
+        long before = GC.GetAllocatedBytesForCurrentThread();
+        for (int i = 0; i < 100; i++) prepared.For(Encoding.UTF8).NewClueFinder();
+        long perFile = (GC.GetAllocatedBytesForCurrentThread() - before) / 100;
+        Assert.NotSame(first, plan.NewClueFinder());
+        Assert.True(perFile < 512, $"1 ファイル {perFile} バイト");
     }
 }

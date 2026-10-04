@@ -14,11 +14,8 @@ namespace UwView.Core.Cli;
 /// </summary>
 public static class CompiledRegexRoute
 {
-    /// <summary>
-    /// 本体に任せる入力の大きさ（展開後の目安）。NativeAOT で余計にかかる時間は約 1.1 ミリ秒/MB（3G 実測）で、
-    /// 本体の起動（約 0.15 秒）と釣り合うのが 130MB 前後。余裕をみてこの大きさから。
-    /// </summary>
-    public const long MinTextBytes = 256L << 20;
+    /// <summary>本体に任せる入力の大きさ（展開後の目安。<see cref="SearchTuning.HandoffMinTextBytes"/>）。</summary>
+    public const long MinTextBytes = SearchTuning.HandoffMinTextBytes;
 
     /// <summary>調べる用：これが "1" なら本体に任せない（uvf は UVF_NO_HANDOFF・uvp は UVP_NO_HANDOFF）。</summary>
     public static bool HandoffDisabled(string variable) => Environment.GetEnvironmentVariable(variable) == "1";
@@ -59,25 +56,35 @@ public static class CompiledRegexRoute
     /// 必須の文字列で候補行を絞れない正規表現か（全行に正規表現を当てることになる）。
     /// 短い手がかり（<see cref="RegexClues"/>・大小を区別するときだけ使う）で絞れる式は、当てる行が減るので任せない。
     /// 任せると、本体の起動と、ファイルごとの正規表現のコンパイルが乗るだけだった（カーネル 8.6 万本で 2 回目 12.9 秒。2026-10-04）。
-    /// 判断は実際の検索が使う手がかり（<see cref="SearchService.CreatePrefilter"/>・<see cref="SearchService.IcaseClue"/>）で行う。
-    /// 別の規則で見ると、<c>-i 'foo|bar'</c> <c>-i 東京</c> のように実際は全行に当てる式を「絞れる」と取り違えた（外部レビュー 2026-10-04 の指摘5）。
+    /// 判断は実際の検索と同じところ（<see cref="SearchPlan.Method"/>）で行う。別の規則で見ると、
+    /// <c>-i 'foo|bar'</c> <c>-i 東京</c> のように実際は全行に当てる式を「絞れる」と取り違えた（外部レビュー 2026-10-04 の指摘5）。
     /// </summary>
     public static bool ScansEveryLine(string pattern, bool ignoreCase = false)
-    {
-        var options = new SearchOptions(pattern, UseRegex: true, IgnoreCase: ignoreCase);
-        return ignoreCase
-            ? SearchService.IcaseClue(options, Encoding.UTF8).Length == 0
-            : SearchService.CreatePrefilter(options, Encoding.UTF8) is null;
-    }
+        => PreparedSearch.Create(new SearchOptions(pattern, UseRegex: true, IgnoreCase: ignoreCase))
+                         .For(Encoding.UTF8).Method == SearchMethod.EveryLine;
+
+    /// <summary>任せる判断のために広げた入力（任せなかったとき、同じプロセスの CLI がもう一度広げずに使う）。</summary>
+    public sealed record ExpandedInput(string Specification, FileSet.Result Result);
 
     /// <summary>uvf の引数から判断する。</summary>
-    public static bool ForUvf(IReadOnlyList<string> argv)
+    public static bool ForUvf(IReadOnlyList<string> argv) => ForUvf(argv, out _);
+
+    /// <summary>
+    /// uvf の引数から判断する。複数ファイルの指定を広げたら <paramref name="expanded"/> に返す
+    /// （任せないときは、同じプロセスの CLI がそれを使う。任せたときは、子が自分で広げ直す。親と子で一覧は受け渡さない）。
+    /// 広げるときは、検索と同じ除外（<c>--no-ignore</c>・<c>--ignore-file</c>）を使う。
+    /// </summary>
+    public static bool ForUvf(IReadOnlyList<string> argv, out ExpandedInput? expanded)
     {
+        expanded = null;
         if (!Interpreted || HandoffDisabled("UVF_NO_HANDOFF")) return false;
         var (inv, _, _) = UvfCli.Parse(argv);
-        return inv is { Regex: true, Pattern: { } pattern, File: { Length: > 0 } file }
-               && ScansEveryLine(pattern, inv.IgnoreCase)
-               && TextBytes(file) >= MinTextBytes;
+        if (inv is not { Regex: true, Pattern: { } pattern, File: { Length: > 0 } file }
+            || !ScansEveryLine(pattern, inv.IgnoreCase))
+            return false;
+        if (!FileSet.IsMultiple(file)) return Estimate(file) >= MinTextBytes;
+        expanded = new ExpandedInput(file, FileSet.Expand(file, ignore: inv.Ignore));
+        return TextBytes(expanded.Result.Files) >= MinTextBytes;
     }
 
     /// <summary>
@@ -85,10 +92,11 @@ public static class CompiledRegexRoute
     /// <see cref="Estimate"/> で見積もる。目安を超えたところで数えるのをやめる。
     /// </summary>
     public static long TextBytes(string specification, Func<string, long?>? sizeOf = null)
+        => TextBytes(FileSet.IsMultiple(specification) ? FileSet.Expand(specification).Files : [specification], sizeOf);
+
+    /// <summary>広げた一覧の、展開後のおおよその大きさ（目安を超えたところで数えるのをやめる）。</summary>
+    public static long TextBytes(IReadOnlyList<string> files, Func<string, long?>? sizeOf = null)
     {
-        IReadOnlyList<string> files = FileSet.IsMultiple(specification)
-            ? FileSet.Expand(specification).Files
-            : [specification];
         long total = 0;
         foreach (string file in files)
         {
