@@ -335,4 +335,7 @@ Bundling puts them into one index (.uwvz) that you search as number:line (they g
   <data name="CmdCopyPowerShell" xml:space="preserve"><value>Copy (PowerShell)</value></data>
   <data name="TipCmdCopyPowerShell" xml:space="preserve"><value>Copies it in a form you can paste into PowerShell (its quoting rules differ)</value></data>
   <data name="CmdYes" xml:space="preserve"><value>Yes</value></data>
+  <data name="CmdExpandedIn" xml:space="preserve"><value>Expanded ({0} s)</value></data>
+  <data name="CmdRanIn" xml:space="preserve"><value>took {0} s</value></data>
+  <data name="CmdShownIn" xml:space="preserve"><value>{0} s to show in the window</value></data>
 </root>

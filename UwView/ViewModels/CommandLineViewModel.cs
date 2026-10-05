@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -171,13 +172,30 @@ public sealed partial class CommandLineViewModel : ObservableObject
     }
 
     /// <summary>［ファイル展開］：ファイル指定パターンを広げて一覧にする（<c>--files</c> と同じ。§3.3）。</summary>
-    public async Task ExpandAsync()
+    /// <param name="report">所要時間を下の行に出すか（［ファイル展開］を押したとき。実行のあとの出し直しでは出さない）。</param>
+    public async Task ExpandAsync(bool report = true)
     {
         var (argv, _) = BuildArgv();
         if (FileArgument() is not { } spec) { Files = []; FilesSummary = L["CmdNoFiles"]; return; }
         var ignore = IgnoreFor(argv ?? []);
+        var watch = Stopwatch.StartNew();
         var list = await WorkingFolder.Run(BaseFolder, () => _backend.Expand(spec, ignore, Japanese));
+        watch.Stop();
         ShowFiles(list);
+        // コマンド（uvf／uvp --files）と比べられるよう、所要時間を出す
+        if (report) Status = L.Format("CmdExpandedIn", Seconds(watch.Elapsed));
+    }
+
+    /// <summary>所要時間の秒（コマンドの「0.00 秒」と同じ書き方）。</summary>
+    internal static string Seconds(TimeSpan t) => t.TotalSeconds.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
+
+    /// <summary>直前の実行の所要時間（コマンドを走らせていた時間。窓に出す時間は入らない）。</summary>
+    public TimeSpan LastElapsed { get; private set; }
+
+    /// <summary>結果を窓に出し終えた（画面が呼ぶ）。窓に出すまでの時間を下の行に足す。</summary>
+    public void NoteShown(TimeSpan elapsed)
+    {
+        if (!_lastCanceled) Status += " ・ " + L.Format("CmdShownIn", Seconds(elapsed));
     }
 
     private void ShowFiles(CommandFileList list)
@@ -226,7 +244,8 @@ public sealed partial class CommandLineViewModel : ObservableObject
         await using (var stdout = new FileStream(outFile, FileMode.Create, FileAccess.Write, FileShare.Read, 1 << 16))
             (result, stderr) = await RunCoreAsync(argv, stdout, toWindow: true);
         if (result is not null && !_lastCanceled)
-            Status = L.Format("CmdExit", result.ExitCode) + (result.ShowInGui is null ? "" : " ・ " + L["CmdShownInWindow"]);
+            Status = L.Format("CmdExit", result.ExitCode) + " ・ " + L.Format("CmdRanIn", Seconds(LastElapsed))
+                     + (result.ShowInGui is null ? "" : " ・ " + L["CmdShownInWindow"]);
         Notice = (openIgnored ? L["CmdOpenIgnored"] + "\n" : "") + stderr;
         ShowOutput(outFile);
         if (result?.Written is { } written && File.Exists(written)) WrittenFile = written;
@@ -234,7 +253,7 @@ public sealed partial class CommandLineViewModel : ObservableObject
         if (_settings is not null && argv.Contains("--tune") && argv.Contains("--apply"))
             _settings.MaxThreads = CliSettings.ReadInt(AppSettings.AppDataFolder, UwView.Core.ThreadBudget.SettingsKey, _settings.MaxThreads);
         // --files は［ファイル展開］と同じく一覧にも出す（§5.1）。束ねた・足したあとは予告も新しくする
-        if (result is not null && (argv.Contains("--files") || _indexShown)) await ExpandAsync();
+        if (result is not null && (argv.Contains("--files") || _indexShown)) await ExpandAsync(report: false);
         if (argv.Contains("--files")) SelectedTab = 0;
         return result;
     }
@@ -261,11 +280,16 @@ public sealed partial class CommandLineViewModel : ObservableObject
         try
         {
             var output = new CommandOutput { StdOut = stdout, StdErr = stderr };
-            result = await WorkingFolder.RunAsync(BaseFolder, () => Task.Run(() =>
+            var watch = Stopwatch.StartNew();
+            try
             {
-                CommandProgress.Current = progress;
-                return _backend.RunAsync(argv, output, Japanese, cts.Token, toWindow);
-            }), cts.Token);
+                result = await WorkingFolder.RunAsync(BaseFolder, () => Task.Run(() =>
+                {
+                    CommandProgress.Current = progress;
+                    return _backend.RunAsync(argv, output, Japanese, cts.Token, toWindow);
+                }), cts.Token);
+            }
+            finally { LastElapsed = watch.Elapsed; }
         }
         catch (OperationCanceledException) { }
         finally
@@ -364,7 +388,7 @@ public sealed partial class CommandLineViewModel : ObservableObject
             if (stderr.Length > 0) Notice = stderr;
             if (!_lastCanceled)
             {
-                Status = L.Format("CmdSaved", full);
+                Status = L.Format("CmdSaved", full) + " ・ " + L.Format("CmdRanIn", Seconds(LastElapsed));
                 WrittenFile = File.Exists(full) ? full : null;
             }
             return;

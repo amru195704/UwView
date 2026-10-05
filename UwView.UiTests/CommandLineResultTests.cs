@@ -1,3 +1,4 @@
+using Avalonia.VisualTree;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
 using UwView.Core.Cli;
@@ -135,6 +136,29 @@ public class CommandLineResultTests : IDisposable
         var cli = await Cli(json ? ["**/*.log", "ERROR", "--json"] : ["**/*.log", "ERROR"]);
         Assert.Equal(cli, File.ReadAllText(path).Split('\n', StringSplitOptions.RemoveEmptyEntries));
         Assert.Equal(Path.GetFullPath(path), cmd.WrittenFile);
+    }
+
+    [AvaloniaFact]
+    public async Task 展開と検索の所要時間を下の行に出す()
+    {
+        var (window, view, _) = UiHarness.OpenMainWindow();
+        view.OpenCommandLine();
+        Dispatcher.UIThread.RunJobs();
+        var dialog = CommandLineDialog.For(window)!;
+        var cmd = dialog.ViewModel;
+        cmd.BaseFolder = _dir;
+        cmd.FilePattern = "**/*.log";
+        cmd.SearchPattern = "ERROR";
+
+        await cmd.ExpandAsync();
+        Assert.Matches(@"^展開しました（所要 \d+\.\d\d 秒）$", cmd.Status);
+
+        // ［検索実行］を押す：コマンドの時間と、窓に出すまでの時間を分けて出す
+        UiHarness.Click(dialog.GetVisualDescendants().OfType<Avalonia.Controls.Button>().Single(b => b.Name == "CmdRunButton"));
+        await UiHarness.WaitUntil(() => cmd.Status.Contains("窓に出すまで"), "窓に出し終える");
+        Assert.Matches(@"^終わりました（終了コード 0） ・ 所要 \d+\.\d\d 秒 ・ 結果は本体の窓に出しました ・ 窓に出すまで \d+\.\d\d 秒$", cmd.Status);
+        Assert.True(cmd.LastElapsed > TimeSpan.Zero);
+        dialog.Close();
     }
 
     [AvaloniaFact]

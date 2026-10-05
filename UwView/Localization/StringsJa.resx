@@ -335,4 +335,7 @@
   <data name="CmdCopyPowerShell" xml:space="preserve"><value>コピー（PowerShell）</value></data>
   <data name="TipCmdCopyPowerShell" xml:space="preserve"><value>PowerShell に貼れる形でコピーします（引用の規則が違うため）</value></data>
   <data name="CmdYes" xml:space="preserve"><value>はい</value></data>
+  <data name="CmdExpandedIn" xml:space="preserve"><value>展開しました（所要 {0} 秒）</value></data>
+  <data name="CmdRanIn" xml:space="preserve"><value>所要 {0} 秒</value></data>
+  <data name="CmdShownIn" xml:space="preserve"><value>窓に出すまで {0} 秒</value></data>
 </root>

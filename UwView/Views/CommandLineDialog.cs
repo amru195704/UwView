@@ -331,7 +331,12 @@ public sealed class CommandLineDialog : Window
     private async Task RunAsync()
     {
         var result = await ViewModel.RunAsync();
-        if (result is { ShowInGui: not null } && _show is not null) await _show(result);
+        if (result is { ShowInGui: not null } && _show is not null)
+        {
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+            await _show(result);
+            ViewModel.NoteShown(watch.Elapsed);
+        }
         // -replace・cat を -out なしで：出力を新しいタブで開く（読むだけ・保存できる。要裁定 §11-5）
         if (result?.OutputTabName is { } name && ViewModel.OutputFile is { } output && _openFile is not null)
             await _openFile(CopyForTab(output, name));
