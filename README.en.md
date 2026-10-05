@@ -44,15 +44,15 @@
 
 The same 979 MB text, compressed in seven formats, searched for 東京 (hot, seconds). **Every tool's output matched `uvf` in line count and content.**
 
-| Format | Standard grep | ugrep 7.8.5 | ripgrep 15.2.0 | **`uvf`** | `uvp` 1st | **`uvp` 2nd** |
+| Format | Standard grep (s) | ugrep 7.8.5 (s) | ripgrep 15.2.0 (s) | **`uvf`** (s) | `uvp` 1st (s) | **`uvp` 2nd** (s) |
 |---|---:|---:|---:|---:|---:|---:|
-| gz | 0.90 s (zgrep) | 0.45 s | 0.43 s | **0.33 s** | 0.42 s | **0.12 s** |
-| bz2 | 8.03 s (bzgrep) | 7.62 s | 7.89 s | **7.43 s** | 7.64 s | **0.12 s** |
-| xz | 4.01 s (xzgrep) | 3.64 s | 4.21 s | **3.37 s** | 3.44 s | **0.11 s** |
-| lzma | 3.21 s (xzgrep) | 2.83 s | 3.40 s | **2.57 s** | 2.64 s | **0.12 s** |
-| zst | 0.63 s (zstdgrep) | 0.65 s | 0.54 s | **0.50 s** | 0.57 s | **0.12 s** |
-| lz4 | 0.65 s (lz4 -dc \| grep) | 0.33 s | 0.31 s | **0.28 s** | 0.35 s | **0.12 s** |
-| br | 1.33 s (brotli -dc \| grep) | 0.91 s | 0.87 s | **0.74 s** | 0.85 s | **0.12 s** |
+| gz | 0.90 (zgrep) | 0.45 | 0.43 | **0.33** | 0.42 | **0.12** |
+| bz2 | 8.03 (bzgrep) | 7.62 | 7.89 | **7.43** | 7.64 | **0.12** |
+| xz | 4.01 (xzgrep) | 3.64 | 4.21 | **3.37** | 3.44 | **0.11** |
+| lzma | 3.21 (xzgrep) | 2.83 | 3.40 | **2.57** | 2.64 | **0.12** |
+| zst | 0.63 (zstdgrep) | 0.65 | 0.54 | **0.50** | 0.57 | **0.12** |
+| lz4 | 0.65 (lz4 -dc \| grep) | 0.33 | 0.31 | **0.28** | 0.35 | **0.12** |
+| br | 1.33 (brotli -dc \| grep) | 0.91 | 0.87 | **0.74** | 0.85 | **0.12** |
 
 - **For a one-off search, `uvf` is the fastest in all seven formats.** Against ugrep and ripgrep, though, the gap is 1.03–1.36× — **on par**.
 - **Against the standard grep tools there is a real gap**: **2.73×** on gz, **2.32×** on lz4, **1.80×** on br (bz2, xz, lzma and zst are on par).
@@ -62,10 +62,10 @@ The same 979 MB text, compressed in seven formats, searched for 東京 (hot, sec
 
 ### Search many files at once
 
-| hot, seconds | zgrep | ugrep | ripgrep | **`uvf`** | `uvp` 1st (bundling) | **`uvp` 2nd** |
+| hot | zgrep (s) | ugrep (s) | ripgrep (s) | **`uvf`** (s) | `uvp` 1st (bundling, s) | **`uvp` 2nd** (s) |
 |---|---:|---:|---:|---:|---:|---:|
-| 5 gz files (~7.4 GB uncompressed) | 9.43 s | 2.56 s | 1.34 s | **1.04 s** | 3.04 s | **0.73 s** |
-| 7 gz + 5 plain = 12 files (~60 GB uncompressed) | 89.35 s | 25.38 s | 24.62 s | **17.60 s** | 41.23 s | **9.52 s** |
+| 5 gz files (~7.4 GB uncompressed) | 9.43 | 2.56 | 1.34 | **1.04** | 3.04 | **0.73** |
+| 7 gz + 5 plain = 12 files (~60 GB uncompressed) | 89.35 | 25.38 | 24.62 | **17.60** | 41.23 | **9.52** |
 
 - With 12 files, `uvf` is **5.08× zgrep** and on par with ugrep and ripgrep (1.44×, 1.40×). Cold (cache dropped), `uvf` 21.35 s and ugrep 26.85 s were on par too.
 - **If you search the same 12 files again and again, use `uvp`.** It bundles them into one `.uwvz`, and from the second search on it is **1.85×** faster than `uvf`.
@@ -82,21 +82,21 @@ Files are skipped by **the same rules as ripgrep** (`.ignore`, `.gitignore`, hid
 
 Plain search for 東京 (seconds; cold = right after dropping the cache / hot = the second run straight after)
 
-| 1st (cold) / 2nd (hot) | ripgrep 15.2.0 | **`uvf`** (free) | **`uvp`** (Pro; 1st run includes building the index) |
+| 1st (cold) / 2nd (hot) | ripgrep 15.2.0 (s) | **`uvf`** (free, s) | **`uvp`** (Pro; 1st run includes building the index, s) |
 |---|---:|---:|---:|
-| 3 GB | 3.26 s / 0.31 s | **3.04 s / 0.29 s** | 3.43 s / **0.29 s** |
-| 10 GB | 10.94 s / 0.97 s | **10.15 s / 0.88 s** | 11.82 s / 1.00 s |
-| 50 GB | 64.68 s / 70.33 s | **50.66 s / 55.94 s** | 58.81 s / **6.45 s** |
+| 3 GB | 3.26 / 0.31 | **3.04 / 0.29** | 3.43 / **0.29** |
+| 10 GB | 10.94 / 0.97 | **10.15 / 0.88** | 11.82 / 1.00 |
+| 50 GB | 64.68 / 70.33 | **50.66 / 55.94** | 58.81 / **6.45** |
 
 **`uvf` is on par with ripgrep or better at every size, on both the first and the second run** (v1.7.3.6.9 made counting newlines for line numbers 5× faster, which put the second run ahead of ripgrep too). At 50 GB the file does not fit in memory, so neither ripgrep nor `uvf` gets faster the second time (ripgrep's second run varies between 55 and 70 s from one measurement to the next). **Only `uvp` does: 6.45 s on the second run** — **10.9×** ripgrep.
 
 Seven searches (plain, `-i`, `-E`, `-E` anchored, `-E -i`, `-v`, `-E -v`), cold + hot total:
 
-| | ripgrep | **`uvf`** | **`uvp`** |
+| | ripgrep (s) | **`uvf`** (s) | **`uvp`** (s) |
 |---|---:|---:|---:|
-| 3 GB | 33.63 s | 33.55 s (on par, 1.00×) | **14.05 s (2.39× faster than ripgrep)** |
-| 10 GB | 95.41 s | 81.99 s (on par, 1.16× faster) | **29.07 s (3.28× faster than ripgrep)** |
-| 50 GB | 870.64 s | 768.93 s (on par, 1.13× faster) | **232.98 s (3.74× faster than ripgrep)** |
+| 3 GB | 33.63 | 33.55 (on par, 1.00×) | **14.05 (2.39× faster than ripgrep)** |
+| 10 GB | 95.41 | 81.99 (on par, 1.16× faster) | **29.07 (3.28× faster than ripgrep)** |
+| 50 GB | 870.64 | 768.93 (on par, 1.13× faster) | **232.98 (3.74× faster than ripgrep)** |
 
 Across all 96 items (searches plus filtering, counting, sorting, head/tail, writing out, gz input and more) against combinations of rg, sed, sort, uniq and gzip, the overall result is **2.49×**, with **zero mismatched results**.
 
@@ -104,11 +104,11 @@ Across all 96 items (searches plus filtering, counting, sorting, head/tail, writ
 
 The Linux kernel source (86,602 files, about 22 KB on average) searched with `uvf 'src/linux/**' word -H`. Five searches (0 to 38,253 matching lines), totals in seconds:
 
-| | First (cold) | Second (hot) | Total |
+| | First (cold, s) | Second (hot, s) | Total (s) |
 |---|---:|---:|---:|
-| ripgrep 15.2.0 | 22.76 s | 7.47 s | 30.22 s |
-| **`uvf`** (free) | 26.49 s | 9.72 s | 36.21 s (ripgrep 1.20× faster, on par) |
-| **`uvp`** (Pro; the first search bundles all 86,000 files into one `.uwvz`) | 10.76 s | **1.42 s** | **12.19 s (2.48× faster than ripgrep)** |
+| ripgrep 15.2.0 | 22.76 | 7.47 | 30.22 |
+| **`uvf`** (free) | 26.49 | 9.72 | 36.21 (ripgrep 1.20× faster, on par) |
+| **`uvp`** (Pro; the first search bundles all 86,000 files into one `.uwvz`) | 10.76 | **1.42** | **12.19 (2.48× faster than ripgrep)** |
 
 This is where **ripgrep is slightly faster** (under 1.5×, so on par). In v1.7.3.6.5 the second run took about 18× as long as ripgrep, and in v1.7.3.6.8 still about 2.2×. If you search the same place again and again, use `uvp`: from the second search on, about 0.3 s.
 
@@ -116,13 +116,13 @@ This is where **ripgrep is slightly faster** (under 1.5×, so on par). In v1.7.3
 
 The same suite was run on macOS, Windows and Linux. **All correctness tests (66 input types, 36 multi-file, 43 exclusion) passed on all three, and the speed runs had zero mismatched results.** Figures are ratios to ripgrep (above 1 = `uvf`/`uvp` faster); **seconds are never compared across systems**.
 
-| How many times faster than ripgrep | macOS | Windows | Linux |
+| How many times faster than ripgrep | macOS (×) | Windows (×) | Linux (×) |
 |---|---|---|---|
 | Machine | Apple M4, 10 cores, 32 GB | x64, 8 logical cores, 16 GB | aarch64, **2 logical cores**, 7 GB |
-| `uvf`, one large file, seven searches (3 GB / 10 GB / 50 GB) | 1.00× / 1.16× / 1.13× | 1.48× / 1.90× / **2.47×** | 1.31× / 1.13× / 1.33× |
-| `uvp`, the same seven (including building the index) | 2.39× / 3.28× / 3.74× | 2.22× / 2.81× / 3.44× | 1.62× / 2.45× / 1.99× |
-| `uvf`, many files (5 plain / 7 gz / 12 mixed) | 1.02× / 1.31× / 1.29× | 1.86× / 1.54× / 1.58× | 2.22× / 1.67× / 1.67× |
-| **Overall, 96 items** | **2.49×** | **3.42×** | **1.88×** |
+| `uvf`, one large file, seven searches (3 GB / 10 GB / 50 GB) | 1.00 / 1.16 / 1.13 | 1.48 / 1.90 / **2.47** | 1.31 / 1.13 / 1.33 |
+| `uvp`, the same seven (including building the index) | 2.39 / 3.28 / 3.74 | 2.22 / 2.81 / 3.44 | 1.62 / 2.45 / 1.99 |
+| `uvf`, many files (5 plain / 7 gz / 12 mixed) | 1.02 / 1.31 / 1.29 | 1.86 / 1.54 / 1.58 | 2.22 / 1.67 / 1.67 |
+| **Overall, 96 items** | **2.49** | **3.42** | **1.88** |
 
 - **The gap is larger on Windows and Linux than on the Mac.** On Windows ripgrep's first run is slow; on Linux (2 cores) `rg -z` pays for calling external decompressors.
 - **Weak spots**: on Windows, `uvf` is 1.5–2.1× slower than ripgrep on compressed xz, zst and lz4. On Linux, `uvp`'s first run (building the index) is heavy for fast-to-decompress zst and lz4 and for plain text, giving 1/1.2–1/1.4 over two runs.
@@ -134,14 +134,14 @@ The same suite was run on macOS, Windows and Linux. **All correctness tests (66 
 
 ## GUI: against klogg
 
-| cold, seconds | 3 GB | 10 GB | 50 GB |
+| cold | 3 GB (s) | 10 GB (s) | 50 GB (s) |
 |---|---:|---:|---:|
-| **Open**: klogg 24.11.0 | 3.65 s | 10.98 s | 52.55 s |
-| **Open**: **UwView GUI** | **2.99 s** | **10.13 s** | **50.44 s** |
-| **Search**: klogg | 0.56 s | 11.75 s | 55.59 s |
-| **Search**: **UwView GUI** | **0.32 s** (1.75× faster than klogg) | **10.15 s** | **53.50 s** |
-| **Find and read**: klogg (open + search) | 4.21 s | 22.73 s | 108.1 s |
-| **Find and read**: **`uvf … -open`** | **3.40 s** | **10.42 s (2.18× faster than klogg)** | **50.76 s (2.13× faster than klogg)** |
+| **Open**: klogg 24.11.0 | 3.65 | 10.98 | 52.55 |
+| **Open**: **UwView GUI** | **2.99** | **10.13** | **50.44** |
+| **Search**: klogg | 0.56 | 11.75 | 55.59 |
+| **Search**: **UwView GUI** | **0.32** (1.75× faster than klogg) | **10.15** | **53.50** |
+| **Find and read**: klogg (open + search) | 4.21 | 22.73 | 108.1 |
+| **Find and read**: **`uvf … -open`** | **3.40** | **10.42 (2.18× faster than klogg)** | **50.76 (2.13× faster than klogg)** |
 
 **Opening and searching are on par with klogg** (only the 3 GB search is 1.75×). **The gap opens up at "find it and read it."** klogg reads the file once to open it and again to search it. **`uvf … -open` reads it once, searching as it goes.**
 
@@ -168,11 +168,11 @@ The first time, every tool has to read the whole file at least once. That is phy
 
 `uvp` builds a **`.uwvz`** (a compressed format plus an index, about 1/9 of the original) the first time, and **from then on never touches the original file.**
 
-| Same file, same word, second search (hot) | ripgrep | `uvf` (free) | **`uvp` (Pro)** |
+| Same file, same word, second search (hot) | ripgrep (s) | `uvf` (free, s) | **`uvp`** (Pro, s) |
 |---|---:|---:|---:|
-| 50 GB plain text | 70.33 s | 55.94 s | **6.45 s (10.9× faster than ripgrep)** |
-| 979 MB bz2 | 7.89 s | 7.43 s | **0.12 s (62× faster than `uvf`)** |
-| 12 gz + plain files (~60 GB uncompressed) | 24.62 s | 17.60 s | **9.52 s (2.59× faster than ripgrep)** |
+| 50 GB plain text | 70.33 | 55.94 | **6.45 (10.9× faster than ripgrep)** |
+| 979 MB bz2 | 7.89 | 7.43 | **0.12 (62× faster than `uvf`)** |
+| 12 gz + plain files (~60 GB uncompressed) | 24.62 | 17.60 | **9.52 (2.59× faster than ripgrep)** |
 
 - **The first time, it is on par**: 50 GB, `uvp` 58.81 s vs ripgrep 64.68 s (while building the index).
 - **The 16 things only `uvp` does** — filtering, counting, sorting and so on — finish **5.15–7.49×** faster than combinations of rg, sed, sort and friends.
