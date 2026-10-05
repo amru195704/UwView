@@ -48,7 +48,7 @@ uvf japan.osm '[ぁ-ん]{3,}' -E
   - 多数のファイルを探すときは、下ごしらえを1回だけ行います（今まではファイルごとにやり直していました。1ファイルごとに確保するメモリ 7,368 → 約 200 バイト。`[ぁ-ん]{3,}` の場合）。
   - 画面の検索も、`-i` を付けた正規表現を、`uvf` と同じ手がかりで先に絞るようになりました。
   - 1 文字の手がかりがほとんどの行にあって絞れないときは、最初の 10 万行で見切って、全行に当てる探し方に切り替えます。
-  - 1 本の大きなファイルに 1 文字の手がかりで絞る式を当てるときは、mac では正規表現をコンパイルできる本体に任せます（3G の `[0-9]{4}-[0-9]{2}` で 1.71 → 1.38 秒）。
+  - mac では、1 本の大きなファイルの先頭を少し読み、1 文字の手がかりで絞れない（全行に当てることになる）と分かったときは、正規表現をコンパイルできる本体に任せます（10G の `[0-9]{3}-[0-9]{4}"` で 2 回目 5.9 → 3.8 秒）。
   - 3GB の8種類・Linux カーネルの5種類の検索で、出力が前と1バイトも変わらないこと、速さが変わらないことを確かめています。
 - 出力は1バイトも変えていません。テストはすべて通っています。
 
@@ -68,9 +68,9 @@ scoop install uwview                             # Windows（更新は scoop upd
 Linux の場合と、手で入れる場合は、下のファイルを使ってください。チェックサムは `SHA256SUMS-1.7.3.7.txt` にあります。
 
 ```
-2f998ee46c4e9b5fd8f7ab739c9ff69fb812672c02188d60ebc257152f512ba1  UwView-1.7.3.7-mac-arm64.dmg
-626a6f3fdbe4f553e4ebfe67a0dc662a2c6f080c03b3100be6a4b0d98d96bd63  UwView-1.7.3.7-mac-x64.dmg
-（mac のみ・2026-10-05 10:3x 作成・ビルド 26.10.05.10。Windows・Linux は未作成）
+4257b2af1f3bfaa7d6192ef07981461cfde59902b65749fbf384424b1c33271a  UwView-1.7.3.7-mac-arm64.dmg
+b7292dfd832ef89d1f7c28a454e0edf8e66a78e5cb26c6865ddf20be58b3c5bb  UwView-1.7.3.7-mac-x64.dmg
+（mac のみ・2026-10-05 14:1x 作成・ビルド 26.10.05.14。Windows・Linux は未作成）
 ```
 
 > **配布は GitHub Releases のみです。** Homebrew と Scoop も、ここからファイルを取得して SHA256 を照合します。操作説明と最新情報は blog サイト（https://uvp.y42u.net/）に載せています。
@@ -136,7 +136,7 @@ Regular expressions first look for a fixed string as raw bytes and run only on t
   - When searching many files, it is done once instead of for every file (memory allocated per file: 7,368 → about 200 bytes for `[ぁ-ん]{3,}`).
   - The window's search now also narrows regular expressions with `-i` by the same clue as `uvf`.
   - When a one-character clue is on almost every line and narrows nothing, the search gives up on it after the first 100,000 lines and tries the expression on every line.
-  - On macOS, a large single file searched with a one-character clue is handed to the main app, which can compile regular expressions (3 GB `[0-9]{4}-[0-9]{2}`: 1.71 → 1.38 s).
+  - On macOS, `uvf` reads the start of a large single file; when the one-character clue would not narrow anything (every line gets the expression), the search is handed to the main app, which can compile regular expressions (10 GB `[0-9]{3}-[0-9]{4}"`, second run: 5.9 → 3.8 s).
   - Output is byte-for-byte unchanged and speed is the same on eight searches on 3 GB and five on the Linux kernel source.
 - Output is unchanged byte for byte. All tests pass.
 
@@ -156,9 +156,9 @@ scoop install uwview                             # Windows (update: scoop update
 For Linux, or to install by hand, use the files below. Checksums are in `SHA256SUMS-1.7.3.7.txt`.
 
 ```
-2f998ee46c4e9b5fd8f7ab739c9ff69fb812672c02188d60ebc257152f512ba1  UwView-1.7.3.7-mac-arm64.dmg
-626a6f3fdbe4f553e4ebfe67a0dc662a2c6f080c03b3100be6a4b0d98d96bd63  UwView-1.7.3.7-mac-x64.dmg
-(macOS only, built 2026-10-05 10:3x, build 26.10.05.10; Windows and Linux not built yet)
+4257b2af1f3bfaa7d6192ef07981461cfde59902b65749fbf384424b1c33271a  UwView-1.7.3.7-mac-arm64.dmg
+b7292dfd832ef89d1f7c28a454e0edf8e66a78e5cb26c6865ddf20be58b3c5bb  UwView-1.7.3.7-mac-x64.dmg
+(macOS only, built 2026-10-05 14:1x, build 26.10.05.14; Windows and Linux not built yet)
 ```
 
 > **Distribution is through GitHub Releases only.** Homebrew and Scoop fetch the files from here and check the SHA256. Instructions and news are on the blog (https://uvp.y42u.net/).
