@@ -27,7 +27,7 @@ uvf japan.osm '[ぁ-ん]{3,}' -E
 | `[ぁ-ん]{3,}` | 2.70 | **0.45**（6.1倍） | 0.27 |
 
 - 空白や `<` `"` `=`・数字のように、ほとんどの行にある 1 文字は手がかりにしません（絞れずに探す手間だけが増えるため）。`^ +<` のような式は前と同じ速さです。
-- 小さなファイルが大量にある場所（Linux カーネルのソース 8.6万本）でも、この3つの式の2回目は 2.13〜2.28秒で、ripgrep（1.53〜1.64秒）の方が約 1.4 倍速いものの、1.5 倍未満なので同等の範囲です。
+- 小さなファイルが大量にある場所（Linux カーネルのソース 8.6万本）でも、この3つの式の2回目は 2.21〜2.23秒で、ripgrep（1.58〜1.60秒）の方が約 1.4 倍速いものの、1.5 倍未満なので同等の範囲です。
 - 画面の検索と UwView Pro の検索・置換にも同じように効きます。
 - 表は Mac（Apple M4・10コア）での測定です（3回の中央値）。
 
@@ -87,9 +87,9 @@ uvf japan.osm '[ぁ-ん]{3,}' -E
 
 | `uvp`・2回目（hot）・秒 | v1.7.3.6.9 | **v1.7.3.7** | ripgrep |
 |---|---:|---:|---:|
-| 1,000 本を束ねた `.uwvz`・`[0-9]{4}-[0-9]{2}`（940万行がヒット） | 8.03 | **1.86** | 1.67 |
+| 1,000 本を束ねた `.uwvz`・`\d+\.\d{6,}`（940万行がヒット） | 8.06 | **1.84** | 1.68 |
 
-- ripgrep（1.67秒）の方が 1.1 倍速いものの、1.5 倍未満なので同等の範囲です。
+- ripgrep（1.68秒）の方が 1.1 倍速いものの、1.5 倍未満なので同等の範囲です。
 
 → [UwView Pro](https://uvp.y42u.net/pro/)（買い切り $129 ／ 月額 $9・**14日間の無料試用**つき）
 
@@ -124,7 +124,7 @@ First, where it is still behind: against ripgrep, `[0-9]{4}-[0-9]{2}` is on par 
 | `[ぁ-ん]{3,}` | 2.70 | **0.45** (6.1×) | 0.27 |
 
 - Characters found on almost every line — spaces, `<`, `"`, `=`, digits — are not used as clues (they would add work without narrowing anything). Expressions such as `^ +<` run at the same speed as before.
-- On many small files (the Linux kernel source, 86,000 files), the second run of these three expressions takes 2.13–2.28 s. ripgrep (1.53–1.64 s) is about 1.4× faster, which we treat as on par (under 1.5×).
+- On many small files (the Linux kernel source, 86,000 files), the second run of these three expressions takes 2.21–2.23 s. ripgrep (1.58–1.60 s) is about 1.4× faster, which we treat as on par (under 1.5×).
 - The window's search and UwView Pro's search and replace benefit in the same way.
 - Measured on a Mac (Apple M4, 10 cores) (median of three runs).
 
@@ -184,8 +184,8 @@ The paid `uvp` gets the same clues and fixes. It also writes out searches with m
 
 | `uvp`, second run (hot), seconds | v1.7.3.6.9 | **v1.7.3.7** | ripgrep |
 |---|---:|---:|---:|
-| `.uwvz` of 1,000 files, `[0-9]{4}-[0-9]{2}` (9.4 million matching lines) | 8.03 | **1.86** | 1.67 |
+| `.uwvz` of 1,000 files, `\d+\.\d{6,}` (9.4 million matching lines) | 8.06 | **1.84** | 1.68 |
 
-- ripgrep (1.67 s) is 1.1× faster, which is on par (under 1.5×).
+- ripgrep (1.68 s) is 1.1× faster, which is on par (under 1.5×).
 
 → [UwView Pro](https://uvp.y42u.net/pro/) (one-time $129 / $9 a month, **14-day free trial**)
