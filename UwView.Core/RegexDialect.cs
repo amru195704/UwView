@@ -17,33 +17,95 @@ namespace UwView.Core;
 public static class RegexDialect
 {
     /// <summary>
-    /// <c>(?P&lt;</c> を <c>(?&lt;</c> に読み替える（<c>\(</c> のように逃がした括弧と、文字クラスの中は触らない）。
-    /// <c>[(?P&lt;]</c> は 4 文字のどれかに当たる文字クラスで、中の P を消すと別の式になる（外部レビュー 2026-10-04 の指摘4）。
+    /// <c>(?P&lt;</c> を <c>(?&lt;</c> に読み替える（<c>\(</c> のように逃がした括弧・文字クラスの中・コメントの中は触らない）。
+    /// <list type="bullet">
+    /// <item><c>[(?P&lt;]</c> は 4 文字のどれかに当たる文字クラスで、中の P を消すと別の式になる（外部レビュー 2026-10-04 の指摘4）</item>
+    /// <item>コメント <c>(?#…)</c> と、<c>(?x)</c> が効いている範囲の <c>#</c> から行末までは、そのまま写す。
+    /// コメントの中の <c>[</c> を文字クラスの始まりと読むと、後ろの <c>(?P&lt;</c> まで写してしまい、
+    /// 対応している書き方が「正しくない正規表現」になった（<c>(?# [)(?P&lt;n&gt;a)]</c>。外部再レビュー 2026-10-05 の指摘2）</item>
+    /// </list>
     /// 文字クラスの終わりは <see cref="RegexSyntax.ClassEnd"/> で読む（必須リテラルの取り出しと同じ読み方）。
     /// </summary>
     public static string Normalize(string pattern)
     {
         if (!pattern.Contains("(?P<", StringComparison.Ordinal)) return pattern;
         var sb = new StringBuilder(pattern.Length);
+        var outer = new Stack<bool>();   // グループに入る前の x（グループを閉じたら戻す）
+        bool x = false;                  // いま空白と # コメントを読み飛ばす書き方（x）が効いているか
         for (int i = 0; i < pattern.Length; i++)
         {
             char c = pattern[i];
             if (c == '\\' && i + 1 < pattern.Length) { sb.Append(c).Append(pattern[++i]); continue; }
-            if (c == '[' && RegexSyntax.ClassEnd(pattern, i) is var end and >= 0)
+            if (x && c == '#')
             {
+                int nl = pattern.IndexOf('\n', i);
+                int end = nl < 0 ? pattern.Length - 1 : nl;
                 sb.Append(pattern, i, end - i + 1);
                 i = end;
                 continue;
             }
-            if (c == '(' && string.CompareOrdinal(pattern, i, "(?P<", 0, 4) == 0)
+            if (c == '[' && RegexSyntax.ClassEnd(pattern, i) is var classEnd and >= 0)
             {
-                sb.Append("(?<");
-                i += 3;
+                sb.Append(pattern, i, classEnd - i + 1);
+                i = classEnd;
                 continue;
             }
+            if (c == '(')
+            {
+                if (string.CompareOrdinal(pattern, i, "(?#", 0, 3) == 0)
+                {
+                    int close = pattern.IndexOf(')', i);       // .NET のコメントは最初の ) で終わる（入れ子にならない）
+                    int end = close < 0 ? pattern.Length - 1 : close;
+                    sb.Append(pattern, i, end - i + 1);
+                    i = end;
+                    continue;
+                }
+                if (ReadOptions(pattern, i, out int after, out bool? xSet, out bool scoped))
+                {
+                    sb.Append(pattern, i, after - i);
+                    i = after - 1;
+                    if (scoped) outer.Push(x);                // (?x:…) は閉じるまで
+                    if (xSet is { } on) x = on;               // (?x) はいまのグループの終わりまで
+                    continue;
+                }
+                outer.Push(x);
+                if (string.CompareOrdinal(pattern, i, "(?P<", 0, 4) == 0)
+                {
+                    sb.Append("(?<");
+                    i += 3;
+                    continue;
+                }
+                sb.Append(c);
+                continue;
+            }
+            if (c == ')' && outer.Count > 0) x = outer.Pop();
             sb.Append(c);
         }
         return sb.ToString();
+    }
+
+    /// <summary>
+    /// <paramref name="i"/>（<c>(</c>）がオプション <c>(?imnsx-imnsx)</c>／<c>(?imnsx-imnsx:</c> なら true。
+    /// <paramref name="after"/> はその後ろの位置、<paramref name="xSet"/> は x を付けた（true）・外した（false）か、触っていない（null）、
+    /// <paramref name="scoped"/> は <c>:</c> で始まるグループ（閉じるまで効く）か。
+    /// </summary>
+    private static bool ReadOptions(string p, int i, out int after, out bool? xSet, out bool scoped)
+    {
+        after = i; xSet = null; scoped = false;
+        if (i + 2 >= p.Length || p[i + 1] != '?') return false;
+        bool off = false, any = false;
+        int k = i + 2;
+        for (; k < p.Length; k++)
+        {
+            char c = p[k];
+            if (c == '-') { off = true; continue; }
+            if (c is 'i' or 'm' or 'n' or 's' or 'x') { any = true; if (c == 'x') xSet = !off; continue; }
+            break;
+        }
+        if (!any || k >= p.Length || p[k] is not (')' or ':')) { xSet = null; return false; }
+        scoped = p[k] == ':';
+        after = k + 1;
+        return true;
     }
 
     private static readonly Regex Posix = new(@"\[:(?<name>[a-z]+):\]", RegexOptions.CultureInvariant);

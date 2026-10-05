@@ -22,6 +22,17 @@ public static class SearchTuning
     public const int MaxShortClueNeedles = 4;
 
     /// <summary>
+    /// 短い手がかりのある行がこの割合を超えたら、手がかりをやめて全行に当てる（<see cref="ClueWatch"/>）。
+    /// 手がかりのある行が多いと、行を探し直す手間が全行に当てるより重くなる
+    /// （10G の <c>[0-9]{3}-[0-9]{4}"</c> は 3 割の行に <c>-</c> があり、全行 3.87 秒・手がかり 4.86 秒。
+    /// 3G の 1 割（<c>[0-9]{4}-[0-9]{2}</c>）は手がかり 1.38 秒・全行 3.08 秒。どちらも本体（JIT）。2026-10-05）。
+    /// </summary>
+    public const double MaxShortClueLineShare = 0.25;
+
+    /// <summary>割合を決めるまでに見る行の数（決めるのは 1 回だけ）。</summary>
+    public const long ShortClueSampleLines = 100_000;
+
+    /// <summary>
     /// 本体（JIT）に任せる入力の大きさ（展開後の目安。mac の NativeAOT の CLI）。NativeAOT で余計にかかる時間は
     /// 約 1.1 ミリ秒/MB（3G 実測）で、本体の起動（約 0.15 秒）と釣り合うのが 130MB 前後。余裕をみてこの大きさから。
     /// </summary>

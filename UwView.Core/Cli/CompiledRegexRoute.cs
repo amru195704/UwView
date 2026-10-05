@@ -60,8 +60,25 @@ public static class CompiledRegexRoute
     /// <c>-i 'foo|bar'</c> <c>-i 東京</c> のように実際は全行に当てる式を「絞れる」と取り違えた（外部レビュー 2026-10-04 の指摘5）。
     /// </summary>
     public static bool ScansEveryLine(string pattern, bool ignoreCase = false)
-        => PreparedSearch.Create(new SearchOptions(pattern, UseRegex: true, IgnoreCase: ignoreCase))
-                         .For(Encoding.UTF8).Method == SearchMethod.EveryLine;
+        => PlanOf(pattern, ignoreCase).Method == SearchMethod.EveryLine;
+
+    /// <summary>
+    /// 1 本の大きな入力で、本体（JIT）に任せたほうが速い式か。全行に当てる式と、短い手がかり（1 文字）で絞る式。
+    /// 短い手がかりは、手がかりのある行が多いと絞れず（<see cref="ClueWatch"/> が全行に切り替える）、
+    /// NativeAOT のままだと正規表現が解釈実行になる（10G の <c>[0-9]{3}-[0-9]{4}"</c>：AOT 5.12 秒・本体 3.87 秒）。
+    /// 絞れる場合も本体のほうが速いか同じ（3G の <c>[0-9]{4}-[0-9]{2}</c>：AOT 1.71 秒・本体 1.38 秒、<c>[ぁ-ん]{3,}</c>：0.45 秒・0.48 秒）。
+    /// 多数ファイルの指定は、ファイルを開く手間が主で、本体の起動の分だけ遅いので任せない（カーネル 8.6 万本：AOT 4.9 秒・本体 5.1 秒。2026-10-05）。
+    /// uvp は 10 並列で探すので解釈実行の遅れが隠れ、本体の起動の分だけ損になるため、これを使わない（<see cref="ScansEveryLine"/> だけで決める。
+    /// 10G：AOT 2.18 秒・本体 2.21 秒、カーネルの束の <c>[ぁ-ん]{3,}</c>：0.41 秒・0.64 秒）。
+    /// </summary>
+    public static bool WantsCompiledRegex(string pattern, bool ignoreCase, bool singleInput)
+    {
+        var plan = PlanOf(pattern, ignoreCase);
+        return plan.Method == SearchMethod.EveryLine || singleInput && plan.UsesShortClue;
+    }
+
+    private static SearchPlan PlanOf(string pattern, bool ignoreCase)
+        => PreparedSearch.Create(new SearchOptions(pattern, UseRegex: true, IgnoreCase: ignoreCase)).For(Encoding.UTF8);
 
     /// <summary>任せる判断のために広げた入力（任せなかったとき、同じプロセスの CLI がもう一度広げずに使う）。</summary>
     public sealed record ExpandedInput(string Specification, FileSet.Result Result);
@@ -79,10 +96,10 @@ public static class CompiledRegexRoute
         expanded = null;
         if (!Interpreted || HandoffDisabled("UVF_NO_HANDOFF")) return false;
         var (inv, _, _) = UvfCli.Parse(argv);
-        if (inv is not { Regex: true, Pattern: { } pattern, File: { Length: > 0 } file }
-            || !ScansEveryLine(pattern, inv.IgnoreCase))
-            return false;
-        if (!FileSet.IsMultiple(file)) return Estimate(file) >= MinTextBytes;
+        if (inv is not { Regex: true, Pattern: { } pattern, File: { Length: > 0 } file }) return false;
+        bool single = !FileSet.IsMultiple(file);
+        if (!WantsCompiledRegex(pattern, inv.IgnoreCase, single)) return false;
+        if (single) return Estimate(file) >= MinTextBytes;
         expanded = new ExpandedInput(file, FileSet.Expand(file, ignore: inv.Ignore));
         return TextBytes(expanded.Result.Files) >= MinTextBytes;
     }

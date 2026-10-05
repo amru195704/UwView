@@ -106,6 +106,7 @@ public static class SearchService
         Regex? regex = literal ? null : plan.Prepared.RentRegex();   // 同時に走るほかの検索と Regex を共有しない
         Decoder? decoder = literal ? null : encoding.GetDecoder();
         var prefilter = plan.NewClueFinder();
+        var watch = new ClueWatch(plan);   // 短い手がかりで絞れていなければ、途中から全行に当てる
         long limit = options.HitLimit;
 
         long totalHits = 0;
@@ -214,6 +215,7 @@ public static class SearchService
         {
             if (literal) ProcessBytes(region, regionBase);
             else ProcessLines(region, regionBase, oversized);
+            if (watch.Watching && !oversized && watch.GiveUp(sep.CountSeparators(region))) prefilter = null;
         }
 
         // literal 高速パス: バイト列 IndexOf。ヒットしたら行頭を逆走査→行末へスキップ（1行1件）
@@ -269,6 +271,7 @@ public static class SearchService
             {
                 int at = prefilter.IndexOf(region, from);
                 if (at < 0) break;
+                watch.Candidate();
                 int lineStart = sep.LineStartBefore(region, at);
                 int sepAt = sep.IndexOfSeparator(region, at);
                 int lineEnd = sepAt < 0 ? region.Length : sepAt;

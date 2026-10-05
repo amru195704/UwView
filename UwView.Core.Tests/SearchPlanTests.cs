@@ -75,6 +75,7 @@ public class SearchPlanTests : IDisposable
         var prepared = PreparedSearch.Create(new SearchOptions("^ +<", UseRegex: true));
         var a = prepared.RentRegex();
         var b = prepared.RentRegex();
+        Assert.Same(prepared.Regex, a);       // 最初の 1 つは共有のもの（コンパイルし直さない）
         Assert.NotSame(a, b);
         Assert.Equal(prepared.Regex.ToString(), a.ToString());
         Assert.Equal(prepared.Regex.Options, a.Options);

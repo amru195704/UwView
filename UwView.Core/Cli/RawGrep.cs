@@ -88,6 +88,8 @@ public static class RawGrep
         // 手がかり（必須リテラル・短い手がかり・大小無視の手がかり）。あれば、そこへ飛びながら見る
         var clues = plan.NewClueFinder();
         bool hasClue = clues is not null;
+        var watch = new ClueWatch(plan);   // 短い手がかりで絞れていなければ、途中から全行に当てる
+        bool clueDropped = false;
 
         // 計測用（UV_TRACE=1）：どこに時間がかかっているかを標準エラーに出す（実装指示書 2026-10-03 §3.1）
         var trace = Environment.GetEnvironmentVariable("UV_TRACE") == "1" && !QuietTrace ? new Trace() : null;
@@ -190,7 +192,7 @@ public static class RawGrep
             }
 
             index?.Finish(fileLength, lineNo);
-            trace?.Report(plan.Clue, plan.ClueKind, regex is not null);
+            trace?.Report(plan.Clue, clueDropped ? plan.ClueKind + "→every-line" : plan.ClueKind, regex is not null);
             return new RawGrepOutcome(hits, truncated);
 
             // region は行頭から始まる完結行の集まり。改行を数えながら出すべき行を出し、次の行番号を返す
@@ -199,9 +201,13 @@ public static class RawGrep
             // 手がかりの無い区間は改行をまとめて数えるだけで済み、行の切り出しもデコードもしない。
             // -v は全行を出す判断が要るので、1行ずつ見る道（ScanLines）へ回す。
             long Scan(ReadOnlySpan<byte> region, long regionBase, long firstLine)
-                => !invert && (literal || hasClue)
+            {
+                long next = !invert && (literal || hasClue)
                     ? ScanByClue(region, regionBase, firstLine)
                     : ScanLines(region, regionBase, firstLine);
+                if (watch.GiveUp(next - firstLine)) { clues = null; hasClue = false; clueDropped = true; }
+                return next;
+            }
 
             long ScanByClue(ReadOnlySpan<byte> region, long regionBase, long firstLine)
             {
@@ -216,6 +222,7 @@ public static class RawGrep
                     if (trace is not null) trace.Find += System.Diagnostics.Stopwatch.GetTimestamp() - t0;
                     if (clueAt < 0) break;
                     if (trace is not null) trace.ClueLines++;
+                    watch.Candidate();
 
                     // cursor から手がかりの位置までの改行を数えて、その行の先頭を求める。
                     // 1本ずつ IndexOf で進むのではなく、まとめて数える（SIMD が効いて 5 倍速い）
@@ -277,9 +284,11 @@ public static class RawGrep
                     bool maybe = true;
                     if (clues is not null)
                     {
-                        while (candidate >= 0 && candidate < start)
-                            candidate = clues.IndexOf(region, candidate + 1);
+                        // 前の行に残った手がかりは数えない。行頭から 1 回探し直す（1 つずつたどると、
+                        // 手がかりの多い行で何千回も回った。-i -v の 'ka' で 34 倍。外部再レビュー 2026-10-05 の指摘1）
+                        if (candidate >= 0 && candidate < start) candidate = clues.IndexOf(region, start);
                         maybe = candidate >= 0 && candidate < end;
+                        if (maybe) watch.Candidate();
                     }
 
                     var text = region[start..end];

@@ -34,6 +34,7 @@ public sealed class PreparedSearch
 
     private readonly Lazy<Regex> _regex;
     private readonly System.Collections.Concurrent.ConcurrentBag<Regex> _spare = new();
+    private int _sharedLent;      // 共有の Regex を貸し出しに回したか（最初の 1 つはコンパイルし直さない）
     private readonly bool _prefilter, _shortClues;     // 作ったときの切り替え（Of が使い回してよいかを見る）
     private SearchPlan? _lastPlan;
 
@@ -111,7 +112,10 @@ public sealed class PreparedSearch
     public Regex RentRegex()
     {
         if (_spare.TryTake(out var regex)) return regex;
-        _ = Regex;                                   // 書き間違いの式はここで知らせる（1 回だけ読む）
+        // 最初の 1 つは共有のものを回す（書き間違いの式はここで知らせる）。前は共有のものと別にもう 1 つコンパイルしていた
+        //（外部再レビュー 2026-10-05 の低優先の指摘）
+        if (Interlocked.Exchange(ref _sharedLent, 1) == 0) return Regex;
+        _ = Regex;
         return BuildScanRegex(Options);
     }
 
@@ -213,6 +217,9 @@ public sealed class SearchPlan
     /// </summary>
     public Regex Regex => Prepared.Regex;
 
+    /// <summary>短い手がかり（1 文字・文字クラスの先頭のバイト）で絞るか（<see cref="ClueWatch"/> が見張る）。</summary>
+    public bool UsesShortClue => ClueKind == "short-clue";
+
     /// <summary>計測の表示用（<c>UV_TRACE=1</c>）：手がかりの種類とバイト列。</summary>
     public string ClueKind { get; } = "none";
     public byte[] Clue { get; } = [];
@@ -279,5 +286,36 @@ public sealed class ClueFinder
         if (_exact is not null) return _exact.IndexOf(region, from);
         int rel = AsciiCaseFold.IndexOf(region[from..], _folded, _anchor!, _anchorAt);
         return rel < 0 ? -1 : from + rel;
+    }
+}
+
+/// <summary>
+/// 短い手がかりで実際に絞れているかを見張る（走査ごとに作る）。手がかりのある行が
+/// <see cref="SearchTuning.MaxShortClueLineShare"/> を超えたら、呼び手は手がかりをやめて全行に当てる。
+/// 「必ず含む手がかりがある」ことと「手がかりのある行が少ない」ことは別で、それはデータを読むまで分からない
+/// （外部レビュー 2026-10-04「整理の進め方」5）。必須リテラル（2 文字以上）と大小無視の手がかりは見張らない。
+/// </summary>
+public sealed class ClueWatch(SearchPlan plan)
+{
+    private bool _watching = plan.UsesShortClue;
+    private long _lines, _candidates;
+
+    /// <summary>まだ決めていないか（区切りの行数を数える手間を、決めるまでに限るため）。</summary>
+    public bool Watching => _watching;
+
+    /// <summary>手がかりのある行を 1 つ見た。</summary>
+    public void Candidate()
+    {
+        if (_watching) _candidates++;
+    }
+
+    /// <summary>区切りを 1 つ見終えた（<paramref name="lines"/> はその行数）。手がかりをやめるなら true（決めるのは 1 回だけ）。</summary>
+    public bool GiveUp(long lines)
+    {
+        if (!_watching) return false;
+        _lines += lines;
+        if (_lines < SearchTuning.ShortClueSampleLines) return false;
+        _watching = false;
+        return _candidates > _lines * SearchTuning.MaxShortClueLineShare;
     }
 }
