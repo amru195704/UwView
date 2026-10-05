@@ -88,6 +88,21 @@ public static class CommandLineSplitter
     /// <summary>引数の列を、シェルに貼れる 1 行にする（必要な引数だけ <c>'…'</c> で囲む）。</summary>
     public static string Join(IEnumerable<string> args) => string.Join(' ', args.Select(Quote));
 
+    /// <summary>
+    /// PowerShell に貼れる形（Windows の［コピー（PowerShell）］。Finder Scope 要裁定 §11-3）。
+    /// <c>'…'</c> の中は <c>''</c> で <c>'</c> を表す。カンマ・<c>@</c>・<c>$</c> などは PowerShell が意味を持たせるので引用する。
+    /// </summary>
+    public static string JoinPowerShell(IEnumerable<string> args) => string.Join(' ', args.Select(QuotePowerShell));
+
+    public static string QuotePowerShell(string arg)
+        => arg.Length > 0 && arg.All(c => c is >= 'a' and <= 'z' or >= 'A' and <= 'Z' or >= '0' and <= '9'
+                                              or '-' or '_' or '.' or '/' or ':' or '=' or '+' or '*' or '?' or '\\'
+                                         || c > 0x7F && !char.IsWhiteSpace(c) && !char.IsControl(c)
+                                            && c is not ('\u2018' or '\u2019' or '\u201A' or '\u201B' or '\u201C' or '\u201D' or '\u201E'))
+            ? arg
+            // PowerShell は ‘ ’ ‚ ‛ も ' と同じに読むので、それぞれ 2 つ重ねる
+            : "'" + string.Concat(arg.Select(c => c is '\'' or '\u2018' or '\u2019' or '\u201A' or '\u201B' ? $"{c}{c}" : c.ToString())) + "'";
+
     /// <summary>1 つの引数を、シェルでそのまま 1 つの引数に戻る形にする。</summary>
     public static string Quote(string arg)
     {

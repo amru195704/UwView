@@ -108,4 +108,19 @@ public class CommandLineSplitterTests
         var bash = output.Split('\0')[..^1];
         Assert.Equal(bash, CommandLineSplitter.Split(text).Args);
     }
+
+    [Theory]
+    [InlineData("ERROR", "ERROR")]
+    [InlineData("**/*.log", "**/*.log")]
+    [InlineData("*.log,old/*.gz", "'*.log,old/*.gz'")]                  // カンマは PowerShell では配列になる
+    [InlineData("a b", "'a b'")]
+    [InlineData("it's", "'it''s'")]
+    [InlineData("k=\"x\"", "'k=\"x\"'")]
+    [InlineData("$HOME", "'$HOME'")]
+    [InlineData("@x", "'@x'")]
+    [InlineData("東京", "東京")]
+    [InlineData("\u2019q", "'\u2019\u2019q'")]                              // ’ も ' と同じに読まれる
+    [InlineData("", "''")]
+    public void PowerShell向けの引用(string arg, string expected)
+        => Assert.Equal(expected, CommandLineSplitter.QuotePowerShell(arg));
 }

@@ -326,4 +326,13 @@ Bundling puts them into one index (.uwvz) that you search as number:line (they g
   <data name="CmdMergedCancel" xml:space="preserve"><value>Cancel</value></data>
   <data name="CmdMergedUnchecked" xml:space="preserve"><value>Opened without checking against the original files ({0})</value></data>
   <data name="CmdMergedStale" xml:space="preserve"><value>The original files changed; this may be out of date ({0})</value></data>
+  <data name="CmdSaved" xml:space="preserve"><value>Saved: {0}</value></data>
+  <data name="CmdWritten" xml:space="preserve"><value>Written:</value></data>
+  <data name="CmdOpenWritten" xml:space="preserve"><value>Open</value></data>
+  <data name="TipCmdOpenWritten" xml:space="preserve"><value>Opens the written file in the main window</value></data>
+  <data name="CmdRevealWritten" xml:space="preserve"><value>Show folder</value></data>
+  <data name="TipCmdRevealWritten" xml:space="preserve"><value>Opens the folder that holds the written file</value></data>
+  <data name="CmdCopyPowerShell" xml:space="preserve"><value>Copy (PowerShell)</value></data>
+  <data name="TipCmdCopyPowerShell" xml:space="preserve"><value>Copies it in a form you can paste into PowerShell (its quoting rules differ)</value></data>
+  <data name="CmdYes" xml:space="preserve"><value>Yes</value></data>
 </root>

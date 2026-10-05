@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Avalonia;
@@ -50,6 +51,8 @@ public sealed class CommandLineDialog : Window
     private readonly TabItem _filesTab;
     private readonly Button _run;
     private readonly Button _rebuild;
+    private readonly TextBlock _written;
+    private readonly DockPanel _writtenRow;
 
     private CommandLineDialog(CommandLineViewModel vm, Func<CommandRunResult, Task>? show, Func<string, Task>? openFile)
     {
@@ -97,6 +100,14 @@ public sealed class CommandLineDialog : Window
         var commandRow = new DockPanel { Margin = new Thickness(0, 8, 0, 0) };
         DockPanel.SetDock(copy, Dock.Right);
         commandRow.Children.Add(copy);
+        if (OperatingSystem.IsWindows())
+        {
+            var copyPs = MakeButton("CmdCopyPowerShellButton", L["CmdCopyPowerShell"], L["TipCmdCopyPowerShell"]);
+            copyPs.Margin = new Thickness(0, 0, 6, 0);
+            copyPs.Click += async (_, _) => await CopyAsync(vm.CommandTextPowerShell);
+            DockPanel.SetDock(copyPs, Dock.Right);
+            commandRow.Children.Add(copyPs);
+        }
         commandRow.Children.Add(new Border
         {
             Background = new SolidColorBrush(Color.FromRgb(0xF2, 0xF4, 0xF7)),
@@ -167,6 +178,23 @@ public sealed class CommandLineDialog : Window
         _rebuild = MakeButton("CmdRebuildButton", L["CmdRebuild"], L["TipCmdRebuild"]);
         _rebuild.Margin = new Thickness(0, 6, 0, 0);
         _rebuild.Click += async (_, _) => await RebuildAsync();
+        // 書いたファイル（-out・convert・［保存…］）：「書きました」＋［開く］［フォルダーを表示］（§5.1）
+        _written = new TextBlock { Name = "CmdWrittenText", Foreground = Brushes.Black, VerticalAlignment = VerticalAlignment.Center,
+                                   TextTrimming = TextTrimming.PrefixCharacterEllipsis };
+        var openWritten = MakeButton("CmdOpenWrittenButton", L["CmdOpenWritten"], L["TipCmdOpenWritten"]);
+        openWritten.Click += async (_, _) =>
+        {
+            if (vm.WrittenFile is { } path && _openFile is not null) await _openFile(path);
+        };
+        var revealWritten = MakeButton("CmdRevealWrittenButton", L["CmdRevealWritten"], L["TipCmdRevealWritten"]);
+        revealWritten.Click += (_, _) => { if (vm.WrittenFile is { } path) RevealInFolder(path); };
+        var writtenButtons = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6 };
+        writtenButtons.Children.Add(openWritten);
+        writtenButtons.Children.Add(revealWritten);
+        _writtenRow = new DockPanel { Margin = new Thickness(0, 6, 0, 0) };
+        DockPanel.SetDock(writtenButtons, Dock.Right);
+        _writtenRow.Children.Add(writtenButtons);
+        _writtenRow.Children.Add(_written);
         var summaryRow = new DockPanel();
         DockPanel.SetDock(_rebuild, Dock.Right);
         summaryRow.Children.Add(_rebuild);
@@ -203,8 +231,10 @@ public sealed class CommandLineDialog : Window
         DockPanel.SetDock(top, Dock.Top);
         DockPanel.SetDock(footer, Dock.Bottom);
         DockPanel.SetDock(summaryRow, Dock.Bottom);
+        DockPanel.SetDock(_writtenRow, Dock.Bottom);
         body.Children.Add(top);
         body.Children.Add(footer);
+        body.Children.Add(_writtenRow);
         body.Children.Add(summaryRow);
         body.Children.Add(_tabs);
         Content = body;
@@ -261,6 +291,12 @@ public sealed class CommandLineDialog : Window
         if (property is null or nameof(vm.Files)) { _files.ItemsSource = vm.Files; _filesTab.Header = L.Format("CmdTabFiles", vm.Files.Count); }
         if (property is null or nameof(vm.FilesSummary)) _summary.Text = vm.FilesSummary;
         if (property is null or nameof(vm.OffersRebuild)) _rebuild.IsVisible = vm.OffersRebuild;
+        if (property is null or nameof(vm.WrittenFile))
+        {
+            _writtenRow.IsVisible = vm.WrittenFile is not null;
+            _written.Text = vm.WrittenFile is { } w ? $"{L["CmdWritten"]} {w}" : "";
+            ToolTip.SetTip(_written, vm.WrittenFile);
+        }
         // 画面の外から入れた値（フォルダーのドロップ・［作り直す…］など）を欄に映す
         if (property is null or nameof(vm.FilePattern) && _filePattern.Text != vm.FilePattern) _filePattern.Text = vm.FilePattern;
         if (property is null or nameof(vm.SearchPattern) && _searchPattern.Text != vm.SearchPattern) _searchPattern.Text = vm.SearchPattern;
@@ -281,17 +317,44 @@ public sealed class CommandLineDialog : Window
         }
     }
 
+    /// <summary>［作り直す…］：<c>--rebuild</c> を足して走らせる（作り直してよいかは、走らせる前に中身が尋ねる）。</summary>
     private async Task RebuildAsync()
     {
-        if (!await ConfirmDialog.AskAsync(this, L["CmdTitle"], L["CmdRebuildAsk"], L["CmdRebuildYes"], L["CmdRebuildNo"])) return;
         ViewModel.AddRebuild();
         await RunAsync();
     }
 
     private async Task RunAsync()
     {
-        if (await ViewModel.RunAsync() is { ShowInGui: not null } result && _show is not null)
-            await _show(result);
+        var result = await ViewModel.RunAsync();
+        if (result is { ShowInGui: not null } && _show is not null) await _show(result);
+        // -replace・cat を -out なしで：出力を新しいタブで開く（読むだけ・保存できる。要裁定 §11-5）
+        if (result?.OutputTabName is { } name && ViewModel.OutputFile is { } output && _openFile is not null)
+            await _openFile(CopyForTab(output, name));
+    }
+
+    /// <summary>出力を、タブで開ける名前の一時ファイルに写す（ダイアログを閉じても消えない場所）。</summary>
+    internal static string CopyForTab(string output, string name)
+    {
+        string folder = Path.Combine(Path.GetTempPath(), "UwView-output", Guid.NewGuid().ToString("N")[..8]);
+        Directory.CreateDirectory(folder);
+        string path = Path.Combine(folder, name);
+        File.Copy(output, path, overwrite: true);
+        return path;
+    }
+
+    /// <summary>ファイルのあるフォルダーを、OS のファイル画面で開く（Mac は選んだ状態で）。</summary>
+    private static void RevealInFolder(string path)
+    {
+        try
+        {
+            var start = OperatingSystem.IsMacOS() ? new System.Diagnostics.ProcessStartInfo("open", ["-R", path])
+                : OperatingSystem.IsWindows() ? new System.Diagnostics.ProcessStartInfo("explorer.exe", $"/select,\"{path}\"")
+                : new System.Diagnostics.ProcessStartInfo("xdg-open", [Path.GetDirectoryName(path) ?? "."]);
+            start.UseShellExecute = false;
+            System.Diagnostics.Process.Start(start);
+        }
+        catch (Exception e) when (e is System.ComponentModel.Win32Exception or InvalidOperationException) { }
     }
 
     private async Task PickFolderAsync()
@@ -318,7 +381,7 @@ public sealed class CommandLineDialog : Window
             Title = L["CmdSave"],
             SuggestedFileName = "output.txt",
         });
-        if (file?.TryGetLocalPath() is { } path) ViewModel.SaveOutput(path);
+        if (file?.TryGetLocalPath() is { } path) await ViewModel.SaveOutputAsync(path);
     }
 
     /// <summary>

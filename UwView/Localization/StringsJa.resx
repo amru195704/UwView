@@ -326,4 +326,13 @@
   <data name="CmdMergedCancel" xml:space="preserve"><value>やめる</value></data>
   <data name="CmdMergedUnchecked" xml:space="preserve"><value>元ファイルとの照合なしで開きました（{0}）</value></data>
   <data name="CmdMergedStale" xml:space="preserve"><value>元ファイルから変わっています。古い可能性があります（{0}）</value></data>
+  <data name="CmdSaved" xml:space="preserve"><value>書きました: {0}</value></data>
+  <data name="CmdWritten" xml:space="preserve"><value>書きました:</value></data>
+  <data name="CmdOpenWritten" xml:space="preserve"><value>開く</value></data>
+  <data name="TipCmdOpenWritten" xml:space="preserve"><value>書いたファイルを本体で開きます</value></data>
+  <data name="CmdRevealWritten" xml:space="preserve"><value>フォルダーを表示</value></data>
+  <data name="TipCmdRevealWritten" xml:space="preserve"><value>書いたファイルのあるフォルダーを開きます</value></data>
+  <data name="CmdCopyPowerShell" xml:space="preserve"><value>コピー（PowerShell）</value></data>
+  <data name="TipCmdCopyPowerShell" xml:space="preserve"><value>PowerShell に貼れる形でコピーします（引用の規則が違うため）</value></data>
+  <data name="CmdYes" xml:space="preserve"><value>はい</value></data>
 </root>

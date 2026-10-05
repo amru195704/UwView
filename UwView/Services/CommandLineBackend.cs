@@ -35,7 +35,15 @@ public sealed class CommandOutput
 /// <summary>コマンドを走らせた結果。</summary>
 /// <param name="ExitCode">grep と同じ（0＝あり・1＝なし・2＝誤りまたは不完全）。</param>
 /// <param name="ShowInGui">結果を本体の窓に出す受け渡し（無ければ null＝出力欄だけ）。</param>
-public sealed record CommandRunResult(int ExitCode, Func<Task>? ShowInGui = null);
+/// <param name="Written">書いたファイル（<c>-out</c>・<c>convert</c>）。「書きました」＋［開く］［フォルダーを表示］を出す。</param>
+/// <param name="OutputTabName">出力を新しいタブで開くときの名前（<c>-replace</c>・<c>cat</c> を <c>-out</c> なしで。§5.1）。</param>
+public sealed record CommandRunResult(int ExitCode, Func<Task>? ShowInGui = null, string? Written = null,
+                                      string? OutputTabName = null);
+
+/// <summary>［保存…］で書くときの走らせ方（§7.3：コマンドの <c>-out</c> と同じ書き方で。形式は拡張子で決まる）。</summary>
+/// <param name="Argv">走らせる引数。</param>
+/// <param name="WritesItself">コマンドが自分で書く（<c>-out</c>）。false なら標準出力を保存先に書く。</param>
+public sealed record CommandSavePlan(IReadOnlyList<string> Argv, bool WritesItself);
 
 /// <summary>
 /// 「コマンドライン」ダイアログ（v1.8.0 Finder Scope）の、uvf と uvp で違う所。画面は共通で、解釈・展開・実行をここに任せる。
@@ -59,10 +67,16 @@ public interface ICommandLineBackend
     IReadOnlyList<string> WithoutSearch(string file);
 
     /// <summary>
-    /// 走らせる前の支度（UI のスレッドで呼ぶ。尋ねることがあればここで尋ねる）。false なら走らせない。
-    /// uvp は、束ねる索引を基準フォルダーに置けないとき、保存先を尋ねる（§6）。
+    /// 走らせる前の支度（UI のスレッドで呼ぶ。尋ねることがあればここで尋ねる）。
+    /// uvp は、束ねる索引を基準フォルダーに置けないとき保存先を尋ね（§6）、既にある <c>-out</c> 先は上書きしてよいか、
+    /// <c>--rebuild</c> は作り直してよいかを尋ねる（§5.1）。
+    /// 書き換えた引数を返す（上書きの確認で「はい」なら <c>--force</c> を足す など）。null なら走らせない。
     /// </summary>
-    Task<bool> PrepareAsync(IReadOnlyList<string> argv, string baseFolder, bool japanese) => Task.FromResult(true);
+    Task<IReadOnlyList<string>?> PrepareAsync(IReadOnlyList<string> argv, string baseFolder, bool japanese)
+        => Task.FromResult<IReadOnlyList<string>?>(argv);
+
+    /// <summary>［保存…］で、この引数の結果を path に書く走らせ方（無ければ出力欄をそのまま写す）。</summary>
+    CommandSavePlan? SavePlan(IReadOnlyList<string> argv, string path) => null;
 
     /// <summary>書き方の誤り（コマンドと同じ言葉）。無料版で Pro の書き方を書いたときの案内もここ。無ければ null。</summary>
     (string Ja, string En)? Check(IReadOnlyList<string> argv);
@@ -74,7 +88,9 @@ public interface ICommandLineBackend
     /// コマンドを走らせる（作業フォルダーは呼び手が基準フォルダーにしてある）。
     /// 行・集計・流れを窓に出すものは、<see cref="CommandRunResult.ShowInGui"/> を返す（呼び手が UI のスレッドで呼ぶ）。
     /// </summary>
-    Task<CommandRunResult> RunAsync(IReadOnlyList<string> argv, CommandOutput output, bool japanese, CancellationToken ct);
+    /// <param name="toWindow">結果を窓に出してよいか（［保存…］で書くときは false＝文字で出す）。</param>
+    Task<CommandRunResult> RunAsync(IReadOnlyList<string> argv, CommandOutput output, bool japanese, CancellationToken ct,
+                                    bool toWindow = true);
 }
 
 /// <summary>ファイル一覧を作る共通の手順（uvf・uvp とも、番号は広げた順）。</summary>

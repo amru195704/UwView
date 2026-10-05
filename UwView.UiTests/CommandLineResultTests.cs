@@ -123,6 +123,20 @@ public class CommandLineResultTests : IDisposable
         Assert.Single(vm.Tabs);
     }
 
+    [AvaloniaTheory]
+    [InlineData("saved.txt", false)]
+    [InlineData("saved.json", true)]
+    public async Task 窓に出した検索も保存でき_中身はコマンドと同じ(string name, bool json)
+    {
+        var (_, _, cmd, result) = await RunInDialog("**/*.log", "ERROR");
+        Assert.NotNull(result?.ShowInGui);
+        string path = Path.Combine(_dir, name);
+        await cmd.SaveOutputAsync(path);
+        var cli = await Cli(json ? ["**/*.log", "ERROR", "--json"] : ["**/*.log", "ERROR"]);
+        Assert.Equal(cli, File.ReadAllText(path).Split('\n', StringSplitOptions.RemoveEmptyEntries));
+        Assert.Equal(Path.GetFullPath(path), cmd.WrittenFile);
+    }
+
     [AvaloniaFact]
     public async Task 進み具合は読み終えた本数と量を数える()
     {

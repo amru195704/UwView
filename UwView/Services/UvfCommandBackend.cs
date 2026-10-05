@@ -46,11 +46,19 @@ public sealed class UvfCommandBackend(UvfGuiTarget? gui = null) : ICommandLineBa
     public CommandFileList Expand(string specification, IgnoreOptions ignore, bool japanese)
         => CommandFileLists.From(FileSet.Expand(specification, ignore: ignore), japanese, Tool);
 
+    /// <summary>［保存…］：同じ引数を文字で走らせて、標準出力を保存先に書く（uvf に -out は無い）。.json なら --json。</summary>
+    public CommandSavePlan? SavePlan(IReadOnlyList<string> argv, string path)
+    {
+        if (UvfCli.Parse(argv).Invocation is not { Mode: UvfMode.Search, Pattern.Length: > 0 } inv) return null;
+        bool json = path.EndsWith(".json", StringComparison.OrdinalIgnoreCase) || path.EndsWith(".jsonl", StringComparison.OrdinalIgnoreCase);
+        return new CommandSavePlan(json && !inv.Json ? [.. argv, "--json"] : argv, WritesItself: false);
+    }
+
     public async Task<CommandRunResult> RunAsync(IReadOnlyList<string> argv, CommandOutput output, bool japanese,
-                                                 CancellationToken ct)
+                                                 CancellationToken ct, bool toWindow = true)
     {
         // 検索（--json・--files でないもの）は、末尾の -open と同じに走らせて、画面へ渡すものを受け取る
-        bool toGui = gui is not null
+        bool toGui = gui is not null && toWindow
                      && UvfCli.Parse(argv).Invocation is { Mode: UvfMode.Search, Pattern.Length: > 0, Json: false, ListFiles: false };
         (string? File, string? Pattern, string? Hits, string? Options, string? Many)? launched = null;
         UvfEnvironment env = null!;

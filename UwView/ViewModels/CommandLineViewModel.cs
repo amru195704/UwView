@@ -77,6 +77,9 @@ public sealed partial class CommandLineViewModel : ObservableObject
     /// <summary>2 つの欄から作った、コマンドとそっくり同じ 1 行（§3.2）。</summary>
     [ObservableProperty] private string _commandText = "";
 
+    /// <summary>同じ 1 行の PowerShell 向け（Windows の［コピー（PowerShell）］。要裁定 §11-3）。</summary>
+    [ObservableProperty] private string _commandTextPowerShell = "";
+
     /// <summary>書き方の誤り（コマンドと同じ言葉）。無ければ空。</summary>
     [ObservableProperty] private string _errorText = "";
 
@@ -154,6 +157,7 @@ public sealed partial class CommandLineViewModel : ObservableObject
     {
         var (argv, error) = BuildArgv();
         CommandText = argv is null ? Tool : Tool + " " + CommandLineSplitter.Join(argv);
+        CommandTextPowerShell = argv is null ? Tool : Tool + " " + CommandLineSplitter.JoinPowerShell(argv);
         error ??= argv is null ? null : _backend.Check(argv);
         ErrorText = error is { } e ? (Japanese ? e.Ja : e.En) : "";
     }
@@ -198,10 +202,10 @@ public sealed partial class CommandLineViewModel : ObservableObject
     /// </summary>
     public async Task<CommandRunResult?> RunAsync()
     {
-        var (argv, _) = BuildArgv();
-        if (argv is null || !CanRun) return null;
+        var (built, _) = BuildArgv();
+        if (built is null || !CanRun) return null;
         bool openIgnored = OpenTyped;
-        if (!await _backend.PrepareAsync(argv, BaseFolder, Japanese))
+        if (await _backend.PrepareAsync(built, BaseFolder, Japanese) is not { } argv)
         {
             Status = L["CmdCanceled"];
             return null;
@@ -214,47 +218,69 @@ public sealed partial class CommandLineViewModel : ObservableObject
             });
             _settings.Save();
         }
+        WrittenFile = null;
+        _lastArgv = argv;
+        string outFile = Path.Combine(Path.GetTempPath(), $"uv-cmd-{Guid.NewGuid():N}.out");
+        CommandRunResult? result;
+        string stderr;
+        await using (var stdout = new FileStream(outFile, FileMode.Create, FileAccess.Write, FileShare.Read, 1 << 16))
+            (result, stderr) = await RunCoreAsync(argv, stdout, toWindow: true);
+        if (result is not null && !_lastCanceled)
+            Status = L.Format("CmdExit", result.ExitCode) + (result.ShowInGui is null ? "" : " ・ " + L["CmdShownInWindow"]);
+        Notice = (openIgnored ? L["CmdOpenIgnored"] + "\n" : "") + stderr;
+        ShowOutput(outFile);
+        if (result?.Written is { } written && File.Exists(written)) WrittenFile = written;
+        // --tune --apply はコマンドが設定ファイルに書く。画面が持っている設定にも入れておく（後で古い値で上書きしない）
+        if (_settings is not null && argv.Contains("--tune") && argv.Contains("--apply"))
+            _settings.MaxThreads = CliSettings.ReadInt(AppSettings.AppDataFolder, UwView.Core.ThreadBudget.SettingsKey, _settings.MaxThreads);
+        // --files は［ファイル展開］と同じく一覧にも出す（§5.1）。束ねた・足したあとは予告も新しくする
+        if (result is not null && (argv.Contains("--files") || _indexShown)) await ExpandAsync();
+        if (argv.Contains("--files")) SelectedTab = 0;
+        return result;
+    }
+
+    private IReadOnlyList<string>? _lastArgv;
+    private bool _lastCanceled;
+
+    /// <summary>書いたファイル（<c>-out</c>・<c>convert</c>）。「書きました」＋［開く］［フォルダーを表示］を出す。</summary>
+    [ObservableProperty] private string? _writtenFile;
+
+    /// <summary>基準フォルダーでコマンドを走らせる（進み具合・中止つき）。標準エラーの文字を一緒に返す。</summary>
+    private async Task<(CommandRunResult? Result, string StdErr)> RunCoreAsync(IReadOnlyList<string> argv, Stream stdout, bool toWindow)
+    {
         using var cts = new CancellationTokenSource();
         _running = cts;
+        _lastCanceled = false;
         IsRunning = true;
         Status = L["CmdRunning"];
         var progress = new CommandProgress();
         using var ticking = new CancellationTokenSource();
         _ = TickAsync(progress, ticking.Token);
-        string outFile = Path.Combine(Path.GetTempPath(), $"uv-cmd-{Guid.NewGuid():N}.out");
         var stderr = new StringWriter { NewLine = "\n" };
         CommandRunResult? result = null;
         try
         {
-            await using (var stdout = new FileStream(outFile, FileMode.Create, FileAccess.Write, FileShare.Read, 1 << 16))
+            var output = new CommandOutput { StdOut = stdout, StdErr = stderr };
+            result = await WorkingFolder.RunAsync(BaseFolder, () => Task.Run(() =>
             {
-                var output = new CommandOutput { StdOut = stdout, StdErr = stderr };
-                result = await WorkingFolder.RunAsync(BaseFolder, () => Task.Run(() =>
-                {
-                    CommandProgress.Current = progress;
-                    return _backend.RunAsync(argv, output, Japanese, cts.Token);
-                }), cts.Token);
-            }
-            // コマンドは中止を「中止しました」＋終了コード 2 で返す（例外にはしない）
-            Status = cts.IsCancellationRequested ? L["CmdCanceled"]
-                : L.Format("CmdExit", result.ExitCode) + (result.ShowInGui is null ? "" : " ・ " + L["CmdShownInWindow"]);
+                CommandProgress.Current = progress;
+                return _backend.RunAsync(argv, output, Japanese, cts.Token, toWindow);
+            }), cts.Token);
         }
-        catch (OperationCanceledException)
-        {
-            Status = L["CmdCanceled"];
-        }
+        catch (OperationCanceledException) { }
         finally
         {
             ticking.Cancel();
             IsRunning = false;
             _running = null;
         }
-        Notice = (openIgnored ? L["CmdOpenIgnored"] + "\n" : "") + stderr.ToString().TrimEnd('\n');
-        ShowOutput(outFile);
-        // --files は［ファイル展開］と同じく一覧にも出す（§5.1）。束ねた・足したあとは予告も新しくする
-        if (result is not null && (argv.Contains("--files") || _indexShown)) await ExpandAsync();
-        if (argv.Contains("--files")) SelectedTab = 0;
-        return result;
+        // コマンドは中止を「中止しました」＋終了コード 2 で返す（例外にはしない）
+        if (cts.IsCancellationRequested)
+        {
+            _lastCanceled = true;
+            Status = L["CmdCanceled"];
+        }
+        return (result, stderr.ToString().TrimEnd('\n'));
     }
 
     /// <summary>走っている間、進み具合を 0.5 秒ごとに出す（何本目／全体・読んだ量・残りの目安・経過。§3.5）。</summary>
@@ -319,9 +345,30 @@ public sealed partial class CommandLineViewModel : ObservableObject
     /// <summary>出力の全部（［保存…］用。出力欄に見せた先頭だけでなく）。</summary>
     public string? OutputFile => _outputFile;
 
-    /// <summary>出力の全部を書き出す（［保存…］）。</summary>
-    public void SaveOutput(string path)
+    /// <summary>
+    /// ［保存…］：結果の全部を書く（§7.3）。コマンドの <c>-out</c> と同じ書き方で（形式は拡張子で決まる）、
+    /// 窓に出した検索も文字で書く。走らせ方が無いもの（--help など）は出力欄をそのまま写す。
+    /// </summary>
+    public async Task SaveOutputAsync(string path)
     {
+        if (_lastArgv is { } argv && _backend.SavePlan(argv, Path.GetFullPath(path)) is { } plan)
+        {
+            string full = Path.GetFullPath(path);
+            string stderr;
+            if (plan.WritesItself) (_, stderr) = await RunCoreAsync(plan.Argv, Stream.Null, toWindow: false);
+            else
+            {
+                await using var target = new FileStream(full, FileMode.Create, FileAccess.Write, FileShare.Read, 1 << 16);
+                (_, stderr) = await RunCoreAsync(plan.Argv, target, toWindow: false);
+            }
+            if (stderr.Length > 0) Notice = stderr;
+            if (!_lastCanceled)
+            {
+                Status = L.Format("CmdSaved", full);
+                WrittenFile = File.Exists(full) ? full : null;
+            }
+            return;
+        }
         if (_outputFile is { } file) File.Copy(file, path, overwrite: true);
     }
 
