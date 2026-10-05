@@ -45,7 +45,7 @@ public partial class MainView
         FileListButton.IsVisible = true;
 
         // 開いた直後は、ヒットした最初のファイルをメインに出す。番号 1 がヒット 0 件だと、
-        // 本文にも当たりが無く、「ヒットしたファイルだけ」の一覧にも 0 件の行が残った（オーナー報告 2026-09-29）。
+        // 本文にも当たりが無く、「ヒットしたファイルだけ」の一覧にも 0 件の行が残った（9.29修正）。
         // ヒットが無い・検索しないときは、開ける最初のもの（番号 1。zip などで開けなければその次。D4）
         var openable = Enumerable.Range(0, set.Files.Count).Where(i => set.Files[i].CanOpen).ToList();
         int first = openable.FirstOrDefault(i => _multiHitsPerFile[i] > 0, openable.FirstOrDefault(-1));

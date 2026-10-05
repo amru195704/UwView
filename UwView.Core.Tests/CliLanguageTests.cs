@@ -3,7 +3,7 @@ using UwView.Core.Cli;
 
 namespace UwView.Core.Tests;
 
-/// <summary>CLI の表示言語はアプリの設定で選んだ言語（オーナー指示 2026-09-14）。</summary>
+/// <summary>CLI の表示言語はアプリの設定で選んだ言語（9.14修正）。</summary>
 public class CliLanguageTests : IDisposable
 {
     private readonly string _dir = Path.Combine(Path.GetTempPath(), "uvf-clilang-" + Guid.NewGuid().ToString("N"));

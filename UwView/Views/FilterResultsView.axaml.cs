@@ -44,7 +44,7 @@ public partial class FilterResultsView : UserControl
         SaveButton.Click += OnSaveClick;
         // 抽出保存（F4-3）: 開いた時点で前回の指定を入れ直す。
         // 専用のボタンは置かない——「保存」と押した後の動きが同じで、
-        // チェックを触っていないかぎり見分けがつかないため（オーナー判断 2026-09-08）。
+        // チェックを触っていないかぎり見分けがつかないため（9.8修正）。
         // 復元は UVP のみ。UVF はこのオプションを出していないので触らない
         if (_vm.AllowExtractOptions) UwView.Services.ExtractSaveOptions.ApplyTo(_vm);
         CancelSaveButton.Click += (_, _) => _vm.CancelSave();

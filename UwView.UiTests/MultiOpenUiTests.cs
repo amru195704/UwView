@@ -235,7 +235,7 @@ public class MultiOpenUiTests : IDisposable
     [AvaloniaFact]
     public async Task 番号1がヒット0件ならヒットした最初のファイルをメインに出す()
     {
-        // a00.log（番号 1）は当たらない。メインは番号 2 の f01.log、一覧にも 0 件の行は出ない（オーナー報告 2026-09-29）
+        // a00.log（番号 1）は当たらない。メインは番号 2 の f01.log、一覧にも 0 件の行は出ない（9.29修正）
         MakeFiles(2);
         File.WriteAllText(Path.Combine(_dir, "a00.log"), "INFO only\n");
         var (view, vm) = await Start(await Handoff("*.log", "ERROR", "-open"));
@@ -249,7 +249,7 @@ public class MultiOpenUiTests : IDisposable
     [AvaloniaFact]
     public async Task ファイル一覧は当たりのあるファイルだけと全部を切り替えられる()
     {
-        // 当たりのあるのは 1〜3 番、4・5 番（q で始まる）は当たらない（オーナー指示 2026-09-29）
+        // 当たりのあるのは 1〜3 番、4・5 番（q で始まる）は当たらない（9.29修正）
         MakeFiles(3);
         foreach (string name in new[] { "q01.log", "q02.log" })
             File.WriteAllText(Path.Combine(_dir, name), "INFO only\nINFO only\n");

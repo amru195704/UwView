@@ -387,7 +387,7 @@ public partial class MainView : UserControl
 
         // CLI がすでに探してあれば、その結果をそのまま使う（同じ検索をやり直さない）。
         // 行番号も渡ってくるので<b>索引の完成を待たない</b>——本文は行頭位置から直接読める
-        //（オーナー指摘 2026-09-18「索引作成の待ちが余計」）。索引は裏で作られ続ける
+        //（9.18修正「索引作成の待ちが余計」）。索引は裏で作られ続ける
         if (hitsPath is not null && UwView.Core.Cli.CliHandoff.TakeFrom(hitsPath) is { } handoff
             && handoff.Matches(tab.Session.Source.Length))
         {
@@ -669,7 +669,7 @@ public partial class MainView : UserControl
                 : Avalonia.Layout.VerticalAlignment.Stretch,
             Width = preferredWidth,
             // 右端にドッキングするとき、本体の縦スクロールバー（16px）を隠さないよう右を空ける
-            // （オーナー報告 2026-09-23: ポップアップの右のバーで本体のバーが半分消える）
+            // （9.23修正: ポップアップの右のバーで本体のバーが半分消える）
             Margin = centered
                 ? new Avalonia.Thickness(0, 80, 0, 0)
                 : new Avalonia.Thickness(0, 6, 26, 6),
@@ -1328,7 +1328,7 @@ public partial class MainView : UserControl
         _vm.IsIndexing = s.IsIndexing;
         _vm.IndexProgress = s.IndexProgress;
 
-        // ブラウザ版は索引を作っている間、縦スクロールバーを使えなくする（オーナー報告 2026-09-23:
+        // ブラウザ版は索引を作っている間、縦スクロールバーを使えなくする（9.23修正:
         // 開いている最中に操作すると止まる）。索引がまだ無いので、任意の位置へ飛ぼうとすると
         // その都度ファイルを読みに行くことになり、WASM では固まって見える
         if (OperatingSystem.IsBrowser())

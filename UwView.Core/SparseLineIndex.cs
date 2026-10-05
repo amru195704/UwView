@@ -207,7 +207,7 @@ public sealed class SparseLineIndex
     ///
     /// CLI は検索でどのみちファイルを通しで読むので、そのついでに N 行ごとの位置を控えておける。
     /// それを渡してもらえば、画面はもう一度読み直さずに済む（10GB なら丸ごと1回ぶんが浮く。
-    /// オーナー指示 2026-09-18「-open が最後にある場合、検索時に index も同時に作成する」）。
+    /// 9.18修正「-open が最後にある場合、検索時に index も同時に作成する」）。
     /// </summary>
     /// <param name="checkpoints">先頭（BOM の直後）から <paramref name="blockLines"/> 行ごとの行頭位置。</param>
     /// <param name="newlineCount">ファイル全体の '\n' の数。</param>
@@ -288,7 +288,7 @@ public sealed class SparseLineIndex
 
                 // 改行は1バイトずつ比べず、SIMD の IndexOf で跳ぶ。
                 // 258GB の実測で索引作成だけ 696MB/s と、検索（880MB/s）や媒体（942MB/s）に負けていた
-                //（1バイトずつ＝約1GB/s が頭打ち。IndexOf なら 3.4GB/s 出る。オーナー計測 2026-09-18）
+                //（1バイトずつ＝約1GB/s が頭打ち。IndexOf なら 3.4GB/s 出る。9.18修正）
                 var span = buf.AsSpan(0, got);
                 int phase = (int)((pos - BomLength) % Separator.UnitSize);   // 文字の途中から読み始めた場合
                 endsWithSeparator = false;   // このひと塊の中身だけで決める

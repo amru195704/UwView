@@ -6,7 +6,7 @@ namespace UwView.Core;
 /// この実行ファイルの<b>呼び名</b>（試験用ビルドだけに付く。本番は空）。
 ///
 /// 既に入れてある版と並べて置いて試すとき、<b>見た目で区別が付かないと取り違える</b>
-/// （オーナー指摘 2026-09-22「名称には Wide Field をあちこち付けて」）。
+/// （9.22修正「名称には Wide Field をあちこち付けて」）。
 /// ビルド時に <c>EDITION="Wide Field"</c> を与えると、UwView.Core に
 /// <c>AssemblyMetadata("Edition", "Wide Field")</c> が焼き込まれ、ここから読める。
 ///
@@ -29,7 +29,7 @@ public static class AppEdition
 
     /// <summary>
     /// <c>--version</c> の 1 行（<c>uvf 1.7.3.6.9 (build 26.10.04.19)</c>）。版数は 2 つ目の語のまま（読むスクリプトを壊さない）。
-    /// ビルド番号は画面の About と同じ値（オーナー指示 2026-10-04）。
+    /// ビルド番号は画面の About と同じ値（10.4修正）。
     /// </summary>
     public static string VersionLine(string tool, string version, string buildNumber)
         => Decorate($"{tool} {version}") + (buildNumber.Length > 0 ? $" (build {buildNumber})" : "");
@@ -37,7 +37,7 @@ public static class AppEdition
     /// <summary>
     /// 版数（本体が起動時に入れる。例 <c>1.7.0.1</c>）。
     /// <b>dist を作るたびに上げる</b>ので、これが題名に出ていれば試験物を取り違えない
-    /// （オーナー指示 2026-09-22）。
+    /// （9.22修正）。
     /// </summary>
     public static string Version { get; set; } = "";
 
@@ -49,7 +49,7 @@ public static class AppEdition
 
     /// <summary>
     /// ウィンドウの題名（<c>UwView(uvf)</c> → <c>UwView(uvf)-Wide Field(v1.7.3.3)</c>）。
-    /// 正式名のビルドでもペット名と版数を出す（オーナー指示 2026-09-28。どの版を見ているか題名で分かるように）。
+    /// 正式名のビルドでもペット名と版数を出す（9.28修正。どの版を見ているか題名で分かるように）。
     /// 試験用の呼び名が焼き込まれていれば、ペット名の代わりにそれを出す。
     /// </summary>
     public static string TitleFor(string name)

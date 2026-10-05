@@ -51,7 +51,7 @@ public static class ConfirmDialog
     /// 3択（例: 登録し直す／解除する／閉じる）。戻り値は 1・2・0（0 は閉じる）。
     ///
     /// 「いったん解除してから登録し直す」を利用者にやらせると、mac / Linux では
-    /// <b>管理者パスワードを2回</b>聞くことになる（オーナー報告 2026-09-23）。
+    /// <b>管理者パスワードを2回</b>聞くことになる（9.23修正）。
     /// 選ばせて1回で済ませるために用意した。
     /// </summary>
     public static async Task<int> ChooseAsync(Window owner, string title, string message,

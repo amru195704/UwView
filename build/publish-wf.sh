@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 # 試験用ビルド（Wide Field の開発版）— UwView / UVF
 #
-# **名前は正式名**（オーナー指示 2026-09-27「uvfWF/uvpWF は正式名に戻す」）:
+# **名前は正式名**（9.27修正「uvfWF/uvpWF は正式名に戻す」）:
 #   配布物   UwView-<ver>-…            アプリ  UwView.app
 #   実行体   UwView.Desktop            CLI     uvf
 #   bundle   net.y42u.uwview           表示    題名・--version に (Wide Field) を付けない
 # 出力先だけは distWideField/ のまま（dist/ は公開した配布物として git に登録してあるので汚さない）。
 # 以前は並べて置けるよう uvfWF・UwViewWF.app などの別名にしていた（〜1.7.3）。
 #
-# **作る対象は3点だけ**（オーナー指示 2026-09-22）:
+# **作る対象は3点だけ**（9.22修正）:
 #   mac arm64 ／ Linux arm64 ／ Windows x64
 #
 # **焼くたびに版数を1つ上げる**（v1.7.0 → v1.7.0.1 → …）。試験物を取り違えないため。

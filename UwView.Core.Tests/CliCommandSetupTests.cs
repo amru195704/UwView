@@ -3,7 +3,7 @@ using UwView.Core.Cli;
 namespace UwView.Core.Tests;
 
 /// <summary>
-/// uvf / uvp をコンソールで名前だけ打って使えるようにする（オーナー指示 2026-09-14）。
+/// uvf / uvp をコンソールで名前だけ打って使えるようにする（9.14修正）。
 /// 配布はインストーラではないので、アプリ自身が PATH（Windows）かリンク（macOS / Linux）を登録する。
 /// 本物の /usr/local/bin やレジストリには触らず、一時フォルダと文字列で確かめる。
 /// </summary>
@@ -40,7 +40,7 @@ public class CliCommandSetupTests : IDisposable
     [Fact]
     public void 別名の起動アプリも見つける()
     {
-        // 試験用ビルドは uvfWF のような別名で入っている（オーナー報告 2026-09-22:
+        // 試験用ビルドは uvfWF のような別名で入っている（9.22修正:
         // 「この版には uvf が入っていません」と出た）。名前ちょうどが無ければ uvf* を探す
         string launcher = MakeLauncher("wf", "uvfWF");
         string gui = Path.Combine(Path.GetDirectoryName(launcher)!, "UwView.Desktop");

@@ -102,11 +102,11 @@ public sealed class UvfEnvironment
 }
 
 /// <summary>
-/// 無料版 UwView の CLI（オーナー指示 2026-09-14）。<b>次の2つの形だけ</b>を受け付ける。
+/// 無料版 UwView の CLI（9.14修正）。<b>次の2つの形だけ</b>を受け付ける。
 ///
 /// 別の実行ファイルは持たない。<b>GUI 本体（UwView）を <c>--uvf</c> 付きで起動すると CLI として動く</b>
 /// （配布物の <c>uvf</c> はその呼び出しを書いただけのスクリプト）。CLI 専用の実行ファイルを入れると
-/// .NET 一式をもう1つ抱えることになり、配布物が約 30MB 増えるため（オーナー指摘 2026-09-14）。
+/// .NET 一式をもう1つ抱えることになり、配布物が約 30MB 増えるため（9.14修正）。
 /// <code>
 /// uvf -open [ファイル] [検索パターン]     GUI を起動。ファイルがあれば開き、パターンがあれば検索まで
 /// uvf ファイル 検索パターン [-open]       検索。-open なら結果を GUI で、無ければ stdout へ
@@ -335,7 +335,7 @@ public static class UvfCli
             return UvfExit.Found;
         }
 
-        // --version / --help（uvp と同じ綴り。無かったので入れた。オーナー指摘 2026-09-21）
+        // --version / --help（uvp と同じ綴り。無かったので入れた。9.21修正）
         if (argv.Count == 1)
         {
             switch (argv[0])
@@ -445,7 +445,7 @@ public static class UvfCli
             string? file = inv.File is null ? null : Path.GetFullPath(inv.File);
 
             // 検索まで頼まれているなら、ここで探してから渡す（画面が同じ検索をやり直さずに済む。
-            // 50GB なら丸ごと読み直す時間がそのまま浮く。オーナー指示 2026-09-18）。
+            // 50GB なら丸ごと読み直す時間がそのまま浮く。9.18修正）。
             // -i / -E / -v もここで解決するので、そのまま -open に付けられる（同 2026-09-18）
             if (inv.Mode == UvfMode.SearchInGui && file is not null && inv.Pattern is { Length: > 0 })
             {
@@ -465,9 +465,9 @@ public static class UvfCli
             return UvfExit.Found;
         }
 
-        // gz は展開しながら探す（gzip -dc | grep と同じ。オーナー指示 2026-09-19）。
+        // gz は展開しながら探す（gzip -dc | grep と同じ。9.19修正）。
         // 読めない gz・zip は、理由を添えて断る（「圧縮ファイルです」だけだと、
-        // 中身が gzip でない .gz にも同じ文が出て分からない。オーナー指示 2026-09-21）。
+        // 中身が gzip でない .gz にも同じ文が出て分からない。9.21修正）。
         // 複数ファイルのときは、この判定を通さない（1ファイル専用の経路）
         var compressed = CompressedKind.None;   // 展開しながら探す形式（gz・bz2・xz・lzma・zstd）
         if (many is null)
@@ -601,7 +601,7 @@ public static class UvfCli
                                                    UvfEnvironment env, Func<string, string, string> t,
                                                    CancellationToken ct)
     {
-        // .gz は展開しながら探す（段階5・オーナー指示 2026-09-23「uvf でも '*.log,*.gz' を」）。
+        // .gz は展開しながら探す（段階5・9.23修正「uvf でも '*.log,*.gz' を」）。
         // zip（複数エントリは uvp のみ）と、受け付けないもの（tar.gz など）は<b>黙って素通りさせず</b>、
         // 名指しして外す——平文として走査すると1件も当たらず「エラーは無い」と誤読させる
         int requested = files.Count;     // 名前を前に付けるかは<b>指定が何件に当たったか</b>で決める
@@ -731,7 +731,7 @@ public static class UvfCli
 
     /// <summary>
     /// 受け付けられない入力の案内（理由ごと）。<b>「壊れています」とは言わない</b>
-    ///（別形式・作り方の違いのことが多く、元のファイルを消されかねない。オーナー指示 2026-09-21）。
+    ///（別形式・作り方の違いのことが多く、元のファイルを消されかねない。9.21修正）。
     /// </summary>
     private static string RejectText(CompressedReject reject, string path, string tool,
                                      Func<string, string, string> t)
@@ -793,7 +793,7 @@ public static class UvfCli
     /// <b>「壊れています」とは言わない。</b>ここに来るのは「途中で切れている」か
     /// 「1つのファイルを1回 gzip したもの、という想定と違う作り方」がほとんどで、
     /// ファイル自体は正しいことが多い。壊れていると言われた利用者が元のファイルを
-    /// 消してしまう恐れがあるので、そう言い切らず、消さないよう添える（オーナー指示 2026-09-21）。
+    /// 消してしまう恐れがあるので、そう言い切らず、消さないよう添える（9.21修正）。
     /// </summary>
     private static string NotReadable(string path, CompressedKind kind, Func<string, string, string> t, bool partialOutput)
     {

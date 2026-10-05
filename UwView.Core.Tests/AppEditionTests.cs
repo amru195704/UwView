@@ -3,7 +3,7 @@ using UwView.Core;
 namespace UwView.Core.Tests;
 
 /// <summary>
-/// 試験用ビルドの呼び名と版数の見せ方（オーナー指示 2026-09-22）。
+/// 試験用ビルドの呼び名と版数の見せ方（9.22修正）。
 /// 手元に何本も置くので、<b>題名を見ただけでどれか分かる</b>ことが要る。
 /// </summary>
 public class AppEditionTests : IDisposable

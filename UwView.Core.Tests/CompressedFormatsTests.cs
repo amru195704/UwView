@@ -132,7 +132,7 @@ public class CompressedFormatsTests : IDisposable
     }
 
     /// <summary>
-    /// mac・Linux では bzip2・xz・lzma を OS のライブラリで展開する（オーナー決定 2026-09-24）。
+    /// mac・Linux では bzip2・xz・lzma を OS のライブラリで展開する（9.24修正）。
     /// 黙って .NET 側へ落ちると速さが 1/2.4〜1/2.8 になるので、落ちていないことを確かめる。
     /// </summary>
     [Theory]

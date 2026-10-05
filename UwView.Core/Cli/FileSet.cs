@@ -177,7 +177,7 @@ public static class FileSet
     /// Windows では OS の区切りが <c>\</c> なので、そのまま出すと
     /// <c>osm/japan-dv-ac</c> と指定したのに <c>osm\japan-dv-ac:12\t…</c> と出て、
     /// ほかの道具（シェルの展開結果や以前の出力）と突き合わせたときに食い違う
-    /// （オーナー報告 2026-09-22: Windows の比較テストで「不一致」）。
+    /// （9.22修正: Windows の比較テストで「不一致」）。
     /// <b>利用者が書いた形で返す</b>ことにして、突き合わせが成り立つようにする。
     /// </summary>
     private static char SeparatorOf(string fragment)

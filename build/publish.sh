@@ -23,7 +23,7 @@ VER=$(grep -oE '<InformationalVersion>[^<]+' UwView/UwView.csproj | sed 's/<Info
 : "${VER:=0.0.0}"
 OUT="${OUT:-dist}"   # 試験用に別フォルダへ出せる（例: OUT=distWideField ./build/publish.sh）
 
-# 試験用に別名で出す（既に入れてある版と並べて置けるように。オーナー指示 2026-09-22）。
+# 試験用に別名で出す（既に入れてある版と並べて置けるように。9.22修正）。
 #   SUFFIX=WF → 配布物 UwViewWF-<ver>-…・アプリ UwViewWF.app・CLI uvfWF・別の bundle id
 # 既定（SUFFIX なし）では従来とまったく同じ名前で出る。
 SUFFIX="${SUFFIX:-}"
@@ -34,7 +34,7 @@ CLI="${CLI:-uvf$SUFFIX}"
 APP_NAME="${APP_NAME:-$NAME}"
 BUNDLE_ID="${BUNDLE_ID:-net.y42u.uwview$(printf '%s' "${SUFFIX:+.$SUFFIX}" | tr 'A-Z' 'a-z')}"
 # 単一ファイル実行体名（プロジェクト名由来）。試験用ビルドは本体にも別名を付ける——
-# tar / zip を展開したとき、既に入れてある版と同じ名前だと上書きになる（オーナー報告 2026-09-22）
+# tar / zip を展開したとき、既に入れてある版と同じ名前だと上書きになる（9.22修正）
 EXE_BUILT="UwView.Desktop"
 EXE="UwView.Desktop$SUFFIX"
 RIDS=("$@"); [ ${#RIDS[@]} -eq 0 ] && RIDS=(osx-arm64 osx-x64 win-x64 win-arm64 linux-x64 linux-arm64)

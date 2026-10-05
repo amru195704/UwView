@@ -7,7 +7,7 @@ using UwView.Views;
 namespace UwView.UiTests;
 
 /// <summary>
-/// 検索の進捗ダイアログ（オーナー要望 2026-09-11「UVP と同じように POPUP で状況表示して」）。
+/// 検索の進捗ダイアログ（9.11修正「UVP と同じように POPUP で状況表示して」）。
 ///
 /// もとは検索が終わると結果一覧がすぐ前に出ていたので、
 /// ステータスバーに出した所要時間は読む前に隠れていた。
@@ -131,7 +131,7 @@ public class SearchProgressTests
     [AvaloniaFact]
     public async Task 同じファイルで検索を2回しても落ちない()
     {
-        // オーナー実機で 1回目は成功・2回目の直後に落ちた（UI スレッドの未処理例外）。
+        // 実機で 1回目は成功・2回目の直後に落ちた（UI スレッドの未処理例外）。
         // 同じ手順（検索 → ダイアログを閉じる → もう一度検索）をここで踏む
         var (view, window, path) = await OpenWithFile();
         try

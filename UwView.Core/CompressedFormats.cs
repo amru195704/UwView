@@ -13,7 +13,7 @@ namespace UwView.Core;
 /// <c>app.log.1</c> のような名前の gz や bz2 が普通にある。
 /// ただし <b>生の lzma と brotli にはマジックが無い</b>ので、この2つだけは拡張子も見る。
 ///
-/// 対応は第1弾の bzip2・xz・lzma・zstd・lz4・brotli（オーナー決定 2026-09-24）。
+/// 対応は第1弾の bzip2・xz・lzma・zstd・lz4・brotli（9.24修正）。
 /// 実測（50MB）で lz4・brotli は外部コマンドより速く、bzip2・xz は 1/2.4〜1/2.8。
 /// </summary>
 public static class CompressedFormats

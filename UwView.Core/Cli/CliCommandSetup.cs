@@ -44,7 +44,7 @@ public sealed record CliCommandResult(bool Ok, bool Cancelled = false, string? E
 /// <item>Linux: 同じく <c>/usr/local/bin/uvf</c>。書けなければ <c>pkexec</c>（標準のパスワード画面）で作る。
 ///   管理者になれない・pkexec が無いときは <c>~/.local/bin/uvf</c> に置く。
 ///   <c>~/.local/bin</c> だけにしないのは、Ubuntu はログインした時点でそのフォルダがあるときしか PATH に足さず、
-///   登録してもログインし直すまで使えなかったため（2026-09-14 オーナーの Ubuntu 実機確認）。</item>
+///   登録してもログインし直すまで使えなかったため（9.14修正・Ubuntu 実機確認）。</item>
 /// </list>
 /// uvf / uvp の起動アプリはリンクをたどって本体を探すので、リンク経由でもそのまま動く。
 /// </summary>
@@ -60,7 +60,7 @@ public static class CliCommandSetup
     /// <summary>
     /// アプリ本体の隣にある起動アプリ（uvf / uvf.exe）。無ければ null。
     ///
-    /// <b>試験用ビルドは別名で入っている</b>（uvfWF / uvpWF。オーナー指示 2026-09-22）。
+    /// <b>試験用ビルドは別名で入っている</b>（uvfWF / uvpWF。9.22修正）。
     /// 名前ちょうどが無ければ <c>uvf*</c> を探して実物を返す——
     /// ここで諦めると「この版には uvf が入っていません」と嘘を言うことになる。
     /// </summary>

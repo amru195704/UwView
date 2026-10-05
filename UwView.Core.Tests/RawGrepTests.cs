@@ -202,7 +202,7 @@ public class RawGrepTests : IDisposable
         Assert.Equal(expected, actual);
     }
 
-    // ── -i / -E / -v（2026-09-17 オーナー指示で uvf にも入れた）────────────
+    // ── -i / -E / -v（9.17修正で uvf にも入れた）────────────
 
     /// <summary>
     /// 参照実装（-i / -E / -v つき）。
@@ -334,7 +334,7 @@ public class RawGrepTests : IDisposable
     [InlineData("-v")]
     public void openと並べても受け付ける(string option)
     {
-        // オーナー指示 2026-09-18 で併用可にした（それまではエラーだった）
+        // 9.18修正 で併用可にした（それまではエラーだった）
         var (inv, ja, _) = UvfCli.Parse([P("x.log"), "HIT", option, "-open"]);
         Assert.True(inv is not null, ja);
         Assert.Equal(UvfMode.SearchInGui, inv!.Mode);
@@ -348,7 +348,7 @@ public class RawGrepTests : IDisposable
         Assert.Equal(new UvfInvocation(UvfMode.Search, "a.log", "HIT", true, true, true), inv);
     }
 
-    // ── -i の前チェックとバイト折り畳み（オーナー指摘 2026-09-17）────────
+    // ── -i の前チェックとバイト折り畳み（9.17修正）────────
 
     [Fact]
     public async Task 大小無視はケルビン記号も従来どおり拾う()
@@ -462,7 +462,7 @@ public class RawGrepTests : IDisposable
         Assert.Equal(Reference(P("iv.log"), "highway", icase: true, regex: false, invert: true), output);
     }
 
-    // ── -open の受け渡し（オーナー指示 2026-09-18）────────────────
+    // ── -open の受け渡し（9.18修正）────────────────
 
     [Fact]
     public async Task openでは検索してから結果を画面へ渡す()
@@ -540,7 +540,7 @@ public class RawGrepTests : IDisposable
     [InlineData(new[] { "-E", "-i" }, "iE")]
     public async Task openは_i_E_v_と併用できる(string[] opts, string letters)
     {
-        // オーナー指示 2026-09-18: -i/-E/-v を付けた検索でも -open が効くこと。
+        // 9.18修正: -i/-E/-v を付けた検索でも -open が効くこと。
         // CLI 側で解決して渡すので、画面は検索し直さない
         File.WriteAllText(P("o2.log"), "1 ERROR a\n2 error b\n3 plain c\n");
         var env = new UvfEnvironment
@@ -563,7 +563,7 @@ public class RawGrepTests : IDisposable
         Assert.Equal(opts.Contains("-v"), taken.Invert);
     }
 
-    // ── 検索と同時に索引も作る（オーナー指示 2026-09-18）────────────
+    // ── 検索と同時に索引も作る（9.18修正）────────────
 
     [Theory]
     [InlineData(20_000)]        // 目印が何度も出る
@@ -621,7 +621,7 @@ public class RawGrepTests : IDisposable
         Assert.Equal(3, mine.TotalLines);
     }
 
-    // ── 画面の検索が索引も同時に作る（オーナー指示 2026-09-18 A・B-1）────
+    // ── 画面の検索が索引も同時に作る（9.18修正 A・B-1）────
 
     [Fact]
     public async Task 索引が無いまま検索すると検索と同時に索引もできる()
@@ -759,7 +759,7 @@ public class RawGrepTests : IDisposable
     [Fact]
     public async Task 索引と同時の検索は呼び出し元のスレッドを塞がない()
     {
-        // オーナー報告 2026-09-19「索引作成中の検索でハングした」。
+        // 9.19修正「索引作成中の検索でハングした」。
         // 統合パスが呼び出し元（画面では UI スレッド）でそのまま回っていたのが原因。
         // ヒットの通知が<b>別スレッド</b>から来ることで、背景へ逃がせていることを確かめる
         var sb = new StringBuilder();

@@ -8,7 +8,7 @@ using UwView.ViewModels;
 namespace UwView.UiTests;
 
 /// <summary>
-/// タブの見た目（オーナー指示 2026-09-27）: 名前は本文と同じ大きさ・1行のまま左右にスクロール・
+/// タブの見た目（9.27修正）: 名前は本文と同じ大きさ・1行のまま左右にスクロール・
 /// 名前は <c>番号:ファイル名</c> で 27 文字まで（越えたら ...）・重ねるとファイル名。
 /// </summary>
 public class TabStripUiTests : IDisposable

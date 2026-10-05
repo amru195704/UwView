@@ -91,7 +91,7 @@ public class FileSetTests : IDisposable
     public void 書いたとおりの区切りで返す()
     {
         // Windows で OS の区切り（\）に直して返すと、指定（osm/x）と出力（osm\x）が食い違い、
-        // ほかの道具の出力と突き合わせられない（オーナー報告 2026-09-22・Windows の比較テストで不一致）
+        // ほかの道具の出力と突き合わせられない（9.22修正・Windows の比較テストで不一致）
         Make("logs/x.log", "logs/y.log");
         Assert.All(FileSet.Expand("logs/*.log", _dir).Files, p => Assert.DoesNotContain('\\', p));
         Assert.Equal(["logs/x.log", "logs/y.log"], FileSet.Expand("logs/*.log", _dir).Files);

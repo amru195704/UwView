@@ -77,7 +77,7 @@ public class ThreadBudgetTests : IDisposable
     // ── --tune ────────────────────────────────────────────
 
     [Theory]
-    // 論理プロセッサ数まで倍々 ＋ その先を4段（本当に頭打ちかを見せるため。オーナー指示 2026-09-22）
+    // 論理プロセッサ数まで倍々 ＋ その先を4段（本当に頭打ちかを見せるため。9.22修正）
     [InlineData(1, new[] { 1, 2, 4, 8, 16 })]
     [InlineData(2, new[] { 1, 2, 4, 8, 16, 32 })]
     [InlineData(10, new[] { 1, 2, 4, 8, 10, 16, 32, 64 })]
@@ -152,7 +152,7 @@ public class ThreadBudgetTests : IDisposable
     [Fact]
     public void 載らなかったときは媒体律速だと言う()
     {
-        // オーナー報告 2026-09-22（Linux VM 2 vCPU・50GB）: 1本 2.0GB/s → 2本 2.17GB/s で伸びない。
+        // 9.22修正（Linux VM 2 vCPU・50GB）: 1本 2.0GB/s → 2本 2.17GB/s で伸びない。
         // 原因はメモリに載っていないこと。黙って「どれでも同じ」と言うと、
         // 本当は CPU 律速で効く場面まで「1本で十分」と読まれてしまう
         var result = new TuneRunner.Result(

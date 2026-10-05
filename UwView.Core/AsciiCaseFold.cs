@@ -8,7 +8,7 @@ namespace UwView.Core;
 
 /// <summary>
 /// 大文字小文字を無視する検索を、<b>デコードせずバイトのまま</b>行うための道具
-/// （オーナー指示 2026-09-17「uvf に揃える」。uvf の CLI と UwView Pro の並列検索が共通で使う）。
+/// （9.17修正「uvf に揃える」。uvf の CLI と UwView Pro の並列検索が共通で使う）。
 ///
 /// <b>なぜ「ASCII だけ」で済むのか</b>:
 /// .NET の <c>IgnoreCase | CultureInvariant</c> が ASCII 英字と一致させる非 ASCII 文字を全 BMP で

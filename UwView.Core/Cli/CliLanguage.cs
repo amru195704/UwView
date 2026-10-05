@@ -3,7 +3,7 @@ using System.Globalization;
 namespace UwView.Core.Cli;
 
 /// <summary>
-/// CLI（uvf / uvp）の表示言語。<b>アプリの設定で選んだ言語</b>を使う（オーナー指示 2026-09-14）。
+/// CLI（uvf / uvp）の表示言語。<b>アプリの設定で選んだ言語</b>を使う（9.14修正）。
 ///
 /// 規則は画面（App / ProApp の ResolveLanguage）と同じ: 設定ファイルの <c>Language</c>（"ja" / "en"）、
 /// 未設定なら OS の表示言語（日本語以外は英語）。CLI は設定を<b>読むだけ</b>で書かない。

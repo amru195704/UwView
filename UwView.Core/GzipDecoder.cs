@@ -130,7 +130,7 @@ internal sealed unsafe class SystemZlibStream : Stream
         return true;
     }
 
-    // 「壊れている」と断定しない（別形式・作り方の違いのこともある。オーナー指示 2026-09-21）
+    // 「壊れている」と断定しない（別形式・作り方の違いのこともある。9.21修正）
     private static InvalidDataException Corrupt(string detail) => new($"could not read as gzip: {detail}");
 
     protected override void Dispose(bool disposing)

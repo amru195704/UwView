@@ -8,7 +8,7 @@ using System.Diagnostics;
 //   以前は「起動アプリ → 本体を --uvf 付きで起動し直す」で .NET の起動が2回走り、何もしなくても 0.14 秒かかった
 //   （rg は 0.01 秒）。1GB の gz・zst・lz4 では、差のほとんどがこの一定時間だった（2026-09-24 実測）。
 //   NativeAOT なら起動は 0.01 秒で、中身も 5MB ほど。-open だけは画面が要るので、本体を起動する。
-//   NativeAOT は その OS の上でしかビルドできないので、当面は mac だけ（オーナー決定 2026-09-24）。
+//   NativeAOT は その OS の上でしかビルドできないので、当面は mac だけ（9.24修正）。
 //
 // ■ Linux・Windows（従来どおり）— 小さな起動アプリ。同じフォルダの本体を --uvf 付きで起動し、
 //   標準入出力をそのまま引き継いで、終了コードを返すだけ。
@@ -60,7 +60,7 @@ namespace UwView.Cli
     /// <summary>同じフォルダにある UwView 本体（画面）を探す。</summary>
     internal static class GuiLocator
     {
-        // 本体の名前。試験用ビルドは別名で入っている（UwView.DesktopWF など。オーナー指示 2026-09-22）ので、
+        // 本体の名前。試験用ビルドは別名で入っている（UwView.DesktopWF など。9.22修正）ので、
         // 名前ちょうどが無ければ同じ名前で始まるものを探す
         private static readonly string[] GuiNames = ["UwView.Desktop", "UwView.Desktop.exe", "UwView", "UwView.exe"];
         private static readonly string[] GuiPrefixes = ["UwView.Desktop", "UwView"];

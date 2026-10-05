@@ -13,7 +13,7 @@ namespace UwView.Services;
 public sealed record OperationEntry(string Name, TimeSpan Elapsed, string? Detail, DateTime At);
 
 /// <summary>
-/// 時間のかかる処理の所要時間を残す場所（オーナー要望 2026-09-11）。
+/// 時間のかかる処理の所要時間を残す場所（9.11修正）。
 ///
 /// 所要時間は進捗ダイアログや一時メッセージにしか出ておらず、閉じると消えていた。
 /// 「さっきの検索は何秒だったか」を後から見られないので、

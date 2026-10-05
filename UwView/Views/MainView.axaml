@@ -57,7 +57,7 @@
         <!-- タブストリップ（§4.7） -->
         <Border DockPanel.Dock="Top" Background="#E4E4E4" BorderBrush="#CCCCCC"
                 BorderThickness="0,0,0,1" IsVisible="{Binding HasTabs}">
-            <!-- 1行のまま。増えたら左右にスクロールする（オーナー指示 2026-09-27。折り返すと本文が下がる） -->
+            <!-- 1行のまま。増えたら左右にスクロールする（9.27修正。折り返すと本文が下がる） -->
             <ScrollViewer x:Name="TabScroll" HorizontalScrollBarVisibility="Auto"
                           VerticalScrollBarVisibility="Disabled">
                 <TabStrip x:Name="TabStripControl" ItemsSource="{Binding Tabs}"
@@ -221,7 +221,7 @@
         <Border DockPanel.Dock="Bottom" Background="#EEEEEE" BorderBrush="#CCCCCC"
                 BorderThickness="0,1,0,0" Padding="6,3">
             <DockPanel LastChildFill="True">
-                <!-- 直前の処理時間。ヒントに直近10件を出す（オーナー要望 2026-09-11） -->
+                <!-- 直前の処理時間。ヒントに直近10件を出す（9.11修正） -->
                 <TextBlock x:Name="LastOpText" DockPanel.Dock="Right" Text=""
                            VerticalAlignment="Center" Foreground="#4A5560" Margin="12,0,0,0" />
                 <!-- 索引パネルを右に先に確保（左情報が食い込まない） -->

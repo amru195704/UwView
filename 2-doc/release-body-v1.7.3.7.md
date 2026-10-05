@@ -68,9 +68,9 @@ scoop install uwview                             # Windows（更新は scoop upd
 Linux の場合と、手で入れる場合は、下のファイルを使ってください。チェックサムは `SHA256SUMS-1.7.3.7.txt` にあります。
 
 ```
-a24ac8d688fa987dd8476230be9e0360ed537db80d12e63a55b0d91dada8fee0  UwView-1.7.3.7-mac-arm64.dmg
-d9b7825e4a8a5c3a7628d42a43b526f63c018f000789a60742448bf5b6342298  UwView-1.7.3.7-mac-x64.dmg
-（mac のみ・2026-10-05 08:3x 作成・ビルド 26.10.05.08。Windows・Linux は未作成）
+2f998ee46c4e9b5fd8f7ab739c9ff69fb812672c02188d60ebc257152f512ba1  UwView-1.7.3.7-mac-arm64.dmg
+626a6f3fdbe4f553e4ebfe67a0dc662a2c6f080c03b3100be6a4b0d98d96bd63  UwView-1.7.3.7-mac-x64.dmg
+（mac のみ・2026-10-05 10:3x 作成・ビルド 26.10.05.10。Windows・Linux は未作成）
 ```
 
 > **配布は GitHub Releases のみです。** Homebrew と Scoop も、ここからファイルを取得して SHA256 を照合します。操作説明と最新情報は blog サイト（https://uvp.y42u.net/）に載せています。
@@ -156,9 +156,9 @@ scoop install uwview                             # Windows (update: scoop update
 For Linux, or to install by hand, use the files below. Checksums are in `SHA256SUMS-1.7.3.7.txt`.
 
 ```
-a24ac8d688fa987dd8476230be9e0360ed537db80d12e63a55b0d91dada8fee0  UwView-1.7.3.7-mac-arm64.dmg
-d9b7825e4a8a5c3a7628d42a43b526f63c018f000789a60742448bf5b6342298  UwView-1.7.3.7-mac-x64.dmg
-(macOS only, built 2026-10-05 08:3x, build 26.10.05.08; Windows and Linux not built yet)
+2f998ee46c4e9b5fd8f7ab739c9ff69fb812672c02188d60ebc257152f512ba1  UwView-1.7.3.7-mac-arm64.dmg
+626a6f3fdbe4f553e4ebfe67a0dc662a2c6f080c03b3100be6a4b0d98d96bd63  UwView-1.7.3.7-mac-x64.dmg
+(macOS only, built 2026-10-05 10:3x, build 26.10.05.10; Windows and Linux not built yet)
 ```
 
 > **Distribution is through GitHub Releases only.** Homebrew and Scoop fetch the files from here and check the SHA256. Instructions and news are on the blog (https://uvp.y42u.net/).

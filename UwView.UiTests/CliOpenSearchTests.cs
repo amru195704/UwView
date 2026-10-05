@@ -6,7 +6,7 @@ using UwView.Views;
 namespace UwView.UiTests;
 
 /// <summary>
-/// uvf の -open で渡した検索パターンを、GUI が開いたファイルで検索する（オーナー指示 2026-09-14）。
+/// uvf の -open で渡した検索パターンを、GUI が開いたファイルで検索する（9.14修正）。
 /// CLI の stdout と<b>同じ件数</b>になることを確かめる（同じ検索関数・同じ条件）。
 /// </summary>
 public class CliOpenSearchTests : IDisposable
@@ -135,7 +135,7 @@ public class CliOpenSearchTests : IDisposable
     [AvaloniaFact]
     public async Task 索引ができる前でも渡された結果を出せる()
     {
-        // オーナー指摘 2026-09-18「索引作成の待ちが余計」。
+        // 9.18修正「索引作成の待ちが余計」。
         // 行番号も渡ってくるので、索引の完成を待たずに結果一覧を出せること
         string log = WriteLog();
         var env = new UvfEnvironment

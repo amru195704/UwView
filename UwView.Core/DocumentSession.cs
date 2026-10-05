@@ -44,7 +44,7 @@ public sealed class DocumentSession : IAsyncDisposable
     ///
     /// mmap は好きな位置をすぐ覗けるが、頭から順に読むと帯域の6割しか引けない
     /// （実測 575MB/s 対 pread 966MB/s。258GB なら 459秒 対 273秒）。
-    /// そこで通し読みだけ pread に替える（オーナー指示 2026-09-18）。
+    /// そこで通し読みだけ pread に替える（9.18修正）。
     /// 実ファイルでなければ（ブラウザ等）これまでどおり <see cref="Source"/> を使う。
     /// </summary>
     internal IByteSource ScanSource
@@ -120,7 +120,7 @@ public sealed class DocumentSession : IAsyncDisposable
 
     /// <summary>
     /// CLI が検索のついでに作った索引をそのまま使う（<c>uvf ファイル 語 -open</c>）。
-    /// 画面はファイルを読み直さずに行モードへ上がれる（オーナー指示 2026-09-18）。
+    /// 画面はファイルを読み直さずに行モードへ上がれる（9.18修正）。
     /// すでに索引があるときは何もしない。
     /// </summary>
     public bool AdoptIndex(SparseLineIndex index)
@@ -170,7 +170,7 @@ public sealed class DocumentSession : IAsyncDisposable
     /// <summary>
     /// <b>すでに分かっている検索結果をそのまま受け取る</b>（<c>uvf ファイル 語 -open</c> の受け渡し）。
     /// CLI がファイルを通しで読んで見つけた行頭位置を渡してくるので、画面は同じ検索をやり直さない
-    /// （50GB なら丸ごと1回読み直す時間が浮く。オーナー指示 2026-09-18）。
+    /// （50GB なら丸ごと1回読み直す時間が浮く。9.18修正）。
     /// 条件の表示・強調表示は普通の検索と同じに整える。
     /// </summary>
     /// <param name="hitLines">ヒット行の行番号（0 始まり・件数が合うときだけ使う）。
@@ -280,7 +280,7 @@ public sealed class DocumentSession : IAsyncDisposable
 
         try
         {
-            // 索引がまだなら、検索のついでに索引も作る（1回読みで両方。オーナー指示 2026-09-18 B-1）。
+            // 索引がまだなら、検索のついでに索引も作る（1回読みで両方。9.18修正 B-1）。
             // 別々に読むと 258GB で 459秒 × 2 になる。走行中の索引作成は止めて、こちらへ相乗りさせる
             var separator = LineSeparator.For(Document.Encoding, Document.Newline);
             if (!IsIndexed && Cli.RawGrep.CanCombineWithIndex(options, separator))
@@ -330,7 +330,7 @@ public sealed class DocumentSession : IAsyncDisposable
         long reported = 0;
 
         // 走査は必ず背景スレッドへ逃がす（SearchService と同じ）。
-        // pread は同期で返るので、UI スレッドのまま回すと画面が固まる（オーナー報告 2026-09-19）
+        // pread は同期で返るので、UI スレッドのまま回すと画面が固まる（9.19修正）
         var outcome = await Task.Run(() => Cli.RawGrep.RunAsync(
             ScanSource, Document.BomLength, Document.Encoding, options, invert: false,
             (_, lineStart, _) =>

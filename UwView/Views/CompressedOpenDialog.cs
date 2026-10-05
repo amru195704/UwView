@@ -77,7 +77,7 @@ public static class CompressedOpenDialog
     /// <b>「壊れています」とは言わない。</b>ここで弾くのはほとんどが「1つのファイルを1回 gzip したもの」
     /// という想定と形が違うだけで、ファイル自体は正しい（tar.gz・二重 gzip・別形式など）。
     /// 壊れていると言われた利用者が元のファイルを消してしまう恐れがあるので、
-    /// 「読めません（どう違うか）」と伝え、消さないよう添える（オーナー指示 2026-09-21）。
+    /// 「読めません（どう違うか）」と伝え、消さないよう添える（9.21修正）。
     /// </summary>
     /// <param name="format">形式名（先頭は読めたが展開できなかったときに言う。既定は gzip）。</param>
     public static string RejectMessage(CompressedReject reject, string fileName, string format = "gzip") => reject switch

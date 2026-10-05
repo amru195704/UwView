@@ -5,7 +5,7 @@ using UwView.Core.Cli;
 namespace UwView.Core.Tests;
 
 /// <summary>
-/// 無料版の CLI（uvf）。オーナー指示 2026-09-14 の<b>2つの形だけ</b>:
+/// 無料版の CLI（uvf）。9.14修正 の<b>2つの形だけ</b>:
 /// <code>
 /// uvf -open [ファイル] [検索パターン]
 /// uvf ファイル 検索パターン [-open]
@@ -321,7 +321,7 @@ public class UvfCliTests : IDisposable
 
     private async Task ファイル数よりスレッドが少なくても止まらない本体(int threads)
     {
-        // オーナーの比較テストで発覚（2026-09-22・UVF_MAX_THREADS=1 で6ファイル → 固まった）。
+        // 比較テストで発覚（9.22修正・UVF_MAX_THREADS=1 で6ファイル → 固まった）。
         // 出す順番を守るために「自分の番」を待つが、順番待ちの間も枠を握っていたため、
         // 先の番のファイルが枠を取れずに永久に待ち合う
         MakeSet();
@@ -389,7 +389,7 @@ public class UvfCliTests : IDisposable
     [Fact]
     public async Task 平文とgzを混ぜて探せる()
     {
-        // 段階5（オーナー指示 2026-09-23「uvf でも '*.log,*.gz' を」）
+        // 段階5（9.23修正「uvf でも '*.log,*.gz' を」）
         MakeSet();
         WriteGz("c.log.gz", "1 gz INFO\n2 gz ERROR\n");
 
@@ -481,7 +481,7 @@ public class UvfCliTests : IDisposable
     }
 
     /// <summary>
-    /// gz は「テキストを圧縮したもの」だけを扱う（オーナー指摘 2026-09-24）。
+    /// gz は「テキストを圧縮したもの」だけを扱う（9.24修正）。
     /// 画像やデータベースを gzip したものを索引にしても探せず、時間とディスクだけを使う。
     /// ただし UTF-16 は 0 バイトを含むがテキストなので、BOM があれば通す。
     /// </summary>
@@ -581,7 +581,7 @@ public class UvfCliTests : IDisposable
         Assert.Contains("--json", run.Err);
     }
 
-    // ── --version / --help（uvp と同じ綴り。オーナー指摘 2026-09-21）────
+    // ── --version / --help（uvp と同じ綴り。9.21修正）────
 
     [Theory]
     [InlineData("--version")]
@@ -622,7 +622,7 @@ public class UvfCliTests : IDisposable
         Assert.Equal(UvfExit.Error, r.Exit);
     }
 
-    // ── gz は展開しながら検索する（オーナー指示 2026-09-19）────────────
+    // ── gz は展開しながら検索する（9.19修正）────────────
 
     private string Gzip(string plainPath, string? name = null)
     {
@@ -719,7 +719,7 @@ public class UvfCliTests : IDisposable
 
         var r = await Uvf(gz, "ERROR");
         Assert.Equal(UvfExit.Error, r.Exit);
-        // 「壊れている」とは言わない（元のファイルを消されかねない。オーナー指示 2026-09-21）
+        // 「壊れている」とは言わない（元のファイルを消されかねない。9.21修正）
         Assert.Contains("could not be read to the end", r.Err);
         Assert.Contains("Please keep the original file", r.Err);
         Assert.DoesNotContain("corrupt", r.Err, StringComparison.OrdinalIgnoreCase);

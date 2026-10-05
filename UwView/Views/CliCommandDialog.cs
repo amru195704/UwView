@@ -28,7 +28,7 @@ public static class CliCommandDialog
     public static async Task RunAsync(Window owner, string tool)
     {
         var status = InspectOverride?.Invoke(tool) ?? CliCommandSetup.Inspect(tool);
-        // 実際に入っている名前で案内する（試験用ビルドは uvfWF のような別名。オーナー指摘 2026-09-22）
+        // 実際に入っている名前で案内する（試験用ビルドは uvfWF のような別名。9.22修正）
         tool = status.Tool;
 
         switch (status.State)
@@ -48,7 +48,7 @@ public static class CliCommandDialog
             case CliCommandState.Installed:
             {
                 // 「解除してから登録し直す」を利用者にやらせると、mac / Linux では
-                // 管理者パスワードを2回聞くことになる（オーナー報告 2026-09-23）。
+                // 管理者パスワードを2回聞くことになる（9.23修正）。
                 // 登録し直しをその場で選べるようにして、1回で済ませる
                 int choice = await Choose(Ja
                         ? $"{tool} はコマンドラインで使えます。\n\n{Where(status)}\n\n"

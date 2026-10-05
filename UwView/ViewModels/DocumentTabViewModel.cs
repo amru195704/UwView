@@ -18,7 +18,7 @@ public partial class DocumentTabViewModel : ObservableObject, IAsyncDisposable
     /// <summary>タブに出す名前の長さの上限（番号を含む。越えたら末尾を … にする）。</summary>
     public const int MaxTabTitleLength = 27;
 
-    /// <summary>タブに出す名前（<c>番号:ファイル名</c> を 27 文字まで。オーナー指示 2026-09-27）。</summary>
+    /// <summary>タブに出す名前（<c>番号:ファイル名</c> を 27 文字まで。9.27修正）。</summary>
     public string TabTitle => DisplayName.Length <= MaxTabTitleLength
         ? DisplayName
         : DisplayName[..(MaxTabTitleLength - 3)] + "...";
@@ -40,7 +40,7 @@ public partial class DocumentTabViewModel : ObservableObject, IAsyncDisposable
 
     /// <summary>
     /// 複数ファイルの結果のメインか（uvf の結果セットのメイン・uvp の束ねた本文）。
-    /// タブを灰色にして、ほかのタブと見分けられるようにする（オーナー指示 2026-09-28）。
+    /// タブを灰色にして、ほかのタブと見分けられるようにする（9.28修正）。
     /// </summary>
     [ObservableProperty] private bool _isResultMain;
 

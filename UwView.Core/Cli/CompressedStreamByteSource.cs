@@ -6,7 +6,7 @@ namespace UwView.Core.Cli;
 
 /// <summary>
 /// 圧縮ファイルを展開しながら先頭から順に読ませる <see cref="IByteSource"/>（CLI の直接検索用）。
-/// gz（オーナー指示 2026-09-19）に加え、v1.7.1 で bzip2・xz・lzma・zstd も同じ口で読む。
+/// gz（9.19修正）に加え、v1.7.1 で bzip2・xz・lzma・zstd も同じ口で読む。
 ///
 /// 検索（<see cref="RawGrep"/>）は前へ前へと読むので、展開したものを直近 <see cref="WindowBytes"/> だけ手元に残せば足りる。
 /// 少し戻る読み（文字コードの判定・長い行の出力）もその範囲なら応える。範囲より前は読めない（<see cref="InvalidDataException"/>）。

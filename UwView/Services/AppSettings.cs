@@ -138,7 +138,7 @@ public sealed class AppSettings
 
     /// <summary>
     /// ファイル一覧で、当たりのあったファイルだけを出すか（uvf の複数ファイルの結果。既定はオン）。
-    /// 指定が広いと当たらないファイルが何百本も並び、探したいものが埋もれる（オーナー指示 2026-09-29）。
+    /// 指定が広いと当たらないファイルが何百本も並び、探したいものが埋もれる（9.29修正）。
     /// </summary>
     public bool FileListHitsOnly { get; set; } = true;
 

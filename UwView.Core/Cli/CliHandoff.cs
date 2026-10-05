@@ -4,7 +4,7 @@ namespace UwView.Core.Cli;
 
 /// <summary>
 /// <c>uvf ファイル 語 -open</c> のとき、<b>CLI が見つけた結果をそのまま画面へ渡す</b>ための小さなファイル
-/// （オーナー指示 2026-09-18。UwView Pro が先に同じ仕組みを入れている）。
+/// （9.18修正。UwView Pro が先に同じ仕組みを入れている）。
 ///
 /// これまでは CLI が起動を頼むだけで、画面側が同じ検索をもう一度やり直していた。
 /// 50GB なら丸ごと1回読み直すことになり、待ち時間がそのまま倍になる。
@@ -18,7 +18,7 @@ namespace UwView.Core.Cli;
 /// <param name="Truncated">上限で打ち切ったか（画面にもその旨を出す）。</param>
 /// <param name="Hits">ヒット行の行頭バイト位置（昇順）。</param>
 /// <param name="Lines">同じ並びの行番号（0 始まり）。これがあると<b>画面は索引の完成を待たずに</b>
-/// 結果一覧を出せる（本文は行頭位置から直接読める。オーナー指摘 2026-09-18「索引待ちが余計」）。</param>
+/// 結果一覧を出せる（本文は行頭位置から直接読める。9.18修正「索引待ちが余計」）。</param>
 /// <param name="BlockLines">索引の目印の間隔（0＝索引を渡していない）。</param>
 /// <param name="IndexMarks">その間隔ごとの行頭位置。画面はこれで索引を組み立て、<b>ファイルを読み直さない</b>。</param>
 public sealed record CliHandoff(

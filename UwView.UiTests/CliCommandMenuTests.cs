@@ -95,7 +95,7 @@ public class CliCommandMenuTests : IDisposable
     public async Task 登録済みならその場で登録し直せる()
     {
         // 「解除してから登録し直す」だと、mac / Linux で管理者パスワードを2回聞かれる
-        // （オーナー報告 2026-09-23）。1手で登録し直せること
+        // （9.23修正）。1手で登録し直せること
         _choice = 1;   // 登録し直す
         CliCommandDialog.InspectOverride = _ => Status(CliCommandState.Installed);
         var (w, _, _) = UiHarness.OpenMainWindow();

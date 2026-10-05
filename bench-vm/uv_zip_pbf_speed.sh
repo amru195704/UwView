@@ -17,7 +17,7 @@
 #       P1 パイプ             osmium cat PBF -f osm | rg
 #                             対 uvp PBF PAT を3回（①.uwvz 作成込み ②purge 後の再利用 ③hot）
 #
-#   zip は「平文5本すべて」から作る（オーナー指示 2026-10-01）。元の .osm は消さない。
+#   zip は「平文5本すべて」から作る（10.1修正）。元の .osm は消さない。
 #   pbf の相手は「パイプだけ」（同・51GB の XML をディスクに出さない）。
 #
 # 使い方（uvf / uvp と同じ場所で。UwTest 直下に置き、osm17 を見に行く）:
@@ -202,7 +202,7 @@ if [ "$DRYRUN" = 1 ]; then
     say "osmium          : ** 見つかりません **  →  brew install osmium-tool で入ります"
   fi
   say "                  osmium cat … -f osm は 51GB 相当の XML をパイプに流します。"
-  say "                  1回あたり数分かかる見込み。ディスクには出しません（オーナー判断 2026-10-01）"
+  say "                  1回あたり数分かかる見込み。ディスクには出しません（10.1修正）"
   say ""
   say "空き容量        : $(freeg "$DATA") GiB（${DATA} のあるボリューム）"
   say "キャッシュ破棄  : PURGE=${PURGE} ／ 待機 ${SETTLE} 秒"
@@ -402,7 +402,7 @@ run_pbf() {
     echo "| 項目 | 値 |"
     echo "|---|---|"
     echo "| pbf | \`${PBF}\` … $(gib "$(bytes "$PBF")") GiB |"
-    echo "| 相手 | \`osmium cat ${PBF} -f osm \| rg -n -F '${PAT}'\`（**XML をディスクに出さずパイプで流す**・オーナー判断 2026-10-01） |"
+    echo "| 相手 | \`osmium cat ${PBF} -f osm \| rg -n -F '${PAT}'\`（**XML をディスクに出さずパイプで流す**・10.1修正） |"
     echo "| 無料版 | pbf は \`${UVP}\` だけ。\`${UVF}\` は名指しで断る（下の P0） |"
     echo
   } >> "$LOG"

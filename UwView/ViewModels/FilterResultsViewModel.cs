@@ -345,7 +345,7 @@ public sealed partial class FilterResultsViewModel : ObservableObject, IDisposab
     /// 行番号欄の文字を差し替える（束ねた .uwvz の「ファイル番号:行番号」用。0 始まりの行番号で呼ばれる）。
     ///
     /// 本体の行番号欄（<see cref="UwView.Controls.TextView.LineLabel"/>）と同じものを渡し、
-    /// 検索結果の一覧でも同じ番号が出るようにする（オーナー指摘 2026-09-23）。
+    /// 検索結果の一覧でも同じ番号が出るようにする（9.23修正）。
     /// </summary>
     public Func<long, string>? LineLabel
     {
@@ -753,7 +753,7 @@ public sealed partial class FilterResultsViewModel : ObservableObject, IDisposab
     /// <param name="lines">
     /// 分かっている行番号（0 始まり・件数が合うときだけ使う）。CLI（<c>uvf … -open</c>）から
     /// 渡ってくる場合はこれがあるので、<b>索引ができる前でも行番号を出せる</b>
-    /// （オーナー指摘 2026-09-18「最初は行番号なし、後で行番号が出る」）。
+    /// （9.18修正「最初は行番号なし、後で行番号が出る」）。
     /// </param>
     private sealed class HitOnlyRowList(LineDocument doc, IReadOnlyList<long> hits, Regex? regex,
                                         IReadOnlyList<long>? lines = null, Func<long, string>? lineLabel = null)

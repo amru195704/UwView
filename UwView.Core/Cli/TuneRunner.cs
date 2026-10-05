@@ -38,7 +38,7 @@ public static class TuneRunner
     /// 載らない量を測ると、2回目も媒体から読み直すことになり、
     /// <b>ホットのつもりで媒体律速を測る</b>。そうなるとスレッドを増やしても伸びず、
     /// 「この機械は1本で十分」という誤った結論になる
-    /// （オーナー報告 2026-09-22: Linux VM 2 vCPU・50GB で 1本 2.0GB/s → 2本 2.17GB/s）。
+    /// （9.22修正: Linux VM 2 vCPU・50GB で 1本 2.0GB/s → 2本 2.17GB/s）。
     ///
     /// 半分にするのは、走査そのもの以外（OS・ほかのアプリ）にも要るため。
     /// </summary>
@@ -109,7 +109,7 @@ public static class TuneRunner
                                 double? DiskGbPerSec, long MeasuredBytes, bool Busy,
                                 bool OnMemory = true, long MemoryBudget = 0);
 
-    /// <summary>論理プロセッサ数を超えて測る段数（オーナー指示 2026-09-22）。</summary>
+    /// <summary>論理プロセッサ数を超えて測る段数（9.22修正）。</summary>
     public const int ExtraRungs = 4;
 
     /// <summary>測る本数の上限（これ以上増やしても見えるものが無い）。</summary>
@@ -119,7 +119,7 @@ public static class TuneRunner
     /// 試すスレッド数（1・2・4・… 論理プロセッサ数 ＋ その先を <see cref="ExtraRungs"/> 段）。
     ///
     /// <b>論理プロセッサ数で止めない。</b>そこで止めると「頭打ちに見えるが、本当にそうか分からない」
-    /// （オーナー指摘 2026-09-22: 2 論理プロセッサだと 1・2 の2点しか出ず、平らなのか測れていないのか
+    /// （9.22修正: 2 論理プロセッサだと 1・2 の2点しか出ず、平らなのか測れていないのか
     /// 判断できない）。先まで測って<b>本当に伸びないことを見せる</b>。
     /// 勧める本数は論理プロセッサ数までから選ぶ（設定もそこで頭打ちにする）。
     /// </summary>
@@ -156,7 +156,7 @@ public static class TuneRunner
             // 大きいファイルは前半だけ測り、後ろは媒体の速さの計測用に取っておく（まだキャッシュに載っていない）
             long length = total > KeepTailAbove ? Math.Min(MaxBytes, total / 2) : Math.Min(MaxBytes, total);
             // メモリに載らない量を測ると、ホットのつもりが媒体律速になり「何本でも同じ」に見える
-            //（オーナー報告 2026-09-22: Linux VM・50GB で 1本 2.0GB/s・2本 2.17GB/s＝伸びない）。
+            //（9.22修正: Linux VM・50GB で 1本 2.0GB/s・2本 2.17GB/s＝伸びない）。
             // 載る大きさまで下げてから測る
             long budget = MemoryBudget();
             bool trimmed = length > budget;
@@ -351,7 +351,7 @@ public static class TuneRunner
         {
             if (row.Threads > logicalProcessors && !notedOversubscribed)
             {
-                // 「本当に頭打ちか」を確かめるための段（オーナー指示 2026-09-22）
+                // 「本当に頭打ちか」を確かめるための段（9.22修正）
                 sb.AppendLine(ja ? "  ── ここから先は論理プロセッサ超え（参考・本当に頭打ちかの確認） ──"
                                  : "  -- beyond the logical processors (reference: is it really flat?) --");
                 notedOversubscribed = true;

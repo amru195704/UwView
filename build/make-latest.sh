@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # dist/latest/ に「版数を外した名前」の複製を作る（サイトの latest/uvp/・latest/uvf/ にそのまま上げる用）。
 #   UwViewPro-1.6.0-linux-x86_64.tar.gz → latest/UwViewPro-linux-x86_64.tar.gz
-# ダウンロードページのリンクを版ごとに書き換えなくて済むようにする（2026-09-15 オーナー指示）。
+# ダウンロードページのリンクを版ごとに書き換えなくて済むようにする（9.15修正）。
 # latest/ には SHA256SUMS（版数なしの名前で計算）と VERSION（中身の版数）も置く。
 #
 # 使い方: build/make-latest.sh <製品名> <版数> [dist]

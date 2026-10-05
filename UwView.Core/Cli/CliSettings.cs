@@ -21,7 +21,7 @@ public static class CliSettings
     /// <summary>
     /// 設定の「1回の検索で保持する最大ヒット数」（0＝無制限）。設定が無ければ無制限。
     /// v1.6.0 の既定（<see cref="SearchService.LegacyDefaultMaxHits"/>＝100万件）が保存されているだけなら、
-    /// 新しい既定＝無制限として読む（オーナー裁定 2026-09-16）。
+    /// 新しい既定＝無制限として読む（9.16修正）。
     /// </summary>
     public static int ReadSearchMaxHits(string appDataFolder) => ReadSearchMaxHitsFrom(PathFor(appDataFolder));
 
