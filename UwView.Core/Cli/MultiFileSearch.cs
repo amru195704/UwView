@@ -101,6 +101,10 @@ public static class MultiFileSearch
         var order = new OrderedOutput(output, files.Count);
         var results = new (long Hits, bool Truncated, string? Reason)[files.Count];
         int taken = -1;
+        // 画面のダイアログから走らせたときだけ、進み具合を数える（コマンドでは null）
+        var progress = CommandProgress.Current;
+        long[]? sizes = progress is null ? null : files.Select(f => CommandProgress.SizeOf(Path.Join(root, f))).ToArray();
+        if (sizes is not null) progress!.Plan(files.Count, sizes.Sum());
         int workers = Math.Max(1, Math.Min(threads, files.Count));
         var tasks = new Task[workers];
         for (int w = 0; w < workers; w++)
@@ -122,6 +126,7 @@ public static class MultiFileSearch
                     results[index] = await OneFileAsync(path, kinds[index], prepared, invert, json, lineNumbers,
                                                         withFileName ? file : null, index, order, ct, decodeThreads,
                                                         small, verifyPlain ? skipped : null, trace);
+                    if (sizes is not null) progress!.FileDone(sizes[index]);
                 }
             }, ct);
         }

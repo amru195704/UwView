@@ -60,6 +60,29 @@ public partial class MainView
         else OpenFileList();
     }
 
+    /// <summary>
+    /// 前の複数ファイルの結果を片付ける（コマンドラインダイアログから続けて実行したとき）。
+    /// 結果に結びついたタブ・結果の窓・ファイル一覧を閉じる。
+    /// </summary>
+    private void ForgetMultiResult()
+    {
+        if (_multi is null || _vm is null) return;
+        _fileListWindow?.Close();
+        _multiResultsWindow?.Close();
+        _multiResultsVm = null;
+        if (_multiGroup is { } group)
+            foreach (var tab in _vm.Tabs.Where(group.Contains).ToList())
+            {
+                tab.CanClose = true;
+                _vm.RequestClose(tab);
+            }
+        _multiGroup = null;
+        _multiAdopted.Clear();
+        _multi = null;
+        _multiHitsPerFile = [];
+        FileListButton.IsVisible = false;
+    }
+
     // ── 結果の窓（結果セットに結びつける。メインを差し替えても窓はそのまま §4.3）──
 
     private void OpenMultiResults()

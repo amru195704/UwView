@@ -19,6 +19,14 @@ sealed class Program
         // CLI は画面を作る前に分岐する（Avalonia を初期化しないので Dock にも出ない）
         if (args.Length > 0 && args[0] == CliMarker)
             return RunCli(args[1..]);
+        // 「コマンドライン」ダイアログの試験用の口（画面は出さない。v1.8.0 Finder Scope §9）
+        if (args.Length > 0 && args[0] == UwView.Services.CommandLineTest.Marker)
+        {
+            UwView.Core.EncodingDetector.EnsureCodePagesRegistered();
+            UwView.Core.AppEdition.Version = UwView.App.VersionText(typeof(UwView.App).Assembly);
+            return UwView.Services.CommandLineTest.Run(new UwView.Services.UvfCommandBackend(), args[1..],
+                CliLanguage.IsJapanese(CliLanguage.FreeSettingsFolder));
+        }
 
         BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
         return 0;

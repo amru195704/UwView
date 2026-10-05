@@ -451,6 +451,7 @@ public static class UvfCli
             {
                 env.SearchOptionLetters = OptionLetters(inv);
                 var check = CompressedInput.Probe(file);
+                CommandProgress.Current?.Plan(1, CommandProgress.SizeOf(file));
                 if (!check.IsCompressed && !check.IsRejected)
                     env.HandoffPath = await CollectForGuiAsync(file, inv, ct);
             }
@@ -498,6 +499,7 @@ public static class UvfCli
         try
         {
             if (many is not null) return await SearchManyAsync(many, inv, env, T, ct);
+            CommandProgress.Current?.Plan(1, CommandProgress.SizeOf(inv.File!));
             return await SearchToStdoutAsync(inv.File!, compressed, inv, env, T, Err, ct);
         }
         catch (InvalidDataException) when (compressed != CompressedKind.None)
@@ -918,6 +920,8 @@ public static class UvfCli
         using var slots = new SemaphoreSlim(Math.Max(1, threads));
         int decodeThreads = CompressedFormats.DecodeThreadsFor(entries.Select(e => e.Kind).ToArray(), threads);
 
+        var progress = CommandProgress.Current;
+        progress?.Plan(entries.Count(e => e.CanOpen), entries.Where(e => e.CanOpen).Sum(e => e.Length));
         var tasks = new List<Task>();
         for (int i = 0; i < files.Count; i++)
         {
@@ -952,7 +956,11 @@ public static class UvfCli
                 {
                     lock (failed) failed.Add((files[index], e.Message));
                 }
-                finally { slots.Release(); }
+                finally
+                {
+                    slots.Release();
+                    progress?.FileDone(entries[index].Length);
+                }
             }, ct));
         }
         await Task.WhenAll(tasks);

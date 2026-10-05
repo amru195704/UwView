@@ -293,4 +293,10 @@
   <data name="CmdExit" xml:space="preserve"><value>終わりました（終了コード {0}）</value></data>
   <data name="CmdCanceled" xml:space="preserve"><value>中止しました</value></data>
   <data name="CmdTruncated" xml:space="preserve"><value>先頭 {0} 行だけを見せています。全部は［保存…］で</value></data>
+  <data name="CmdProgressFiles" xml:space="preserve"><value>{0} / {1} 本</value></data>
+  <data name="CmdProgressBytes" xml:space="preserve"><value>{0} / {1}</value></data>
+  <data name="CmdProgressRemaining" xml:space="preserve"><value>残り 約 {0}</value></data>
+  <data name="CmdProgressElapsed" xml:space="preserve"><value>経過 {0}</value></data>
+  <data name="CmdOpenIgnored" xml:space="preserve"><value>-open は画面の中では要りません（無視しました）</value></data>
+  <data name="CmdShownInWindow" xml:space="preserve"><value>結果は本体の窓に出しました</value></data>
 </root>

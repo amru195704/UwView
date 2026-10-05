@@ -8,11 +8,17 @@ using UwView.Core.Cli;
 
 namespace UwView.Services;
 
+/// <summary>検索の結果を本体の窓に出す先（画面が渡す）。</summary>
+/// <param name="ShowFile">1 本のファイル：開いて（開いていればそのタブで）、結果一覧に出す。引数はファイル・検索語・CLI が探した結果・検索の種類。</param>
+/// <param name="ShowMany">複数ファイル：CLI が探した結果（<see cref="MultiHandoff"/>）を、複数ファイルの結果として出す。</param>
+public sealed record UvfGuiTarget(Func<string, string, string?, string?, Task> ShowFile, Func<string, Task> ShowMany);
+
 /// <summary>
 /// 無料版の「コマンドライン」ダイアログの中身。解釈・展開・実行は uvf のコマンドとまったく同じ
 ///（uvf が断るものは GUI も同じ言葉で断る。v1.8.0 Finder Scope §5.2）。
+/// 検索は、コマンドの <c>-open</c> と同じ道で探して（文字は出さず）、結果を本体の窓に出す（§4）。
 /// </summary>
-public sealed class UvfCommandBackend : ICommandLineBackend
+public sealed class UvfCommandBackend(UvfGuiTarget? gui = null) : ICommandLineBackend
 {
     public string Tool => "uvf";
 
@@ -41,8 +47,20 @@ public sealed class UvfCommandBackend : ICommandLineBackend
     public async Task<CommandRunResult> RunAsync(IReadOnlyList<string> argv, CommandOutput output, bool japanese,
                                                  CancellationToken ct)
     {
-        var env = new UvfEnvironment
+        // 検索（--json・--files でないもの）は、末尾の -open と同じに走らせて、画面へ渡すものを受け取る
+        bool toGui = gui is not null
+                     && UvfCli.Parse(argv).Invocation is { Mode: UvfMode.Search, Pattern.Length: > 0, Json: false, ListFiles: false };
+        (string? File, string? Pattern, string? Hits, string? Options, string? Many)? launched = null;
+        UvfEnvironment env = null!;
+        env = new UvfEnvironment
         {
+            LaunchGui = toGui
+                ? (file, pattern) =>
+                {
+                    launched = (file, pattern, env.HandoffPath, env.SearchOptionLetters, env.MultiHandoffPath);
+                    return true;
+                }
+                : null,
             StdOut = output.StdOut,
             StdErr = output.StdErr,
             Japanese = japanese,
@@ -50,7 +68,10 @@ public sealed class UvfCommandBackend : ICommandLineBackend
             BuildNumber = AppEdition.BuildNumberOf(typeof(UvfCommandBackend).Assembly),
             SettingsFolder = AppSettings.AppDataFolder,
         };
-        int code = await UvfCli.RunAsync(argv, env, ct).ConfigureAwait(false);
-        return new CommandRunResult(code);
+        int code = await UvfCli.RunAsync(toGui ? [.. argv, "-open"] : argv, env, ct).ConfigureAwait(false);
+        if (launched is not { } to || ct.IsCancellationRequested) return new CommandRunResult(code);
+        return new CommandRunResult(code, () => to.Many is { } many
+            ? gui!.ShowMany(many)
+            : gui!.ShowFile(to.File!, to.Pattern!, to.Hits, to.Options));
     }
 }

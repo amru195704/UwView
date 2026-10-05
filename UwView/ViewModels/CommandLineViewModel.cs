@@ -115,11 +115,15 @@ public sealed partial class CommandLineViewModel : ObservableObject
         return (argv, null);
     }
 
+    /// <summary>実際に走らせる引数（<c>-open</c> は画面の中では要らないので外す。§5.1）。</summary>
+    private static IReadOnlyList<string> Executable(IReadOnlyList<string> argv)
+        => argv.Contains("-open") ? [.. argv.Where(a => a != "-open")] : argv;
+
     private void Refresh()
     {
         var (argv, error) = BuildArgv();
         CommandText = argv is null ? Tool : Tool + " " + CommandLineSplitter.Join(argv);
-        error ??= argv is null ? null : _backend.Check(argv);
+        error ??= argv is null ? null : _backend.Check(Executable(argv));
         ErrorText = error is { } e ? (Japanese ? e.Ja : e.En) : "";
     }
 
@@ -136,7 +140,7 @@ public sealed partial class CommandLineViewModel : ObservableObject
     {
         var (argv, _) = BuildArgv();
         if (FileArgument() is not { } spec) { Files = []; FilesSummary = L["CmdNoFiles"]; return; }
-        var ignore = IgnoreFor(argv ?? []);
+        var ignore = IgnoreFor(Executable(argv ?? []));
         var list = await WorkingFolder.Run(BaseFolder, () => _backend.Expand(spec, ignore, Japanese));
         ShowFiles(list);
     }
@@ -160,12 +164,17 @@ public sealed partial class CommandLineViewModel : ObservableObject
     /// </summary>
     public async Task<CommandRunResult?> RunAsync()
     {
-        var (argv, _) = BuildArgv();
-        if (argv is null || !CanRun) return null;
+        var (typed, _) = BuildArgv();
+        if (typed is null || !CanRun) return null;
+        var argv = Executable(typed);
+        bool openIgnored = argv.Count != typed.Count;
         using var cts = new CancellationTokenSource();
         _running = cts;
         IsRunning = true;
         Status = L["CmdRunning"];
+        var progress = new CommandProgress();
+        using var ticking = new CancellationTokenSource();
+        _ = TickAsync(progress, ticking.Token);
         string outFile = Path.Combine(Path.GetTempPath(), $"uv-cmd-{Guid.NewGuid():N}.out");
         var stderr = new StringWriter { NewLine = "\n" };
         CommandRunResult? result = null;
@@ -174,10 +183,15 @@ public sealed partial class CommandLineViewModel : ObservableObject
             await using (var stdout = new FileStream(outFile, FileMode.Create, FileAccess.Write, FileShare.Read, 1 << 16))
             {
                 var output = new CommandOutput { StdOut = stdout, StdErr = stderr };
-                result = await WorkingFolder.RunAsync(BaseFolder,
-                    () => Task.Run(() => _backend.RunAsync(argv, output, Japanese, cts.Token)), cts.Token);
+                result = await WorkingFolder.RunAsync(BaseFolder, () => Task.Run(() =>
+                {
+                    CommandProgress.Current = progress;
+                    return _backend.RunAsync(argv, output, Japanese, cts.Token);
+                }), cts.Token);
             }
-            Status = L.Format("CmdExit", result.ExitCode);
+            // コマンドは中止を「中止しました」＋終了コード 2 で返す（例外にはしない）
+            Status = cts.IsCancellationRequested ? L["CmdCanceled"]
+                : L.Format("CmdExit", result.ExitCode) + (result.ShowInGui is null ? "" : " ・ " + L["CmdShownInWindow"]);
         }
         catch (OperationCanceledException)
         {
@@ -185,13 +199,44 @@ public sealed partial class CommandLineViewModel : ObservableObject
         }
         finally
         {
+            ticking.Cancel();
             IsRunning = false;
             _running = null;
         }
-        Notice = stderr.ToString().TrimEnd('\n');
+        Notice = (openIgnored ? L["CmdOpenIgnored"] + "\n" : "") + stderr.ToString().TrimEnd('\n');
         ShowOutput(outFile);
         return result;
     }
+
+    /// <summary>走っている間、進み具合を 0.5 秒ごとに出す（何本目／全体・読んだ量・残りの目安・経過。§3.5）。</summary>
+    private async Task TickAsync(CommandProgress progress, CancellationToken ct)
+    {
+        try
+        {
+            while (true)
+            {
+                await Task.Delay(500, ct);
+                Status = Describe(progress.Read());
+            }
+        }
+        catch (OperationCanceledException) { }
+    }
+
+    internal static string Describe(CommandProgress.Snapshot p)
+    {
+        var parts = new List<string> { L["CmdRunning"] };
+        if (p.FilesTotal > 1)
+            parts.Add(L.Format("CmdProgressFiles", p.FilesDone.ToString("N0", L.Culture), p.FilesTotal.ToString("N0", L.Culture)));
+        if (p.BytesTotal > 0)
+            parts.Add(p.FilesTotal > 1 ? L.Format("CmdProgressBytes", FormatSize(p.BytesDone), FormatSize(p.BytesTotal)) : FormatSize(p.BytesTotal));
+        if (p.Remaining is { } left) parts.Add(L.Format("CmdProgressRemaining", FormatTime(left)));
+        parts.Add(L.Format("CmdProgressElapsed", FormatTime(p.Elapsed)));
+        return string.Join(" ・ ", parts);
+    }
+
+    private static string FormatTime(TimeSpan t) => t.TotalSeconds < 60
+        ? (Japanese ? $"{t.TotalSeconds:F0} 秒" : $"{t.TotalSeconds:F0} s")
+        : (Japanese ? $"{(int)t.TotalMinutes} 分 {t.Seconds} 秒" : $"{(int)t.TotalMinutes} min {t.Seconds} s");
 
     /// <summary>［中止］。</summary>
     public void Cancel() => _running?.Cancel();

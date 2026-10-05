@@ -293,4 +293,10 @@
   <data name="CmdExit" xml:space="preserve"><value>Finished (exit code {0})</value></data>
   <data name="CmdCanceled" xml:space="preserve"><value>Stopped</value></data>
   <data name="CmdTruncated" xml:space="preserve"><value>Showing the first {0} lines. Use Save… for everything</value></data>
+  <data name="CmdProgressFiles" xml:space="preserve"><value>{0} / {1} files</value></data>
+  <data name="CmdProgressBytes" xml:space="preserve"><value>{0} / {1}</value></data>
+  <data name="CmdProgressRemaining" xml:space="preserve"><value>about {0} left</value></data>
+  <data name="CmdProgressElapsed" xml:space="preserve"><value>{0} elapsed</value></data>
+  <data name="CmdOpenIgnored" xml:space="preserve"><value>-open is not needed inside the app (ignored)</value></data>
+  <data name="CmdShownInWindow" xml:space="preserve"><value>The results are shown in the main window</value></data>
 </root>
