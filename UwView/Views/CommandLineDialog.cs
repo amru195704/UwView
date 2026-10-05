@@ -32,6 +32,9 @@ public sealed class CommandLineDialog : Window
     /// <summary>結果を本体の窓に出す（ViewModel が返した受け渡しを、UI のスレッドで呼ぶ）。</summary>
     private readonly Func<CommandRunResult, Task>? _show;
 
+    /// <summary>ファイル一覧の行をダブルクリックしたとき、本体で開く係（無ければ何もしない）。</summary>
+    private readonly Func<string, Task>? _openFile;
+
     private readonly TextBox _filePattern;
     private readonly TextBox _searchPattern;
     private readonly TextBlock _baseFolder;
@@ -46,11 +49,13 @@ public sealed class CommandLineDialog : Window
     private readonly TabControl _tabs;
     private readonly TabItem _filesTab;
     private readonly Button _run;
+    private readonly Button _rebuild;
 
-    private CommandLineDialog(CommandLineViewModel vm, Func<CommandRunResult, Task>? show)
+    private CommandLineDialog(CommandLineViewModel vm, Func<CommandRunResult, Task>? show, Func<string, Task>? openFile)
     {
         ViewModel = vm;
         _show = show;
+        _openFile = openFile;
         Title = L["CmdTitle"];
         Width = 860;
         Height = 620;
@@ -109,6 +114,11 @@ public sealed class CommandLineDialog : Window
             ItemTemplate = new FuncDataTemplate<CommandFileRow>((row, _) => row is null ? new Panel() : FileRowView(row),
                                                                 supportsRecycling: false),
         };
+        ToolTip.SetTip(_files, L["TipCmdFileList"]);
+        _files.DoubleTapped += async (_, _) =>
+        {
+            if (_files.SelectedItem is CommandFileRow { Readable: true } row && _openFile is not null) await _openFile(row.FullPath);
+        };
         var fileHeader = new Grid { ColumnDefinitions = new ColumnDefinitions("56,*,90"), Margin = new Thickness(10, 2, 22, 2) };
         AddCell(fileHeader, 0, L["FileListNumber"], HorizontalAlignment.Right);
         AddCell(fileHeader, 1, L["FileListFile"], HorizontalAlignment.Left);
@@ -153,6 +163,14 @@ public sealed class CommandLineDialog : Window
         _summary = new TextBlock { Name = "CmdFilesSummary", Foreground = Brushes.Black, TextWrapping = TextWrapping.Wrap,
                                    Margin = new Thickness(2, 6, 0, 0) };
         _status = new TextBlock { Name = "CmdStatus", Foreground = Brushes.Black, VerticalAlignment = VerticalAlignment.Center };
+        // Keep（元ファイルが減った）のときだけ出す。前の索引は .bak-日時 に退避してから作り直す（コマンドの --rebuild と同じ）
+        _rebuild = MakeButton("CmdRebuildButton", L["CmdRebuild"], L["TipCmdRebuild"]);
+        _rebuild.Margin = new Thickness(0, 6, 0, 0);
+        _rebuild.Click += async (_, _) => await RebuildAsync();
+        var summaryRow = new DockPanel();
+        DockPanel.SetDock(_rebuild, Dock.Right);
+        summaryRow.Children.Add(_rebuild);
+        summaryRow.Children.Add(_summary);
 
         // ── ボタン（§3.5）──
         var expand = MakeButton("CmdExpandButton", L["CmdExpand"], L["TipCmdExpand"]);
@@ -175,8 +193,8 @@ public sealed class CommandLineDialog : Window
 
         var top = new StackPanel { Spacing = 6 };
         top.Children.Add(folderRow);
-        top.Children.Add(Row(L["CmdFilePattern"], _filePattern));
-        top.Children.Add(Row(L["CmdSearchPattern"], _searchPattern));
+        top.Children.Add(Row(L["CmdFilePattern"], _filePattern, HistoryButton("CmdFileHistoryButton", e => e.FilePattern)));
+        top.Children.Add(Row(L["CmdSearchPattern"], _searchPattern, HistoryButton("CmdSearchHistoryButton", e => e.SearchPattern)));
         top.Children.Add(_ignore);
         top.Children.Add(commandRow);
         top.Children.Add(_error);
@@ -184,10 +202,10 @@ public sealed class CommandLineDialog : Window
         var body = new DockPanel { Margin = new Thickness(14) };
         DockPanel.SetDock(top, Dock.Top);
         DockPanel.SetDock(footer, Dock.Bottom);
-        DockPanel.SetDock(_summary, Dock.Bottom);
+        DockPanel.SetDock(summaryRow, Dock.Bottom);
         body.Children.Add(top);
         body.Children.Add(footer);
-        body.Children.Add(_summary);
+        body.Children.Add(summaryRow);
         body.Children.Add(_tabs);
         Content = body;
 
@@ -216,22 +234,23 @@ public sealed class CommandLineDialog : Window
     /// <summary>
     /// 窓ごとに 1 つ。開いていれば前に出す。<paramref name="show"/> は結果を本体の窓に出す係（無ければ出力欄だけ）。
     /// </summary>
-    public static CommandLineDialog ShowFor(Window owner, Func<CommandLineViewModel> create, Func<CommandRunResult, Task>? show)
+    public static CommandLineDialog ShowFor(Window owner, Func<CommandLineViewModel> create, Func<CommandRunResult, Task>? show,
+                                            Func<string, Task>? openFile = null)
     {
         if (Open.TryGetValue(owner, out var existing))
         {
             existing.Activate();
             return existing;
         }
-        var dialog = new CommandLineDialog(create(), show);
+        var dialog = new CommandLineDialog(create(), show, openFile);
         Open[owner] = dialog;
         dialog.Closed += (_, _) => Open.Remove(owner);
         dialog.Show(owner);
         return dialog;
     }
 
-    /// <summary>自動テスト用：この窓のダイアログ（無ければ null）。</summary>
-    internal static CommandLineDialog? For(Window owner) => Open.GetValueOrDefault(owner);
+    /// <summary>この窓のダイアログ（無ければ null）。</summary>
+    public static CommandLineDialog? For(Window owner) => Open.GetValueOrDefault(owner);
 
     private void Apply(string? property)
     {
@@ -241,6 +260,11 @@ public sealed class CommandLineDialog : Window
         if (property is null or nameof(vm.ErrorText)) { _error.Text = vm.ErrorText; _error.IsVisible = vm.ErrorText.Length > 0; }
         if (property is null or nameof(vm.Files)) { _files.ItemsSource = vm.Files; _filesTab.Header = L.Format("CmdTabFiles", vm.Files.Count); }
         if (property is null or nameof(vm.FilesSummary)) _summary.Text = vm.FilesSummary;
+        if (property is null or nameof(vm.OffersRebuild)) _rebuild.IsVisible = vm.OffersRebuild;
+        // 画面の外から入れた値（フォルダーのドロップ・［作り直す…］など）を欄に映す
+        if (property is null or nameof(vm.FilePattern) && _filePattern.Text != vm.FilePattern) _filePattern.Text = vm.FilePattern;
+        if (property is null or nameof(vm.SearchPattern) && _searchPattern.Text != vm.SearchPattern) _searchPattern.Text = vm.SearchPattern;
+        if (property is null or nameof(vm.FollowIgnore) && _ignore.IsChecked != vm.FollowIgnore) _ignore.IsChecked = vm.FollowIgnore;
         if (property is null or nameof(vm.OutputLines) or nameof(vm.OutputTruncated))
         {
             _output.ItemsSource = vm.OutputLines;
@@ -255,6 +279,13 @@ public sealed class CommandLineDialog : Window
             ToolTip.SetTip(_run, vm.IsRunning ? L["TipCmdCancel"] : L["TipCmdRun"]);
             _run.IsEnabled = vm.IsRunning || vm.CanRun;
         }
+    }
+
+    private async Task RebuildAsync()
+    {
+        if (!await ConfirmDialog.AskAsync(this, L["CmdTitle"], L["CmdRebuildAsk"], L["CmdRebuildYes"], L["CmdRebuildNo"])) return;
+        ViewModel.AddRebuild();
+        await RunAsync();
     }
 
     private async Task RunAsync()
@@ -289,6 +320,34 @@ public sealed class CommandLineDialog : Window
         });
         if (file?.TryGetLocalPath() is { } path) ViewModel.SaveOutput(path);
     }
+
+    /// <summary>
+    /// ▼（履歴）。その欄の値を新しい順に並べ、選ぶと基準フォルダー・2 つの欄・除外のチェックを 1 組で戻す（§3.1）。
+    /// </summary>
+    private Button HistoryButton(string name, Func<CommandHistoryEntry, string> field)
+    {
+        var button = new Button { Name = name, Content = "▼", Padding = new Thickness(8, 4) };
+        ToolTip.SetTip(button, L["TipCmdHistory"]);
+        button.Click += (_, _) =>
+        {
+            var menu = new MenuFlyout();
+            foreach (var entry in HistoryItems(ViewModel.History, field))
+            {
+                var item = new MenuItem { Header = field(entry), FontFamily = Mono };
+                ToolTip.SetTip(item, $"{entry.BaseFolder}\n{ViewModel.Tool} {entry.FilePattern} {entry.SearchPattern}");
+                item.Click += (_, _) => ViewModel.Recall(entry);
+                menu.Items.Add(item);
+            }
+            if (menu.Items.Count == 0) menu.Items.Add(new MenuItem { Header = L["CmdHistoryEmpty"], IsEnabled = false });
+            menu.ShowAt(button);
+        };
+        return button;
+    }
+
+    /// <summary>履歴のうち、その欄の値ごとに一番新しいもの（空の値は出さない）。</summary>
+    internal static IEnumerable<CommandHistoryEntry> HistoryItems(IEnumerable<CommandHistoryEntry> history,
+                                                                 Func<CommandHistoryEntry, string> field)
+        => history.Where(e => field(e).Length > 0).DistinctBy(field);
 
     private static Button MakeButton(string name, string label, string tip)
     {

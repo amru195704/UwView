@@ -20,8 +20,10 @@ public sealed record CommandFileRow(string Label, string Name, string FullPath, 
 /// <param name="Notices">広げたときの知らせ（当たらなかった断片・除外の本数・多すぎる本数など。コマンドの標準エラーと同じ言葉）。</param>
 /// <param name="Ignored">除外したファイル・フォルダーの数。</param>
 /// <param name="IgnoredNames">除外したものの名前（分かる範囲で）。</param>
+/// <param name="Index">束ねる前の予告（uvp で複数ファイルのとき。Reuse・Append・Rebuild・Keep・新規。§3.3）。</param>
+/// <param name="OffersRebuild">［作り直す…］を出すか（Keep のとき）。</param>
 public sealed record CommandFileList(IReadOnlyList<CommandFileRow> Rows, IReadOnlyList<string> Notices, int Ignored,
-                                     IReadOnlyList<string> IgnoredNames);
+                                     IReadOnlyList<string> IgnoredNames, string? Index = null, bool OffersRebuild = false);
 
 /// <summary>コマンドの出力先（ダイアログの出力欄につなぐ）。</summary>
 public sealed class CommandOutput
@@ -49,6 +51,18 @@ public interface ICommandLineBackend
 
     /// <summary>検索パターンの先頭に書くと、ファイルより前に置く語か（uvp の <c>convert</c> <c>cat</c> <c>search</c>）。</summary>
     bool IsSubcommand(string word) => false;
+
+    /// <summary>
+    /// 検索パターンに検索語も段も無いときの引数（§4「検索語なし」）。uvf は一覧だけ（<c>--files</c>）、
+    /// uvp は束ねて（1 本ならそのまま）開くだけ（先頭の <c>-open</c>）。
+    /// </summary>
+    IReadOnlyList<string> WithoutSearch(string file);
+
+    /// <summary>
+    /// 走らせる前の支度（UI のスレッドで呼ぶ。尋ねることがあればここで尋ねる）。false なら走らせない。
+    /// uvp は、束ねる索引を基準フォルダーに置けないとき、保存先を尋ねる（§6）。
+    /// </summary>
+    Task<bool> PrepareAsync(IReadOnlyList<string> argv, string baseFolder, bool japanese) => Task.FromResult(true);
 
     /// <summary>書き方の誤り（コマンドと同じ言葉）。無料版で Pro の書き方を書いたときの案内もここ。無ければ null。</summary>
     (string Ja, string En)? Check(IReadOnlyList<string> argv);

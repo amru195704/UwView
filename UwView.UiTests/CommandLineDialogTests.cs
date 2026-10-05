@@ -58,7 +58,7 @@ public class CommandLineDialogTests : IDisposable
     [Theory]
     [InlineData("a.log", "ERROR -uniq", "-uniq は UwView Pro の機能です")]
     [InlineData("a.log", "ERROR -out x.txt", "-out は UwView Pro の機能です")]
-    [InlineData("a.log", "", "ファイルと検索パターンを1つずつ指定してください")]   // uvf と同じ言葉
+    [InlineData("a.log", "ERROR extra words", "ファイルと検索パターンを1つずつ指定してください")]   // uvf と同じ言葉
     [InlineData("a.log", "'ERROR", "引用符 ' が閉じていません")]
     [InlineData("", "ERROR", "ファイルを指定してください")]
     public void 誤りはコマンドと同じ言葉で出て実行できない(string files, string search, string message)
@@ -78,8 +78,43 @@ public class CommandLineDialogTests : IDisposable
         Assert.Contains("除外 1 本", vm.FilesSummary);
 
         await vm.RunAsync();
-        Assert.Equal(expanded, vm.OutputLines);
-        Assert.Equal(1, vm.SelectedTab);
+        Assert.Equal(expanded, vm.OutputLines);                 // 出力欄はコマンドの --files そのまま
+        Assert.Equal(0, vm.SelectedTab);                        // 一覧にも出して、一覧を見せる（§5.1）
+        Assert.Equal(expanded, vm.Files.Select(r => $"{r.Label}\t{r.Name}"));
+    }
+
+    [Fact]
+    public void 検索語なしは一覧だけ()
+    {
+        var vm = Vm("**/*.log", "");
+        Assert.Equal("uvf '**/*.log' --files", vm.CommandText);
+        Assert.Equal("", vm.ErrorText);
+        vm.SearchPattern = "--no-ignore";
+        Assert.Equal("uvf '**/*.log' --files --no-ignore", vm.CommandText);
+    }
+
+    [AvaloniaFact]
+    public async Task 履歴は1組で残り_次に開くと前回値で_選ぶと戻る()
+    {
+        var settings = new AppSettings();
+        var first = new CommandLineViewModel(new UvfCommandBackend(), _dir, settings)
+            { FilePattern = "*.log", SearchPattern = "ERROR", FollowIgnore = false };
+        await first.RunAsync();
+        var second = new CommandLineViewModel(new UvfCommandBackend(), null, settings) { SearchPattern = "error -i" };
+        await second.RunAsync();
+
+        var reopened = new CommandLineViewModel(new UvfCommandBackend(), null, settings);
+        Assert.Equal(_dir, reopened.BaseFolder);                // 今のタブが無ければ前回値
+        Assert.Equal("*.log", reopened.FilePattern);
+        Assert.Equal("error -i", reopened.SearchPattern);
+        Assert.False(reopened.FollowIgnore);
+        Assert.Equal(2, reopened.History.Count);
+
+        reopened.Recall(reopened.History[1]);
+        Assert.Equal("ERROR", reopened.SearchPattern);
+        Assert.Equal(["error -i", "ERROR"],
+            CommandLineDialog.HistoryItems(reopened.History, e => e.SearchPattern).Select(e => e.SearchPattern));
+        Assert.Single(CommandLineDialog.HistoryItems(reopened.History, e => e.FilePattern));   // 同じ値は 1 つに
     }
 
     [AvaloniaFact]

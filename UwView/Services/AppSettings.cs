@@ -37,6 +37,22 @@ public sealed class PerFileState
     public string? TailHash { get; set; }
 }
 
+/// <summary>
+/// 「コマンドライン」ダイアログの 1 回分。基準フォルダー・2 つの欄・除外のチェックを<b>1 組で</b>残す
+///（相対パスの指定は基準フォルダーとそろって初めて意味を持つ。Finder Scope §3.1）。
+/// </summary>
+public sealed class CommandHistoryEntry
+{
+    public string BaseFolder { get; set; } = "";
+    public string FilePattern { get; set; } = "";
+    public string SearchPattern { get; set; } = "";
+    public bool FollowIgnore { get; set; } = true;
+
+    public bool SameAs(CommandHistoryEntry other)
+        => BaseFolder == other.BaseFolder && FilePattern == other.FilePattern
+           && SearchPattern == other.SearchPattern && FollowIgnore == other.FollowIgnore;
+}
+
 /// <summary>最近使ったファイルの1件（V1.1.1 §2-2）。</summary>
 public sealed class RecentEntry
 {
@@ -248,6 +264,22 @@ public sealed class AppSettings
     /// 集計式は `k="([^"]+)"` のような正規表現で、検索窓の候補に混ぜると互いに邪魔になる。
     /// </summary>
     public List<string> TallyHistory { get; set; } = new();
+
+    /// <summary>「コマンドライン」ダイアログの履歴（新しい順・上限 <see cref="CommandHistoryLimit"/>。Finder Scope §3.1）。</summary>
+    public List<CommandHistoryEntry> CommandHistory { get; set; } = new();
+
+    public const int CommandHistoryLimit = 50;
+
+    public void PushCommandHistory(CommandHistoryEntry entry)
+    {
+        CommandHistory.RemoveAll(e => e.SameAs(entry));
+        CommandHistory.Insert(0, entry);
+        if (CommandHistory.Count > CommandHistoryLimit)
+            CommandHistory.RemoveRange(CommandHistoryLimit, CommandHistory.Count - CommandHistoryLimit);
+    }
+
+    /// <summary>「開く」で 2 本以上選んだとき、別々に開くか束ねるかを尋ねるか（Finder Scope §2。「次から尋ねない」で false）。</summary>
+    public bool AskBundleOnMultiOpen { get; set; } = true;
 
     public void PushTallyHistory(string pattern)
     {

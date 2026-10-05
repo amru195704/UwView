@@ -299,4 +299,31 @@
   <data name="CmdProgressElapsed" xml:space="preserve"><value>経過 {0}</value></data>
   <data name="CmdOpenIgnored" xml:space="preserve"><value>-open は画面の中では要りません（無視しました）</value></data>
   <data name="CmdShownInWindow" xml:space="preserve"><value>結果は本体の窓に出しました</value></data>
+  <data name="CmdRebuild" xml:space="preserve"><value>作り直す…</value></data>
+  <data name="TipCmdRebuild" xml:space="preserve"><value>見つからないファイルを除いて索引を作り直します（前の索引は .bak-日時 に退避。コマンドの --rebuild と同じ）</value></data>
+  <data name="CmdRebuildAsk" xml:space="preserve"><value>前の索引を .bak-日時 に退避してから、いまのファイルで作り直します。見つからないファイルの中身は新しい索引には入りません。作り直しますか？</value></data>
+  <data name="CmdRebuildYes" xml:space="preserve"><value>作り直す</value></data>
+  <data name="TipCmdFileList" xml:space="preserve"><value>ダブルクリックで本体に開きます</value></data>
+  <data name="CmdRebuildNo" xml:space="preserve"><value>やめる</value></data>
+  <data name="TipCmdHistory" xml:space="preserve"><value>前に実行した値（新しい順）。選ぶと基準フォルダー・2 つの欄・除外のチェックをまとめて戻します</value></data>
+  <data name="CmdHistoryEmpty" xml:space="preserve"><value>（履歴はまだありません）</value></data>
+  <data name="CmdMultiOpenTitle" xml:space="preserve"><value>開く</value></data>
+  <data name="CmdMultiOpenAsk" xml:space="preserve"><value>{0} 本のファイルを選びました。どう開きますか？
+束ねると、1 本の索引（.uwvz）にまとめて、番号:行番号で探せます（コマンドラインのダイアログに入れます）。</value></data>
+  <data name="CmdMultiOpenSeparate" xml:space="preserve"><value>別々のタブで開く</value></data>
+  <data name="CmdMultiOpenBundle" xml:space="preserve"><value>1 本に束ねて開く</value></data>
+  <data name="CmdMultiOpenDontAsk" xml:space="preserve"><value>次から尋ねない（別々のタブで開く）</value></data>
+  <data name="CmdNoCommonFolder" xml:space="preserve"><value>共通のフォルダーが無いので束ねられません。別々のタブで開きます</value></data>
+  <data name="CmdOneFolderAtATime" xml:space="preserve"><value>フォルダーは 1 つずつ落としてください</value></data>
+  <data name="CmdIndexElsewhere" xml:space="preserve"><value>索引の保存先（基準フォルダーに書けません。別の場所に置くと、コマンドとは索引を共有できません）</value></data>
+  <data name="CmdMergedTabTitle" xml:space="preserve"><value>{0} — {1}（{2}本）</value></data>
+  <data name="CmdMergedChangedTitle" xml:space="preserve"><value>束ねた索引</value></data>
+  <data name="CmdMergedAppendAsk" xml:space="preserve"><value>{0}
+（{1}）</value></data>
+  <data name="CmdMergedAppendOpen" xml:space="preserve"><value>足して開く</value></data>
+  <data name="CmdMergedRebuildOpen" xml:space="preserve"><value>作り直して開く</value></data>
+  <data name="CmdMergedOpenAsIs" xml:space="preserve"><value>このまま開く</value></data>
+  <data name="CmdMergedCancel" xml:space="preserve"><value>やめる</value></data>
+  <data name="CmdMergedUnchecked" xml:space="preserve"><value>元ファイルとの照合なしで開きました（{0}）</value></data>
+  <data name="CmdMergedStale" xml:space="preserve"><value>元ファイルから変わっています。古い可能性があります（{0}）</value></data>
 </root>

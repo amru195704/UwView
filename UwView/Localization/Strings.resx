@@ -299,4 +299,31 @@
   <data name="CmdProgressElapsed" xml:space="preserve"><value>{0} elapsed</value></data>
   <data name="CmdOpenIgnored" xml:space="preserve"><value>-open is not needed inside the app (ignored)</value></data>
   <data name="CmdShownInWindow" xml:space="preserve"><value>The results are shown in the main window</value></data>
+  <data name="CmdRebuild" xml:space="preserve"><value>Rebuild…</value></data>
+  <data name="TipCmdRebuild" xml:space="preserve"><value>Rebuilds the index without the missing files (the previous index is moved to .bak-date; same as --rebuild)</value></data>
+  <data name="CmdRebuildAsk" xml:space="preserve"><value>The previous index is moved to .bak-date, and a new one is made from the files that exist now. The contents of the missing files will not be in the new index. Rebuild?</value></data>
+  <data name="CmdRebuildYes" xml:space="preserve"><value>Rebuild</value></data>
+  <data name="TipCmdFileList" xml:space="preserve"><value>Double-click to open it in the main window</value></data>
+  <data name="CmdRebuildNo" xml:space="preserve"><value>Cancel</value></data>
+  <data name="TipCmdHistory" xml:space="preserve"><value>Values you ran before (newest first). Picking one restores the base folder, both fields and the exclusion check together</value></data>
+  <data name="CmdHistoryEmpty" xml:space="preserve"><value>(no history yet)</value></data>
+  <data name="CmdMultiOpenTitle" xml:space="preserve"><value>Open</value></data>
+  <data name="CmdMultiOpenAsk" xml:space="preserve"><value>You picked {0} files. How do you want to open them?
+Bundling puts them into one index (.uwvz) that you search as number:line (they go into the Command line dialog).</value></data>
+  <data name="CmdMultiOpenSeparate" xml:space="preserve"><value>Open in separate tabs</value></data>
+  <data name="CmdMultiOpenBundle" xml:space="preserve"><value>Bundle into one</value></data>
+  <data name="CmdMultiOpenDontAsk" xml:space="preserve"><value>Don't ask again (open in separate tabs)</value></data>
+  <data name="CmdNoCommonFolder" xml:space="preserve"><value>These files have no common folder, so they cannot be bundled. They open in separate tabs</value></data>
+  <data name="CmdOneFolderAtATime" xml:space="preserve"><value>Drop one folder at a time</value></data>
+  <data name="CmdIndexElsewhere" xml:space="preserve"><value>Where to save the index (the base folder is not writable; elsewhere, the command cannot share it)</value></data>
+  <data name="CmdMergedTabTitle" xml:space="preserve"><value>{0} — {1} ({2} files)</value></data>
+  <data name="CmdMergedChangedTitle" xml:space="preserve"><value>Bundled index</value></data>
+  <data name="CmdMergedAppendAsk" xml:space="preserve"><value>{0}
+({1})</value></data>
+  <data name="CmdMergedAppendOpen" xml:space="preserve"><value>Add and open</value></data>
+  <data name="CmdMergedRebuildOpen" xml:space="preserve"><value>Rebuild and open</value></data>
+  <data name="CmdMergedOpenAsIs" xml:space="preserve"><value>Open as it is</value></data>
+  <data name="CmdMergedCancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="CmdMergedUnchecked" xml:space="preserve"><value>Opened without checking against the original files ({0})</value></data>
+  <data name="CmdMergedStale" xml:space="preserve"><value>The original files changed; this may be out of date ({0})</value></data>
 </root>

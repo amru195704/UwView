@@ -12,7 +12,7 @@ public partial class DocumentTabViewModel : ObservableObject, IAsyncDisposable
     private readonly Action<DocumentTabViewModel> _onClose;
 
     public DocumentSession Session { get; }
-    public string DisplayName => TitlePrefix + Session.DisplayName;
+    public string DisplayName => TitlePrefix + (TitleOverride ?? Session.DisplayName);
     public string FilePath => Session.FilePath;
 
     /// <summary>タブに出す名前の長さの上限（番号を含む。越えたら末尾を … にする）。</summary>
@@ -31,6 +31,15 @@ public partial class DocumentTabViewModel : ObservableObject, IAsyncDisposable
     [NotifyPropertyChangedFor(nameof(DisplayName))]
     [NotifyPropertyChangedFor(nameof(TabTitle))]
     private string _titlePrefix = "";
+
+    /// <summary>
+    /// ファイル名の代わりに出す名前（束ねた索引は <c>uw-….uwvz</c> では読めないので、指定 (A) で出す。
+    /// 旧 Open Cluster §5.1）。null ならファイル名。
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DisplayName))]
+    [NotifyPropertyChangedFor(nameof(TabTitle))]
+    private string? _titleOverride;
 
     /// <summary>
     /// 閉じられるか。結果セット・束ねた索引のメインは false（閉じるボタンを出さない。

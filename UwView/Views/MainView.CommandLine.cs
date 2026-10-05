@@ -17,8 +17,8 @@ public partial class MainView
         if (TopLevel.GetTopLevel(this) is not Window owner) return;
         CommandLineDialog.ShowFor(owner,
             () => new CommandLineViewModel(new UvfCommandBackend(new UvfGuiTarget(ShowCommandFileAsync, ShowCommandManyAsync)),
-                                           DefaultCommandFolder()),
-            ShowCommandResultAsync);
+                                           DefaultCommandFolder(), UwView.App.Settings),
+            ShowCommandResultAsync, path => OpenPathsAsync([path]));
     }
 
     /// <summary>基準フォルダーの既定：今のタブのファイルのフォルダー（§3.1）。</summary>

@@ -29,14 +29,39 @@ public sealed partial class CommandLineViewModel : ObservableObject
     private readonly ICommandLineBackend _backend;
     private CancellationTokenSource? _running;
     private string? _outputFile;
+    private bool _indexShown;
 
-    public CommandLineViewModel(ICommandLineBackend backend, string? baseFolder = null)
+    /// <param name="baseFolder">基準フォルダーの既定（今のタブのファイルのフォルダー）。無ければ前回値、それも無ければホーム。</param>
+    /// <param name="settings">履歴の置き場所（無ければ残さない）。開いたときの 2 つの欄と除外のチェックは前回値。</param>
+    public CommandLineViewModel(ICommandLineBackend backend, string? baseFolder = null, AppSettings? settings = null)
     {
         _backend = backend;
-        _baseFolder = baseFolder is { Length: > 0 } && Directory.Exists(baseFolder)
-            ? baseFolder
+        _settings = settings;
+        var last = settings?.CommandHistory.FirstOrDefault();
+        if (last is not null)
+        {
+            _filePattern = last.FilePattern;
+            _searchPattern = last.SearchPattern;
+            _followIgnore = last.FollowIgnore;
+        }
+        _baseFolder = baseFolder is { Length: > 0 } && Directory.Exists(baseFolder) ? baseFolder
+            : last?.BaseFolder is { Length: > 0 } before && Directory.Exists(before) ? before
             : Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         Refresh();
+    }
+
+    private readonly AppSettings? _settings;
+
+    /// <summary>履歴（新しい順）。</summary>
+    public IReadOnlyList<CommandHistoryEntry> History => _settings?.CommandHistory ?? [];
+
+    /// <summary>履歴の 1 組を戻す（基準フォルダー・2 つの欄・除外のチェック）。</summary>
+    public void Recall(CommandHistoryEntry entry)
+    {
+        if (Directory.Exists(entry.BaseFolder)) BaseFolder = entry.BaseFolder;
+        FilePattern = entry.FilePattern;
+        SearchPattern = entry.SearchPattern;
+        FollowIgnore = entry.FollowIgnore;
     }
 
     private static Localizer L => Localizer.Instance;
@@ -57,6 +82,9 @@ public sealed partial class CommandLineViewModel : ObservableObject
 
     [ObservableProperty] private IReadOnlyList<CommandFileRow> _files = [];
     [ObservableProperty] private string _filesSummary = "";
+
+    /// <summary>［作り直す…］を出すか（束ねた索引を Keep で使うとき。§3.3）。</summary>
+    [ObservableProperty] private bool _offersRebuild;
 
     /// <summary>出力欄の行（先頭 <see cref="MaxOutputLines"/> 行まで）。</summary>
     [ObservableProperty] private IReadOnlyList<string> _outputLines = [];
@@ -101,13 +129,17 @@ public sealed partial class CommandLineViewModel : ObservableObject
         var split = CommandLineSplitter.Split(SearchPattern);
         if (split.Error is { } bad) return (null, bad);
         var argv = new List<string>();
-        var rest = split.Args;
+        // -open は画面の中では要らない（書いても外す。§5.1）。コマンドの行も外した形で出す
+        var rest = split.Args.Contains("-open") ? [.. split.Args.Where(a => a != "-open")] : split.Args;
         // uvp convert / cat：コマンドではファイルより前に書く語
         if (rest.Count > 0 && _backend.IsSubcommand(rest[0])) { argv.Add(rest[0]); rest = [.. rest.Skip(1)]; }
         if (!_backend.TakesNoFile(rest))
         {
             if (FileArgument() is not { } file) return (null, ("ファイルを指定してください", "Specify the files"));
-            argv.Add(file);
+            // 検索語も段も無い（除外の指定・--rebuild だけ）なら、一覧だけ／束ねて開くだけ（§4）
+            if (argv.Count == 0 && IgnoreOptions.Take(rest).Item2.All(a => a == "--rebuild"))
+                argv.AddRange(_backend.WithoutSearch(file));
+            else argv.Add(file);
         }
         argv.AddRange(rest);
         // ☑ を外したら --no-ignore と同じ（検索パターンにも書けば、両方ともオフ）
@@ -115,15 +147,14 @@ public sealed partial class CommandLineViewModel : ObservableObject
         return (argv, null);
     }
 
-    /// <summary>実際に走らせる引数（<c>-open</c> は画面の中では要らないので外す。§5.1）。</summary>
-    private static IReadOnlyList<string> Executable(IReadOnlyList<string> argv)
-        => argv.Contains("-open") ? [.. argv.Where(a => a != "-open")] : argv;
+    /// <summary>検索パターンに <c>-open</c> を書いたか（外して走らせ、その旨を出す）。</summary>
+    private bool OpenTyped => CommandLineSplitter.Split(SearchPattern).Args.Contains("-open");
 
     private void Refresh()
     {
         var (argv, error) = BuildArgv();
         CommandText = argv is null ? Tool : Tool + " " + CommandLineSplitter.Join(argv);
-        error ??= argv is null ? null : _backend.Check(Executable(argv));
+        error ??= argv is null ? null : _backend.Check(argv);
         ErrorText = error is { } e ? (Japanese ? e.Ja : e.En) : "";
     }
 
@@ -140,7 +171,7 @@ public sealed partial class CommandLineViewModel : ObservableObject
     {
         var (argv, _) = BuildArgv();
         if (FileArgument() is not { } spec) { Files = []; FilesSummary = L["CmdNoFiles"]; return; }
-        var ignore = IgnoreFor(Executable(argv ?? []));
+        var ignore = IgnoreFor(argv ?? []);
         var list = await WorkingFolder.Run(BaseFolder, () => _backend.Expand(spec, ignore, Japanese));
         ShowFiles(list);
     }
@@ -154,7 +185,10 @@ public sealed partial class CommandLineViewModel : ObservableObject
         if (list.Rows.Count > ManyFiles) parts.Add(L.Format("CmdFilesMany", ManyFiles.ToString("N0", L.Culture)));
         if (list.Rows.Count == 0) parts.Add(L["CmdNoFiles"]);
         parts.AddRange(list.Notices);
+        if (list.Index is { } index) parts.Add(index);
         FilesSummary = string.Join(" ・ ", parts);
+        OffersRebuild = list.OffersRebuild;
+        _indexShown = list.Index is not null;
         SelectedTab = 0;
     }
 
@@ -164,10 +198,22 @@ public sealed partial class CommandLineViewModel : ObservableObject
     /// </summary>
     public async Task<CommandRunResult?> RunAsync()
     {
-        var (typed, _) = BuildArgv();
-        if (typed is null || !CanRun) return null;
-        var argv = Executable(typed);
-        bool openIgnored = argv.Count != typed.Count;
+        var (argv, _) = BuildArgv();
+        if (argv is null || !CanRun) return null;
+        bool openIgnored = OpenTyped;
+        if (!await _backend.PrepareAsync(argv, BaseFolder, Japanese))
+        {
+            Status = L["CmdCanceled"];
+            return null;
+        }
+        if (_settings is not null)
+        {
+            _settings.PushCommandHistory(new CommandHistoryEntry
+            {
+                BaseFolder = BaseFolder, FilePattern = FilePattern, SearchPattern = SearchPattern, FollowIgnore = FollowIgnore,
+            });
+            _settings.Save();
+        }
         using var cts = new CancellationTokenSource();
         _running = cts;
         IsRunning = true;
@@ -205,6 +251,9 @@ public sealed partial class CommandLineViewModel : ObservableObject
         }
         Notice = (openIgnored ? L["CmdOpenIgnored"] + "\n" : "") + stderr.ToString().TrimEnd('\n');
         ShowOutput(outFile);
+        // --files は［ファイル展開］と同じく一覧にも出す（§5.1）。束ねた・足したあとは予告も新しくする
+        if (result is not null && (argv.Contains("--files") || _indexShown)) await ExpandAsync();
+        if (argv.Contains("--files")) SelectedTab = 0;
         return result;
     }
 
@@ -237,6 +286,13 @@ public sealed partial class CommandLineViewModel : ObservableObject
     private static string FormatTime(TimeSpan t) => t.TotalSeconds < 60
         ? (Japanese ? $"{t.TotalSeconds:F0} 秒" : $"{t.TotalSeconds:F0} s")
         : (Japanese ? $"{(int)t.TotalMinutes} 分 {t.Seconds} 秒" : $"{(int)t.TotalMinutes} min {t.Seconds} s");
+
+    /// <summary>［作り直す…］：検索パターンに <c>--rebuild</c> を足す（コマンドの行にも出る。確認は画面がする）。</summary>
+    public void AddRebuild()
+    {
+        if (!CommandLineSplitter.Split(SearchPattern).Args.Contains("--rebuild"))
+            SearchPattern = (SearchPattern.TrimEnd() + " --rebuild").TrimStart();
+    }
 
     /// <summary>［中止］。</summary>
     public void Cancel() => _running?.Cancel();

@@ -95,6 +95,49 @@ public static class ConfirmDialog
         return result;
     }
 
+    /// <summary>
+    /// 2 択＋「次から尋ねない」。戻り値は選んだもの（1・2。閉じたら 0）と、チェックの状態。
+    /// </summary>
+    public static async Task<(int Choice, bool DontAskAgain)> ChooseRememberAsync(Window owner, string title, string message,
+                                                                                 string first, string second, string dontAsk)
+    {
+        int result = 0;
+        var dialog = new Window
+        {
+            Title = title,
+            Width = 520,
+            SizeToContent = SizeToContent.Height,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            CanResize = false,
+        };
+        var one = new Button { Name = "ChoiceFirst", Content = first, MinWidth = 120, IsDefault = true, HorizontalContentAlignment = HorizontalAlignment.Center };
+        var two = new Button { Name = "ChoiceSecond", Content = second, MinWidth = 120, HorizontalContentAlignment = HorizontalAlignment.Center };
+        var check = new CheckBox { Name = "ChoiceDontAsk", Content = dontAsk, Foreground = Brushes.Black };
+        one.Click += (_, _) => { result = 1; dialog.Close(); };
+        two.Click += (_, _) => { result = 2; dialog.Close(); };
+
+        dialog.Content = new StackPanel
+        {
+            Margin = new Thickness(22),
+            Spacing = 16,
+            Children =
+            {
+                new TextBlock { Text = message, TextWrapping = TextWrapping.Wrap, Foreground = Brushes.Black },
+                check,
+                new StackPanel
+                {
+                    Orientation = Orientation.Horizontal,
+                    HorizontalAlignment = HorizontalAlignment.Right,
+                    Spacing = 8,
+                    Children = { one, two },
+                },
+            },
+        };
+
+        await dialog.ShowDialog(owner);
+        return (result, result != 0 && check.IsChecked == true);
+    }
+
     /// <summary>お知らせ（ボタンは1つ）。本文は選んでコピーできる（コマンド例を貼り付けて使うため）。</summary>
     public static async Task NoticeAsync(Window owner, string title, string message, string closeLabel)
     {

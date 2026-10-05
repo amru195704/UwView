@@ -116,7 +116,7 @@ public class CommandLineResultTests : IDisposable
     public async Task 書いた_open_は無視してその旨を出す()
     {
         var (_, vm, cmd, result) = await RunInDialog("a.log", "ERROR -open");
-        Assert.Equal("uvf a.log ERROR -open", cmd.CommandText);         // 行は書いたまま
+        Assert.Equal("uvf a.log ERROR", cmd.CommandText);               // 行は実際に走らせる形（-open を外す）
         Assert.Equal("", cmd.ErrorText);
         Assert.Contains("-open は画面の中では要りません", cmd.Notice);
         Assert.NotNull(result?.ShowInGui);

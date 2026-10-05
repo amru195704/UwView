@@ -31,6 +31,8 @@ public sealed class UvfCommandBackend(UvfGuiTarget? gui = null) : ICommandLineBa
         => searchArgs.Count > 0 && searchArgs[0] is "--help" or "-h" or "-help" or "--Help" or "--version" or "-version"
                                                    or "--Version" or "--tune";
 
+    public IReadOnlyList<string> WithoutSearch(string file) => [file, "--files"];
+
     public (string Ja, string En)? Check(IReadOnlyList<string> argv)
     {
         if (argv.Count == 0) return ("ファイルを指定してください", "Specify the files");
