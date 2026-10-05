@@ -149,6 +149,9 @@
                 <Button x:Name="HighlighterButton" Classes="icon" ToolTip.Tip="{loc:Localize HighlighterTip}">
                     <Image RenderOptions.BitmapInterpolationMode="HighQuality" Source="avares://UwView/Assets/Toolbar/highlighter.png" />
                 </Button>
+                <Button x:Name="CommandLineButton" Classes="icon" ToolTip.Tip="{loc:Localize TipCmdButton}">
+                    <Image RenderOptions.BitmapInterpolationMode="HighQuality" Source="avares://UwView/Assets/Toolbar/terminal.png" />
+                </Button>
                 <Rectangle Width="1" Fill="#CCCCCC" Margin="4,0" />
                 <ComboBox x:Name="LanguageCombo" MinWidth="90"
                           ToolTip.Tip="{loc:Localize LanguageLabel}"

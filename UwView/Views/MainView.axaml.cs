@@ -41,6 +41,8 @@ public partial class MainView : UserControl
         // File メニュー（メニューバー）→ このメイン画面の操作へ委譲
         App.RequestOpenFile = () => OnOpenClick(this, new RoutedEventArgs());
         App.RequestCloseTab = CloseActiveTab;
+        App.RequestCommandLine = OpenCommandLine;
+        CommandLineButton.Click += (_, _) => OpenCommandLine();
         App.RequestCloseAll = () =>
         {
             if (_vm is null) return;

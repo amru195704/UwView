@@ -18,6 +18,8 @@ public enum ShortcutAction
     ToggleTail,
     Reload,
     LeaveInput,
+    /// <summary>「コマンドライン」ダイアログを開く（Ctrl+Shift+K・Mac は ⌘⇧K。v1.8.0 Finder Scope §2）。</summary>
+    OpenCommandLine,
 }
 
 /// <summary>
@@ -49,6 +51,7 @@ public static class ShortcutKeys
             {
                 case Key.F: return ShortcutAction.ToggleTail;
                 case Key.G when mac: return ShortcutAction.PrevHit;
+                case Key.K: return ShortcutAction.OpenCommandLine;
             }
         if (key == Key.F3 && relevant == KeyModifiers.None) return ShortcutAction.NextHit;
         if (key == Key.F3 && relevant == KeyModifiers.Shift) return ShortcutAction.PrevHit;

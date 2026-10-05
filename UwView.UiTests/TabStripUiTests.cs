@@ -65,7 +65,7 @@ public class TabStripUiTests : IDisposable
     public void 題名にペット名と版数が出る()
     {
         var (window, _, _) = UiHarness.OpenMainWindow();
-        try { Assert.Matches(@"^UwView\(uvf\)-Wide Field(\(v[0-9.]+\))?$", window.Title); }
+        try { Assert.Matches(@"^UwView\(uvf\)-Finder Scope(\(v[0-9.]+\))?$", window.Title); }
         finally { window.Close(); }
     }
 

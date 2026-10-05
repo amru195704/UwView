@@ -222,6 +222,8 @@ public partial class App : Application
 
     // ── File / Help メニューの動作（File 操作は現在のメイン画面へ委譲）────
     public static System.Action? RequestOpenFile;
+    /// <summary>メニュー「ファイル → コマンドライン…」（v1.8.0 Finder Scope §2）。</summary>
+    public static System.Action? RequestCommandLine;
     public static System.Action? RequestCloseTab;
     public static System.Action? RequestCloseAll;
     public static System.Action? RequestExportBookmarks;

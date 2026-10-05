@@ -44,6 +44,7 @@ public partial class MainView
                 TailToggle.IsChecked = TailToggle.IsChecked != true;
                 return true;
             case ShortcutAction.Reload: ReloadActiveTab(); return true;
+            case ShortcutAction.OpenCommandLine: OpenCommandLine(); return true;
             case ShortcutAction.LeaveInput:
                 if (SearchBox.IsDropDownOpen) return false;   // 候補の一覧を閉じるのが先
                 TextView.Focus();

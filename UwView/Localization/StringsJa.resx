@@ -255,4 +255,42 @@
   <data name="BookmarksExported" xml:space="preserve"><value>ブックマークを {0} 件書き出しました</value></data>
   <data name="Reloaded" xml:space="preserve"><value>ファイルを読み直しました</value></data>
   <data name="ReloadNotAvailable" xml:space="preserve"><value>このタブは読み直せません</value></data>
+  <data name="CmdTitle" xml:space="preserve"><value>コマンドライン</value></data>
+  <data name="CmdMenu" xml:space="preserve"><value>コマンドライン…</value></data>
+  <data name="TipCmdButton" xml:space="preserve"><value>コマンドライン（uvf／uvp と同じ書き方で、ファイルを指定して検索する）</value></data>
+  <data name="CmdBaseFolder" xml:space="preserve"><value>基準フォルダー</value></data>
+  <data name="CmdPickFolder" xml:space="preserve"><value>選ぶ…</value></data>
+  <data name="TipCmdPickFolder" xml:space="preserve"><value>ファイル指定パターンの相対パスを、このフォルダーから解く（コマンドの「起動したフォルダー」と同じ）</value></data>
+  <data name="CmdFilePattern" xml:space="preserve"><value>ファイル指定パターン</value></data>
+  <data name="TipCmdFilePattern" xml:space="preserve"><value>コマンドの第1引数と同じ書き方（* ? [ ] **、カンマ区切り、zip の中、絶対パス）。引用符は要らない</value></data>
+  <data name="CmdSearchPattern" xml:space="preserve"><value>検索パターン</value></data>
+  <data name="TipCmdSearchPattern" xml:space="preserve"><value>コマンドの第2引数から後ろと同じ書き方（検索語・段・オプション）。引用符と \ はシェルと同じに読む。Enter で実行</value></data>
+  <data name="CmdFollowIgnore" xml:space="preserve"><value>.ignore・.gitignore に従う</value></data>
+  <data name="TipCmdFollowIgnore" xml:space="preserve"><value>オフはコマンドの --no-ignore と同じ</value></data>
+  <data name="CmdCopy" xml:space="preserve"><value>コピー</value></data>
+  <data name="TipCmdCopy" xml:space="preserve"><value>コマンドの行をコピーする（基準フォルダーで貼れば同じ結果）</value></data>
+  <data name="TipCmdCopyOutput" xml:space="preserve"><value>出力欄の中身をコピーする</value></data>
+  <data name="CmdSave" xml:space="preserve"><value>保存…</value></data>
+  <data name="TipCmdSaveOutput" xml:space="preserve"><value>出力の全部をファイルに書く</value></data>
+  <data name="CmdTabFiles" xml:space="preserve"><value>ファイル（{0}）</value></data>
+  <data name="CmdTabOutput" xml:space="preserve"><value>出力</value></data>
+  <data name="CmdExpand" xml:space="preserve"><value>ファイル展開</value></data>
+  <data name="TipCmdExpand" xml:space="preserve"><value>ファイル指定パターンを広げて一覧にする（--files と同じ）</value></data>
+  <data name="CmdRun" xml:space="preserve"><value>検索実行</value></data>
+  <data name="TipCmdRun" xml:space="preserve"><value>コマンドの行と同じことを実行する</value></data>
+  <data name="CmdCancel" xml:space="preserve"><value>中止</value></data>
+  <data name="TipCmdCancel" xml:space="preserve"><value>実行を止める</value></data>
+  <data name="CmdClose" xml:space="preserve"><value>クローズ</value></data>
+  <data name="TipCmdClose" xml:space="preserve"><value>ダイアログを閉じる（入力は残る）</value></data>
+  <data name="CmdStopAndClose" xml:space="preserve"><value>実行中です。止めて閉じますか？</value></data>
+  <data name="CmdStopYes" xml:space="preserve"><value>止めて閉じる</value></data>
+  <data name="CmdStopNo" xml:space="preserve"><value>続ける</value></data>
+  <data name="CmdNoFiles" xml:space="preserve"><value>当たるファイルがありません</value></data>
+  <data name="CmdFilesCount" xml:space="preserve"><value>{0} 本・{1}</value></data>
+  <data name="CmdFilesIgnored" xml:space="preserve"><value>除外 {0} 本</value></data>
+  <data name="CmdFilesMany" xml:space="preserve"><value>{0} 本を超えています（続けます）</value></data>
+  <data name="CmdRunning" xml:space="preserve"><value>実行しています…</value></data>
+  <data name="CmdExit" xml:space="preserve"><value>終わりました（終了コード {0}）</value></data>
+  <data name="CmdCanceled" xml:space="preserve"><value>中止しました</value></data>
+  <data name="CmdTruncated" xml:space="preserve"><value>先頭 {0} 行だけを見せています。全部は［保存…］で</value></data>
 </root>
