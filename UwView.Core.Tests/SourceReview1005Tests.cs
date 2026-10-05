@@ -106,12 +106,41 @@ public class SourceReview1005Tests : IDisposable
         Assert.False(literal.Watching);                     // 必須リテラルは見張らない
     }
 
-    // 遅くなった 2（続き）: 1 本の大きな入力では、短い手がかりの式も本体（JIT）に任せる。多数ファイルは任せない
+    // 遅くなった 2（続き）: 1 本の大きな入力で短い手がかりが絞れない（＝全行に当てる）ときだけ本体（JIT）に任せる。
+    // 先頭を読んで割合を数える（絞れる式まで任せると、本体の起動の分だけ遅かった。grix テスト 2026-10-05）
     [Theory]
-    [InlineData("[0-9]{4}-[0-9]{2}", true, true)]
-    [InlineData("[0-9]{4}-[0-9]{2}", false, false)]
-    [InlineData("^ +<", false, true)]                     // 全行に当てる式は今までどおり
-    [InlineData("k=\"highway[^\"]*\"", true, false)]    // 必須リテラルで絞れる式は任せない
-    public void 一本の大きな入力では短い手がかりの式も任せる(string pattern, bool single, bool expected)
-        => Assert.Equal(expected, CompiledRegexRoute.WantsCompiledRegex(pattern, ignoreCase: false, single));
+    [InlineData("[0-9]{3}-[0-9]{4}\"", 2, true)]       // 半分の行に - がある
+    [InlineData("[0-9]{3}-[0-9]{4}\"", 50, false)]     // 2% の行だけ
+    [InlineData("[ぁ-ん]{3,}", 2, false)]                // ひらがなの行は無い
+    [InlineData("k=\"x\" tel", 2, false)]              // 必須リテラルで絞れる式は数えない
+    public void 短い手がかりが絞れないときだけ任せる(string pattern, int dashEvery, bool expected)
+    {
+        string path = Path.Combine(Path.GetTempPath(), $"uv_dense_{Guid.NewGuid():N}.txt");
+        try
+        {
+            var sb = new StringBuilder();
+            for (int i = 0; i < 20_000; i++)
+                sb.Append(i % dashEvery == 0 ? "<node ts=\"2019-05-01\"/>" : "<tag k=\"x\" v=\"y\"/>").Append('\n');
+            File.WriteAllText(path, sb.ToString());
+            var plan = PreparedSearch.Create(new SearchOptions(pattern, UseRegex: true)).For(Encoding.UTF8);
+            Assert.Equal(expected, CompiledRegexRoute.ShortClueIsDense(path, plan));
+        }
+        finally { File.Delete(path); }
+    }
+
+    [Fact]
+    public void 短すぎるファイルと圧縮ファイルは数えない()
+    {
+        string path = Path.Combine(Path.GetTempPath(), $"uv_dense_{Guid.NewGuid():N}.txt");
+        try
+        {
+            File.WriteAllText(path, string.Concat(Enumerable.Repeat("2019-05-01\n", 500)));
+            var plan = PreparedSearch.Create(new SearchOptions("[0-9]{3}-[0-9]{4}", UseRegex: true)).For(Encoding.UTF8);
+            Assert.False(CompiledRegexRoute.ShortClueIsDense(path, plan));
+            using (var gz = new System.IO.Compression.GZipStream(File.Create(path + ".gz"), System.IO.Compression.CompressionLevel.Fastest))
+                gz.Write(Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("2019-05-01\n", 5000))));
+            Assert.False(CompiledRegexRoute.ShortClueIsDense(path + ".gz", plan));
+        }
+        finally { File.Delete(path); File.Delete(path + ".gz"); }
+    }
 }

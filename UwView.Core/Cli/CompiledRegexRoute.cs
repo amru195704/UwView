@@ -63,18 +63,40 @@ public static class CompiledRegexRoute
         => PlanOf(pattern, ignoreCase).Method == SearchMethod.EveryLine;
 
     /// <summary>
-    /// 1 本の大きな入力で、本体（JIT）に任せたほうが速い式か。全行に当てる式と、短い手がかり（1 文字）で絞る式。
-    /// 短い手がかりは、手がかりのある行が多いと絞れず（<see cref="ClueWatch"/> が全行に切り替える）、
-    /// NativeAOT のままだと正規表現が解釈実行になる（10G の <c>[0-9]{3}-[0-9]{4}"</c>：AOT 5.12 秒・本体 3.87 秒）。
-    /// 絞れる場合も本体のほうが速いか同じ（3G の <c>[0-9]{4}-[0-9]{2}</c>：AOT 1.71 秒・本体 1.38 秒、<c>[ぁ-ん]{3,}</c>：0.45 秒・0.48 秒）。
-    /// 多数ファイルの指定は、ファイルを開く手間が主で、本体の起動の分だけ遅いので任せない（カーネル 8.6 万本：AOT 4.9 秒・本体 5.1 秒。2026-10-05）。
-    /// uvp は 10 並列で探すので解釈実行の遅れが隠れ、本体の起動の分だけ損になるため、これを使わない（<see cref="ScansEveryLine"/> だけで決める。
-    /// 10G：AOT 2.18 秒・本体 2.21 秒、カーネルの束の <c>[ぁ-ん]{3,}</c>：0.41 秒・0.64 秒）。
+    /// 1 本の大きな入力に短い手がかり（1 文字）で絞る式を当てるとき、手がかりのある行が多くて絞れない（＝全行に当てることになる）か。
+    /// 先頭の <paramref name="sampleBytes"/> を読んで数える（<see cref="ClueWatch"/> と同じ割合）。多ければ本体（JIT）に任せる。
+    /// 10G の <c>[0-9]{3}-[0-9]{4}"</c> は 3 割の行に <c>-</c> があり、全行に当てると AOT 5.12 秒・本体 3.87 秒。
+    /// 手がかりで絞れる式まで任せると、本体の起動の分だけ遅かった（1G の <c>[ぁ-ん]{3,}</c> 0.150 → 0.361 秒。grix テスト 2026-10-05）。
+    /// 多数ファイルは任せない（ファイルを開く手間が主で、本体の起動の分だけ遅い。カーネル 8.6 万本：AOT 4.9 秒・本体 5.1 秒）。
+    /// uvp は使わない（10 並列で解釈実行の遅れが隠れる。10G：AOT 2.18 秒・本体 2.21 秒）。圧縮ファイルは読まずに false。
     /// </summary>
-    public static bool WantsCompiledRegex(string pattern, bool ignoreCase, bool singleInput)
+    public static bool ShortClueIsDense(string path, SearchPlan plan, int sampleBytes = 8 << 20)
     {
-        var plan = PlanOf(pattern, ignoreCase);
-        return plan.Method == SearchMethod.EveryLine || singleInput && plan.UsesShortClue;
+        if (!plan.UsesShortClue || plan.NewClueFinder() is not { } clues) return false;
+        try
+        {
+            if (CompressedInput.Probe(path).Kind != CompressedKind.None) return false;
+            using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, 1 << 16);
+            byte[] buf = new byte[(int)Math.Min(sampleBytes, fs.Length)];
+            int got = fs.ReadAtLeast(buf, buf.Length, throwOnEndOfStream: false);
+            var region = buf.AsSpan(0, got);
+            int last = region.LastIndexOf((byte)'\n');
+            if (last < 0) return false;
+            region = region[..(last + 1)];
+            long lines = NewlineCounter.Count(region), candidates = 0;
+            if (lines < 1000) return false;                     // 数えるには短すぎる
+            clues.Reset();
+            for (int from = 0; from < region.Length; )
+            {
+                int at = clues.IndexOf(region, from);
+                if (at < 0) break;
+                candidates++;
+                int nl = region[at..].IndexOf((byte)'\n');
+                from = at + nl + 1;
+            }
+            return candidates > lines * SearchTuning.MaxShortClueLineShare;
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { return false; }
     }
 
     private static SearchPlan PlanOf(string pattern, bool ignoreCase)
@@ -97,8 +119,11 @@ public static class CompiledRegexRoute
         if (!Interpreted || HandoffDisabled("UVF_NO_HANDOFF")) return false;
         var (inv, _, _) = UvfCli.Parse(argv);
         if (inv is not { Regex: true, Pattern: { } pattern, File: { Length: > 0 } file }) return false;
+        var plan = PlanOf(pattern, inv.IgnoreCase);
         bool single = !FileSet.IsMultiple(file);
-        if (!WantsCompiledRegex(pattern, inv.IgnoreCase, single)) return false;
+        if (single && plan.Method != SearchMethod.EveryLine)
+            return Estimate(file) >= MinTextBytes && ShortClueIsDense(file, plan);   // 大きいときだけ先頭を読む
+        if (plan.Method != SearchMethod.EveryLine) return false;
         if (single) return Estimate(file) >= MinTextBytes;
         expanded = new ExpandedInput(file, FileSet.Expand(file, ignore: inv.Ignore));
         return TextBytes(expanded.Result.Files) >= MinTextBytes;
