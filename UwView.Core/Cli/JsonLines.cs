@@ -36,6 +36,10 @@ public static class JsonLines
             : $"{{\"file\":{Quote(file)},\"line\":{Quote(text)}}}";
 
     /// <summary>集計（<c>-uniq</c>）の1行。</summary>
+    /// <summary>名前と値の組を 1 行のオブジェクトに（uvp の <c>-format … --json</c>）。並びは書いた順のまま。</summary>
+    public static string Record(IEnumerable<(string Key, string Value)> fields)
+        => "{" + string.Join(",", fields.Select(f => Quote(f.Key) + ":" + Quote(f.Value))) + "}";
+
     public static string Tally(string value, long count)
         => $"{{\"value\":{Quote(value)},\"count\":{count}}}";
 
