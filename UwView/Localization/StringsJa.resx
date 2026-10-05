@@ -280,7 +280,7 @@
   <data name="TipCmdRun" xml:space="preserve"><value>コマンドの行と同じことを実行する</value></data>
   <data name="CmdCancel" xml:space="preserve"><value>中止</value></data>
   <data name="TipCmdCancel" xml:space="preserve"><value>実行を止める</value></data>
-  <data name="CmdClose" xml:space="preserve"><value>クローズ</value></data>
+  <data name="CmdClose" xml:space="preserve"><value>閉じる</value></data>
   <data name="TipCmdClose" xml:space="preserve"><value>ダイアログを閉じる（入力は残る）</value></data>
   <data name="CmdStopAndClose" xml:space="preserve"><value>実行中です。止めて閉じますか？</value></data>
   <data name="CmdStopYes" xml:space="preserve"><value>止めて閉じる</value></data>

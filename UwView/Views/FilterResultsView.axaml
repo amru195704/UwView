@@ -11,7 +11,7 @@
 
     <DockPanel LastChildFill="True">
 
-        <!-- ツールバー: 件数 / 前後±N（Pro のみ表示）/ 保存 / 閉じる -->
+        <!-- ツールバー: 件数 / 前後±N（Pro のみ表示）/ 保存（閉じるは右下。ポップアップの決まり） -->
         <Border DockPanel.Dock="Top" Background="#EEEEEE" BorderBrush="#CCCCCC"
                 BorderThickness="0,0,0,1" Padding="6">
             <!-- 幅が足りないとき折り返す（WASM の小さいウィンドウで「閉じる」が切れないように） -->
@@ -59,17 +59,20 @@
                 <Button x:Name="CancelSaveButton" Content="{loc:Localize Cancel}"
                         ToolTip.Tip="{loc:Localize TipCancelSave}"
                         IsVisible="{Binding IsSaving}" />
-                <Rectangle Width="1" Fill="#CCCCCC" Margin="2,0" />
-                <Button x:Name="CloseButton" Content="{loc:Localize Close}"
-                        ToolTip.Tip="{loc:Localize TipCloseList}" />
             </WrapPanel>
         </Border>
 
-        <!-- 複数ファイルの結果: 選んでいる行のファイル（番号: 実ファイル名） -->
-        <Border DockPanel.Dock="Bottom" Background="#F5F5F5" BorderBrush="#CCCCCC"
-                BorderThickness="0,1,0,0" Padding="6,3" IsVisible="{Binding IsResultSet}">
-            <TextBlock x:Name="CursorFileText" Text="{Binding CursorFileText}" Foreground="Black"
-                       TextTrimming="CharacterEllipsis" />
+        <!-- 下のバー: 閉じる（右下に固定。ポップアップの決まり）と、
+             複数ファイルの結果のときは選んでいる行のファイル（番号: 実ファイル名） -->
+        <Border x:Name="BottomBar" DockPanel.Dock="Bottom" Background="#F5F5F5" BorderBrush="#CCCCCC"
+                BorderThickness="0,1,0,0" Padding="6,4">
+            <DockPanel LastChildFill="True">
+                <Button x:Name="CloseButton" DockPanel.Dock="Right" Content="{loc:Localize Close}"
+                        Margin="8,0,0,0" ToolTip.Tip="{loc:Localize TipCloseList}" />
+                <TextBlock x:Name="CursorFileText" Text="{Binding CursorFileText}" Foreground="Black"
+                           VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                           IsVisible="{Binding IsResultSet}" />
+            </DockPanel>
         </Border>
 
         <!-- 結果リスト（自前描画。メインの TextView と同じ方式で可視行だけ描く。

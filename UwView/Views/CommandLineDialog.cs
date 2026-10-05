@@ -10,6 +10,7 @@ using Avalonia.Input;
 using Avalonia.Input.Platform;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.VisualTree;
 using Avalonia.Platform.Storage;
 using UwView.Localization;
 using UwView.Services;
@@ -49,6 +50,7 @@ public sealed class CommandLineDialog : Window
     private readonly TextBlock _status;
     private readonly TabControl _tabs;
     private readonly TabItem _filesTab;
+    private readonly TextBlock _filesTabHeader;
     private readonly Button _run;
     private readonly Button _rebuild;
     private readonly TextBlock _written;
@@ -138,7 +140,9 @@ public sealed class CommandLineDialog : Window
         DockPanel.SetDock(fileHeader, Dock.Top);
         filesPanel.Children.Add(fileHeader);
         filesPanel.Children.Add(_files);
-        _filesTab = new TabItem { Header = L.Format("CmdTabFiles", 0), Content = filesPanel };
+        // 見出しは TextBlock にする（文字列のままだと、本数が増えても幅が最初の「ファイル（0）」のままで切れた）
+        _filesTabHeader = TabHeader(L.Format("CmdTabFiles", 0));
+        _filesTab = new TabItem { Header = _filesTabHeader, Content = filesPanel };
 
         _output = new ListBox
         {
@@ -164,7 +168,7 @@ public sealed class CommandLineDialog : Window
         DockPanel.SetDock(outTop, Dock.Top);
         outputPanel.Children.Add(outTop);
         outputPanel.Children.Add(_output);
-        var outputTab = new TabItem { Header = L["CmdTabOutput"], Content = outputPanel };
+        var outputTab = new TabItem { Header = TabHeader(L["CmdTabOutput"]), Content = outputPanel };
 
         _tabs = new TabControl { Name = "CmdTabs", Margin = new Thickness(0, 8, 0, 0) };
         _tabs.Items.Add(_filesTab);
@@ -288,7 +292,7 @@ public sealed class CommandLineDialog : Window
         if (property is null or nameof(vm.BaseFolder)) { _baseFolder.Text = vm.BaseFolder; ToolTip.SetTip(_baseFolder, vm.BaseFolder); }
         if (property is null or nameof(vm.CommandText)) _command.Text = vm.CommandText;
         if (property is null or nameof(vm.ErrorText)) { _error.Text = vm.ErrorText; _error.IsVisible = vm.ErrorText.Length > 0; }
-        if (property is null or nameof(vm.Files)) { _files.ItemsSource = vm.Files; _filesTab.Header = L.Format("CmdTabFiles", vm.Files.Count); }
+        if (property is null or nameof(vm.Files)) { _files.ItemsSource = vm.Files; _filesTabHeader.Text = L.Format("CmdTabFiles", vm.Files.Count.ToString("N0", L.Culture)); RemeasureTabs(); }
         if (property is null or nameof(vm.FilesSummary)) _summary.Text = vm.FilesSummary;
         if (property is null or nameof(vm.OffersRebuild)) _rebuild.IsVisible = vm.OffersRebuild;
         if (property is null or nameof(vm.WrittenFile))
@@ -411,6 +415,15 @@ public sealed class CommandLineDialog : Window
     internal static IEnumerable<CommandHistoryEntry> HistoryItems(IEnumerable<CommandHistoryEntry> history,
                                                                  Func<CommandHistoryEntry, string> field)
         => history.Where(e => field(e).Length > 0).DistinctBy(field);
+
+    /// <summary>見出しの長さが変わったら、タブとタブ列を測り直させる（見出しだけ書き換えても、タブは最初の幅のままだった）。</summary>
+    private void RemeasureTabs()
+    {
+        foreach (var item in _tabs.GetVisualDescendants().OfType<TabItem>()) item.InvalidateMeasure();
+        if (_filesTab.GetVisualParent() is Layoutable strip) strip.InvalidateMeasure();
+    }
+
+    private static TextBlock TabHeader(string text) => new() { Text = text, FontSize = 15, Foreground = Brushes.Black };
 
     private static Button MakeButton(string name, string label, string tip)
     {

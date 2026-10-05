@@ -1,3 +1,6 @@
+using Avalonia.Layout;
+using Avalonia.VisualTree;
+using Avalonia;
 using System.Text;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
@@ -163,6 +166,38 @@ public class CommandLineDialogTests : IDisposable
         dialog!.Close();
         Dispatcher.UIThread.RunJobs();
         Assert.Null(CommandLineDialog.For(window));
+    }
+
+    [AvaloniaFact]
+    public async Task ファイルの本数は見出しに切れずに出て_閉じるボタンは閉じる()
+    {
+        for (int i = 0; i < 1200; i++) File.WriteAllText(Path.Combine(_dir, $"m{i:D4}.txt"), "x\n");
+        var (window, view, _) = UiHarness.OpenMainWindow();
+        view.OpenCommandLine();
+        Dispatcher.UIThread.RunJobs();
+        var dialog = CommandLineDialog.For(window)!;
+        dialog.ViewModel.BaseFolder = _dir;
+        dialog.ViewModel.FilePattern = "*.txt";
+        await dialog.ViewModel.ExpandAsync();
+        Dispatcher.UIThread.RunJobs();
+        var header = dialog.GetVisualDescendants().OfType<TabItem>().First().Header as TextBlock;
+        Assert.Equal("ファイル（1,201）", header!.Text);                  // note.txt＋1,200 本
+        dialog.UpdateLayout();
+        double shown = header.Bounds.Width;
+        header.Measure(Size.Infinity);                                     // 同じフォントで、制限なしに測った幅
+        Assert.True(shown >= header.DesiredSize.Width - 0.5, $"見出しが切れている: {shown} < {header.DesiredSize.Width}");
+        var close = dialog.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "CmdCloseButton");
+        Assert.Equal("閉じる", close.Content);
+        // 「閉じる」は右下に固定（窓の幅を変えても、右端・一番下のまま）
+        foreach (double width in new[] { 860.0, 1200.0 })
+        {
+            dialog.Width = width;
+            dialog.UpdateLayout();
+            var at = close.TranslatePoint(new Point(close.Bounds.Width, close.Bounds.Height), dialog)!.Value;
+            Assert.InRange(dialog.Bounds.Width - at.X, 0, 20);
+            Assert.InRange(dialog.Bounds.Height - at.Y, 0, 20);
+        }
+        dialog.Close();
     }
 
     [Fact]

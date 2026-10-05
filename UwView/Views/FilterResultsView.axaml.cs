@@ -30,6 +30,19 @@ public partial class FilterResultsView : UserControl
 
     /// <summary>閉じる要求（ホストが Window.Close / オーバーレイ除去を行う）。</summary>
     public event Action? CloseRequested;
+
+    /// <summary>
+    /// 一覧の「閉じる」を出すか（既定は出す）。窓の右下に自分の「閉じる」を持つ入れ物（Pro の結果の窓）は消す——
+    /// 集計・並べ替えの結果を一覧に重ねると、一覧の中の「閉じる」は隠れてしまうため。
+    /// </summary>
+    public bool ShowCloseButton
+    {
+        get => CloseButton.IsVisible;
+        set { CloseButton.IsVisible = value; UpdateBottomBar(); }
+    }
+
+    /// <summary>下のバーは、閉じるか番号のファイルを出すときだけ。</summary>
+    private void UpdateBottomBar() => BottomBar.IsVisible = CloseButton.IsVisible || _vm.IsResultSet;
     /// <summary>タイトル変化（デスクトップの Window.Title 用）。</summary>
     public event Action<string>? TitleChanged;
 
@@ -49,6 +62,7 @@ public partial class FilterResultsView : UserControl
         if (_vm.AllowExtractOptions) UwView.Services.ExtractSaveOptions.ApplyTo(_vm);
         CancelSaveButton.Click += (_, _) => _vm.CancelSave();
         CloseButton.Click += (_, _) => CloseRequested?.Invoke();
+        _vm.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(_vm.IsResultSet)) UpdateBottomBar(); };
         ChangeLimitButton.Click += (_, _) => ViewModels.FilterResultsViewModel.OpenSearchLimitSettings?.Invoke();
 
         RowList.AttachScrollBar(RowScroll);
