@@ -98,6 +98,9 @@ public sealed class FilterListView : Control
 
     public double FontSize { get; set; }
 
+    /// <summary>描く本文を書き換える（UVP の「伏せる…」）。</summary>
+    public Func<string, string>? TextTransform { get; set; }
+
     public IReadOnlyList<FilterRow>? Rows
     {
         get => _rows;
@@ -595,7 +598,7 @@ public sealed class FilterListView : Control
                 continue;
             }
 
-            string text = row.Text;
+            string text = TextTransform is { } transform ? transform(row.Text) : row.Text;
             if (text.Length == 0) continue;
 
             // 横スクロールバーの範囲用に可視行の幅を実測（全行走査はしない）

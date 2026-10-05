@@ -167,6 +167,19 @@ public sealed class FilterRow
 /// </summary>
 public sealed partial class FilterResultsViewModel : ObservableObject, IDisposable
 {
+    /// <summary>
+    /// 出す本文を書き換える（UVP の「伏せる…」＝ <c>-mask</c>）。表示・保存・コピーの本文に当てる。本体の本文・判定は変えない。
+    /// </summary>
+    public Func<string, string>? TextTransform
+    {
+        get => _textTransform;
+        set { _textTransform = value; OnPropertyChanged(); }
+    }
+    private Func<string, string>? _textTransform;
+
+    /// <summary>出す形の本文（<see cref="TextTransform"/> を当てたもの）。</summary>
+    public string Shown(string text) => _textTransform is { } f ? f(text) : text;
+
     private readonly Action<long> _onJump;
     private DocumentSession? _session;
 
@@ -633,7 +646,7 @@ public sealed partial class FilterResultsViewModel : ObservableObject, IDisposab
 
                     string prefix = IncludeLineNumbersOnSave && row.LineNumberText.Length > 0
                         ? row.LineNumberText + "\t" : "";
-                    await writer.WriteLineAsync(prefix + text);
+                    await writer.WriteLineAsync(prefix + Shown(text));
                 }
 
                 if ((i & 1023) == 0)

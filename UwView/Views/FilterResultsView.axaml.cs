@@ -62,6 +62,13 @@ public partial class FilterResultsView : UserControl
         if (_vm.AllowExtractOptions) UwView.Services.ExtractSaveOptions.ApplyTo(_vm);
         CancelSaveButton.Click += (_, _) => _vm.CancelSave();
         CloseButton.Click += (_, _) => CloseRequested?.Invoke();
+        RowList.TextTransform = _vm.TextTransform;
+        _vm.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName != nameof(_vm.TextTransform)) return;
+            RowList.TextTransform = _vm.TextTransform;
+            RowList.InvalidateVisual();
+        };
         _vm.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(_vm.IsResultSet)) UpdateBottomBar(); };
         ChangeLimitButton.Click += (_, _) => ViewModels.FilterResultsViewModel.OpenSearchLimitSettings?.Invoke();
 
@@ -191,7 +198,8 @@ public partial class FilterResultsView : UserControl
         FilterRow row, System.Threading.CancellationToken ct = default)
     {
         if (row.IsSeparator) return "⋯";
-        if (await row.GetTextForSaveAsync(ct) is not { } text) return null;
+        if (await row.GetTextForSaveAsync(ct) is not { } raw) return null;
+        string text = _vm.Shown(raw);
         return _vm.IncludeLineNumbersOnSave && row.LineNumberText.Length > 0
             ? row.LineNumberText + "\t" + text
             : text;
