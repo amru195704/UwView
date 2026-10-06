@@ -12,10 +12,17 @@ namespace UwView.Core;
 public static class LinkedFile
 {
     /// <summary>リンクなら最終的なリンク先、そうでなければ自身の FileInfo。</summary>
-    public static FileInfo Info(string path)
+    public static FileInfo Info(string path) => Info(path, null);
+
+    /// <param name="baseDirectory">
+    /// 相対パスの起点（省略すれば今のフォルダー）。多くのファイルを続けて見るときは、今のフォルダーを
+    /// 1 回だけ取って渡す。渡さないと 1 本ごとに getcwd を問い合わせ、mac の外付けディスクで
+    /// 6 万本の確認に約 0.6 秒かかっていた（2026-10-06）。
+    /// </param>
+    public static FileInfo Info(string path, string? baseDirectory)
     {
         // 相対パスのままだと相対リンク（ln -s real.log link.log）の解決先が狂うので絶対パスにする
-        var info = new FileInfo(Path.GetFullPath(path));
+        var info = new FileInfo(baseDirectory is null ? Path.GetFullPath(path) : Path.GetFullPath(path, baseDirectory));
         // リンクかどうかは属性で先に見る（LinkTarget はリンクでなくても1本ずつ問い合わせる。8.6 万本の確認で効く）
         return (info.Attributes & FileAttributes.ReparsePoint) != 0
                && info.LinkTarget is not null
