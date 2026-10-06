@@ -58,11 +58,49 @@ public class RegexLiteralsTests
 
     [Fact]
     public void 当たる行は必ず取り出したリテラルを含む_ランダムな式と行で確かめる()
+        => HoldsOnRandomPatterns(20260915, lookarounds: false);
+
+    [Fact]
+    public void 先読みと後読みを混ぜても当たる行は必ず取り出したリテラルを含む()
+        => HoldsOnRandomPatterns(20261006, lookarounds: true);
+
+    [Theory]
+    [InlineData(@"^(?=.*User: (\S+))(?=.*Action: (\S+))(?=.*Time: (.+?)\s*$)", "Action: ")]   // 中身のいちばん長い必須リテラル
+    [InlineData("(?=.*(foo|barbaz))x", "foo|barbaz")]
+    [InlineData("(?=.*foo|.*barbaz)", "foo|barbaz")]
+    [InlineData("ab(?=cdef)gh", "cdef")]                    // 前後とはつながない（abcdef・cdefgh にしない）
+    [InlineData(@"^(?!.*IgnoredWarning).*DatabaseTimeout", "DatabaseTimeout")]   // 否定の先読みの中身は取らない
+    [InlineData("(?<=abcd)ef", "ef")]                       // 後読みの中身は取らない
+    public void 肯定の先読みの中身を候補にする(string pattern, string expected)
     {
-        var rnd = new Random(20260915);
+        var got = RegexLiterals.Extract(pattern, ignoreCase: false);
+        Assert.NotNull(got);
+        Assert.Equal(expected.Split('|').Order(StringComparer.Ordinal), got!.Order(StringComparer.Ordinal));
+    }
+
+    [Theory]
+    [InlineData("(?=abcd)?xy")]          // 量指定子で無くてよい先読み
+    [InlineData("(?=(?i)abcd)xyz")]      // 中身が読めない → 外の xyz だけ
+    public void 無くてよい先読みや読めない先読みは候補にしない(string pattern)
+    {
+        var got = RegexLiterals.Extract(pattern, ignoreCase: false);
+        Assert.DoesNotContain("abcd", got ?? []);
+    }
+
+    private static void HoldsOnRandomPatterns(int seed, bool lookarounds)
+    {
+        var rnd = new Random(seed);
         const string alphabet = "abcxy-\"=:東京";
         string Atom(int depth)
         {
+            if (lookarounds && depth <= 2 && rnd.Next(6) == 0)
+                return rnd.Next(4) switch
+                {
+                    0 => "(?=" + Seq(depth + 1) + ")",
+                    1 => "(?=.*" + Seq(depth + 1) + ")",
+                    2 => "(?!" + Seq(depth + 1) + ")",
+                    _ => "(?<=" + Seq(depth + 1) + ")",
+                };
             switch (rnd.Next(depth > 2 ? 6 : 9))
             {
                 case 0: return alphabet[rnd.Next(alphabet.Length)].ToString();
@@ -113,7 +151,7 @@ public class RegexLiteralsTests
                     $"式 {pattern} は「{text}」に当たるのに、リテラル [{string.Join(" | ", literals)}] をどれも含まない");
             }
         }
-        Assert.True(checkedPatterns > 2000 && withLiterals > 300 && matches > 3000,
+        Assert.True(checkedPatterns > 2000 && withLiterals > 300 && matches > (lookarounds ? 1000 : 3000),
             $"試した数が少なすぎる: 式 {checkedPatterns}・リテラルあり {withLiterals}・当たり {matches}");
     }
 

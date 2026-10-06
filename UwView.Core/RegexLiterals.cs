@@ -14,7 +14,7 @@ namespace UwView.Core;
 /// 迷ったら取らない側に倒す——取り損ねても遅いだけだが、必須でないものを取ると<b>ヒットが消える</b>。
 /// <list type="bullet">
 /// <item>大小無視（IgnoreCase・<c>(?i)</c>）は扱わない</item>
-/// <item>文字クラス・<c>.</c>・<c>\d</c> など・後方参照・先読み／後読みはリテラルの切れ目</item>
+/// <item>文字クラス・<c>.</c>・<c>\d</c> など・後方参照・先読み／後読みはリテラルの切れ目（肯定の先読み <c>(?=…)</c> の中身の必須リテラルは、つながない候補として使う）</item>
 /// <item><c>?</c> <c>*</c> <c>{0,…}</c> の付いた要素は必須でない。<c>+</c> <c>{1,…}</c> は1回分だけ必須</item>
 /// <item>選択肢がすべてリテラルのグループ <c>(bus_stop|traffic_signals)</c> は、候補の集合として前後とつなぐ</item>
 /// <item>全体が <c>a|b</c> のときは、枝ごとの必須リテラルの和集合（1つでも取れない枝があれば null）</item>
@@ -135,13 +135,23 @@ public static class RegexLiterals
                                 Failed = true;                       // (?i) などのオプション・コメント・条件式は扱わない
                                 return (null, null);
                             case RegexSyntax.GroupKind.Lookaround:
-                                // 先読み・後読み: 本文を消費しないので必須リテラルにしない
-                                _i = RegexSyntax.SkipGroup(p, _i);
-                                if (_i < 0) { Failed = true; return (null, null); }
+                            {
+                                // 先読み・後読み: 本文を消費しないので、前後のリテラルとはつながない。
+                                // ただし肯定の先読み (?=…) の中身は、当たる行の中に必ず現れる（照合は 1 行ずつで、. は改行に当たらない）。
+                                // その必須リテラルは候補にできる（^(?=.*User: …)(?=.*Action: …) が全行に正規表現を当てていた。
+                                // カーネル 6 万本で rg の 1/1.6。2026-10-06）。中身は別に読み、読めなければ候補にしないだけ（全体は諦めない）
+                                bool positiveAhead = p[_i + 2] == '=';
+                                int end = RegexSyntax.SkipGroup(p, _i);
+                                if (end < 0) { Failed = true; return (null, null); }
+                                var ahead = positiveAhead ? AheadLiterals(p[body..(end - 1)]) : null;
+                                _i = end;
                                 isPure = false;
                                 Flush();
-                                if (RegexSyntax.ReadQuantifier(p, ref _i).Min < 0) { Failed = true; return (null, null); }
+                                int aheadMin = RegexSyntax.ReadQuantifier(p, ref _i).Min;
+                                if (aheadMin < 0) { Failed = true; return (null, null); }
+                                if (aheadMin > 0 && ahead is not null) candidates.Add(ahead);
                                 continue;
+                            }
                             default:
                                 _i = body;
                                 var inner = ParseAlternation(topLevel: false);
@@ -204,6 +214,15 @@ public static class RegexLiterals
                 .ThenBy(set => set.Count)
                 .FirstOrDefault();
             return (best, isPure ? pure.ToString() : null);
+        }
+
+        /// <summary>肯定の先読みの中身の必須リテラル（読めない・取れないなら null）。</summary>
+        private static List<string>? AheadLiterals(string inner)
+        {
+            var parser = new Parser(inner);
+            var result = parser.ParseAlternation(topLevel: true);
+            if (parser.Failed || !parser.AtEnd || result.Best is not { Count: > 0 } best || best.Any(s => s.Length == 0)) return null;
+            return best;
         }
     }
 }
