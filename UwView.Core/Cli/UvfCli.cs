@@ -1006,6 +1006,7 @@ public static class UvfCli
         await using (var w = new StreamWriter(env.StdOut, new UTF8Encoding(false), 1 << 16, leaveOpen: true) { NewLine = "\n" })
         {
             var writer = w;
+            var lines = new HitLineWriter();
             try
             {
                 outcome = await RawGrep.RunAsync(src, detected.BomLength, encoding, options, inv.Invert, Write, ct);
@@ -1025,9 +1026,7 @@ public static class UvfCli
                     writer.WriteLine(JsonLines.Hit(null, line + 1, encoding.GetString(text)));
                     return;
                 }
-                writer.Write((line + 1).ToString(CultureInfo.InvariantCulture));
-                writer.Write('\t');
-                writer.WriteLine(encoding.GetString(text));
+                lines.Write(writer, null, lineNumbers: true, line, text, encoding);
             }
         }
 

@@ -302,15 +302,18 @@ public static class MultiFileSearch
             var encoding = detected.Encoding;
 
             long t2 = trace is null ? 0 : Trace.Now;
+            var lines = new HitLineWriter();
             var outcome = await RawGrep.RunAsync(
                 source, detected.BomLength, encoding, prepared.Options, invert,
                 (line, _, text) =>
                 {
                     hits++;
-                    string body = encoding.GetString(text);
-                    writer.WriteLine(json
-                        ? (lineNumbers ? JsonLines.Hit(name, line + 1, body) : JsonLines.HitWithoutNumber(name, body))
-                        : Text(name, lineNumbers, line, body));
+                    if (json)
+                    {
+                        string body = encoding.GetString(text);
+                        writer.WriteLine(lineNumbers ? JsonLines.Hit(name, line + 1, body) : JsonLines.HitWithoutNumber(name, body));
+                    }
+                    else lines.Write(writer, name, lineNumbers, line, text, encoding);
                     if (!direct && buffer.GetStringBuilder().Length >= BufferLimit) GoDirect();
                 }, ct, prepared: prepared);
             if (trace is not null) Interlocked.Add(ref trace.Search, Trace.Now - t2);
@@ -350,13 +353,4 @@ public static class MultiFileSearch
         public ValueTask DisposeAsync() => ValueTask.CompletedTask;
     }
 
-    /// <summary>テキスト1行（grep 互換: 複数ファイルのときだけファイル名を前置する）。</summary>
-    private static string Text(string? name, bool lineNumbers, long line, string body)
-    {
-        var sb = new StringBuilder();
-        if (name is not null) { sb.Append(name); sb.Append(':'); }
-        if (lineNumbers) { sb.Append(line + 1); sb.Append('\t'); }
-        sb.Append(body);
-        return sb.ToString();
-    }
 }
