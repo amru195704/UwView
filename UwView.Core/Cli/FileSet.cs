@@ -214,7 +214,10 @@ public static class FileSet
 
         var found = new HashSet<string>(StringComparer.Ordinal);
         // 先頭のワイルドカードの無い段（名前を書いたフォルダー）は除外しない（ripgrep に渡したフォルダーと同じ）
-        try { Walk(Path.GetFullPath(start), segments, first, found, walk); }
+        string full = Path.GetFullPath(start);
+        // ** で下を全部たどり、除外の決まりも無いなら、下のフォルダーの一覧を見つけた先から並べて読んでおく
+        Prefetch(full, walk, cascade: segments[first] == "**" && !walk.Ignore.MayIgnoreBelow(full));
+        try { Walk(full, segments, first, found, walk); }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException) { }
 
         // 自分たちが作った派生ファイル（.uwvz など）は、ワイルドカードの対象にしない。
@@ -271,6 +274,10 @@ public static class FileSet
         public readonly List<(string Name, string Path)> Files = [];
         public readonly List<(string Name, string Path)> Directories = [];
         public readonly List<(string Name, string Path)> LinkedFiles = [];
+        /// <summary>.gitignore・.ignore・.git がある（ここから下は除外の決まりがあるかもしれない）。</summary>
+        public bool HasIgnoreFiles;
+        /// <summary>下のフォルダーの一覧を、見つけた先から読んでおいてよい（<see cref="ListingOf"/>）。</summary>
+        public bool CascadeBelow;
     }
 
     /// <summary>
@@ -304,17 +311,33 @@ public static class FileSet
     /// フォルダーを1回だけ読む（<c>**</c> では同じフォルダーを段ごとに何度も見るので覚えておく）。
     /// 除外の判定は順に行うが、一覧を読むのは先読みで並列にする（8.6 万本で約 0.4 秒かかっていた。2026-10-02）。
     /// </summary>
-    private static Listing Read(string directory, WalkState walk) => ListingOf(directory, walk).Value;
+    private static Listing Read(string directory, WalkState walk) => ListingOf(directory, walk, cascade: false).Value;
 
-    private static Lazy<Listing> ListingOf(string directory, WalkState walk)
-        => walk.Listings.GetOrAdd(directory, d => new Lazy<Listing>(() => ReadNow(d)));
+    /// <param name="cascade">
+    /// 読んだら、その下のフォルダーも続けて先読みする（除外の決まりのあるフォルダーで止める）。
+    /// 下りる番が来てから頼むと、深い枝で読み終わりを待つことになる（カーネル 6 万本の一覧で 0.34 → 0.24 秒。2026-10-06）。
+    /// 読むのは一覧だけで、除外の判定は今までどおりたどる側でする（結果は変えない）。
+    /// </param>
+    private static Lazy<Listing> ListingOf(string directory, WalkState walk, bool cascade)
+        => walk.Listings.GetOrAdd(directory, d => new Lazy<Listing>(() =>
+        {
+            var listing = ReadNow(d);
+            listing.CascadeBelow = cascade && !listing.HasIgnoreFiles;
+            if (listing.CascadeBelow)
+                foreach (var (_, sub) in listing.Directories) Prefetch(sub, walk, cascade: true);
+            return listing;
+        }));
 
     /// <summary>あとで下りるフォルダーを、別スレッドで先に読んでおく。</summary>
-    private static void Prefetch(string directory, WalkState walk)
+    private static void Prefetch(string directory, WalkState walk, bool cascade)
     {
-        var lazy = ListingOf(directory, walk);
+        var lazy = ListingOf(directory, walk, cascade);
         if (!lazy.IsValueCreated) ThreadPool.UnsafeQueueUserWorkItem(l => _ = l.Value, lazy, preferLocal: false);
     }
+
+    /// <summary>除外の決まりを置くファイル・フォルダーの名前（あれば、その下は先読みを深くしない）。</summary>
+    private static bool IsIgnoreFileName(ReadOnlySpan<char> name)
+        => name is ".gitignore" or ".ignore" or ".git";
 
     private static Listing ReadNow(string directory)
     {
@@ -324,7 +347,14 @@ public static class FileSet
         {
             var entries = new FileSystemEnumerable<(string Name, string Path, bool IsDirectory)>(directory,
                 (ref FileSystemEntry e) => (e.FileName.ToString(), e.ToFullPath(), e.IsDirectory), WithoutLinks)
-            { ShouldIncludePredicate = (ref FileSystemEntry e) => !IsDotName(e.FileName) };
+            {
+                ShouldIncludePredicate = (ref FileSystemEntry e) =>
+                {
+                    if (!IsDotName(e.FileName)) return true;
+                    if (IsIgnoreFileName(e.FileName)) listing.HasIgnoreFiles = true;
+                    return false;
+                },
+            };
             foreach (var (name, path, isDirectory) in entries)
             {
                 count++;
@@ -367,7 +397,7 @@ public static class FileSet
             if (!FileSystemName.MatchesSimpleExpression(pattern, name, IgnoreCase)) continue;
             if (walk.Ignore.IsIgnored(path, isDirectory: true, directory)) { walk.IgnoredFolders.Add(path); continue; }
             result.Add(path);
-            Prefetch(path, walk);
+            Prefetch(path, walk, cascade: false);
         }
         return result;
     }

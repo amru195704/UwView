@@ -344,6 +344,14 @@ public sealed class IgnoreTree
         return result == IgnoreMatch.Ignore;
     }
 
+    /// <summary>
+    /// このフォルダーより下で、何かを除外する決まりがあるかもしれないか（自分と上のフォルダーの除外ファイル・.git、
+    /// --ignore-file）。無いと言えるときだけ false（一覧の先読みを深くしてよいかの判断。結果は変えない）。
+    /// git 全体の除外は git の中でしか効かないので、.git があるか（AnyGit）で見る。
+    /// </summary>
+    public bool MayIgnoreBelow(string directory)
+        => _extra.Length > 0 || _enabled && NodeFor(directory) is { AnyRules: true } or { AnyGit: true };
+
     private Node NodeFor(string directory)
     {
         string full = Path.TrimEndingDirectorySeparator(Path.GetFullPath(directory));
