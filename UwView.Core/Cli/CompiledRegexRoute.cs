@@ -71,20 +71,37 @@ public static class CompiledRegexRoute
     /// uvp は使わない（10 並列で解釈実行の遅れが隠れる。10G：AOT 2.18 秒・本体 2.21 秒）。圧縮ファイルは読まずに false。
     /// </summary>
     public static bool ShortClueIsDense(string path, SearchPlan plan, int sampleBytes = 8 << 20)
+        => plan.UsesShortClue && SampleClues(path, plan, sampleBytes) is { } s && s.Candidates > s.Lines * SearchTuning.MaxShortClueLineShare;
+
+    /// <summary>
+    /// 1 本の大きな入力に、肯定の先読み（<c>(?=…)</c>）の中身で絞る式を当てるとき、候補の行が多くて本体（JIT）のほうが速いか。
+    /// 候補の数は、先頭を読んで数えた割合をファイル全体に引き延ばして見積もる（<see cref="SearchTuning.LookaheadHandoffCandidateLines"/>）。
+    /// 先読みの無い式は数えない（候補が多くても解釈実行で遅くならない）。圧縮ファイルは読まずに false。
+    /// </summary>
+    public static bool LookaheadCluesAreDense(string path, string pattern, bool ignoreCase = false, int sampleBytes = 8 << 20)
     {
-        if (!plan.UsesShortClue || plan.NewClueFinder() is not { } clues) return false;
+        if (!pattern.Contains("(?=", StringComparison.Ordinal)) return false;
+        var plan = PlanOf(pattern, ignoreCase);
+        if (plan.Method != SearchMethod.CandidateLines || SampleClues(path, plan, sampleBytes) is not { } s) return false;
+        return s.Candidates * (double)s.FileLength / s.SampledBytes >= SearchTuning.LookaheadHandoffCandidateLines;
+    }
+
+    /// <summary>先頭の <paramref name="sampleBytes"/> を読み、行の数と手がかりのある行の数を数える。数えられなければ null。</summary>
+    private static (long Lines, long Candidates, long SampledBytes, long FileLength)? SampleClues(string path, SearchPlan plan, int sampleBytes)
+    {
+        if (plan.NewClueFinder() is not { } clues) return null;
         try
         {
-            if (CompressedInput.Probe(path).Kind != CompressedKind.None) return false;
+            if (CompressedInput.Probe(path).Kind != CompressedKind.None) return null;
             using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, 1 << 16);
             byte[] buf = new byte[(int)Math.Min(sampleBytes, fs.Length)];
             int got = fs.ReadAtLeast(buf, buf.Length, throwOnEndOfStream: false);
             var region = buf.AsSpan(0, got);
             int last = region.LastIndexOf((byte)'\n');
-            if (last < 0) return false;
+            if (last < 0) return null;
             region = region[..(last + 1)];
             long lines = NewlineCounter.Count(region), candidates = 0;
-            if (lines < 1000) return false;                     // 数えるには短すぎる
+            if (lines < 1000) return null;                      // 数えるには短すぎる
             clues.Reset();
             for (int from = 0; from < region.Length; )
             {
@@ -94,9 +111,9 @@ public static class CompiledRegexRoute
                 int nl = region[at..].IndexOf((byte)'\n');
                 from = at + nl + 1;
             }
-            return candidates > lines * SearchTuning.MaxShortClueLineShare;
+            return (lines, candidates, region.Length, fs.Length);
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { return false; }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { return null; }
     }
 
     private static SearchPlan PlanOf(string pattern, bool ignoreCase)
@@ -122,7 +139,8 @@ public static class CompiledRegexRoute
         var plan = PlanOf(pattern, inv.IgnoreCase);
         bool single = !FileSet.IsMultiple(file);
         if (single && plan.Method != SearchMethod.EveryLine)
-            return Estimate(file) >= MinTextBytes && ShortClueIsDense(file, plan);   // 大きいときだけ先頭を読む
+            return Estimate(file) >= MinTextBytes                                    // 大きいときだけ先頭を読む
+                   && (ShortClueIsDense(file, plan) || LookaheadCluesAreDense(file, pattern, inv.IgnoreCase));
         if (plan.Method != SearchMethod.EveryLine) return false;
         if (single) return Estimate(file) >= MinTextBytes;
         expanded = new ExpandedInput(file, FileSet.Expand(file, ignore: inv.Ignore));

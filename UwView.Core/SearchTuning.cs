@@ -39,6 +39,14 @@ public static class SearchTuning
     public const long HandoffMinTextBytes = 256L << 20;
 
     /// <summary>
+    /// 肯定の先読み（<c>(?=…)</c>）の中身で絞る式を、本体（JIT）に任せる候補の行の数（見積もり）。
+    /// 先読みは解釈実行で特に遅く、候補 1 行あたり約 1µs 余分にかかる。本体の起動（約 0.3 秒）と釣り合うのが 30 万行前後。
+    /// 1G の <c>^(?=.*User: …)(?=.*Action: …)(?=.*Time: …)</c>（候補 約 370 万行）は AOT 4.68 秒・本体 2.18 秒。
+    /// 同じ候補の数でも単純な式（<c>User: (\S+)</c>）は AOT 0.93 秒・本体 1.02 秒なので、先読みのときだけ数える（2026-10-06）。
+    /// </summary>
+    public const long LookaheadHandoffCandidateLines = 300_000;
+
+    /// <summary>
     /// XML・ログ・ソースでほぼどの行にもあるバイト（1 バイトの手がかりにしない）。絞れずに探す手間だけが乗る
     ///（OSM の <c>-v '^ +&lt;'</c> で 1.1 倍遅くなった。Rust の regex も、ありふれたバイトでは前置きを使わない）。
     /// </summary>
