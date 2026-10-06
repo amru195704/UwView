@@ -156,6 +156,7 @@ namespace UwView.Cli
             {
                 var psi = new ProcessStartInfo(gui) { UseShellExecute = false };
                 foreach (string a in guiArgs) psi.ArgumentList.Add(a);
+                UwView.Core.Cli.LaunchFolder.Pass(psi);   // 画面の「コマンドライン」の基準フォルダーを、打ったフォルダーにする
                 using var p = Process.Start(psi);
                 return p is not null;
             }

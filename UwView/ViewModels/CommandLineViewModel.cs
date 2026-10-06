@@ -32,7 +32,12 @@ public sealed partial class CommandLineViewModel : ObservableObject
     private string? _outputFile;
     private bool _indexShown;
 
-    /// <param name="baseFolder">基準フォルダーの既定（今のタブのファイルのフォルダー）。無ければ前回値、それも無ければホーム。</param>
+    /// <param name="baseFolder">
+    /// 今のタブのファイルのフォルダー。基準フォルダーの既定は（オーナー指示 2026-10-06）：
+    /// ① ターミナルの -open で起動したなら打ったフォルダー（この起動で最初の 1 回だけ。あとで変えたものを上書きしない）
+    /// ② 終了時の基準フォルダー（<see cref="AppSettings.CommandBaseFolder"/>。使っている間に変えればその値）
+    /// ③ これ（今のタブのファイルのフォルダー） ④ 前回の履歴 ⑤ ホーム。
+    /// </param>
     /// <param name="settings">履歴の置き場所（無ければ残さない）。開いたときの 2 つの欄と除外のチェックは前回値。</param>
     public CommandLineViewModel(ICommandLineBackend backend, string? baseFolder = null, AppSettings? settings = null)
     {
@@ -45,10 +50,24 @@ public sealed partial class CommandLineViewModel : ObservableObject
             _searchPattern = last.SearchPattern;
             _followIgnore = last.FollowIgnore;
         }
-        _baseFolder = baseFolder is { Length: > 0 } && Directory.Exists(baseFolder) ? baseFolder
+        string? launched = s_launchFolderUsed ? null : UwView.Core.Cli.LaunchFolder.FromCli;
+        s_launchFolderUsed = true;
+        _baseFolder = launched
+            ?? (settings?.CommandBaseFolder is { Length: > 0 } atExit && Directory.Exists(atExit) ? atExit
+            : baseFolder is { Length: > 0 } && Directory.Exists(baseFolder) ? baseFolder
             : last?.BaseFolder is { Length: > 0 } before && Directory.Exists(before) ? before
-            : Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            : Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
+        RememberBaseFolder(_baseFolder);
         Refresh();
+    }
+
+    /// <summary>ターミナルのフォルダーは、この起動で最初に開いたときだけ使う。</summary>
+    private static bool s_launchFolderUsed;
+
+    /// <summary>いまの基準フォルダーを、終了時の値として覚える（保存は終了時にまとめて）。</summary>
+    private void RememberBaseFolder(string folder)
+    {
+        if (_settings is not null && folder.Length > 0 && Directory.Exists(folder)) _settings.CommandBaseFolder = folder;
     }
 
     private readonly AppSettings? _settings;
@@ -108,7 +127,11 @@ public sealed partial class CommandLineViewModel : ObservableObject
     /// <summary>［検索実行］を押せるか（誤りが無く、走っていない）。</summary>
     public bool CanRun => ErrorText.Length == 0 && !IsRunning;
 
-    partial void OnBaseFolderChanged(string value) => Refresh();
+    partial void OnBaseFolderChanged(string value)
+    {
+        RememberBaseFolder(value);
+        Refresh();
+    }
     partial void OnFilePatternChanged(string value) => Refresh();
     partial void OnSearchPatternChanged(string value) => Refresh();
     partial void OnFollowIgnoreChanged(bool value) => Refresh();

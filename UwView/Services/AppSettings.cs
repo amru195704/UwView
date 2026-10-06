@@ -265,6 +265,12 @@ public sealed class AppSettings
     /// </summary>
     public List<string> TallyHistory { get; set; } = new();
 
+    /// <summary>
+    /// 「コマンドライン」の基準フォルダー（終了時の値。次に GUI から開いたときの既定。オーナー指示 2026-10-06）。
+    /// ターミナルの -open で起動したときは、打ったフォルダーのほうを先に使う。
+    /// </summary>
+    public string? CommandBaseFolder { get; set; }
+
     /// <summary>「コマンドライン」ダイアログの履歴（新しい順・上限 <see cref="CommandHistoryLimit"/>。Finder Scope §3.1）。</summary>
     public List<CommandHistoryEntry> CommandHistory { get; set; } = new();
 

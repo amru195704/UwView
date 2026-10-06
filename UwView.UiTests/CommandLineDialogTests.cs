@@ -96,6 +96,43 @@ public class CommandLineDialogTests : IDisposable
         Assert.Equal("uvf '**/*.log' --files --no-ignore", vm.CommandText);
     }
 
+    [Fact]
+    public void 基準フォルダーは終了時の値を次の既定にし_今のタブのフォルダーより先に使う()
+    {
+        string other = Directory.CreateTempSubdirectory("uv-cmd-other-").FullName;
+        try
+        {
+            var settings = new AppSettings();
+            // 終了時の値がまだ無ければ、今のタブのファイルのフォルダー
+            var first = new CommandLineViewModel(new UvfCommandBackend(), _dir, settings);
+            Assert.Equal(_dir, first.BaseFolder);
+            Assert.Equal(_dir, settings.CommandBaseFolder);
+
+            // 使っている間に変えたら、その値が終了時の値になる（保存は終了時にまとめて）
+            first.BaseFolder = other;
+            Assert.Equal(other, settings.CommandBaseFolder);
+            first.BaseFolder = Path.Combine(other, "無いフォルダー");   // 打ちかけの・無いフォルダーは覚えない
+            Assert.Equal(other, settings.CommandBaseFolder);
+
+            // 次に GUI から開くと、今のタブのフォルダーより終了時の値が先
+            var next = new CommandLineViewModel(new UvfCommandBackend(), _dir, settings);
+            Assert.Equal(other, next.BaseFolder);
+
+            // 終了時の値のフォルダーが消えていれば、今のタブのフォルダー
+            Directory.Delete(other);
+            Assert.Equal(_dir, new CommandLineViewModel(new UvfCommandBackend(), _dir, settings).BaseFolder);
+        }
+        finally { if (Directory.Exists(other)) Directory.Delete(other, recursive: true); }
+    }
+
+    [Fact]
+    public void 画面を起動するときは打ったフォルダーを渡す()
+    {
+        var psi = new System.Diagnostics.ProcessStartInfo("x");
+        UwView.Core.Cli.LaunchFolder.Pass(psi);
+        Assert.Equal(Directory.GetCurrentDirectory(), psi.Environment[UwView.Core.Cli.LaunchFolder.Variable]);
+    }
+
     [AvaloniaFact]
     public async Task 履歴は1組で残り_次に開くと前回値で_選ぶと戻る()
     {
