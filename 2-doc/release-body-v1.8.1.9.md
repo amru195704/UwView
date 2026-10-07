@@ -1,12 +1,5 @@
 *日本語 ｜ [English](#uwview-v1819--finder-scope-english)*
 
-<!--
-  オーナー確認（公開前に消す）:
-  - 配布物は 6 つ（Mac arm64・x64／Windows x64・arm64／Linux x86_64・aarch64。2026-10-07 20:51〜21:00 作成・build 26.10.07.20。Pro の結果の窓のコマンドの行の修正と、Windows の入力欄を PowerShell と同じに分ける修正入り）。
-  - Homebrew・Scoop・Snap に出すかどうかで、「ダウンロード」の最後の行を直す。
-  - 「64 通りを自動で突き合わせ」（uv_gui_cmd_test.sh）はまだ走らせていないので、書いていない。
--->
-
 ## UwView v1.8.1.9 — Finder Scope
 
 **画面に「コマンドライン」が入りました。`uvf`・`uvp` と同じ書き方で、画面から検索できます。** 結果は本体の窓に出て、そのまま読み進められます。ターミナルから `-open` で画面に渡した結果を、画面で検索し直すこともできます。
@@ -50,9 +43,15 @@ UwView Pro には、複数行のブロック（`-seq … -range`）・伏せ字�
 - 無料版で扱えないもの：`.zip`・`.tar.gz`・OSM の `.pbf`（展開してから探してください。zip と pbf は UwView Pro が扱います）。
 - 秒数は、ある 1 台の Mac（Apple M4・10 コア・メモリ 32GB・外付け USB SSD）で 2026 年 10 月 6〜7 日に測った値です。**秒数を環境をまたいで比べないでください。**
 
-### 📥 ダウンロード
+### 📥 インストール・ダウンロード
 
-このページの下の **Assets** から取ってください。Mac は dmg（Apple シリコン〈M1〜M4〉用の `arm64`・Intel 用の `x64`）、Windows は zip（`x64`・`arm64`）、Linux は tar.gz（`x86_64`・`aarch64`）です。チェックサムは `SHA256SUMS-1.8.1.9.txt` にあります。
+```bash
+brew install --cask amru195704/uwview/uwview     # Mac（更新は brew upgrade --cask uwview）
+scoop install uwview                             # Windows（更新は scoop update uwview）
+sudo snap install uwview                         # Linux（更新は snap refresh uwview）
+```
+
+手で入れる場合は、このページの下の **Assets** から取ってください。Mac は dmg（Apple シリコン〈M1〜M4〉用の `arm64`・Intel 用の `x64`）、Windows は zip（`x64`・`arm64`）、Linux は tar.gz（`x86_64`・`aarch64`）です。チェックサムは `SHA256SUMS-1.8.1.9.txt` にあります。
 
 ```
 7bd08dc13342eb0a6d2d53fe0203a2669c0a47e82ecaa07ffeeddfe9b49bcfd3  UwView-1.8.1.9-linux-aarch64.tar.gz
@@ -64,7 +63,7 @@ bc7f89ff811f2a7a89d7681be17925095b8bf8fb15f14b055997a8bed8c05f47  UwView-1.8.1.9
 （2026-10-07 21:00 作成。macOS 版は署名・公証済み。ビルド番号は 26.10.07.20（日本時間）、Linux 版の uvf だけ 26.10.07.11（UTC）です）
 ```
 
-> 操作説明と最新情報は blog サイト（https://uvp.y42u.net/）に載せています。コマンドと画面の対比は記事「ripgrep・uvf・uvp 検索コマンド対比表」にまとめています。
+> **配布は GitHub Releases が元です。** Homebrew・Scoop・Snap も、ここのファイルを使います（Homebrew と Scoop は SHA256 を照合します）。操作説明と最新情報は blog サイト（https://uvp.y42u.net/）に載せています。コマンドと画面の対比は記事「ripgrep・uvf・uvp 検索コマンド対比表」にまとめています。
 
 ### 📣 UwView Pro 側 — 複数行のブロック・伏せ字・整形、画面で束ねる
 
@@ -140,9 +139,15 @@ Open the dialog with the **Command Line** button on the toolbar (Ctrl+Shift+K, C
 - Not handled by the free edition: `.zip`, `.tar.gz` and OSM `.pbf` (extract them first; UwView Pro handles zip and pbf).
 - Times were measured on one Mac (Apple M4, 10 cores, 32 GB, external USB SSD) on 6–7 October 2026. **Do not compare times across environments.**
 
-### 📥 Download
+### 📥 Install / download
 
-Get the files from **Assets** below: a dmg for the Mac (`arm64` for Apple silicon M1–M4, `x64` for Intel), a zip for Windows (`x64`, `arm64`), a tar.gz for Linux (`x86_64`, `aarch64`). Checksums are in `SHA256SUMS-1.8.1.9.txt`.
+```bash
+brew install --cask amru195704/uwview/uwview     # Mac (update: brew upgrade --cask uwview)
+scoop install uwview                             # Windows (update: scoop update uwview)
+sudo snap install uwview                         # Linux (update: snap refresh uwview)
+```
+
+To install by hand, get the files from **Assets** below: a dmg for the Mac (`arm64` for Apple silicon M1–M4, `x64` for Intel), a zip for Windows (`x64`, `arm64`), a tar.gz for Linux (`x86_64`, `aarch64`). Checksums are in `SHA256SUMS-1.8.1.9.txt`.
 
 ```
 7bd08dc13342eb0a6d2d53fe0203a2669c0a47e82ecaa07ffeeddfe9b49bcfd3  UwView-1.8.1.9-linux-aarch64.tar.gz
@@ -154,7 +159,7 @@ bc7f89ff811f2a7a89d7681be17925095b8bf8fb15f14b055997a8bed8c05f47  UwView-1.8.1.9
 (built 2026-10-07 21:00 JST; the macOS builds are signed and notarized. Build number: 26.10.07.20 (JST); only uvf in the Linux builds shows 26.10.07.11 (UTC))
 ```
 
-> Instructions and news are on the blog (https://uvp.y42u.net/). The article “ripgrep, uvf and uvp search commands side by side” compares the commands and the window.
+> **GitHub Releases is the source.** Homebrew, Scoop and Snap use the files here (Homebrew and Scoop check the SHA256). Instructions and news are on the blog (https://uvp.y42u.net/). The article “ripgrep, uvf and uvp search commands side by side” compares the commands and the window.
 
 ### 📣 On the UwView Pro side — multi-line blocks, masking, formatting, bundling in the window
 

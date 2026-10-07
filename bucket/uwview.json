@@ -1,21 +1,27 @@
 {
-    "version": "1.7.3.6.7",
-    "description": "巨大なログ・テキストを調べるビューア（GUI本体 + CLIの uvf を同梱）",
-    "homepage": "https://uvp.y42u.net/",
-    "license": "Proprietary",
+    "version": "1.8.1.9",
+    "description": "Open and search huge text/log files (verified up to 258 GB). GUI viewer plus the uvf command.",
+    "homepage": "https://github.com/amru195704/UwView",
+    "license": {
+        "identifier": "PolyForm-Internal-Use-1.0.0",
+        "url": "https://github.com/amru195704/UwView/blob/main/LICENSE"
+    },
     "architecture": {
         "64bit": {
-            "url": "https://github.com/amru195704/UwView/releases/download/v1.7.3.6.7/UwView-1.7.3.6.7-win-x64.zip",
-            "hash": "7c9671e0d5b96d99ae312cf04f859d8c396d1748db56ee4c0b27ea4349f47145"
+            "url": "https://github.com/amru195704/UwView/releases/download/v1.8.1.9/UwView-1.8.1.9-win-x64.zip",
+            "hash": "077db178b5bc11eafb0479b24b4ab5b70580340cd3818cb4d7c0c3f404a2ede2"
         },
         "arm64": {
-            "url": "https://github.com/amru195704/UwView/releases/download/v1.7.3.6.7/UwView-1.7.3.6.7-win-arm64.zip",
-            "hash": "8d13094f164eb90464a6eba067aeb79415799a9b429cd69f2b58d5dd7678e870"
+            "url": "https://github.com/amru195704/UwView/releases/download/v1.8.1.9/UwView-1.8.1.9-win-arm64.zip",
+            "hash": "040d5465a0ed0189f7e4787016043438ed0e64e76f35d94d0044b762907b7545"
         }
     },
-    "bin": ["uvf.exe", "UwView.Desktop.exe"],
+    "bin": "uvf.exe",
     "shortcuts": [
-        ["UwView.Desktop.exe", "UwView"]
+        [
+            "UwView.Desktop.exe",
+            "UwView"
+        ]
     ],
     "checkver": {
         "github": "https://github.com/amru195704/UwView"
@@ -28,9 +34,6 @@
             "arm64": {
                 "url": "https://github.com/amru195704/UwView/releases/download/v$version/UwView-$version-win-arm64.zip"
             }
-        },
-        "hash": {
-            "url": "https://github.com/amru195704/UwView/releases/download/v$version/SHA256SUMS-$version.txt"
         }
     }
 }

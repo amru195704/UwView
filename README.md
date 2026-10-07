@@ -10,7 +10,8 @@
 📖 **[uvf コマンド操作マニュアル](2-doc/uvf_コマンド操作マニュアル.md)** ・ 🖥 **[GUI の操作マニュアル](2-doc/UwView_操作マニュアル.md)**（[PDF](2-doc/UwView_操作マニュアル.pdf)） ・ 🧾 **[v1.7.3.6.9 リリースノート](2-doc/release-body-v1.7.3.6.9.md)**  
 ▶ **[動画で見る（YouTube・日本語）](https://www.youtube.com/playlist?list=PLVa-Z1XEnkKs)** ・ [English](https://www.youtube.com/playlist?list=PLBJs4svTLd_w) ・ [チャンネル @uwviewapp](https://www.youtube.com/@uwviewapp)
 
-> **最新版は v1.7.3.6.9「Wide Field」。** 複数のファイルを、ワイルドカード1つでまとめて探せます。平文と **7 種類の圧縮ファイル**（gz・bz2・xz・lzma・zst・lz4・br）を混ぜても1回で済み、外部のコマンドは要りません。
+> **最新版は v1.8.1.9「Finder Scope」。** 画面に「コマンドライン」が入り、`uvf` と同じ書き方で画面から検索できます（[リリースノート](2-doc/release-body-v1.8.1.9.md)）。
+> 複数のファイルを、ワイルドカード1つでまとめて探せます。平文と **7 種類の圧縮ファイル**（gz・bz2・xz・lzma・zst・lz4・br）を混ぜても1回で済み、外部のコマンドは要りません。
 > v1.7.3.6.9 では、キャッシュに載ったファイルの2回目の検索が ripgrep 以上になり、**mac・Windows・Linux の3つの OS で、総合が ripgrep などの組み合わせの 2.49／3.42／1.88 倍**でした（[3つの OS の結果](#3つの-os-で測った結果)）。
 
 ---
@@ -261,7 +262,7 @@ GUI の使い方（検索・結果一覧・ファイル一覧とタブ・ハイ�
 |---|---|
 | 📖 **uvf コマンド操作マニュアル** | [2-doc/uvf_コマンド操作マニュアル.md](2-doc/uvf_コマンド操作マニュアル.md)（書き方・オプション・圧縮・正規表現・終了コード・ripgrep との対応表・性能） |
 | 🖥 **GUI の操作マニュアル** | [2-doc/UwView_操作マニュアル.md](2-doc/UwView_操作マニュアル.md) ・ [PDF](2-doc/UwView_操作マニュアル.pdf)（GUI の構成・検索・結果一覧・ファイル一覧とタブ・ハイライタ・キー操作） |
-| 🧾 **v1.7.3.6.9 Wide Field のリリースノート** | [release-body-v1.7.3.6.9.md](2-doc/release-body-v1.7.3.6.9.md)（前の版 [v1.7.3.6.7](2-doc/release-body-v1.7.3.6.7.md)・[v1.7.3.6](2-doc/release-body-v1.7.3.6.md)） |
+| 🧾 **v1.8.1.9 Finder Scope のリリースノート** | [release-body-v1.8.1.9.md](2-doc/release-body-v1.8.1.9.md)（前の版 [v1.7.3.7](2-doc/release-body-v1.7.3.7.md)・[v1.7.3.6.9](2-doc/release-body-v1.7.3.6.9.md)・[v1.7.3.6.7](2-doc/release-body-v1.7.3.6.7.md)・[v1.7.3.6](2-doc/release-body-v1.7.3.6.md)） |
 | ▶ **動画（YouTube）** | [再生リスト「UwView:日本語」](https://www.youtube.com/playlist?list=PLVa-Z1XEnkKs) ・ [English](https://www.youtube.com/playlist?list=PLBJs4svTLd_w) ・ [チャンネル @uwviewapp](https://www.youtube.com/@uwviewapp)（v1.7.3.6 の使い方 全8テーマと、まとめの1本） |
 | 📊 **実測の全データと条件** | [ベンチマーク一覧](https://uvp.y42u.net/benchmarks/)（EmEditor・klogg・010 Editor・UltraEdit・Log Viewer・grep・ripgrep・amber を 3GB〜250GB で実測。**負けている数字もそのまま載せています**） |
 | 📖 **klogg と正直に比べ直した話** | [記事](https://uvp.y42u.net/blog/uvp-klogg-open-lose-flow-win/) |
