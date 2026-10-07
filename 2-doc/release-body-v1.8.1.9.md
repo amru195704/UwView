@@ -2,7 +2,7 @@
 
 <!--
   オーナー確認（公開前に消す）:
-  - 配布物は 6 つ（Mac arm64・x64／Windows x64・arm64／Linux x86_64・aarch64。2026-10-07 19:35〜19:43 作成。Pro の結果の窓のコマンドの行の修正入り）。
+  - 配布物は 6 つ（Mac arm64・x64／Windows x64・arm64／Linux x86_64・aarch64。2026-10-07 20:51〜21:00 作成・build 26.10.07.20。Pro の結果の窓のコマンドの行の修正と、Windows の入力欄を PowerShell と同じに分ける修正入り）。
   - Homebrew・Scoop・Snap に出すかどうかで、「ダウンロード」の最後の行を直す。
   - 「64 通りを自動で突き合わせ」（uv_gui_cmd_test.sh）はまだ走らせていないので、書いていない。
 -->
@@ -23,6 +23,7 @@ UwView Pro には、複数行のブロック（`-seq … -range`）・伏せ字�
 | 検索パターン | それより後ろ | `東京 -i`　`'K="NAME[^"]*"' -E -i` |
 
 - 2 つの欄から組み立てた **「コマンドの行」** を下に出します。［コピー］でターミナルに貼れば、同じ結果になります（Windows は PowerShell 向けのコピーもあります）。
+- 欄に入れた文字は、その OS のターミナルと同じに引数に分けます。**Windows は PowerShell と同じ**（`\` は文字のまま、`` ` `` で次の 1 文字を逃がす、`'…'` の中の `''` は `'` 1 つ）、Mac・Linux は bash・zsh と同じです。Windows で引用なしの `\d+ -E` は、PowerShell で打ったときと同じ意味になります。どの OS でも同じに書くなら、正規表現は `'…'` で囲んでください。
 - ［検索実行］で探し、結果を本体の窓に出します（1 本のファイルなら開いて結果一覧に、複数のファイルなら複数ファイルの結果に）。
 - ［ファイル展開］で、探す前に対象のファイルの一覧（本数・大きさ・`.gitignore` などで除外した本数）を確かめられます。
 - 書き方の誤りは、コマンドと同じ言葉で出して、実行しません。無料版で UwView Pro の機能（`-uniq` など）を書いたときは「UwView Pro の機能です」と出します。
@@ -54,13 +55,13 @@ UwView Pro には、複数行のブロック（`-seq … -range`）・伏せ字�
 このページの下の **Assets** から取ってください。Mac は dmg（Apple シリコン〈M1〜M4〉用の `arm64`・Intel 用の `x64`）、Windows は zip（`x64`・`arm64`）、Linux は tar.gz（`x86_64`・`aarch64`）です。チェックサムは `SHA256SUMS-1.8.1.9.txt` にあります。
 
 ```
-d7c49eeaa59a5048fc4e7ae1847172a35f4991e975232410b5fd700a91794876  UwView-1.8.1.9-linux-aarch64.tar.gz
-b77a4df9fcf7c7e497ae3b94929535deb361a0edab34cf21399f372604de7958  UwView-1.8.1.9-linux-x86_64.tar.gz
-88c0c3017d8b41f1ee5afe797305a3c9f57b8cf7e54253b2e094527b71f55cae  UwView-1.8.1.9-mac-arm64.dmg
-3c3fa70374891c69c4449ef1ddcfd82bc17a9f0ea3a056e76d58dde5762ad04a  UwView-1.8.1.9-mac-x64.dmg
-be77302e6742ee3b1c8a8d39d9b4291ac8cb7b6a838a04b96cbc351720b38b00  UwView-1.8.1.9-win-arm64.zip
-f0fc1021e9ca818546c13d988f598a57928790d3465dff11aa49e9e18160bc02  UwView-1.8.1.9-win-x64.zip
-（2026-10-07 19:43 作成。macOS 版は署名・公証済み。ビルド番号は 26.10.07.19（日本時間）、Linux 版の uvf だけ 26.10.07.10（UTC）です）
+7bd08dc13342eb0a6d2d53fe0203a2669c0a47e82ecaa07ffeeddfe9b49bcfd3  UwView-1.8.1.9-linux-aarch64.tar.gz
+bc83bfb420b8d7155efdd48a8f3e4cf0d08307c5549c63b0c3350fa861d0cea2  UwView-1.8.1.9-linux-x86_64.tar.gz
+d98bb2dcfdbab175763af3dabd523356be0da10a1809d6e0f095ce3c26e44fb1  UwView-1.8.1.9-mac-arm64.dmg
+bc7f89ff811f2a7a89d7681be17925095b8bf8fb15f14b055997a8bed8c05f47  UwView-1.8.1.9-mac-x64.dmg
+040d5465a0ed0189f7e4787016043438ed0e64e76f35d94d0044b762907b7545  UwView-1.8.1.9-win-arm64.zip
+077db178b5bc11eafb0479b24b4ab5b70580340cd3818cb4d7c0c3f404a2ede2  UwView-1.8.1.9-win-x64.zip
+（2026-10-07 21:00 作成。macOS 版は署名・公証済み。ビルド番号は 26.10.07.20（日本時間）、Linux 版の uvf だけ 26.10.07.11（UTC）です）
 ```
 
 > 操作説明と最新情報は blog サイト（https://uvp.y42u.net/）に載せています。コマンドと画面の対比は記事「ripgrep・uvf・uvp 検索コマンド対比表」にまとめています。
@@ -112,6 +113,7 @@ Open the dialog with the **Command Line** button on the toolbar (Ctrl+Shift+K, C
 | Search pattern | everything after it | `東京 -i`　`'K="NAME[^"]*"' -E -i` |
 
 - Below them, the dialog shows **the command line** built from the two fields. **Copy** it into a terminal and you get the same result (on Windows there is also a copy for PowerShell).
+- The fields are split into arguments the way your terminal does it: **PowerShell rules on Windows** (`\` stays as it is, `` ` `` escapes the next character, `''` inside `'…'` is one `'`), and bash/zsh rules on macOS and Linux. So `\d+ -E` typed without quotes means the same as in PowerShell on Windows. To use the same text on every OS, put regular expressions in `'…'`.
 - **Run** searches and shows the results in the main window (one file opens with its result list; several files appear as a multi-file result).
 - **Expand Files** lists the target files before searching (count, size, and how many were excluded by `.gitignore` and the like).
 - Mistakes are reported in the same words as the command, and nothing runs. In the free edition, a UwView Pro option (such as `-uniq`) is reported as “a UwView Pro feature”.
@@ -143,13 +145,13 @@ Open the dialog with the **Command Line** button on the toolbar (Ctrl+Shift+K, C
 Get the files from **Assets** below: a dmg for the Mac (`arm64` for Apple silicon M1–M4, `x64` for Intel), a zip for Windows (`x64`, `arm64`), a tar.gz for Linux (`x86_64`, `aarch64`). Checksums are in `SHA256SUMS-1.8.1.9.txt`.
 
 ```
-d7c49eeaa59a5048fc4e7ae1847172a35f4991e975232410b5fd700a91794876  UwView-1.8.1.9-linux-aarch64.tar.gz
-b77a4df9fcf7c7e497ae3b94929535deb361a0edab34cf21399f372604de7958  UwView-1.8.1.9-linux-x86_64.tar.gz
-88c0c3017d8b41f1ee5afe797305a3c9f57b8cf7e54253b2e094527b71f55cae  UwView-1.8.1.9-mac-arm64.dmg
-3c3fa70374891c69c4449ef1ddcfd82bc17a9f0ea3a056e76d58dde5762ad04a  UwView-1.8.1.9-mac-x64.dmg
-be77302e6742ee3b1c8a8d39d9b4291ac8cb7b6a838a04b96cbc351720b38b00  UwView-1.8.1.9-win-arm64.zip
-f0fc1021e9ca818546c13d988f598a57928790d3465dff11aa49e9e18160bc02  UwView-1.8.1.9-win-x64.zip
-(built 2026-10-07 19:43 JST; the macOS builds are signed and notarized. Build number: 26.10.07.19 (JST); only uvf in the Linux builds shows 26.10.07.10 (UTC))
+7bd08dc13342eb0a6d2d53fe0203a2669c0a47e82ecaa07ffeeddfe9b49bcfd3  UwView-1.8.1.9-linux-aarch64.tar.gz
+bc83bfb420b8d7155efdd48a8f3e4cf0d08307c5549c63b0c3350fa861d0cea2  UwView-1.8.1.9-linux-x86_64.tar.gz
+d98bb2dcfdbab175763af3dabd523356be0da10a1809d6e0f095ce3c26e44fb1  UwView-1.8.1.9-mac-arm64.dmg
+bc7f89ff811f2a7a89d7681be17925095b8bf8fb15f14b055997a8bed8c05f47  UwView-1.8.1.9-mac-x64.dmg
+040d5465a0ed0189f7e4787016043438ed0e64e76f35d94d0044b762907b7545  UwView-1.8.1.9-win-arm64.zip
+077db178b5bc11eafb0479b24b4ab5b70580340cd3818cb4d7c0c3f404a2ede2  UwView-1.8.1.9-win-x64.zip
+(built 2026-10-07 21:00 JST; the macOS builds are signed and notarized. Build number: 26.10.07.20 (JST); only uvf in the Linux builds shows 26.10.07.11 (UTC))
 ```
 
 > Instructions and news are on the blog (https://uvp.y42u.net/). The article “ripgrep, uvf and uvp search commands side by side” compares the commands and the window.
