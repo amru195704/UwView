@@ -2,7 +2,7 @@
 
 <!--
   オーナー確認（公開前に消す）:
-  - 配布物は Mac（arm64）・Windows（x64）・Linux（arm64）の 3 つ（2026-10-07 09:36 作成）。Mac x64・Windows arm64・Linux x86_64 を出すなら、作って下の一覧とチェックサムに足す。
+  - 配布物は 6 つ（Mac arm64・x64／Windows x64・arm64／Linux x86_64・aarch64。2026-10-07 19:35〜19:43 作成。Pro の結果の窓のコマンドの行の修正入り）。
   - Homebrew・Scoop・Snap に出すかどうかで、「ダウンロード」の最後の行を直す。
   - 「64 通りを自動で突き合わせ」（uv_gui_cmd_test.sh）はまだ走らせていないので、書いていない。
 -->
@@ -51,13 +51,16 @@ UwView Pro には、複数行のブロック（`-seq … -range`）・伏せ字�
 
 ### 📥 ダウンロード
 
-このページの下の **Assets** から取ってください。Mac は dmg（Apple シリコン〈M1〜M4〉用の `arm64`）、Windows は zip（`x64`）、Linux は tar.gz（`aarch64`）です。チェックサムは `SHA256SUMS-1.8.1.9.txt` にあります。
+このページの下の **Assets** から取ってください。Mac は dmg（Apple シリコン〈M1〜M4〉用の `arm64`・Intel 用の `x64`）、Windows は zip（`x64`・`arm64`）、Linux は tar.gz（`x86_64`・`aarch64`）です。チェックサムは `SHA256SUMS-1.8.1.9.txt` にあります。
 
 ```
-3b95233462fb4d7997062af932286342a607404937ee1c03ec0af50be1b4a79a  UwView-1.8.1.9-linux-aarch64.tar.gz
-4ef625346595b844a39eb64dd42f8cf8ed6b3bc69dbed540eae0ce4c363817b7  UwView-1.8.1.9-mac-arm64.dmg
-d53b4269537f7716698f3d60f5146108fb08147bc061b53471263491c7e44658  UwView-1.8.1.9-win-x64.zip
-（2026-10-07 09:36 作成。macOS 版は署名・公証済み。ビルド番号は Mac・Windows 版が 26.10.07.09（日本時間）、Linux 版は 26.10.07.00（UTC）です）
+d7c49eeaa59a5048fc4e7ae1847172a35f4991e975232410b5fd700a91794876  UwView-1.8.1.9-linux-aarch64.tar.gz
+b77a4df9fcf7c7e497ae3b94929535deb361a0edab34cf21399f372604de7958  UwView-1.8.1.9-linux-x86_64.tar.gz
+88c0c3017d8b41f1ee5afe797305a3c9f57b8cf7e54253b2e094527b71f55cae  UwView-1.8.1.9-mac-arm64.dmg
+3c3fa70374891c69c4449ef1ddcfd82bc17a9f0ea3a056e76d58dde5762ad04a  UwView-1.8.1.9-mac-x64.dmg
+be77302e6742ee3b1c8a8d39d9b4291ac8cb7b6a838a04b96cbc351720b38b00  UwView-1.8.1.9-win-arm64.zip
+f0fc1021e9ca818546c13d988f598a57928790d3465dff11aa49e9e18160bc02  UwView-1.8.1.9-win-x64.zip
+（2026-10-07 19:43 作成。macOS 版は署名・公証済み。ビルド番号は 26.10.07.19（日本時間）、Linux 版の uvf だけ 26.10.07.10（UTC）です）
 ```
 
 > 操作説明と最新情報は blog サイト（https://uvp.y42u.net/）に載せています。コマンドと画面の対比は記事「ripgrep・uvf・uvp 検索コマンド対比表」にまとめています。
@@ -137,13 +140,16 @@ Open the dialog with the **Command Line** button on the toolbar (Ctrl+Shift+K, C
 
 ### 📥 Download
 
-Get the files from **Assets** below: a dmg for the Mac (`arm64` for Apple silicon M1–M4), a zip for Windows (`x64`), a tar.gz for Linux (`aarch64`). Checksums are in `SHA256SUMS-1.8.1.9.txt`.
+Get the files from **Assets** below: a dmg for the Mac (`arm64` for Apple silicon M1–M4, `x64` for Intel), a zip for Windows (`x64`, `arm64`), a tar.gz for Linux (`x86_64`, `aarch64`). Checksums are in `SHA256SUMS-1.8.1.9.txt`.
 
 ```
-3b95233462fb4d7997062af932286342a607404937ee1c03ec0af50be1b4a79a  UwView-1.8.1.9-linux-aarch64.tar.gz
-4ef625346595b844a39eb64dd42f8cf8ed6b3bc69dbed540eae0ce4c363817b7  UwView-1.8.1.9-mac-arm64.dmg
-d53b4269537f7716698f3d60f5146108fb08147bc061b53471263491c7e44658  UwView-1.8.1.9-win-x64.zip
-(built 2026-10-07 09:36 JST; the macOS build is signed and notarized. Build numbers: 26.10.07.09 (JST) for macOS and Windows, 26.10.07.00 (UTC) for Linux)
+d7c49eeaa59a5048fc4e7ae1847172a35f4991e975232410b5fd700a91794876  UwView-1.8.1.9-linux-aarch64.tar.gz
+b77a4df9fcf7c7e497ae3b94929535deb361a0edab34cf21399f372604de7958  UwView-1.8.1.9-linux-x86_64.tar.gz
+88c0c3017d8b41f1ee5afe797305a3c9f57b8cf7e54253b2e094527b71f55cae  UwView-1.8.1.9-mac-arm64.dmg
+3c3fa70374891c69c4449ef1ddcfd82bc17a9f0ea3a056e76d58dde5762ad04a  UwView-1.8.1.9-mac-x64.dmg
+be77302e6742ee3b1c8a8d39d9b4291ac8cb7b6a838a04b96cbc351720b38b00  UwView-1.8.1.9-win-arm64.zip
+f0fc1021e9ca818546c13d988f598a57928790d3465dff11aa49e9e18160bc02  UwView-1.8.1.9-win-x64.zip
+(built 2026-10-07 19:43 JST; the macOS builds are signed and notarized. Build number: 26.10.07.19 (JST); only uvf in the Linux builds shows 26.10.07.10 (UTC))
 ```
 
 > Instructions and news are on the blog (https://uvp.y42u.net/). The article “ripgrep, uvf and uvp search commands side by side” compares the commands and the window.
