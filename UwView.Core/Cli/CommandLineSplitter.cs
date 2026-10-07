@@ -5,9 +5,16 @@ namespace UwView.Core.Cli;
 /// <summary>
 /// 「コマンドライン」ダイアログ（v1.8.0 Finder Scope §7.2）の入力欄を、コマンドの引数の列（argv）にする係と、その逆。
 ///
-/// 分け方は POSIX のシェルと同じ：空白で区切る、<c>'…'</c> の中はそのまま、<c>"…"</c> の中は <c>\"</c> <c>\\</c> <c>\$</c> <c>\`</c> だけを逃がす、
-/// 引用の外の <c>\</c> は次の 1 文字をそのまま。<b>展開（<c>*</c> <c>?</c> <c>$</c> <c>~</c>）はしない</b>——ファイルの指定はコマンドの中で広げるので、
-/// シェルに任せたときと同じ argv になる。OS で規則を変えない（GUI の中ではシェルを通らない）。
+/// 分け方は 2 通り（<see cref="ShellStyle"/>）。画面の入力欄は OS のシェルに合わせる（<see cref="Native"/>。Windows は PowerShell、
+/// ほかは POSIX。オーナー裁定 2026-10-07：Windows でターミナルの書き方をそのまま移すと、<c>\d+</c> の <c>\</c> が消えて結果が変わったため）。
+/// <list type="bullet">
+///   <item>POSIX（bash・zsh と同じ）：空白で区切る、<c>'…'</c> の中はそのまま、<c>"…"</c> の中は <c>\"</c> <c>\\</c> <c>\$</c> <c>\`</c> だけを逃がす、
+///         引用の外の <c>\</c> は次の 1 文字をそのまま。</item>
+///   <item>PowerShell：空白で区切る、<c>'…'</c> の中はそのまま（<c>''</c> で <c>'</c> 1 つ）、<c>"…"</c> の中は <c>`</c> で次の 1 文字を逃がし <c>""</c> で <c>"</c> 1 つ、
+///         引用の外も <c>`</c> で逃がす。<c>\</c> は どこでも文字のまま。‘ ’ ‚ ‛ は <c>'</c>、“ ” „ は <c>"</c> と同じに読む（PowerShell と同じ）。</item>
+/// </list>
+/// どちらも<b>展開（<c>*</c> <c>?</c> <c>$</c> <c>~</c>・カンマの配列）はしない</b>——ファイルの指定はコマンドの中で広げるので、
+/// シェルに任せたときと同じ argv になる（GUI の中ではシェルを通らない）。
 ///
 /// 逆向き（<see cref="Join"/>）は、そのままでは別の意味になる引数だけ <c>'…'</c> で囲む。
 /// 「分ける → 組み立てる → 分ける」で同じ argv に戻る（完了条件 #4）。
@@ -17,7 +24,17 @@ public static class CommandLineSplitter
     /// <summary>分けた結果。<see cref="Error"/> が null でなければ書き方の誤り（日英）。</summary>
     public sealed record Result(IReadOnlyList<string> Args, (string Ja, string En)? Error);
 
-    /// <summary>入力欄の文字を引数の列に分ける。</summary>
+    /// <summary>分け方。</summary>
+    public enum ShellStyle { Posix, PowerShell }
+
+    /// <summary>この OS のターミナルの分け方（Windows は PowerShell、ほかは POSIX）。画面の入力欄に使う。</summary>
+    public static ShellStyle Native => OperatingSystem.IsWindows() ? ShellStyle.PowerShell : ShellStyle.Posix;
+
+    /// <summary>入力欄の文字を、その分け方で引数の列に分ける。</summary>
+    public static Result Split(string? text, ShellStyle style)
+        => style == ShellStyle.PowerShell ? SplitPowerShell(text) : Split(text);
+
+    /// <summary>入力欄の文字を引数の列に分ける（POSIX。コマンドの行 <see cref="Join"/> を分け直すときもこれ）。</summary>
     public static Result Split(string? text)
     {
         var args = new List<string>();
@@ -75,6 +92,78 @@ public static class CommandLineSplitter
                     cur.Append(c);
                     i++;
                     break;
+            }
+        }
+        if (inArg) args.Add(cur.ToString());
+        return new Result(args, null);
+    }
+
+    private static bool IsSingleQuote(char c) => c is '\'' or '\u2018' or '\u2019' or '\u201A' or '\u201B';
+    private static bool IsDoubleQuote(char c) => c is '"' or '\u201C' or '\u201D' or '\u201E';
+
+    /// <summary>PowerShell と同じに分ける（<c>\</c> は文字のまま、逃がしは <c>`</c>）。</summary>
+    private static Result SplitPowerShell(string? text)
+    {
+        var args = new List<string>();
+        if (string.IsNullOrEmpty(text)) return new Result(args, null);
+        var cur = new StringBuilder();
+        bool inArg = false;
+        int i = 0;
+        while (i < text.Length)
+        {
+            char c = text[i];
+            if (c is ' ' or '\t' or '\n' or '\r')
+            {
+                if (inArg) { args.Add(cur.ToString()); cur.Clear(); inArg = false; }
+                i++;
+                continue;
+            }
+            inArg = true;
+            if (IsSingleQuote(c))
+            {
+                i++;
+                while (true)
+                {
+                    if (i >= text.Length) return Unclosed('\'');
+                    char d = text[i];
+                    if (IsSingleQuote(d))
+                    {
+                        if (i + 1 < text.Length && IsSingleQuote(text[i + 1])) { cur.Append(d); i += 2; continue; }   // '' は ' 1 つ
+                        i++;
+                        break;
+                    }
+                    cur.Append(d);
+                    i++;
+                }
+            }
+            else if (IsDoubleQuote(c))
+            {
+                i++;
+                while (true)
+                {
+                    if (i >= text.Length) return Unclosed('"');
+                    char d = text[i];
+                    if (d == '`' && i + 1 < text.Length) { cur.Append(text[i + 1]); i += 2; continue; }
+                    if (IsDoubleQuote(d))
+                    {
+                        if (i + 1 < text.Length && IsDoubleQuote(text[i + 1])) { cur.Append(d); i += 2; continue; }   // "" は " 1 つ
+                        i++;
+                        break;
+                    }
+                    cur.Append(d);
+                    i++;
+                }
+            }
+            else if (c == '`')
+            {
+                if (i + 1 >= text.Length) { cur.Append('`'); i++; }          // 末尾の ` はそのまま
+                else if (text[i + 1] == '\n') i += 2;                          // 行の続き
+                else { cur.Append(text[i + 1]); i += 2; }
+            }
+            else
+            {
+                cur.Append(c);
+                i++;
             }
         }
         if (inArg) args.Add(cur.ToString());

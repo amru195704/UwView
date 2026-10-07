@@ -123,4 +123,58 @@ public class CommandLineSplitterTests
     [InlineData("", "''")]
     public void PowerShell向けの引用(string arg, string expected)
         => Assert.Equal(expected, CommandLineSplitter.QuotePowerShell(arg));
+
+    // Windows の画面の入力欄は PowerShell と同じに分ける（オーナー裁定 2026-10-07）
+    [Theory]
+    [InlineData("\\d+ -E", new[] { "\\d+", "-E" })]                          // \ は文字のまま（POSIX なら d+）
+    [InlineData("C:\\logs\\*.log", new[] { "C:\\logs\\*.log" })]
+    [InlineData("'it''s'", new[] { "it's" })]
+    [InlineData("'k=\"x\"' -E", new[] { "k=\"x\"", "-E" })]
+    [InlineData("\"say \"\"hi\"\"\"", new[] { "say \"hi\"" })]
+    [InlineData("\"a`\"b\"", new[] { "a\"b" })]
+    [InlineData("a` b c", new[] { "a b", "c" })]
+    [InlineData("\u2018k=\"x\"\u2019", new[] { "k=\"x\"" })]               // ‘ ’ も ' と同じ
+    [InlineData("'^(?=.*User: (\\S+))' -format '$1' --csv", new[] { "^(?=.*User: (\\S+))", "-format", "$1", "--csv" })]
+    [InlineData("$1,$2", new[] { "$1,$2" })]                                    // 展開・配列にしない
+    [InlineData("東京　駅 -i", new[] { "東京　駅", "-i" })]
+    [InlineData("''", new[] { "" })]
+    [InlineData("", new string[0])]
+    public void PowerShellと同じに分ける(string text, string[] expected)
+    {
+        var r = CommandLineSplitter.Split(text, CommandLineSplitter.ShellStyle.PowerShell);
+        Assert.Null(r.Error);
+        Assert.Equal(expected, r.Args);
+    }
+
+    [Theory]
+    [InlineData("'abc")]
+    [InlineData("\"abc")]
+    [InlineData("'it''s")]
+    public void PowerShellでも閉じていない引用符は誤り(string text)
+        => Assert.NotNull(CommandLineSplitter.Split(text, CommandLineSplitter.ShellStyle.PowerShell).Error);
+
+    [Fact]
+    public void PowerShell向けに組み立てて分けると元に戻る_200通り()
+    {
+        var rnd = new Random(1007);
+        for (int round = 0; round < 200; round++)
+        {
+            var args = new List<string>();
+            for (int k = rnd.Next(1, 6); k > 0; k--)
+            {
+                var sb = new StringBuilder();
+                for (int n = rnd.Next(0, 7); n > 0; n--) sb.Append(Pieces[rnd.Next(Pieces.Length)]);
+                args.Add(sb.ToString());
+            }
+            string line = CommandLineSplitter.JoinPowerShell(args);
+            var back = CommandLineSplitter.Split(line, CommandLineSplitter.ShellStyle.PowerShell);
+            Assert.Null(back.Error);
+            Assert.True(args.SequenceEqual(back.Args), $"{string.Join(" | ", args)} → {line} → {string.Join(" | ", back.Args)}");
+        }
+    }
+
+    [Fact]
+    public void 画面の分け方はOSのターミナルと同じ()
+        => Assert.Equal(OperatingSystem.IsWindows() ? CommandLineSplitter.ShellStyle.PowerShell : CommandLineSplitter.ShellStyle.Posix,
+                        CommandLineSplitter.Native);
 }

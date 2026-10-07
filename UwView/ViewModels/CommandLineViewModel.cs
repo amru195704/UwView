@@ -89,6 +89,18 @@ public sealed partial class CommandLineViewModel : ObservableObject
 
     public string Tool => _backend.Tool;
 
+    /// <summary>
+    /// 入力欄の分け方。その OS のターミナルと同じ（Windows は PowerShell：<c>\\</c> は文字のまま、逃がしは <c>`</c>。ほかは bash・zsh と同じ）。
+    /// 下に出す「コマンドの行」は今までどおり POSIX の形（Windows は［コピー（PowerShell）］も出す）。
+    /// </summary>
+    public CommandLineSplitter.ShellStyle InputStyle
+    {
+        get => _inputStyle;
+        set { _inputStyle = value; Refresh(); }
+    }
+
+    private CommandLineSplitter.ShellStyle _inputStyle = CommandLineSplitter.Native;
+
     [ObservableProperty] private string _baseFolder;
     [ObservableProperty] private string _filePattern = "";
     [ObservableProperty] private string _searchPattern = "";
@@ -146,14 +158,14 @@ public sealed partial class CommandLineViewModel : ObservableObject
     {
         string text = FilePattern.Trim();
         if (text.Length == 0) return null;
-        if (text[0] is '\'' or '"' && CommandLineSplitter.Split(text) is { Error: null, Args: [string one] }) return one;
+        if (text[0] is '\'' or '"' && CommandLineSplitter.Split(text, InputStyle) is { Error: null, Args: [string one] }) return one;
         return text;
     }
 
     /// <summary>2 つの欄から、コマンドの引数の列（argv）を作る（§7.2）。誤りがあれば null と言葉を返す。</summary>
     public (IReadOnlyList<string>? Argv, (string Ja, string En)? Error) BuildArgv()
     {
-        var split = CommandLineSplitter.Split(SearchPattern);
+        var split = CommandLineSplitter.Split(SearchPattern, InputStyle);
         if (split.Error is { } bad) return (null, bad);
         var argv = new List<string>();
         // -open は画面の中では要らない（書いても外す。§5.1）。コマンドの行も外した形で出す
@@ -175,7 +187,7 @@ public sealed partial class CommandLineViewModel : ObservableObject
     }
 
     /// <summary>検索パターンに <c>-open</c> を書いたか（外して走らせ、その旨を出す）。</summary>
-    private bool OpenTyped => CommandLineSplitter.Split(SearchPattern).Args.Contains("-open");
+    private bool OpenTyped => CommandLineSplitter.Split(SearchPattern, InputStyle).Args.Contains("-open");
 
     private void Refresh()
     {
@@ -363,7 +375,7 @@ public sealed partial class CommandLineViewModel : ObservableObject
     /// <summary>［作り直す…］：検索パターンに <c>--rebuild</c> を足す（コマンドの行にも出る。確認は画面がする）。</summary>
     public void AddRebuild()
     {
-        if (!CommandLineSplitter.Split(SearchPattern).Args.Contains("--rebuild"))
+        if (!CommandLineSplitter.Split(SearchPattern, InputStyle).Args.Contains("--rebuild"))
             SearchPattern = (SearchPattern.TrimEnd() + " --rebuild").TrimStart();
     }
 

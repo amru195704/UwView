@@ -50,6 +50,16 @@ public class CommandLineDialogTests : IDisposable
     public void コマンドの行は2つの欄から作る(string files, string search, string expected)
         => Assert.Equal(expected, Vm(files, search).CommandText);
 
+    [Theory]
+    [InlineData(CommandLineSplitter.ShellStyle.PowerShell, "uvf a.log '\\d+' -E")]   // Windows：PowerShell と同じく \ は残る
+    [InlineData(CommandLineSplitter.ShellStyle.Posix, "uvf a.log d+ -E")]            // Mac・Linux：bash と同じく \ で逃がす
+    public void 入力欄はOSのターミナルと同じに分ける(CommandLineSplitter.ShellStyle style, string expected)
+    {
+        var vm = new CommandLineViewModel(new UvfCommandBackend(), _dir) { InputStyle = style, FilePattern = "a.log", SearchPattern = "\\d+ -E" };
+        Assert.Equal(expected, vm.CommandText);
+        Assert.Equal("", vm.ErrorText);
+    }
+
     [Fact]
     public void 除外のチェックを外すと_no_ignore_と同じ()
     {
