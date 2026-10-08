@@ -38,6 +38,7 @@ mkdir -p "${OUTDIR}" "${DOCKER_DIR}/nuget"
 docker run --rm \
   -v "${GIT}:/src:ro" -v "${OUTDIR}:/out" -v "${DOCKER_DIR}/nuget:/root/.nuget/packages" \
   -e EDITION="${EDITION:-}" \
+  -e UV_BUILD_NUMBER="${UV_BUILD_NUMBER:-$(date +%y.%m.%d.%H)}" \
   "${IMAGE}" bash -c "
     set -euo pipefail
     mkdir -p /work
