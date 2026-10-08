@@ -532,6 +532,38 @@ public class TextView : Control
     /// <summary>末尾へ（Tail 追従用）。</summary>
     public void GoToEnd() => ScrollToEnd();
 
+    // ── キーの割り当てから呼ぶ操作（v1.8.2 extFS E-3。j・k・h・l・^・$・g）──
+
+    /// <summary>行単位で上下へ動かす（j・k。数字を前に打てば N 行）。</summary>
+    public void ScrollLines(int delta) => ScrollByLines(delta);
+
+    /// <summary>横へ文字単位で動かす（h・l）。</summary>
+    public void ScrollColumns(int delta) => SetHOffset(_hOffset + delta * CellWidth);
+
+    /// <summary>行の左端へ（^）。</summary>
+    public void ScrollToLineStart() => SetHOffset(0);
+
+    /// <summary>見えている行のうち一番長い行の右端へ（$）。</summary>
+    public void ScrollToLineEnd() => SetHOffset(double.MaxValue);
+
+    /// <summary>先頭へ（g）。</summary>
+    public void GoToStart() => ScrollToHome();
+
+    /// <summary>ダブルクリックで選んだ語（* と # で探す）。選んでいなければ null。</summary>
+    public string? SelectedWord
+    {
+        get
+        {
+            if (_wordSel is not { } w || Doc is not { } doc) return null;
+            try
+            {
+                string line = doc.GetLine(w.Line);
+                return w.End <= line.Length && w.Start < w.End ? line[w.Start..w.End] : null;
+            }
+            catch (Exception e) when (e is IOException or ObjectDisposedException or InvalidOperationException) { return null; }
+        }
+    }
+
     public void JumpToPercent(double pct)
     {
         if (_session is null) return;

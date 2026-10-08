@@ -131,6 +131,9 @@ public sealed class AppSettings
     /// <summary>結果の一覧に出すもの（0=当たり＋ブックマーク・1=ブックマークだけ・2=当たりだけ。v1.8.2 extFS E-2）。</summary>
     public int ResultListMode { get; set; }
 
+    /// <summary>キーの割り当て（［標準］と違う操作だけ。操作の名前 → キー。v1.8.2 extFS E-3）。</summary>
+    public Dictionary<string, List<string>>? KeyBindings { get; set; }
+
     // ── Ver1.1: B Follow 中の自動更新 ──
     public bool FollowAutoRefresh { get; set; } = true;
 

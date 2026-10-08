@@ -20,6 +20,38 @@ public enum ShortcutAction
     LeaveInput,
     /// <summary>「コマンドライン」ダイアログを開く（Ctrl+Shift+K・Mac は ⌘⇧K。v1.8.0 Finder Scope §2）。</summary>
     OpenCommandLine,
+    /// <summary>設定の画面を開く（Ctrl＋,・Mac は ⌘,。v1.8.2 extFS E-3）。</summary>
+    OpenSettings,
+
+    // ── v1.8.2 extFS E-3 §4.3 で足した操作（［vi・less 風］でキーが付く。［標準］ではキーなし）──
+    /// <summary>1 行下（j。数字を前に打てば N 行）。</summary>
+    LineDown,
+    /// <summary>1 行上（k）。</summary>
+    LineUp,
+    /// <summary>左へ横に動かす（h）。</summary>
+    ScrollLeft,
+    /// <summary>右へ横に動かす（l）。</summary>
+    ScrollRight,
+    /// <summary>行の左端へ（^）。</summary>
+    LineLeftEnd,
+    /// <summary>行の右端へ（$）。</summary>
+    LineRightEnd,
+    /// <summary>数字＋g でその行へ、g だけなら先頭へ。</summary>
+    GoToLine,
+    /// <summary>末尾へ（G）。</summary>
+    GoToEnd,
+    /// <summary>選んだ語の次を探す（*）。</summary>
+    SearchWordNext,
+    /// <summary>選んだ語の前を探す（#）。</summary>
+    SearchWordPrev,
+    /// <summary>結果の一覧の切り替え（v）。</summary>
+    CycleResultList,
+    /// <summary>結果の一覧の窓を大きく（+）。</summary>
+    ResultListBigger,
+    /// <summary>結果の一覧の窓を小さく（-）。</summary>
+    ResultListSmaller,
+    /// <summary>開いているファイルを選ぶ小さな窓（Ctrl＋Shift＋O）。</summary>
+    OpenFileSwitcher,
 }
 
 /// <summary>
@@ -33,38 +65,19 @@ public static class ShortcutKeys
     /// <summary>キーから動きを決める（割り当てが無ければ null）。</summary>
     /// <param name="symbol">押したキーが表す文字（配列によらず <c>[</c> <c>]</c> を見分けるため）。</param>
     /// <param name="typing">文字を打つ欄（検索欄・ジャンプ欄・Pro の編集中の本文）にいるか。</param>
+    /// <remarks>割り当ては設定で変えられる（<see cref="UwView.Services.KeyBindings"/>。v1.8.2 extFS E-3）。</remarks>
     public static ShortcutAction? Map(Key key, KeyModifiers mods, string? symbol, bool typing, bool mac)
+        => UwView.Services.KeyBindings.For(mac).Find(key, mods, symbol, typing, mac);
+
+    // ── 数字の前置き（5j で 5 行下・120g で 120 行目へ）──
+    private static int _count;
+
+    /// <summary>打った数字（無ければ null）を受け取って消す。</summary>
+    public static int? TakeCount()
     {
-        var primary = mac ? KeyModifiers.Meta : KeyModifiers.Control;
-        var relevant = mods & (KeyModifiers.Control | KeyModifiers.Meta | KeyModifiers.Shift | KeyModifiers.Alt);
-
-        if (relevant == primary)
-            switch (key)
-            {
-                case Key.F: return ShortcutAction.FocusSearch;
-                case Key.L: return ShortcutAction.FocusJump;
-                case Key.B: return ShortcutAction.ToggleBookmark;
-                case Key.G when mac: return ShortcutAction.NextHit;
-            }
-        if (relevant == (primary | KeyModifiers.Shift))
-            switch (key)
-            {
-                case Key.F: return ShortcutAction.ToggleTail;
-                case Key.G when mac: return ShortcutAction.PrevHit;
-                case Key.K: return ShortcutAction.OpenCommandLine;
-            }
-        if (key == Key.F3 && relevant == KeyModifiers.None) return ShortcutAction.NextHit;
-        if (key == Key.F3 && relevant == KeyModifiers.Shift) return ShortcutAction.PrevHit;
-        if (key == Key.F5 && relevant == KeyModifiers.None) return ShortcutAction.Reload;
-        if (key == Key.Escape && relevant == KeyModifiers.None) return typing ? ShortcutAction.LeaveInput : null;
-        if (typing) return null;
-
-        // AltGr（Ctrl+Alt）で打つ配列もあるので、Cmd や Ctrl だけのときを除いて文字で見る
-        bool plainChar = (relevant & KeyModifiers.Meta) == 0
-                      && ((relevant & KeyModifiers.Control) == 0 || (relevant & KeyModifiers.Alt) != 0);
-        if (plainChar && symbol == "[") return ShortcutAction.PrevBookmark;
-        if (plainChar && symbol == "]") return ShortcutAction.NextBookmark;
-        return null;
+        int n = _count;
+        _count = 0;
+        return n > 0 ? n : null;
     }
 
     /// <summary>
@@ -78,8 +91,23 @@ public static class ShortcutKeys
         EventHandler<KeyEventArgs> handler = (_, e) =>
         {
             if (e.Handled) return;
-            if (Map(e.Key, e.KeyModifiers, e.KeySymbol, typing(), OperatingSystem.IsMacOS()) is not { } action) return;
-            if (run(action)) e.Handled = true;
+            bool inText = typing();
+            // 文字を打つ欄の外で、修飾なしの数字は「何行」の前置き（j・k・g が使う）
+            if (!inText && (e.KeyModifiers & (KeyModifiers.Control | KeyModifiers.Meta | KeyModifiers.Alt)) == 0
+                && e.KeySymbol is { Length: 1 } digit && char.IsAsciiDigit(digit[0]))
+            {
+                _count = (int)Math.Min(int.MaxValue / 10, (long)_count * 10 + (digit[0] - '0'));
+                e.Handled = true;
+                return;
+            }
+            var action = Map(e.Key, e.KeyModifiers, e.KeySymbol, inText, OperatingSystem.IsMacOS());
+            if (action is null)
+            {
+                if (e.KeySymbol is { Length: > 0 }) _count = 0;   // ほかのキーを打ったら前置きは捨てる
+                return;
+            }
+            if (run(action.Value)) e.Handled = true;
+            _count = 0;
         };
         TopLevel? attached = null;
         void Hook()

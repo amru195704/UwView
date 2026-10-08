@@ -264,6 +264,72 @@
   <data name="TipResultShowBookmarks" xml:space="preserve"><value>Show only bookmarked lines (also used when there is no search)</value></data>
   <data name="TipResultShowHits" xml:space="preserve"><value>Show only search hits (bookmarked lines still get the mark)</value></data>
   <data name="BookmarkRangeTooMany" xml:space="preserve"><value>You can bookmark up to {0} lines at once. Select a smaller range</value></data>
+  <data name="KeyAction_FocusSearch" xml:space="preserve"><value>Go to the search box</value></data>
+  <data name="KeyAction_NextHit" xml:space="preserve"><value>Next hit</value></data>
+  <data name="KeyAction_PrevHit" xml:space="preserve"><value>Previous hit</value></data>
+  <data name="KeyAction_FocusJump" xml:space="preserve"><value>Go to the jump box</value></data>
+  <data name="KeyAction_ToggleBookmark" xml:space="preserve"><value>Toggle bookmark (all lines of a selection)</value></data>
+  <data name="KeyAction_PrevBookmark" xml:space="preserve"><value>Previous bookmark</value></data>
+  <data name="KeyAction_NextBookmark" xml:space="preserve"><value>Next bookmark</value></data>
+  <data name="KeyAction_ToggleTail" xml:space="preserve"><value>Toggle follow</value></data>
+  <data name="KeyAction_Reload" xml:space="preserve"><value>Reload</value></data>
+  <data name="KeyAction_LeaveInput" xml:space="preserve"><value>Leave the input box</value></data>
+  <data name="KeyAction_OpenCommandLine" xml:space="preserve"><value>Open the Command Line</value></data>
+  <data name="KeyAction_OpenSettings" xml:space="preserve"><value>Open Settings</value></data>
+  <data name="KeyAction_LineDown" xml:space="preserve"><value>Line down (type a number first for N lines)</value></data>
+  <data name="KeyAction_LineUp" xml:space="preserve"><value>Line up (type a number first for N lines)</value></data>
+  <data name="KeyAction_ScrollLeft" xml:space="preserve"><value>Scroll left</value></data>
+  <data name="KeyAction_ScrollRight" xml:space="preserve"><value>Scroll right</value></data>
+  <data name="KeyAction_LineLeftEnd" xml:space="preserve"><value>To the left end of the line</value></data>
+  <data name="KeyAction_LineRightEnd" xml:space="preserve"><value>To the right end of the line</value></data>
+  <data name="KeyAction_GoToLine" xml:space="preserve"><value>Go to line (number + key) / to the top</value></data>
+  <data name="KeyAction_GoToEnd" xml:space="preserve"><value>Go to the end</value></data>
+  <data name="KeyAction_SearchWordNext" xml:space="preserve"><value>Search the selected word forward</value></data>
+  <data name="KeyAction_SearchWordPrev" xml:space="preserve"><value>Search the selected word backward</value></data>
+  <data name="KeyAction_CycleResultList" xml:space="preserve"><value>Switch what the result list shows</value></data>
+  <data name="KeyAction_ResultListBigger" xml:space="preserve"><value>Make the result list larger</value></data>
+  <data name="KeyAction_ResultListSmaller" xml:space="preserve"><value>Make the result list smaller</value></data>
+  <data name="KeyAction_OpenFileSwitcher" xml:space="preserve"><value>Choose an open file</value></data>
+  <data name="SettingsTabGeneral" xml:space="preserve"><value>General</value></data>
+  <data name="SettingsTabKeys" xml:space="preserve"><value>Keys</value></data>
+  <data name="ToolsMenu" xml:space="preserve"><value>Tools</value></data>
+  <data name="KeysPresetLabel" xml:space="preserve"><value>Preset:</value></data>
+  <data name="KeysPresetStandard" xml:space="preserve"><value>Standard</value></data>
+  <data name="KeysPresetVi" xml:space="preserve"><value>vi / less</value></data>
+  <data name="TipKeysPresetStandard" xml:space="preserve"><value>Back to the 1.8.1 keys (new actions such as j and k have no key)</value></data>
+  <data name="TipKeysPresetVi" xml:space="preserve"><value>Standard plus j k h l g G n N * # m f v + - and Ctrl+Shift+O (same as klogg)</value></data>
+  <data name="KeysColAction" xml:space="preserve"><value>Action</value></data>
+  <data name="KeysColKeys" xml:space="preserve"><value>Keys</value></data>
+  <data name="KeysColDefault" xml:space="preserve"><value>Default</value></data>
+  <data name="KeysResetOne" xml:space="preserve"><value>Reset</value></data>
+  <data name="TipKeysResetOne" xml:space="preserve"><value>Reset this action to its default keys</value></data>
+  <data name="KeysClearOne" xml:space="preserve"><value>Clear</value></data>
+  <data name="TipKeysClearOne" xml:space="preserve"><value>Remove the keys from this action</value></data>
+  <data name="KeysCaptureIdle" xml:space="preserve"><value>Select an action in the list, then press the new key here (up to two keys per action).</value></data>
+  <data name="KeysCapturePrompt" xml:space="preserve"><value>Press the key for "{0}" (Esc cancels; with two keys already, the second is replaced)</value></data>
+  <data name="KeysCaptureCanceled" xml:space="preserve"><value>Canceled. Press another key to assign it.</value></data>
+  <data name="KeysConflict" xml:space="preserve"><value>{0} is used by "{1}". Which should keep it? (Moving it to "{2}" removes it from "{1}")</value></data>
+  <data name="KeysConflictMove" xml:space="preserve"><value>Move to "{0}"</value></data>
+  <data name="TipKeysConflictMove" xml:space="preserve"><value>Give this key to the selected action and remove it from the other</value></data>
+  <data name="KeysConflictKeep" xml:space="preserve"><value>Keep on "{0}"</value></data>
+  <data name="TipKeysConflictKeep" xml:space="preserve"><value>Leave the key where it is</value></data>
+  <data name="KeysAlready" xml:space="preserve"><value>{0} is already assigned</value></data>
+  <data name="KeysAssigned" xml:space="preserve"><value>Assigned {0} to "{1}"</value></data>
+  <data name="KeysDigitReserved" xml:space="preserve"><value>Digits are reserved as a count (5j moves five lines, 120g goes to line 120)</value></data>
+  <data name="KeysResetAll" xml:space="preserve"><value>Reset all</value></data>
+  <data name="TipKeysResetAll" xml:space="preserve"><value>Reset every action to the Standard keys</value></data>
+  <data name="KeysExport" xml:space="preserve"><value>Export…</value></data>
+  <data name="TipKeysExport" xml:space="preserve"><value>Save these keys as a .uwvkeys file for another computer</value></data>
+  <data name="KeysImport" xml:space="preserve"><value>Import…</value></data>
+  <data name="TipKeysImport" xml:space="preserve"><value>Load a .uwvkeys file and replace these keys</value></data>
+  <data name="KeysPresetApplied" xml:space="preserve"><value>Keys replaced</value></data>
+  <data name="KeysExported" xml:space="preserve"><value>Exported</value></data>
+  <data name="KeysImported" xml:space="preserve"><value>Imported</value></data>
+  <data name="KeysImportBad" xml:space="preserve"><value>Could not import (not a .uwvkeys file)</value></data>
+  <data name="KeysTypingNote" xml:space="preserve"><value>While you type in a box such as the search box, single-character keys (j, k, [ …) type the character.</value></data>
+  <data name="FileSwitcherTitle" xml:space="preserve"><value>Open files</value></data>
+  <data name="FileSwitcherWatermark" xml:space="preserve"><value>Type part of a name (Enter to switch, Esc to close)</value></data>
+  <data name="SelectWordFirst" xml:space="preserve"><value>Double-click the word to search first</value></data>
   <data name="ReloadNotAvailable" xml:space="preserve"><value>This tab cannot be reloaded</value></data>
   <data name="ChangeTruncated" xml:space="preserve"><value>{0} was truncated</value></data>
   <data name="ChangeRewritten" xml:space="preserve"><value>{0} was rewritten</value></data>

@@ -9,6 +9,9 @@
     <NativeMenu.Menu>
         <NativeMenu>
             <NativeMenuItem Header="About UwView" Click="OnAboutClick" />
+            <NativeMenuItemSeparator />
+            <!-- 設定の画面（キーの割り当てなど。v1.8.2 extFS E-3） -->
+            <NativeMenuItem Header="設定…" Click="OnSettingsClick" Gesture="Cmd+OemComma" />
         </NativeMenu>
     </NativeMenu.Menu>
 

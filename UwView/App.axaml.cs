@@ -216,8 +216,12 @@ public partial class App : Application
     private void SetupAppMenu()
     {
         bool ja = Localizer.Instance.Culture.TwoLetterISOLanguageName == "ja";
-        if (Avalonia.Controls.NativeMenu.GetMenu(this) is { Items: [Avalonia.Controls.NativeMenuItem about, ..] })
+        // 定義順: [0]=About, [1]=区切り, [2]=設定
+        if (Avalonia.Controls.NativeMenu.GetMenu(this) is not { } menu) return;
+        if (menu.Items is [Avalonia.Controls.NativeMenuItem about, ..])
             about.Header = ja ? "UwView について" : "About UwView";
+        if (menu.Items.Count > 2 && menu.Items[2] is Avalonia.Controls.NativeMenuItem settings)
+            settings.Header = Localizer.Instance["SettingsOpen"];
     }
 
     // ── File / Help メニューの動作（File 操作は現在のメイン画面へ委譲）────
@@ -237,6 +241,10 @@ public partial class App : Application
     }
 
     private void OnAboutClick(object? sender, System.EventArgs e) => ShowAbout();
+
+    /// <summary>アプリ名メニューの「設定…」（Mac。v1.8.2 extFS E-3）。</summary>
+    private void OnSettingsClick(object? sender, System.EventArgs e)
+        => Views.PreferencesWindow.Open((Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)?.MainWindow);
 
     /// <summary>
     /// 表示する版数。4つ目まで使っている版（1.6.6.1 のような修正版）は4つ目まで出す

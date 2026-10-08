@@ -50,7 +50,7 @@ public partial class MainView
                 if (SearchBox.IsDropDownOpen) return false;   // 候補の一覧を閉じるのが先
                 TextView.Focus();
                 return true;
-            default: return false;
+            default: return RunMoreShortcut(action);
         }
     }
 

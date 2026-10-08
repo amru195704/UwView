@@ -264,6 +264,72 @@
   <data name="TipResultShowBookmarks" xml:space="preserve"><value>ブックマークの行だけを出す（検索していないときもこれと同じ）</value></data>
   <data name="TipResultShowHits" xml:space="preserve"><value>検索の当たりだけを出す（ブックマークの行には印だけ付く）</value></data>
   <data name="BookmarkRangeTooMany" xml:space="preserve"><value>まとめて付けられるのは {0} 行までです。範囲を狭めてください</value></data>
+  <data name="KeyAction_FocusSearch" xml:space="preserve"><value>検索欄へ</value></data>
+  <data name="KeyAction_NextHit" xml:space="preserve"><value>次の当たり</value></data>
+  <data name="KeyAction_PrevHit" xml:space="preserve"><value>前の当たり</value></data>
+  <data name="KeyAction_FocusJump" xml:space="preserve"><value>ジャンプ欄へ</value></data>
+  <data name="KeyAction_ToggleBookmark" xml:space="preserve"><value>ブックマークを付ける・外す（選んだ範囲なら全部）</value></data>
+  <data name="KeyAction_PrevBookmark" xml:space="preserve"><value>前のブックマーク</value></data>
+  <data name="KeyAction_NextBookmark" xml:space="preserve"><value>次のブックマーク</value></data>
+  <data name="KeyAction_ToggleTail" xml:space="preserve"><value>末尾追従のオン・オフ</value></data>
+  <data name="KeyAction_Reload" xml:space="preserve"><value>読み直す</value></data>
+  <data name="KeyAction_LeaveInput" xml:space="preserve"><value>入力欄から本文へ戻る</value></data>
+  <data name="KeyAction_OpenCommandLine" xml:space="preserve"><value>コマンドラインを開く</value></data>
+  <data name="KeyAction_OpenSettings" xml:space="preserve"><value>設定を開く</value></data>
+  <data name="KeyAction_LineDown" xml:space="preserve"><value>1 行下（数字を前に打てば N 行）</value></data>
+  <data name="KeyAction_LineUp" xml:space="preserve"><value>1 行上（数字を前に打てば N 行）</value></data>
+  <data name="KeyAction_ScrollLeft" xml:space="preserve"><value>左へ動かす</value></data>
+  <data name="KeyAction_ScrollRight" xml:space="preserve"><value>右へ動かす</value></data>
+  <data name="KeyAction_LineLeftEnd" xml:space="preserve"><value>行の左端へ</value></data>
+  <data name="KeyAction_LineRightEnd" xml:space="preserve"><value>行の右端へ</value></data>
+  <data name="KeyAction_GoToLine" xml:space="preserve"><value>その行へ（数字＋キー）・先頭へ</value></data>
+  <data name="KeyAction_GoToEnd" xml:space="preserve"><value>末尾へ</value></data>
+  <data name="KeyAction_SearchWordNext" xml:space="preserve"><value>選んだ語の次を探す</value></data>
+  <data name="KeyAction_SearchWordPrev" xml:space="preserve"><value>選んだ語の前を探す</value></data>
+  <data name="KeyAction_CycleResultList" xml:space="preserve"><value>結果の一覧の切り替え</value></data>
+  <data name="KeyAction_ResultListBigger" xml:space="preserve"><value>結果の一覧の窓を大きく</value></data>
+  <data name="KeyAction_ResultListSmaller" xml:space="preserve"><value>結果の一覧の窓を小さく</value></data>
+  <data name="KeyAction_OpenFileSwitcher" xml:space="preserve"><value>開いているファイルを選ぶ</value></data>
+  <data name="SettingsTabGeneral" xml:space="preserve"><value>全般</value></data>
+  <data name="SettingsTabKeys" xml:space="preserve"><value>キー</value></data>
+  <data name="ToolsMenu" xml:space="preserve"><value>ツール</value></data>
+  <data name="KeysPresetLabel" xml:space="preserve"><value>ひな形:</value></data>
+  <data name="KeysPresetStandard" xml:space="preserve"><value>標準</value></data>
+  <data name="KeysPresetVi" xml:space="preserve"><value>vi・less 風</value></data>
+  <data name="TipKeysPresetStandard" xml:space="preserve"><value>1.8.1 までと同じ割り当てに戻す（j・k などの新しい操作はキーなし）</value></data>
+  <data name="TipKeysPresetVi" xml:space="preserve"><value>標準に、j・k・h・l・g・G・n・N・*・#・m・f・v・+・- と Ctrl＋Shift＋O を足す（klogg と同じ）</value></data>
+  <data name="KeysColAction" xml:space="preserve"><value>操作</value></data>
+  <data name="KeysColKeys" xml:space="preserve"><value>今のキー</value></data>
+  <data name="KeysColDefault" xml:space="preserve"><value>既定のキー</value></data>
+  <data name="KeysResetOne" xml:space="preserve"><value>戻す</value></data>
+  <data name="TipKeysResetOne" xml:space="preserve"><value>この操作のキーを既定に戻す</value></data>
+  <data name="KeysClearOne" xml:space="preserve"><value>消す</value></data>
+  <data name="TipKeysClearOne" xml:space="preserve"><value>この操作のキーを外す（キーなしにする）</value></data>
+  <data name="KeysCaptureIdle" xml:space="preserve"><value>一覧で操作を選ぶと、ここで新しいキーを受け付けます（1 つの操作に 2 つまで）。</value></data>
+  <data name="KeysCapturePrompt" xml:space="preserve"><value>「{0}」に付けるキーを押してください（Esc でやめる。2 つ付いていれば 2 つ目と入れ替える）</value></data>
+  <data name="KeysCaptureCanceled" xml:space="preserve"><value>やめました。別のキーを押すと、また付けられます。</value></data>
+  <data name="KeysConflict" xml:space="preserve"><value>{0} は「{1}」に付いています。どちらに残しますか？（「{2}」に付け替えると「{1}」からは外れます）</value></data>
+  <data name="KeysConflictMove" xml:space="preserve"><value>「{0}」に付け替える</value></data>
+  <data name="TipKeysConflictMove" xml:space="preserve"><value>このキーを今選んでいる操作に付け、前の操作からは外す</value></data>
+  <data name="KeysConflictKeep" xml:space="preserve"><value>「{0}」のままにする</value></data>
+  <data name="TipKeysConflictKeep" xml:space="preserve"><value>付け替えずに、前の操作に残す</value></data>
+  <data name="KeysAlready" xml:space="preserve"><value>{0} はもう付いています</value></data>
+  <data name="KeysAssigned" xml:space="preserve"><value>{0} を「{1}」に付けました</value></data>
+  <data name="KeysDigitReserved" xml:space="preserve"><value>数字は「何行」の前置き（5j で 5 行下・120g で 120 行目）に使うので付けられません</value></data>
+  <data name="KeysResetAll" xml:space="preserve"><value>全部を既定に戻す</value></data>
+  <data name="TipKeysResetAll" xml:space="preserve"><value>すべての操作のキーを［標準］に戻す</value></data>
+  <data name="KeysExport" xml:space="preserve"><value>書き出す…</value></data>
+  <data name="TipKeysExport" xml:space="preserve"><value>今の割り当てを .uwvkeys に書き出す（別の機械で読み込める）</value></data>
+  <data name="KeysImport" xml:space="preserve"><value>読み込む…</value></data>
+  <data name="TipKeysImport" xml:space="preserve"><value>.uwvkeys を読み込んで、今の割り当てを置き換える</value></data>
+  <data name="KeysPresetApplied" xml:space="preserve"><value>割り当てを入れ替えました</value></data>
+  <data name="KeysExported" xml:space="preserve"><value>書き出しました</value></data>
+  <data name="KeysImported" xml:space="preserve"><value>読み込みました</value></data>
+  <data name="KeysImportBad" xml:space="preserve"><value>読み込めませんでした（.uwvkeys ではありません）</value></data>
+  <data name="KeysTypingNote" xml:space="preserve"><value>検索欄・ジャンプ欄など文字を入れる欄にいる間は、文字 1 つのキー（j・k・[ など）は文字として入ります。</value></data>
+  <data name="FileSwitcherTitle" xml:space="preserve"><value>開いているファイル</value></data>
+  <data name="FileSwitcherWatermark" xml:space="preserve"><value>名前の一部を打って絞り込む（Enter で移る・Esc で閉じる）</value></data>
+  <data name="SelectWordFirst" xml:space="preserve"><value>探す語をダブルクリックで選んでください</value></data>
   <data name="ReloadNotAvailable" xml:space="preserve"><value>このタブは読み直せません</value></data>
   <data name="ChangeTruncated" xml:space="preserve"><value>{0} が切り詰められました</value></data>
   <data name="ChangeRewritten" xml:space="preserve"><value>{0} が作り直されました</value></data>

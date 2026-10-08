@@ -55,6 +55,10 @@
                 <MenuItem Header="{loc:Localize CloseTabMenu}" Click="OnWinClose" />
                 <MenuItem Header="{loc:Localize CloseAll}" Click="OnWinCloseAll" />
             </MenuItem>
+            <!-- ツール → 設定…（キーの割り当てなど。v1.8.2 extFS E-3） -->
+            <MenuItem Header="{loc:Localize ToolsMenu}">
+                <MenuItem x:Name="WinSettingsItem" Header="{loc:Localize SettingsOpen}" Click="OnWinSettings" InputGesture="Ctrl+OemComma" />
+            </MenuItem>
             <MenuItem Header="{loc:Localize HelpMenu}">
                 <MenuItem Header="{loc:Localize HelpHowTo}" Click="OnWinHowTo" />
                 <MenuItem Header="{loc:Localize HelpNews}" Click="OnWinNews" />

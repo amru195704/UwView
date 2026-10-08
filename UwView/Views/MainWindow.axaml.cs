@@ -48,6 +48,7 @@ public partial class MainWindow : Window
     private void OnWinClose(object? s, RoutedEventArgs e) => App.RequestCloseTab?.Invoke();
     private void OnWinCloseAll(object? s, RoutedEventArgs e) => App.RequestCloseAll?.Invoke();
     private void OnWinHowTo(object? s, RoutedEventArgs e) => App.OpenExternal(SiteLinks.HelpLink);
+    private void OnWinSettings(object? s, RoutedEventArgs e) => PreferencesWindow.Open(this);
     private void OnWinNews(object? s, RoutedEventArgs e) => App.OpenExternal(SiteLinks.OfficialLink);
     private void OnWinSupport(object? s, RoutedEventArgs e) => App.OpenExternal(SiteLinks.SupportLink);
     private void OnWinGitHubUwView(object? s, RoutedEventArgs e) => App.OpenExternal(SiteLinks.GitHubRepoLink);
