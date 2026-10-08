@@ -54,13 +54,13 @@ sudo snap install uwview                         # Linux（更新は snap refres
 手で入れる場合は、このページの下の **Assets** から取ってください。Mac は dmg（Apple シリコン〈M1〜M4〉用の `arm64`・Intel 用の `x64`）、Windows は zip（`x64`・`arm64`）、Linux は tar.gz（`x86_64`・`aarch64`）です。チェックサムは `SHA256SUMS-1.8.1.9.txt` にあります。
 
 ```
-7bd08dc13342eb0a6d2d53fe0203a2669c0a47e82ecaa07ffeeddfe9b49bcfd3  UwView-1.8.1.9-linux-aarch64.tar.gz
-bc83bfb420b8d7155efdd48a8f3e4cf0d08307c5549c63b0c3350fa861d0cea2  UwView-1.8.1.9-linux-x86_64.tar.gz
+cb084cbadb2fe7442a2311036c588674cff5ffabb254e97ee6019822cd9e9b1d  UwView-1.8.1.9-linux-aarch64.tar.gz
+b18e58264ba4bea5a4160baaf6a23c2e3dbe969ded55ae67a9dce40aff884aee  UwView-1.8.1.9-linux-x86_64.tar.gz
 d98bb2dcfdbab175763af3dabd523356be0da10a1809d6e0f095ce3c26e44fb1  UwView-1.8.1.9-mac-arm64.dmg
 bc7f89ff811f2a7a89d7681be17925095b8bf8fb15f14b055997a8bed8c05f47  UwView-1.8.1.9-mac-x64.dmg
 040d5465a0ed0189f7e4787016043438ed0e64e76f35d94d0044b762907b7545  UwView-1.8.1.9-win-arm64.zip
 077db178b5bc11eafb0479b24b4ab5b70580340cd3818cb4d7c0c3f404a2ede2  UwView-1.8.1.9-win-x64.zip
-（2026-10-07 21:00 作成。macOS 版は署名・公証済み。ビルド番号は 26.10.07.20（日本時間）、Linux 版の uvf だけ 26.10.07.11（UTC）です）
+（2026-10-07 21:00 作成・Linux 版は 2026-10-08 に作り直し。macOS 版は署名・公証済み。ビルド番号はすべて 26.10.07.20（日本時間）です）
 ```
 
 > **配布は GitHub Releases が元です。** Homebrew・Scoop・Snap も、ここのファイルを使います（Homebrew と Scoop は SHA256 を照合します）。操作説明と最新情報は blog サイト（https://uvp.y42u.net/）に載せています。コマンドと画面の対比は記事「ripgrep・uvf・uvp 検索コマンド対比表」にまとめています。
@@ -150,13 +150,13 @@ sudo snap install uwview                         # Linux (update: snap refresh u
 To install by hand, get the files from **Assets** below: a dmg for the Mac (`arm64` for Apple silicon M1–M4, `x64` for Intel), a zip for Windows (`x64`, `arm64`), a tar.gz for Linux (`x86_64`, `aarch64`). Checksums are in `SHA256SUMS-1.8.1.9.txt`.
 
 ```
-7bd08dc13342eb0a6d2d53fe0203a2669c0a47e82ecaa07ffeeddfe9b49bcfd3  UwView-1.8.1.9-linux-aarch64.tar.gz
-bc83bfb420b8d7155efdd48a8f3e4cf0d08307c5549c63b0c3350fa861d0cea2  UwView-1.8.1.9-linux-x86_64.tar.gz
+cb084cbadb2fe7442a2311036c588674cff5ffabb254e97ee6019822cd9e9b1d  UwView-1.8.1.9-linux-aarch64.tar.gz
+b18e58264ba4bea5a4160baaf6a23c2e3dbe969ded55ae67a9dce40aff884aee  UwView-1.8.1.9-linux-x86_64.tar.gz
 d98bb2dcfdbab175763af3dabd523356be0da10a1809d6e0f095ce3c26e44fb1  UwView-1.8.1.9-mac-arm64.dmg
 bc7f89ff811f2a7a89d7681be17925095b8bf8fb15f14b055997a8bed8c05f47  UwView-1.8.1.9-mac-x64.dmg
 040d5465a0ed0189f7e4787016043438ed0e64e76f35d94d0044b762907b7545  UwView-1.8.1.9-win-arm64.zip
 077db178b5bc11eafb0479b24b4ab5b70580340cd3818cb4d7c0c3f404a2ede2  UwView-1.8.1.9-win-x64.zip
-(built 2026-10-07 21:00 JST; the macOS builds are signed and notarized. Build number: 26.10.07.20 (JST); only uvf in the Linux builds shows 26.10.07.11 (UTC))
+(built 2026-10-07 21:00 JST, Linux builds rebuilt on 2026-10-08; the macOS builds are signed and notarized. Build number: 26.10.07.20 (JST) for all builds)
 ```
 
 > **GitHub Releases is the source.** Homebrew, Scoop and Snap use the files here (Homebrew and Scoop check the SHA256). Instructions and news are on the blog (https://uvp.y42u.net/). The article “ripgrep, uvf and uvp search commands side by side” compares the commands and the window.

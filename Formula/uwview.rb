@@ -10,10 +10,10 @@ class Uwview < Formula
 
   if Hardware::CPU.arm?
     url "https://github.com/amru195704/UwView/releases/download/v#{version}/UwView-#{version}-linux-aarch64.tar.gz"
-    sha256 "7bd08dc13342eb0a6d2d53fe0203a2669c0a47e82ecaa07ffeeddfe9b49bcfd3"
+    sha256 "cb084cbadb2fe7442a2311036c588674cff5ffabb254e97ee6019822cd9e9b1d"
   else
     url "https://github.com/amru195704/UwView/releases/download/v#{version}/UwView-#{version}-linux-x86_64.tar.gz"
-    sha256 "bc83bfb420b8d7155efdd48a8f3e4cf0d08307c5549c63b0c3350fa861d0cea2"
+    sha256 "b18e58264ba4bea5a4160baaf6a23c2e3dbe969ded55ae67a9dce40aff884aee"
   end
 
   def install
