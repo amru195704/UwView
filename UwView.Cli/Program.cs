@@ -170,10 +170,11 @@ namespace UwView.Cli
         private static string VersionText()
         {
             // 5つ目まで使う版（1.7.3.6.2）は InformationalVersion から（本体の App.VersionText と同じ）
+            // 4つ目が 0 の版（1.8.2.0）も csproj のとおりに出す（「1.8.2」と出て配布物の名前と合わなかった。2026-10-09）。
             string? info = System.Reflection.CustomAttributeExtensions
                 .GetCustomAttribute<System.Reflection.AssemblyInformationalVersionAttribute>(typeof(InProcess).Assembly)
                 ?.InformationalVersion?.Split('+')[0];
-            if (info is not null && System.Text.RegularExpressions.Regex.IsMatch(info, @"^\d+(\.\d+){4,}$")) return info;
+            if (info is not null && System.Text.RegularExpressions.Regex.IsMatch(info, @"^\d+(\.\d+){3,}$")) return info;
             var v = typeof(InProcess).Assembly.GetName().Version;
             if (v is null) return "1.0";
             return v.Revision > 0 ? v.ToString(4) : v.ToString(3);
