@@ -11,6 +11,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using UwView.Core;
 using UwView.Localization;
 using UwView.Services;
@@ -175,6 +176,8 @@ public partial class MainView : UserControl
         {
             _vm.PropertyChanged += OnVmPropertyChanged;
             _vm.CloseTabRequested += OnCloseTabRequested;
+            // AND・NOT・OR のひな形を、初めてのときだけ定義済み★に入れる（v1.8.2 extFS E-1）
+            if (PredefinedTemplates.AddOnce(UwView.App.Settings, Ja)) UwView.App.Settings.Save();
             LoadFilterState(); // Ver1.1-A: 検索履歴・定義済みフィルタを反映
             UwView.App.Settings.PruneMissing(); // V1.1.1: 欠損 Recent/Favorites を間引く
             _vm.RefreshStartLists();
@@ -467,7 +470,33 @@ public partial class MainView : UserControl
         _vm.SearchText = f.Pattern;
         _vm.SearchIsRegex = f.IsRegex;
         _vm.SearchIgnoreCase = f.IgnoreCase;
+        // ひな形は探さず、最初の語を選んだ状態にする（打てばそのまま置き換わる。v1.8.2 extFS E-1）
+        if (PredefinedTemplates.FirstPlaceholder(f) is { } word) { SelectInSearchBox(word.Start, word.Length); return; }
         StartSearch();
+    }
+
+    /// <summary>検索欄の中の文字を選ぶ（欄に文字が入ってから選ぶので、後回しにする）。</summary>
+    private void SelectInSearchBox(int start, int length)
+    {
+        SearchBox.Focus();
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (SearchBox.GetVisualDescendants().OfType<TextBox>().FirstOrDefault() is not { } box) return;
+            box.Focus();
+            box.SelectionStart = start;
+            box.SelectionEnd = start + length;
+        });
+    }
+
+    /// <summary>定義済み★の行の「×」：その定義済みを消す（ひな形も消せる。消したものは戻さない）。</summary>
+    private void OnPredefinedDeleteClick(object? sender, RoutedEventArgs e)
+    {
+        e.Handled = true;
+        if ((sender as Control)?.DataContext is not Services.PredefinedFilter f) return;
+        PredefinedCombo.IsDropDownOpen = false;
+        UwView.App.Settings.PredefinedFilters.RemoveAll(x => x.Name == f.Name);
+        UwView.App.Settings.Save();
+        LoadFilterState();
     }
 
     private void SaveCurrentAsFilter()

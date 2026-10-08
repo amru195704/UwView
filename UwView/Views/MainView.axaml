@@ -192,7 +192,12 @@
                           SelectedItem="{Binding SelectedPredefinedFilter, Mode=TwoWay}">
                     <ComboBox.ItemTemplate>
                         <DataTemplate>
-                            <TextBlock Text="{Binding Name}" Foreground="Black" />
+                            <!-- 行の「×」で消せる（既定のひな形も。v1.8.2 extFS E-1） -->
+                            <DockPanel LastChildFill="True">
+                                <Button DockPanel.Dock="Right" Content="×" Padding="6,0" Margin="10,0,0,0"
+                                        ToolTip.Tip="{loc:Localize PredefinedDeleteTip}" Click="OnPredefinedDeleteClick" />
+                                <TextBlock Text="{Binding Name}" Foreground="Black" VerticalAlignment="Center" />
+                            </DockPanel>
                         </DataTemplate>
                     </ComboBox.ItemTemplate>
                 </ComboBox>

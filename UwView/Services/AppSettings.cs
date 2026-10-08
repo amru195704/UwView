@@ -15,6 +15,12 @@ public sealed class PredefinedFilter
     public bool IsRegex { get; set; }
     public bool IgnoreCase { get; set; }
 
+    /// <summary>
+    /// ひな形のときの、置き換えて使う語（例 <c>語1</c>・<c>語2</c>）。選ぶと検索欄に入り、最初の語が選ばれた状態になる
+    ///（そのまま探さない。v1.8.2 extFS E-1）。ひな形でなければ null。
+    /// </summary>
+    public List<string>? Placeholders { get; set; }
+
     public override string ToString() => Name; // ComboBox 等の既定表示
 }
 
@@ -119,6 +125,8 @@ public sealed class AppSettings
     // ── Ver1.1: A 検索履歴・定義済みフィルタ ──
     public List<string> SearchHistory { get; set; } = new();
     public List<PredefinedFilter> PredefinedFilters { get; set; } = new();
+    /// <summary>AND・NOT・OR のひな形を入れたか（入れるのは 1 回だけ。消したものは戻さない。v1.8.2 extFS E-1）。</summary>
+    public bool PredefinedTemplatesAdded { get; set; }
 
     // ── Ver1.1: B Follow 中の自動更新 ──
     public bool FollowAutoRefresh { get; set; } = true;

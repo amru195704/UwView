@@ -135,6 +135,7 @@
 
   <data name="PredefinedFilters" xml:space="preserve"><value>Filters</value></data>
   <data name="SavePredefinedTip" xml:space="preserve"><value>Save current search as a predefined filter</value></data>
+  <data name="PredefinedDeleteTip" xml:space="preserve"><value>Delete this filter</value></data>
   <data name="Highlighter" xml:space="preserve"><value>Highlighter</value></data>
   <data name="HighlighterTip" xml:space="preserve"><value>Manage color highlighters (always-on multi-pattern coloring, independent of search)</value></data>
   <data name="HighlighterTitle" xml:space="preserve"><value>Color highlighters</value></data>

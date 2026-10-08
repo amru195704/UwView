@@ -135,6 +135,7 @@
 
   <data name="PredefinedFilters" xml:space="preserve"><value>定義済み</value></data>
   <data name="SavePredefinedTip" xml:space="preserve"><value>現在の検索を定義済みフィルタに保存</value></data>
+  <data name="PredefinedDeleteTip" xml:space="preserve"><value>この定義済みを消す</value></data>
   <data name="Highlighter" xml:space="preserve"><value>ハイライタ</value></data>
   <data name="HighlighterTip" xml:space="preserve"><value>色分けハイライタを管理（検索と独立に複数パターンを常時着色）</value></data>
   <data name="HighlighterTitle" xml:space="preserve"><value>色分けハイライタ</value></data>
