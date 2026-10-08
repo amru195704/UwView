@@ -291,6 +291,26 @@
   <data name="KeyAction_ResultListSmaller" xml:space="preserve"><value>Make the result list smaller</value></data>
   <data name="KeyAction_OpenFileSwitcher" xml:space="preserve"><value>Choose an open file</value></data>
   <data name="SettingsTabGeneral" xml:space="preserve"><value>General</value></data>
+  <data name="KeyAction_ZoomIn" xml:space="preserve"><value>Larger text</value></data>
+  <data name="KeyAction_ZoomOut" xml:space="preserve"><value>Smaller text</value></data>
+  <data name="KeyAction_ZoomReset" xml:space="preserve"><value>Default text size</value></data>
+  <data name="SettingsTabAppearance" xml:space="preserve"><value>Display</value></data>
+  <data name="ThemeLabel" xml:space="preserve"><value>Theme</value></data>
+  <data name="ThemeSystem" xml:space="preserve"><value>Follow the OS</value></data>
+  <data name="ThemeLight" xml:space="preserve"><value>Light</value></data>
+  <data name="ThemeDark" xml:space="preserve"><value>Dark</value></data>
+  <data name="ThemeNote" xml:space="preserve"><value>"Follow the OS" switches immediately when the OS changes between light and dark.</value></data>
+  <data name="FontLabel" xml:space="preserve"><value>Text font</value></data>
+  <data name="FontSizeLabel" xml:space="preserve"><value>Size</value></data>
+  <data name="FontDefault" xml:space="preserve"><value>Default (Cascadia Mono, Menlo, Consolas…)</value></data>
+  <data name="FontMonospace" xml:space="preserve"><value>{0} (monospace)</value></data>
+  <data name="TipFontFamily" xml:space="preserve"><value>Font for the text and the result list (monospace fonts first)</value></data>
+  <data name="TipFontSize" xml:space="preserve"><value>Text size (6–48; the result list is 2 smaller)</value></data>
+  <data name="FontPreview" xml:space="preserve"><value>2026-10-09 12:34:56.789 ERROR [worker-17] exception occurred id=42 path=/api/v1/items</value></data>
+  <data name="FontZoomNote" xml:space="preserve"><value>You can also use Ctrl (⌘ on Mac) + wheel or Ctrl + + / Ctrl + − over the text or the result list. Ctrl + 0 resets the size.</value></data>
+  <data name="AppearanceReset" xml:space="preserve"><value>Reset the font</value></data>
+  <data name="TipAppearanceReset" xml:space="preserve"><value>Reset the text font and size to the default (14)</value></data>
+  <data name="HlLowContrastTip" xml:space="preserve"><value>Hard to read on a dark background (too little contrast between text and background). Change the text or background color</value></data>
   <data name="SettingsTabKeys" xml:space="preserve"><value>Keys</value></data>
   <data name="ToolsMenu" xml:space="preserve"><value>Tools</value></data>
   <data name="KeysPresetLabel" xml:space="preserve"><value>Preset:</value></data>

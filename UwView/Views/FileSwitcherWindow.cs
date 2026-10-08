@@ -36,7 +36,7 @@ public sealed class FileSwitcherWindow : Window
         Height = 360;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
         ShowInTaskbar = false;
-        Background = Brushes.White;
+        Background = UwView.Services.ThemeColors.Surface;
 
         _filter = new TextBox { Watermark = L["FileSwitcherWatermark"], Margin = new Thickness(0, 0, 0, 8) };
         _list = new ListBox
@@ -46,8 +46,8 @@ public sealed class FileSwitcherWindow : Window
                 Spacing = 1,
                 Children =
                 {
-                    new TextBlock { Text = t?.DisplayName ?? "", Foreground = Brushes.Black, FontWeight = FontWeight.SemiBold },
-                    new TextBlock { Text = t?.FilePath ?? "", Foreground = Brushes.Black, FontSize = 11,
+                    new TextBlock { Text = t?.DisplayName ?? "", Foreground = UwView.Services.ThemeColors.Text, FontWeight = FontWeight.SemiBold },
+                    new TextBlock { Text = t?.FilePath ?? "", Foreground = UwView.Services.ThemeColors.Text, FontSize = 11,
                                     TextTrimming = TextTrimming.CharacterEllipsis },
                 },
             }),

@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    ライト／ダーク × 100%／150% の画面の写し（v1.8.2 extFS E-4 §5 のテスト）。
+    UI テストと同じ方式（Avalonia Headless）で本物の窓を組み立て、描画は Skia で本当に描いて PNG にする。
+    ふつうのテスト（dotnet test UwView.slnx）には入れない。写しが要るときだけ、このプロジェクトを指定して走らせる:
+      UV_THEME_SHOTS=<出力フォルダー> dotnet test UwView.ThemeShots
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <OutputType>Exe</OutputType>
+    <!-- UwView の internal（UI テスト用に公開されている部分）を使うため、UI テストと同じ名前にする -->
+    <AssemblyName>UwView.UiTests</AssemblyName>
+    <RootNamespace>UwView.ThemeShots</RootNamespace>
+    <NoWarn>$(NoWarn);xUnit1051</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia.Headless.XUnit" />
+    <PackageReference Include="Avalonia.Skia" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../UwView/UwView.csproj" />
+    <ProjectReference Include="../UwView.Core/UwView.Core.csproj" />
+    <Compile Include="../UwView.UiTests/UiHarness.cs" Link="Harness/UiHarness.cs" />
+  </ItemGroup>
+</Project>

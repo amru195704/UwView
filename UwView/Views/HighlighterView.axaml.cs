@@ -159,4 +159,19 @@ public partial class HighlighterView : UserControl
         }
         catch (IOException) { /* 読み込み失敗は黙って中断 */ }
     }
+
+    // テーマが替わったら、規則の ⚠（ダークで読みにくい色）を出し直す（v1.8.2 extFS E-4）
+    protected override void OnAttachedToVisualTree(Avalonia.VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+        UwView.Services.ThemeColors.Changed += OnThemeChanged;
+    }
+
+    protected override void OnDetachedFromVisualTree(Avalonia.VisualTreeAttachmentEventArgs e)
+    {
+        UwView.Services.ThemeColors.Changed -= OnThemeChanged;
+        base.OnDetachedFromVisualTree(e);
+    }
+
+    private void OnThemeChanged() => _vm.RefreshContrast();
 }

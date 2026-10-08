@@ -73,7 +73,7 @@ public sealed class KeyBindingsPanel : UserControl
         var presets = new StackPanel
         {
             Orientation = Orientation.Horizontal, Spacing = 8, Margin = new Thickness(0, 0, 0, 8),
-            Children = { new TextBlock { Text = L["KeysPresetLabel"], Foreground = Brushes.Black, VerticalAlignment = VerticalAlignment.Center }, standard, vi },
+            Children = { new TextBlock { Text = L["KeysPresetLabel"], Foreground = UwView.Services.ThemeColors.Text, VerticalAlignment = VerticalAlignment.Center }, standard, vi },
         };
 
         var header = RowGrid(Bold(L["KeysColAction"]), Bold(L["KeysColKeys"]), Bold(L["KeysColDefault"]), new Control());
@@ -87,25 +87,28 @@ public sealed class KeyBindingsPanel : UserControl
                 if (row is null) return new TextBlock();
                 var reset = Button(L["KeysResetOne"], L["TipKeysResetOne"], () => { Change(row.Action, _defaults.KeysOf(row.Action)); });
                 var clear = Button(L["KeysClearOne"], L["TipKeysClearOne"], () => { Change(row.Action, []); });
-                var keys = new TextBlock { Foreground = Brushes.Black, VerticalAlignment = VerticalAlignment.Center };
+                var keys = new TextBlock { Foreground = UwView.Services.ThemeColors.Text, VerticalAlignment = VerticalAlignment.Center };
                 keys.Bind(TextBlock.TextProperty, new Avalonia.Data.Binding(nameof(Row.Keys)) { Source = row });
-                var defaults = new TextBlock { Foreground = Brushes.Black, VerticalAlignment = VerticalAlignment.Center };
+                var defaults = new TextBlock { Foreground = UwView.Services.ThemeColors.Text, VerticalAlignment = VerticalAlignment.Center };
                 defaults.Bind(TextBlock.TextProperty, new Avalonia.Data.Binding(nameof(Row.Defaults)) { Source = row });
-                return RowGrid(new TextBlock { Text = row.Name, Foreground = Brushes.Black, VerticalAlignment = VerticalAlignment.Center },
+                var name = new TextBlock { Text = row.Name, Foreground = UwView.Services.ThemeColors.Text, VerticalAlignment = VerticalAlignment.Center,
+                                           TextTrimming = TextTrimming.CharacterEllipsis, Margin = new Thickness(0, 0, 8, 0) };
+                ToolTip.SetTip(name, row.Name);   // 長い名前は切れるので、全文はヒントで
+                return RowGrid(name,
                                keys, defaults,
                                new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4, Children = { reset, clear } });
             }),
         };
         _list.SelectionChanged += (_, _) => BeginCapture();
 
-        _captureText = new TextBlock { Foreground = Brushes.Black, TextWrapping = TextWrapping.Wrap, Text = L["KeysCaptureIdle"] };
+        _captureText = new TextBlock { Foreground = UwView.Services.ThemeColors.Text, TextWrapping = TextWrapping.Wrap, Text = L["KeysCaptureIdle"] };
         _conflictButtons = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, IsVisible = false, Margin = new Thickness(0, 6, 0, 0) };
         _capture = new Border
         {
             Name = "KeyCapture",
             Focusable = true,
-            Background = new SolidColorBrush(Color.FromRgb(0xF4, 0xF8, 0xFF)),
-            BorderBrush = new SolidColorBrush(Color.FromRgb(0x1A, 0x6F, 0xE8)),
+            Background = UwView.Services.ThemeColors.Get("Uv_F4F8FF", new SolidColorBrush(Color.FromRgb(0xF4, 0xF8, 0xFF))),
+            BorderBrush = UwView.Services.ThemeColors.Get("Uv_1A6FE8", new SolidColorBrush(Color.FromRgb(0x1A, 0x6F, 0xE8))),
             BorderThickness = new Thickness(1),
             Padding = new Thickness(10, 8),
             Margin = new Thickness(0, 8, 0, 8),
@@ -113,7 +116,7 @@ public sealed class KeyBindingsPanel : UserControl
         };
         _capture.KeyDown += OnCaptureKeyDown;
 
-        _status = new TextBlock { Foreground = Brushes.Black, TextWrapping = TextWrapping.Wrap };
+        _status = new TextBlock { Foreground = UwView.Services.ThemeColors.Text, TextWrapping = TextWrapping.Wrap };
         var resetAll = Button(L["KeysResetAll"], L["TipKeysResetAll"], () => ApplyPreset(KeyBindingSet.Standard(_mac)));
         var export = Button(L["KeysExport"], L["TipKeysExport"], () => _ = ExportAsync());
         var import = Button(L["KeysImport"], L["TipKeysImport"], () => _ = ImportAsync());
@@ -125,13 +128,13 @@ public sealed class KeyBindingsPanel : UserControl
             Children =
             {
                 presets, header, _list, _capture, bottom,
-                new TextBlock { Text = L["KeysTypingNote"], Foreground = Brushes.Black, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 8, 0, 0) },
+                new TextBlock { Text = L["KeysTypingNote"], Foreground = UwView.Services.ThemeColors.Text, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 8, 0, 0) },
                 _status,
             },
         };
     }
 
-    private static TextBlock Bold(string text) => new() { Text = text, Foreground = Brushes.Black, FontWeight = FontWeight.Bold };
+    private static TextBlock Bold(string text) => new() { Text = text, Foreground = UwView.Services.ThemeColors.Text, FontWeight = FontWeight.Bold };
 
     private static Grid RowGrid(Control name, Control keys, Control defaults, Control buttons)
     {

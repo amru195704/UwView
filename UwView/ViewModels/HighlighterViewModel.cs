@@ -33,6 +33,30 @@ public sealed partial class HlRuleRow : ObservableObject
         _enabled = rule.Enabled;
     }
 
+    /// <summary>
+    /// ダークで読みにくい色か（文字と地の明るさの比が 3 より小さい。規則の一覧に ⚠ を出す。v1.8.2 extFS E-4）。
+    /// 文字の色が無ければ本文の文字の色、地が無ければ本文の地で見る。明るい地で文字の色が無ければ黒で描くので読める。
+    /// </summary>
+    public bool LowContrast
+    {
+        get
+        {
+            if (!UwView.Services.ThemeColors.IsDark || !Enabled) return false;
+            uint fg = CompiledHighlighter.ParseColor(Foreground), bg = CompiledHighlighter.ParseColor(Background);
+            if (fg == 0 && bg == 0) return false;
+            if (bg != 0 && HighlightPresets.DarkVariant(bg) is { } dark) bg = dark;
+            var back = bg != 0 ? ToColor(bg) : ((Avalonia.Media.ISolidColorBrush)UwView.Services.ThemeColors.ViewBackground).Color;
+            if (fg == 0 && UwView.Services.ThemeColors.Luminance(back) >= 0.45) return false;   // 黒で描く
+            var text = fg != 0 ? ToColor(fg) : ((Avalonia.Media.ISolidColorBrush)UwView.Services.ThemeColors.ViewText).Color;
+            return UwView.Services.ThemeColors.Contrast(text, back) < 3;
+
+            static Avalonia.Media.Color ToColor(uint c) => Avalonia.Media.Color.FromUInt32(c | 0xFF000000);
+        }
+    }
+
+    /// <summary>テーマが替わったときに ⚠ を出し直す。</summary>
+    public void RefreshContrast() => OnPropertyChanged(nameof(LowContrast));
+
     public HlRule ToRule() => new(Pattern, IsRegex, IgnoreCase,
         string.IsNullOrWhiteSpace(Foreground) ? null : Foreground.Trim(),
         string.IsNullOrWhiteSpace(Background) ? null : Background.Trim(),
@@ -41,10 +65,10 @@ public sealed partial class HlRuleRow : ObservableObject
     partial void OnPatternChanged(string value) => _onChanged();
     partial void OnIsRegexChanged(bool value) => _onChanged();
     partial void OnIgnoreCaseChanged(bool value) => _onChanged();
-    partial void OnForegroundChanged(string value) => _onChanged();
-    partial void OnBackgroundChanged(string value) => _onChanged();
+    partial void OnForegroundChanged(string value) { OnPropertyChanged(nameof(LowContrast)); _onChanged(); }
+    partial void OnBackgroundChanged(string value) { OnPropertyChanged(nameof(LowContrast)); _onChanged(); }
     partial void OnWholeLineChanged(bool value) => _onChanged();
-    partial void OnEnabledChanged(bool value) => _onChanged();
+    partial void OnEnabledChanged(bool value) { OnPropertyChanged(nameof(LowContrast)); _onChanged(); }
 }
 
 /// <summary>
@@ -76,6 +100,9 @@ public sealed partial class HighlighterViewModel : ObservableObject
     public event EventHandler? Changed;
     /// <summary>アクティブセットが切り替わったとき（永続化のトリガ）。</summary>
     public event EventHandler? ActiveSetChanged;
+
+    /// <summary>テーマが替わったとき、規則の ⚠（ダークで読みにくい色）を出し直す。</summary>
+    public void RefreshContrast() { foreach (var r in Rules) r.RefreshContrast(); }
 
     public HighlighterViewModel(HighlighterConfig config)
     {

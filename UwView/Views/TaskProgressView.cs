@@ -24,9 +24,9 @@ public sealed class TaskProgressView : UserControl
     private static bool Ja => Localizer.Instance.Culture.TwoLetterISOLanguageName == "ja";
     private static string T(string ja, string en) => Ja ? ja : en;
 
-    private readonly TextBlock _count = new() { Foreground = Brushes.Black, FontSize = 15 };
-    private readonly TextBlock _place = new() { Foreground = Brushes.Black };
-    private readonly TextBlock _elapsed = new() { Foreground = Brushes.Black };
+    private readonly TextBlock _count = new() { Foreground = UwView.Services.ThemeColors.Text, FontSize = 15 };
+    private readonly TextBlock _place = new() { Foreground = UwView.Services.ThemeColors.Text };
+    private readonly TextBlock _elapsed = new() { Foreground = UwView.Services.ThemeColors.Text };
     private readonly ProgressBar _bar = new() { Minimum = 0, Maximum = 1, Height = 8 };
     private readonly Button _button = new()
     {
@@ -88,7 +88,7 @@ public sealed class TaskProgressView : UserControl
             Spacing = 10,
             Children =
             {
-                new TextBlock { Text = title, FontWeight = FontWeight.Bold, Foreground = Brushes.Black },
+                new TextBlock { Text = title, FontWeight = FontWeight.Bold, Foreground = UwView.Services.ThemeColors.Text },
                 _count,
                 _place,
                 _elapsed,

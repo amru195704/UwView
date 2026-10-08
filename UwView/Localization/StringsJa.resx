@@ -291,6 +291,26 @@
   <data name="KeyAction_ResultListSmaller" xml:space="preserve"><value>結果の一覧の窓を小さく</value></data>
   <data name="KeyAction_OpenFileSwitcher" xml:space="preserve"><value>開いているファイルを選ぶ</value></data>
   <data name="SettingsTabGeneral" xml:space="preserve"><value>全般</value></data>
+  <data name="KeyAction_ZoomIn" xml:space="preserve"><value>文字を大きく</value></data>
+  <data name="KeyAction_ZoomOut" xml:space="preserve"><value>文字を小さく</value></data>
+  <data name="KeyAction_ZoomReset" xml:space="preserve"><value>文字を既定の大きさに戻す</value></data>
+  <data name="SettingsTabAppearance" xml:space="preserve"><value>表示</value></data>
+  <data name="ThemeLabel" xml:space="preserve"><value>テーマ</value></data>
+  <data name="ThemeSystem" xml:space="preserve"><value>OS に合わせる</value></data>
+  <data name="ThemeLight" xml:space="preserve"><value>ライト</value></data>
+  <data name="ThemeDark" xml:space="preserve"><value>ダーク</value></data>
+  <data name="ThemeNote" xml:space="preserve"><value>「OS に合わせる」は、OS の明るい・暗いの切り替えにその場でついていきます。</value></data>
+  <data name="FontLabel" xml:space="preserve"><value>本文のフォント</value></data>
+  <data name="FontSizeLabel" xml:space="preserve"><value>大きさ</value></data>
+  <data name="FontDefault" xml:space="preserve"><value>既定（Cascadia Mono・Menlo・Consolas…）</value></data>
+  <data name="FontMonospace" xml:space="preserve"><value>{0}（等幅）</value></data>
+  <data name="TipFontFamily" xml:space="preserve"><value>本文と結果の一覧のフォント（等幅のものを上に並べています）</value></data>
+  <data name="TipFontSize" xml:space="preserve"><value>本文の文字の大きさ（6〜48。結果の一覧は 2 小さくなります）</value></data>
+  <data name="FontPreview" xml:space="preserve"><value>2026-10-09 12:34:56.789 ERROR [worker-17] 例外が発生しました id=42 path=/api/v1/items</value></data>
+  <data name="FontZoomNote" xml:space="preserve"><value>本文や結果の一覧の上で Ctrl（Mac は ⌘）＋ホイール、Ctrl＋＋／Ctrl＋－ でも変えられます。Ctrl＋0 で既定の大きさに戻ります。</value></data>
+  <data name="AppearanceReset" xml:space="preserve"><value>フォントを既定に戻す</value></data>
+  <data name="TipAppearanceReset" xml:space="preserve"><value>本文のフォントと大きさを既定（14）に戻す</value></data>
+  <data name="HlLowContrastTip" xml:space="preserve"><value>暗い背景では読みにくい色です（文字と地の明るさの差が小さい）。文字色か背景色を変えると読みやすくなります</value></data>
   <data name="SettingsTabKeys" xml:space="preserve"><value>キー</value></data>
   <data name="ToolsMenu" xml:space="preserve"><value>ツール</value></data>
   <data name="KeysPresetLabel" xml:space="preserve"><value>ひな形:</value></data>

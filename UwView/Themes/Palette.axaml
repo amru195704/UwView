@@ -1,0 +1,150 @@
+<!-- 画面の色（v1.8.2 extFS E-4。ライト／ダーク）。uvf・uvp の両方の App が読み込む。
+     ライトは 1.8.1 までと同じ値。名前に色の値が入っているもの（Uv_CCCCCC など）は、ライトのその色の置き場所。
+     自前で描く部品（本文・ミニマップ・結果の一覧）は ThemeColors から引く。 -->
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ResourceDictionary.ThemeDictionaries>
+            <ResourceDictionary x:Key="Light">
+                <SolidColorBrush x:Key="Uv_Text" Color="#000000" />  <!-- 文字 -->
+                <SolidColorBrush x:Key="Uv_Surface" Color="#FFFFFF" />  <!-- 窓・欄の地 -->
+                <SolidColorBrush x:Key="Uv_CCCCCC" Color="#CCCCCC" />  <!-- 枠・区切り -->
+                <SolidColorBrush x:Key="Uv_DDDDDD" Color="#DDDDDD" />  <!-- 枠・区切り（淡い） -->
+                <SolidColorBrush x:Key="Uv_BBBBBB" Color="#BBBBBB" />  <!-- 枠（濃い） -->
+                <SolidColorBrush x:Key="Uv_EEEEEE" Color="#EEEEEE" />  <!-- 道具の帯 -->
+                <SolidColorBrush x:Key="Uv_F5F5F5" Color="#F5F5F5" />  <!-- 下の帯 -->
+                <SolidColorBrush x:Key="Uv_F7F7F7" Color="#F7F7F7" />  <!-- 地（淡い） -->
+                <SolidColorBrush x:Key="Uv_F6F6F6" Color="#F6F6F6" />  <!-- 地（淡い） -->
+                <SolidColorBrush x:Key="Uv_F2F2F2" Color="#F2F2F2" />  <!-- 地（淡い） -->
+                <SolidColorBrush x:Key="Uv_FAFAFA" Color="#FAFAFA" />  <!-- スタート画面 -->
+                <SolidColorBrush x:Key="Uv_E4E4E4" Color="#E4E4E4" />  <!-- 地（灰） -->
+                <SolidColorBrush x:Key="Uv_F4F6F8" Color="#F4F6F8" />  <!-- 地（青みの灰） -->
+                <SolidColorBrush x:Key="Uv_EEF4FB" Color="#EEF4FB" />  <!-- 地（淡い青） -->
+                <SolidColorBrush x:Key="Uv_D4E8D9" Color="#D4E8D9" />  <!-- 緑の枠 -->
+                <SolidColorBrush x:Key="Uv_F0F8F1" Color="#F0F8F1" />  <!-- 緑の地 -->
+                <SolidColorBrush x:Key="Uv_F7FBF8" Color="#F7FBF8" />  <!-- 緑の地（淡い） -->
+                <SolidColorBrush x:Key="Uv_F3F8F4" Color="#F3F8F4" />  <!-- 緑の地（淡い） -->
+                <SolidColorBrush x:Key="Uv_E8F4EA" Color="#E8F4EA" />  <!-- 緑の地 -->
+                <SolidColorBrush x:Key="Uv_E8D4A8" Color="#E8D4A8" />  <!-- 黄土の枠 -->
+                <SolidColorBrush x:Key="Uv_E8CE7A" Color="#E8CE7A" />  <!-- 黄の枠 -->
+                <SolidColorBrush x:Key="Uv_FFF6E5" Color="#FFF6E5" />  <!-- 黄の地 -->
+                <SolidColorBrush x:Key="Uv_FFF6D6" Color="#FFF6D6" />  <!-- 黄の地 -->
+                <SolidColorBrush x:Key="Uv_FFF4CE" Color="#FFF4CE" />  <!-- 帯の地（黄） -->
+                <SolidColorBrush x:Key="Uv_E0B000" Color="#E0B000" />  <!-- 帯の枠（黄） -->
+                <SolidColorBrush x:Key="Uv_9A6B18" Color="#9A6B18" />  <!-- 注意の文字 -->
+                <SolidColorBrush x:Key="Uv_1A6FE8" Color="#1A6FE8" />  <!-- 強調の文字（青） -->
+                <SolidColorBrush x:Key="Uv_888888" Color="#888888" />  <!-- 補足の文字 -->
+                <SolidColorBrush x:Key="Uv_777777" Color="#777777" />  <!-- 補足の文字 -->
+                <SolidColorBrush x:Key="Uv_4A5560" Color="#4A5560" />  <!-- 補足の文字 -->
+                <SolidColorBrush x:Key="Uv_9E9E9E" Color="#9E9E9E" />  <!-- タブの枠 -->
+                <SolidColorBrush x:Key="Uv_C8C8C8" Color="#C8C8C8" />  <!-- 選んだタブの地 -->
+                <SolidColorBrush x:Key="Uv_6B7075" Color="#6B7075" />  <!-- 使えない案内の文字 -->
+                <SolidColorBrush x:Key="Uv_8A8A8A" Color="#8A8A8A" />  <!-- 補足の文字 -->
+                <SolidColorBrush x:Key="Uv_F2F4F7" Color="#F2F4F7" />  <!-- コマンドの行の地 -->
+                <SolidColorBrush x:Key="Uv_C8CED8" Color="#C8CED8" />  <!-- コマンドの行の枠 -->
+                <SolidColorBrush x:Key="Uv_F4F8FF" Color="#F4F8FF" />  <!-- キーを待つ欄の地 -->
+                <SolidColorBrush x:Key="Uv_999999" Color="#999999" />  <!-- 影の枠 -->
+                <SolidColorBrush x:Key="Uv_B01E1E" Color="#B01E1E" />  <!-- 誤りの文字 -->
+                <SolidColorBrush x:Key="Uv_B00000" Color="#B00000" />  <!-- 誤りの文字（強い） -->
+                <SolidColorBrush x:Key="Uv_2F7D53" Color="#2F7D53" />  <!-- 成功の文字 -->
+                <SolidColorBrush x:Key="Uv_8A4B00" Color="#8A4B00" />  <!-- 注意の文字（茶） -->
+                <SolidColorBrush x:Key="Uv_FFF09E" Color="#FFF09E" />  <!-- 絞り込みの窓の当たりの地 -->
+                <SolidColorBrush x:Key="Uv_ProButton" Color="#6BA6E0" />  <!-- Pro のボタンの地（押せる） -->
+                <SolidColorBrush x:Key="Uv_ProButtonBorder" Color="#4F8CCB" />  <!-- Pro のボタンの枠 -->
+                <SolidColorBrush x:Key="Uv_ProButtonHover" Color="#7EB4EA" />  <!-- Pro のボタンの地（指した） -->
+                <SolidColorBrush x:Key="Uv_ProButtonHoverBorder" Color="#6BA6E0" />  <!-- Pro のボタンの枠（指した） -->
+                <SolidColorBrush x:Key="Uv_ProButtonPressed" Color="#4F8CCB" />  <!-- Pro のボタンの地（押した） -->
+                <SolidColorBrush x:Key="Uv_ProButtonText" Color="#000000" />  <!-- Pro のボタンの文字 -->
+                <SolidColorBrush x:Key="Uv_ProButtonDisabled" Color="#B9BCC0" />  <!-- Pro のボタンの地（押せない） -->
+                <SolidColorBrush x:Key="Uv_ProButtonDisabledBorder" Color="#9AA0A6" />  <!-- Pro のボタンの枠（押せない） -->
+                <SolidColorBrush x:Key="Uv_ProButtonDisabledText" Color="#5A5F66" />  <!-- Pro のボタンの文字（押せない） -->
+                <SolidColorBrush x:Key="Uv_View_Background" Color="#FFFFFF" />  <!-- 本文の地 -->
+                <SolidColorBrush x:Key="Uv_View_Text" Color="#000000" />  <!-- 本文の文字 -->
+                <SolidColorBrush x:Key="Uv_View_LineNumber" Color="#404040" />  <!-- 行番号 -->
+                <SolidColorBrush x:Key="Uv_View_Gutter" Color="#F2F2F2" />  <!-- 行番号の欄 -->
+                <SolidColorBrush x:Key="Uv_View_Match" Color="#FFE066" />  <!-- 当たりの語の地 -->
+                <SolidColorBrush x:Key="Uv_View_Bookmark" Color="#1A6FE8" />  <!-- ブックマークの印 -->
+                <SolidColorBrush x:Key="Uv_View_Emphasis" Color="#CBE8FA" />  <!-- ジャンプ先の行 -->
+                <SolidColorBrush x:Key="Uv_View_Selection" Color="#B4D5EE" />  <!-- 選んだ行・語 -->
+                <SolidColorBrush x:Key="Uv_View_ContextBg" Color="#F2F2F2" />  <!-- 前後の行の地 -->
+                <SolidColorBrush x:Key="Uv_View_HitNumber" Color="#1A6FE8" />  <!-- 当たりの番号 -->
+                <SolidColorBrush x:Key="Uv_Minimap_Background" Color="#F0F0F0" />  <!-- ミニマップの地 -->
+                <SolidColorBrush x:Key="Uv_Minimap_Hit" Color="#E8711A" />  <!-- ミニマップの当たり（橙） -->
+                <SolidColorBrush x:Key="Uv_Minimap_View" Color="#60404040" />  <!-- ミニマップの今の位置 -->
+                <SolidColorBrush x:Key="Uv_Edit_Selection" Color="#661A6FE8" />  <!-- 編集の選択 -->
+                <SolidColorBrush x:Key="Uv_Edit_Caret" Color="#1A6FE8" />  <!-- 編集のカーソル -->
+                <SolidColorBrush x:Key="Uv_Edit_Mark" Color="#E88A1A" />  <!-- 編集した行の印 -->
+                <SolidColorBrush x:Key="Uv_Rect_Selection" Color="#552A78D6" />  <!-- 矩形選択 -->
+            </ResourceDictionary>
+            <ResourceDictionary x:Key="Dark">
+                <SolidColorBrush x:Key="Uv_Text" Color="#E6E6E6" />  <!-- 文字 -->
+                <SolidColorBrush x:Key="Uv_Surface" Color="#1E1E1E" />  <!-- 窓・欄の地 -->
+                <SolidColorBrush x:Key="Uv_CCCCCC" Color="#4A4A4A" />  <!-- 枠・区切り -->
+                <SolidColorBrush x:Key="Uv_DDDDDD" Color="#3C3C3C" />  <!-- 枠・区切り（淡い） -->
+                <SolidColorBrush x:Key="Uv_BBBBBB" Color="#5A5A5A" />  <!-- 枠（濃い） -->
+                <SolidColorBrush x:Key="Uv_EEEEEE" Color="#2D2D30" />  <!-- 道具の帯 -->
+                <SolidColorBrush x:Key="Uv_F5F5F5" Color="#252526" />  <!-- 下の帯 -->
+                <SolidColorBrush x:Key="Uv_F7F7F7" Color="#262628" />  <!-- 地（淡い） -->
+                <SolidColorBrush x:Key="Uv_F6F6F6" Color="#262628" />  <!-- 地（淡い） -->
+                <SolidColorBrush x:Key="Uv_F2F2F2" Color="#2A2A2C" />  <!-- 地（淡い） -->
+                <SolidColorBrush x:Key="Uv_FAFAFA" Color="#202022" />  <!-- スタート画面 -->
+                <SolidColorBrush x:Key="Uv_E4E4E4" Color="#333337" />  <!-- 地（灰） -->
+                <SolidColorBrush x:Key="Uv_F4F6F8" Color="#23272E" />  <!-- 地（青みの灰） -->
+                <SolidColorBrush x:Key="Uv_EEF4FB" Color="#1E2836" />  <!-- 地（淡い青） -->
+                <SolidColorBrush x:Key="Uv_D4E8D9" Color="#2F4A37" />  <!-- 緑の枠 -->
+                <SolidColorBrush x:Key="Uv_F0F8F1" Color="#1F2B22" />  <!-- 緑の地 -->
+                <SolidColorBrush x:Key="Uv_F7FBF8" Color="#1D2620" />  <!-- 緑の地（淡い） -->
+                <SolidColorBrush x:Key="Uv_F3F8F4" Color="#1F2921" />  <!-- 緑の地（淡い） -->
+                <SolidColorBrush x:Key="Uv_E8F4EA" Color="#223026" />  <!-- 緑の地 -->
+                <SolidColorBrush x:Key="Uv_E8D4A8" Color="#5A4A26" />  <!-- 黄土の枠 -->
+                <SolidColorBrush x:Key="Uv_E8CE7A" Color="#6A5520" />  <!-- 黄の枠 -->
+                <SolidColorBrush x:Key="Uv_FFF6E5" Color="#33291A" />  <!-- 黄の地 -->
+                <SolidColorBrush x:Key="Uv_FFF6D6" Color="#352D17" />  <!-- 黄の地 -->
+                <SolidColorBrush x:Key="Uv_FFF4CE" Color="#3A3218" />  <!-- 帯の地（黄） -->
+                <SolidColorBrush x:Key="Uv_E0B000" Color="#B08A00" />  <!-- 帯の枠（黄） -->
+                <SolidColorBrush x:Key="Uv_9A6B18" Color="#E0B060" />  <!-- 注意の文字 -->
+                <SolidColorBrush x:Key="Uv_1A6FE8" Color="#6AA6FF" />  <!-- 強調の文字（青） -->
+                <SolidColorBrush x:Key="Uv_888888" Color="#9A9A9A" />  <!-- 補足の文字 -->
+                <SolidColorBrush x:Key="Uv_777777" Color="#A0A0A0" />  <!-- 補足の文字 -->
+                <SolidColorBrush x:Key="Uv_4A5560" Color="#A9B4BF" />  <!-- 補足の文字 -->
+                <SolidColorBrush x:Key="Uv_9E9E9E" Color="#5A5A5A" />  <!-- タブの枠 -->
+                <SolidColorBrush x:Key="Uv_C8C8C8" Color="#3E3E42" />  <!-- 選んだタブの地 -->
+                <SolidColorBrush x:Key="Uv_6B7075" Color="#9097A0" />  <!-- 使えない案内の文字 -->
+                <SolidColorBrush x:Key="Uv_8A8A8A" Color="#A0A0A0" />  <!-- 補足の文字 -->
+                <SolidColorBrush x:Key="Uv_F2F4F7" Color="#262A30" />  <!-- コマンドの行の地 -->
+                <SolidColorBrush x:Key="Uv_C8CED8" Color="#4A5060" />  <!-- コマンドの行の枠 -->
+                <SolidColorBrush x:Key="Uv_F4F8FF" Color="#1E2836" />  <!-- キーを待つ欄の地 -->
+                <SolidColorBrush x:Key="Uv_999999" Color="#6A6A6A" />  <!-- 影の枠 -->
+                <SolidColorBrush x:Key="Uv_B01E1E" Color="#FF7070" />  <!-- 誤りの文字 -->
+                <SolidColorBrush x:Key="Uv_B00000" Color="#FF6060" />  <!-- 誤りの文字（強い） -->
+                <SolidColorBrush x:Key="Uv_2F7D53" Color="#6BD39A" />  <!-- 成功の文字 -->
+                <SolidColorBrush x:Key="Uv_8A4B00" Color="#E0A050" />  <!-- 注意の文字（茶） -->
+                <SolidColorBrush x:Key="Uv_FFF09E" Color="#7A6400" />  <!-- 絞り込みの窓の当たりの地 -->
+                <SolidColorBrush x:Key="Uv_ProButton" Color="#2F5F8F" />  <!-- Pro のボタンの地（押せる） -->
+                <SolidColorBrush x:Key="Uv_ProButtonBorder" Color="#4F8CCB" />  <!-- Pro のボタンの枠 -->
+                <SolidColorBrush x:Key="Uv_ProButtonHover" Color="#3A6EA3" />  <!-- Pro のボタンの地（指した） -->
+                <SolidColorBrush x:Key="Uv_ProButtonHoverBorder" Color="#6BA6E0" />  <!-- Pro のボタンの枠（指した） -->
+                <SolidColorBrush x:Key="Uv_ProButtonPressed" Color="#244C74" />  <!-- Pro のボタンの地（押した） -->
+                <SolidColorBrush x:Key="Uv_ProButtonText" Color="#F0F0F0" />  <!-- Pro のボタンの文字 -->
+                <SolidColorBrush x:Key="Uv_ProButtonDisabled" Color="#3A3D42" />  <!-- Pro のボタンの地（押せない） -->
+                <SolidColorBrush x:Key="Uv_ProButtonDisabledBorder" Color="#50555C" />  <!-- Pro のボタンの枠（押せない） -->
+                <SolidColorBrush x:Key="Uv_ProButtonDisabledText" Color="#8A8F96" />  <!-- Pro のボタンの文字（押せない） -->
+                <SolidColorBrush x:Key="Uv_View_Background" Color="#1E1E1E" />  <!-- 本文の地 -->
+                <SolidColorBrush x:Key="Uv_View_Text" Color="#D4D4D4" />  <!-- 本文の文字 -->
+                <SolidColorBrush x:Key="Uv_View_LineNumber" Color="#8A8A8A" />  <!-- 行番号 -->
+                <SolidColorBrush x:Key="Uv_View_Gutter" Color="#252526" />  <!-- 行番号の欄 -->
+                <SolidColorBrush x:Key="Uv_View_Match" Color="#7A6400" />  <!-- 当たりの語の地 -->
+                <SolidColorBrush x:Key="Uv_View_Bookmark" Color="#4C9AFF" />  <!-- ブックマークの印 -->
+                <SolidColorBrush x:Key="Uv_View_Emphasis" Color="#1F3B57" />  <!-- ジャンプ先の行 -->
+                <SolidColorBrush x:Key="Uv_View_Selection" Color="#264F78" />  <!-- 選んだ行・語 -->
+                <SolidColorBrush x:Key="Uv_View_ContextBg" Color="#2A2A2C" />  <!-- 前後の行の地 -->
+                <SolidColorBrush x:Key="Uv_View_HitNumber" Color="#6AA6FF" />  <!-- 当たりの番号 -->
+                <SolidColorBrush x:Key="Uv_Minimap_Background" Color="#252526" />  <!-- ミニマップの地 -->
+                <SolidColorBrush x:Key="Uv_Minimap_Hit" Color="#FF9A4D" />  <!-- ミニマップの当たり（橙） -->
+                <SolidColorBrush x:Key="Uv_Minimap_View" Color="#60C8C8C8" />  <!-- ミニマップの今の位置 -->
+                <SolidColorBrush x:Key="Uv_Edit_Selection" Color="#664C9AFF" />  <!-- 編集の選択 -->
+                <SolidColorBrush x:Key="Uv_Edit_Caret" Color="#9CC4FF" />  <!-- 編集のカーソル -->
+                <SolidColorBrush x:Key="Uv_Edit_Mark" Color="#FFAA4D" />  <!-- 編集した行の印 -->
+                <SolidColorBrush x:Key="Uv_Rect_Selection" Color="#554C9AFF" />  <!-- 矩形選択 -->
+            </ResourceDictionary>
+    </ResourceDictionary.ThemeDictionaries>
+</ResourceDictionary>

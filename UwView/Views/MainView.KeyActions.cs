@@ -22,6 +22,9 @@ public partial class MainView
                 return true;
             case ShortcutAction.ResultListBigger: ResizeFilterResults(1.15); return true;
             case ShortcutAction.ResultListSmaller: ResizeFilterResults(1 / 1.15); return true;
+            case ShortcutAction.ZoomIn: ViewFont.Zoom(1); return true;
+            case ShortcutAction.ZoomOut: ViewFont.Zoom(-1); return true;
+            case ShortcutAction.ZoomReset: ViewFont.ResetZoom(); return true;
         }
         if (_vm?.ActiveTab is null) return false;
         switch (action)

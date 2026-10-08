@@ -709,8 +709,8 @@ public partial class MainView : UserControl
             Margin = centered
                 ? new Avalonia.Thickness(0, 80, 0, 0)
                 : new Avalonia.Thickness(0, 6, 26, 6),
-            Background = Avalonia.Media.Brushes.White,
-            BorderBrush = new Avalonia.Media.SolidColorBrush(Avalonia.Media.Color.FromRgb(0x99, 0x99, 0x99)),
+            Background = UwView.Services.ThemeColors.Surface,
+            BorderBrush = UwView.Services.ThemeColors.Get("Uv_999999", new Avalonia.Media.SolidColorBrush(Avalonia.Media.Color.FromRgb(0x99, 0x99, 0x99))),
             BorderThickness = new Avalonia.Thickness(1),
             CornerRadius = new Avalonia.CornerRadius(6),
             ClipToBounds = true,

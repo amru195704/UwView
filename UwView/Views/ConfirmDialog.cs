@@ -32,7 +32,7 @@ public static class ConfirmDialog
             Spacing = 16,
             Children =
             {
-                new TextBlock { Text = message, TextWrapping = TextWrapping.Wrap, Foreground = Brushes.Black },
+                new TextBlock { Text = message, TextWrapping = TextWrapping.Wrap, Foreground = UwView.Services.ThemeColors.Text },
                 new StackPanel
                 {
                     Orientation = Orientation.Horizontal,
@@ -80,7 +80,7 @@ public static class ConfirmDialog
             Spacing = 16,
             Children =
             {
-                new TextBlock { Text = message, TextWrapping = TextWrapping.Wrap, Foreground = Brushes.Black },
+                new TextBlock { Text = message, TextWrapping = TextWrapping.Wrap, Foreground = UwView.Services.ThemeColors.Text },
                 new StackPanel
                 {
                     Orientation = Orientation.Horizontal,
@@ -112,7 +112,7 @@ public static class ConfirmDialog
         };
         var one = new Button { Name = "ChoiceFirst", Content = first, MinWidth = 120, IsDefault = true, HorizontalContentAlignment = HorizontalAlignment.Center };
         var two = new Button { Name = "ChoiceSecond", Content = second, MinWidth = 120, HorizontalContentAlignment = HorizontalAlignment.Center };
-        var check = new CheckBox { Name = "ChoiceDontAsk", Content = dontAsk, Foreground = Brushes.Black };
+        var check = new CheckBox { Name = "ChoiceDontAsk", Content = dontAsk, Foreground = UwView.Services.ThemeColors.Text };
         one.Click += (_, _) => { result = 1; dialog.Close(); };
         two.Click += (_, _) => { result = 2; dialog.Close(); };
 
@@ -122,7 +122,7 @@ public static class ConfirmDialog
             Spacing = 16,
             Children =
             {
-                new TextBlock { Text = message, TextWrapping = TextWrapping.Wrap, Foreground = Brushes.Black },
+                new TextBlock { Text = message, TextWrapping = TextWrapping.Wrap, Foreground = UwView.Services.ThemeColors.Text },
                 check,
                 new StackPanel
                 {
@@ -157,7 +157,7 @@ public static class ConfirmDialog
             Spacing = 16,
             Children =
             {
-                new SelectableTextBlock { Text = message, TextWrapping = TextWrapping.Wrap, Foreground = Brushes.Black },
+                new SelectableTextBlock { Text = message, TextWrapping = TextWrapping.Wrap, Foreground = UwView.Services.ThemeColors.Text },
                 new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Children = { close } },
             },
         };

@@ -239,7 +239,7 @@ public class TextView : Control
             b.Click += (_, _) => { ColorLabelRequested?.Invoke(word, hex); CloseFlyout(); };
             swatches.Children.Add(b);
         }
-        root.Children.Add(new TextBlock { Text = word, FontWeight = FontWeight.Bold, Foreground = Brushes.Black });
+        root.Children.Add(new TextBlock { Text = word, FontWeight = FontWeight.Bold, Foreground = UwView.Services.ThemeColors.Text });
 
         // コピー（先頭。着色メニューか copy か迷わないよう明示）
         var copy = new Button { HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch };
@@ -289,8 +289,9 @@ public class TextView : Control
     /// <summary>先頭表示位置・モード・セッションが変わったら発火（ステータス/スクロールバー更新用）。</summary>
     public event EventHandler? StateChanged;
 
-    private readonly Typeface _typeface = new(new FontFamily("Cascadia Mono,Menlo,Consolas,Courier New,monospace"));
-    private const double FontSize = 14;
+    // フォントと大きさは設定から（v1.8.2 extFS E-4。Ctrl＋ホイール・Ctrl＋＋／－で拡大・縮小）
+    private static Typeface _typeface => UwView.Services.ViewFont.Typeface;
+    private static double FontSize => UwView.Services.ViewFont.Size;
     private const double Padding = 4;
     private double _lineHeight;
     private double _digitWidth;
@@ -312,14 +313,40 @@ public class TextView : Control
     /// <summary>本文の横スクロール量（px）。行番号ガターは固定で本文だけ動く。</summary>
     protected double HOffset => _hOffset;
 
+    /// <summary>地の色（null ならテーマの本文の地）。</summary>
     public IBrush? Background { get; set; }
 
     public TextView()
     {
         Focusable = true;
         ClipToBounds = true;
-        Background = Brushes.White;
         SizeChanged += (_, _) => { InvalidateVisual(); NotifyChanged(); };
+    }
+
+    // テーマ・フォントが変わったら描き直す（v1.8.2 extFS E-4）
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+        UwView.Services.ThemeColors.Changed += OnThemeChanged;
+        UwView.Services.ViewFont.Changed += OnFontChanged;
+    }
+
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        UwView.Services.ThemeColors.Changed -= OnThemeChanged;
+        UwView.Services.ViewFont.Changed -= OnFontChanged;
+        base.OnDetachedFromVisualTree(e);
+    }
+
+    private void OnThemeChanged() => InvalidateVisual();
+
+    private void OnFontChanged()
+    {
+        _lineHeight = 0;       // 測り直す（行の高さ・数字の幅）
+        _maxLineWidth = 0;
+        InvalidateVisual();
+        NotifyChanged();
+        UpdateHScroll();
     }
 
     public void AttachScrollBar(ScrollBar scrollBar)
@@ -776,8 +803,37 @@ public class TextView : Control
         }
     }
 
+    /// <summary>ダークのとき：同梱の淡い色は暗い色に替え、それ以外の明るい地で文字の色が無い区間は文字を黒にする。</summary>
+    private static IReadOnlyList<HlSpan> DarkReadable(IReadOnlyList<HlSpan> spans)
+    {
+        HlSpan[]? changed = null;
+        for (int i = 0; i < spans.Count; i++)
+        {
+            var sp = spans[i];
+            if (sp.Bg == 0) continue;
+            // 同梱のプリセットの淡い色は、暗い背景で読める色に替える
+            if (HighlightPresets.DarkVariant(sp.Bg) is { } dark)
+            {
+                changed ??= [.. spans];
+                changed[i] = sp with { Bg = dark };
+                continue;
+            }
+            if (sp.Fg != 0 || UwView.Services.ThemeColors.Luminance(ColorFromArgb(sp.Bg)) < 0.45) continue;
+            changed ??= [.. spans];
+            changed[i] = sp with { Fg = 0xFF000000 };
+        }
+        return changed ?? spans;
+    }
+
     protected override void OnPointerWheelChanged(PointerWheelEventArgs e)
     {
+        // Ctrl（Mac は ⌘）＋ホイール：文字の拡大・縮小（v1.8.2 extFS E-4）
+        if (e.KeyModifiers.HasFlag(OperatingSystem.IsMacOS() ? KeyModifiers.Meta : KeyModifiers.Control) && e.Delta.Y != 0)
+        {
+            UwView.Services.ViewFont.Zoom(e.Delta.Y > 0 ? 1 : -1);
+            e.Handled = true;
+            return;
+        }
         // 横: トラックパッドの横スワイプ（Delta.X）。Shift+縦ホイールも横に回す。
         if (e.Delta.X != 0)
         {
@@ -975,8 +1031,7 @@ public class TextView : Control
 
     public override void Render(DrawingContext ctx)
     {
-        if (Background is not null)
-            ctx.FillRectangle(Background, new Rect(Bounds.Size));
+        ctx.FillRectangle(Background ?? UwView.Services.ThemeColors.ViewBackground, new Rect(Bounds.Size));
 
         var doc = Doc;
         if (_session is null || doc is null) return;
@@ -1023,8 +1078,8 @@ public class TextView : Control
 
         // 行番号ガター
         double gutter = 0;
-        var numberBrush = new SolidColorBrush(Color.FromRgb(0x40, 0x40, 0x40));
-        var textBrush = Brushes.Black;
+        var numberBrush = UwView.Services.ThemeColors.LineNumber;
+        var textBrush = UwView.Services.ThemeColors.ViewText;
         if (showNumbers && visible.Count > 0)
         {
             long maxNo = 0;
@@ -1039,21 +1094,21 @@ public class TextView : Control
                 digits = widestLabel;
             }
             gutter = digits * _digitWidth + Padding * 2;
-            ctx.FillRectangle(new SolidColorBrush(Color.FromRgb(0xF2, 0xF2, 0xF2)),
-                new Rect(0, 0, gutter, Bounds.Height));
+            ctx.FillRectangle(UwView.Services.ThemeColors.Gutter, new Rect(0, 0, gutter, Bounds.Height));
         }
         _lastGutter = gutter; // ピクセル→セル座標変換（矩形選択）用に保存
 
         // 検索ハイライト（§11-②）: 可視行だけ再マッチして背景色を塗る
         var hlRegex = _session.SearchHighlightRegex;
-        var hlBrush = new SolidColorBrush(Color.FromRgb(0xFF, 0xE0, 0x66)); // 黄
-        var bookmarkBrush = new SolidColorBrush(Color.FromRgb(0x1A, 0x6F, 0xE8)); // 青（§11-④）
-        var emphasisBrush = new SolidColorBrush(Color.FromRgb(0xCB, 0xE8, 0xFA)); // 水色（ジャンプ先の行）
-        var selBrush = new SolidColorBrush(Color.FromRgb(0xB4, 0xD5, 0xEE)); // 行選択（やや濃い水色）
+        var hlBrush = UwView.Services.ThemeColors.Match;            // 黄
+        var bookmarkBrush = UwView.Services.ThemeColors.Bookmark;   // 青（§11-④）
+        var emphasisBrush = UwView.Services.ThemeColors.Emphasis;   // 水色（ジャンプ先の行）
+        var selBrush = UwView.Services.ThemeColors.Selection;       // 行選択（やや濃い水色）
         bool hasBookmarks = _session.Bookmarks.Count > 0;
         bool hasSel = HasLineSelection && lineMode && !FilterOn;
         long selTop = SelTop, selBottom = SelBottom;
-        var wordBrush = new SolidColorBrush(Color.FromRgb(0xB4, 0xD5, 0xEE)); // 語選択（行選択と同色）
+        var wordBrush = UwView.Services.ThemeColors.Selection;      // 語選択（行選択と同色）
+        bool dark = UwView.Services.ThemeColors.IsDark;
 
         // 横スクロール: 本文だけ _hOffset ぶん左へずらす（ガターは固定）。
         double x = gutter + Padding - _hOffset;
@@ -1109,6 +1164,8 @@ public class TextView : Control
             IReadOnlyList<HlSpan> hlSpans = Highlighter is { IsEmpty: false } compiled && text.Length > 0
                 ? compiled.Highlight(text)
                 : System.Array.Empty<HlSpan>();
+            // ダークで明るい地の着色は、文字を黒にして読めるようにする（利用者の色そのものは変えない。v1.8.2 extFS E-4）
+            if (dark && hlSpans.Count > 0) hlSpans = DarkReadable(hlSpans);
             bool hlHasFg = false;
             foreach (var sp in hlSpans)
             {
@@ -1199,5 +1256,5 @@ public class TextView : Control
 
     private FormattedText MakeText(string s, IBrush? brush = null) => new(
         s, CultureInfo.CurrentCulture, FlowDirection.LeftToRight,
-        _typeface, FontSize, brush ?? Brushes.Black);
+        _typeface, FontSize, brush ?? UwView.Services.ThemeColors.ViewText);
 }

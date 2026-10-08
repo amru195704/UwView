@@ -31,6 +31,8 @@
         <PackageVersion Include="xunit" Version="2.9.3" />
         <!-- UI テスト（Avalonia.Headless.XUnit は xunit v3 系に依存する） -->
         <PackageVersion Include="Avalonia.Headless.XUnit" Version="12.0.5" />
+        <!-- 画面の写し（UwView.ThemeShots。描画を省かず Skia で描く） -->
+        <PackageVersion Include="Avalonia.Skia" Version="12.0.5" />
         <PackageVersion Include="xunit.v3" Version="3.2.2" />
         <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.4" />
     </ItemGroup>

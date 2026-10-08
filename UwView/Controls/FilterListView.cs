@@ -8,6 +8,7 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Threading;
+using UwView.Services;
 using UwView.ViewModels;
 
 namespace UwView.Controls;
@@ -29,17 +30,18 @@ public sealed class FilterListView : Control
     private const double DragThresholdPx = 4;
     private const int WheelRows = 3;
 
-    private static readonly IBrush BgBrush = Brushes.White;
-    private static readonly IBrush TextBrush = Brushes.Black;
-    private static readonly IBrush HitNumberBrush = new SolidColorBrush(Color.FromRgb(0x1A, 0x6F, 0xE8));
-    private static readonly IBrush LineNumberBrush = new SolidColorBrush(Color.FromRgb(0x40, 0x40, 0x40));
-    private static readonly IBrush MatchBrush = new SolidColorBrush(Color.FromRgb(0xFF, 0xE0, 0x66));
-    private static readonly IBrush SelBrush = new SolidColorBrush(Color.FromRgb(0xB4, 0xD5, 0xEE));
-    private static readonly IBrush ContextBgBrush = new SolidColorBrush(Color.FromRgb(0xF2, 0xF2, 0xF2));
-    private static readonly IBrush BookmarkBrush = new SolidColorBrush(Color.FromRgb(0x1A, 0x6F, 0xE8)); // 本文・ミニマップと同じ青
+    // 色はテーマから（ライト／ダーク。v1.8.2 extFS E-4）
+    private static IBrush BgBrush => ThemeColors.ViewBackground;
+    private static IBrush TextBrush => ThemeColors.ViewText;
+    private static IBrush HitNumberBrush => ThemeColors.HitNumber;
+    private static IBrush LineNumberBrush => ThemeColors.LineNumber;
+    private static IBrush MatchBrush => ThemeColors.Match;
+    private static IBrush SelBrush => ThemeColors.Selection;
+    private static IBrush ContextBgBrush => ThemeColors.ContextBg;
+    private static IBrush BookmarkBrush => ThemeColors.Bookmark;   // 本文・ミニマップと同じ青
 
-    // メイン（TextView）と同じ等幅フォント指定。WASM では同梱の Noto Sans JP に落ちる。
-    private readonly Typeface _typeface = new(new FontFamily("Cascadia Mono,Menlo,Consolas,Courier New,monospace"));
+    // メイン（TextView）と同じフォント（設定で選べる。WASM では同梱の Noto Sans JP に落ちる）。
+    private static Typeface _typeface => ViewFont.Typeface;
     private double _lineHeight;
     private double _charWidth;
 
@@ -78,8 +80,34 @@ public sealed class FilterListView : Control
     {
         Focusable = true;
         ClipToBounds = true;
-        FontSize = 12;
+        FontSize = ViewFont.ListSize;
         SizeChanged += (_, _) => { InvalidateVisual(); NotifyScrollChanged(); };
+    }
+
+    // テーマ・フォントが変わったら描き直す（v1.8.2 extFS E-4）
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+        ThemeColors.Changed += InvalidateVisual;
+        ViewFont.Changed += OnFontChanged;
+        OnFontChanged();
+    }
+
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        ThemeColors.Changed -= InvalidateVisual;
+        ViewFont.Changed -= OnFontChanged;
+        base.OnDetachedFromVisualTree(e);
+    }
+
+    private void OnFontChanged()
+    {
+        if (FontSize == ViewFont.ListSize && _lineHeight > 0) return;
+        FontSize = ViewFont.ListSize;
+        _lineHeight = 0;        // 測り直す
+        _charWidth = 0;
+        InvalidateVisual();
+        NotifyScrollChanged();
     }
 
     /// <summary>行の活性化（ダブルクリック / Enter）。</summary>
@@ -299,6 +327,13 @@ public sealed class FilterListView : Control
 
     protected override void OnPointerWheelChanged(PointerWheelEventArgs e)
     {
+        // Ctrl（Mac は ⌘）＋ホイール：文字の拡大・縮小（本文と一緒に変わる。v1.8.2 extFS E-4）
+        if (e.KeyModifiers.HasFlag(OperatingSystem.IsMacOS() ? KeyModifiers.Meta : KeyModifiers.Control) && e.Delta.Y != 0)
+        {
+            ViewFont.Zoom(e.Delta.Y > 0 ? 1 : -1);
+            e.Handled = true;
+            return;
+        }
         // 横: トラックパッドの横スワイプ、Shift+縦ホイールも横に回す
         if (e.Delta.X != 0)
         {

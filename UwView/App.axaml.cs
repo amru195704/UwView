@@ -108,6 +108,7 @@ public partial class App : Application
         // 題名に出す版数（試験用ビルドだけ使う。dist ごとに上がるので取り違えない）
         UwView.Core.AppEdition.Version = VersionText(typeof(App).Assembly);
         AvaloniaXamlLoader.Load(this);
+        UwView.Controls.ToolbarIcon.RegisterThemeIcons(this);   // アイコン（ライト／ダーク。v1.8.2 extFS E-4）
     }
 
     /// <summary>保存済み言語 → 無ければ OS の UI カルチャ（ja 以外は en）。</summary>
@@ -169,6 +170,7 @@ public partial class App : Application
         // 言語を VM 生成より先に適用（EncodingOptions 等の初期ラベルを正しい言語に）
         Settings = AppSettings.Load();
         UwView.Services.AppSettingsRef.Current = Settings; // 共有VMからの参照先
+        UwView.Services.AppTheme.Apply(Settings.Theme);   // テーマ（OS に合わせる・ライト・ダーク。v1.8.2 extFS E-4）
         Localizer.Instance.SetLanguage(ResolveLanguage(Settings));
 
         HookFileActivation();
@@ -327,7 +329,7 @@ public partial class App : Application
         var link = new Avalonia.Controls.TextBlock
         {
             Text = url,
-            Foreground = new Avalonia.Media.SolidColorBrush(Avalonia.Media.Color.FromRgb(0x1A, 0x6F, 0xE8)),
+            Foreground = UwView.Services.ThemeColors.Get("Uv_1A6FE8", new Avalonia.Media.SolidColorBrush(Avalonia.Media.Color.FromRgb(0x1A, 0x6F, 0xE8))),
             TextDecorations = Avalonia.Media.TextDecorations.Underline,
             Cursor = new Avalonia.Input.Cursor(Avalonia.Input.StandardCursorType.Hand),
         };

@@ -19,6 +19,15 @@
         <local:ViewLocator/>
     </Application.DataTemplates>
 
+    <!-- 画面の色（ライト／ダーク。v1.8.2 extFS E-4） -->
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceInclude Source="avares://UwView/Themes/Palette.axaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Application.Resources>
+
     <Application.Styles>
         <FluentTheme />
         <!-- 候補の一覧（検索履歴など）が開いているときの1回目のクリックを、一覧を閉じるだけで終わらせない。

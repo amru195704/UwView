@@ -52,6 +52,14 @@ public enum ShortcutAction
     ResultListSmaller,
     /// <summary>開いているファイルを選ぶ小さな窓（Ctrl＋Shift＋O）。</summary>
     OpenFileSwitcher,
+
+    // ── v1.8.2 extFS E-4 §5：文字の拡大・縮小（本文と結果の一覧の両方）──
+    /// <summary>文字を大きく（Ctrl＋＋）。</summary>
+    ZoomIn,
+    /// <summary>文字を小さく（Ctrl＋－）。</summary>
+    ZoomOut,
+    /// <summary>文字を既定の大きさに戻す（Ctrl＋0）。</summary>
+    ZoomReset,
 }
 
 /// <summary>

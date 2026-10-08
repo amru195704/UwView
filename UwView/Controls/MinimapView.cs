@@ -31,10 +31,23 @@ public sealed class MinimapView : Control
     /// <summary>クリック位置の割合（0..1）でジャンプ要求。</summary>
     public event EventHandler<double>? JumpRequested;
 
-    private static readonly IBrush BgBrush = new SolidColorBrush(Color.FromRgb(0xF0, 0xF0, 0xF0));
-    private static readonly IBrush HitBrush = new SolidColorBrush(Color.FromRgb(0xE8, 0x71, 0x1A)); // 橙（検索）
-    private static readonly IBrush BookmarkBrush = new SolidColorBrush(Color.FromRgb(0x1A, 0x6F, 0xE8)); // 青（§11-④）
-    private static readonly IBrush ViewBrush = new SolidColorBrush(Color.FromArgb(0x60, 0x40, 0x40, 0x40));
+    // 色はテーマから（ライト／ダーク。v1.8.2 extFS E-4）
+    private static IBrush BgBrush => UwView.Services.ThemeColors.MinimapBackground;
+    private static IBrush HitBrush => UwView.Services.ThemeColors.MinimapHit;          // 橙（検索）
+    private static IBrush BookmarkBrush => UwView.Services.ThemeColors.Bookmark;       // 青（§11-④）
+    private static IBrush ViewBrush => UwView.Services.ThemeColors.MinimapView;
+
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+        UwView.Services.ThemeColors.Changed += InvalidateVisual;
+    }
+
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        UwView.Services.ThemeColors.Changed -= InvalidateVisual;
+        base.OnDetachedFromVisualTree(e);
+    }
 
     public MinimapView()
     {

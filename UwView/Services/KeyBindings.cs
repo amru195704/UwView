@@ -205,6 +205,9 @@ public sealed class KeyBindingSet
         set.SetKeys(ShortcutAction.LeaveInput, [KeyChord.Of(Key.Escape)]);
         set.SetKeys(ShortcutAction.OpenCommandLine, [KeyChord.Of(Key.K, P | ChordMods.Shift)]);
         set.SetKeys(ShortcutAction.OpenSettings, [KeyChord.Of(Key.OemComma, P)]);
+        set.SetKeys(ShortcutAction.ZoomIn, [KeyChord.Of(Key.OemPlus, P), KeyChord.Of(Key.OemPlus, P | ChordMods.Shift)]);
+        set.SetKeys(ShortcutAction.ZoomOut, [KeyChord.Of(Key.OemMinus, P), KeyChord.Of(Key.Subtract, P)]);
+        set.SetKeys(ShortcutAction.ZoomReset, [KeyChord.Of(Key.D0, P), KeyChord.Of(Key.NumPad0, P)]);
         return set;
     }
 

@@ -197,7 +197,7 @@ public static class CompressedOpenDialog
                 HorizontalAlignment = HorizontalAlignment.Stretch,
                 HorizontalContentAlignment = HorizontalAlignment.Left,
                 Padding = new Thickness(14, 10),
-                Foreground = new SolidColorBrush(Color.FromRgb(0x8A, 0x8A, 0x8A)),
+                Foreground = UwView.Services.ThemeColors.Get("Uv_8A8A8A", new SolidColorBrush(Color.FromRgb(0x8A, 0x8A, 0x8A))),
             };
             ToolTip.SetTip(upsell, T("UwView Pro の機能です（クリックで案内）",
                                      "A UwView Pro feature — click for details"));
@@ -223,7 +223,7 @@ public static class CompressedOpenDialog
         body.Children.Add(new TextBlock
         {
             Text = head, TextWrapping = TextWrapping.Wrap,
-            Foreground = Brushes.Black, FontWeight = FontWeight.Bold,
+            Foreground = UwView.Services.ThemeColors.Text, FontWeight = FontWeight.Bold,
         });
         // Pro が使えるときは「.uwvz に変換」を上（＝既定の勧め）に置く
         if (proOk) { body.Children.Add(convertRow); body.Children.Add(expand); }
@@ -253,7 +253,7 @@ public static class CompressedOpenDialog
             {
                 new TextBlock { Text = title, FontWeight = FontWeight.Bold },
                 new TextBlock { Text = detail, TextWrapping = TextWrapping.Wrap, FontSize = 12,
-                                Foreground = new SolidColorBrush(Color.FromRgb(0x4A, 0x55, 0x60)) },
+                                Foreground = UwView.Services.ThemeColors.Get("Uv_4A5560", new SolidColorBrush(Color.FromRgb(0x4A, 0x55, 0x60))) },
             },
         },
     };

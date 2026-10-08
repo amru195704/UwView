@@ -27,6 +27,9 @@
          アプリ内では avares://UwView/Assets/Toolbar/open.png のように参照する。 -->
     <AvaloniaResource Include="..\press-kit\assets\toolbar\*.png"
                       Link="Assets\Toolbar\%(Filename)%(Extension)" />
+    <!-- ダーク用（黒い所を明るい灰色にしたもの。build/make-dark-toolbar-icons.py で作る。v1.8.2 extFS E-4） -->
+    <AvaloniaResource Include="..\press-kit\assets\toolbar-dark\*.png"
+                      Link="Assets\ToolbarDark\%(Filename)%(Extension)" />
   </ItemGroup>
 
   <ItemGroup>

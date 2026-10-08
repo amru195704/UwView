@@ -35,10 +35,10 @@
 
         <!-- 入力欄＋操作ボタンを1つの部品として囲む（[入力][操作] が1組と判るように） -->
         <Style Selector="Border.inputGroup">
-            <Setter Property="BorderBrush" Value="#9E9E9E" />
+            <Setter Property="BorderBrush" Value="{DynamicResource Uv_9E9E9E}" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="CornerRadius" Value="4" />
-            <Setter Property="Background" Value="White" />
+            <Setter Property="Background" Value="{DynamicResource Uv_Surface}" />
             <Setter Property="Padding" Value="2,1" />
         </Style>
         <!-- 内側の入力欄は二重枠にならないよう枠と背景を消す -->
@@ -55,7 +55,7 @@
     <DockPanel LastChildFill="True">
 
         <!-- タブストリップ（§4.7） -->
-        <Border DockPanel.Dock="Top" Background="#E4E4E4" BorderBrush="#CCCCCC"
+        <Border DockPanel.Dock="Top" Background="{DynamicResource Uv_E4E4E4}" BorderBrush="{DynamicResource Uv_CCCCCC}"
                 BorderThickness="0,0,0,1" IsVisible="{Binding HasTabs}">
             <!-- 1行のまま。増えたら左右にスクロールする（9.27修正。折り返すと本文が下がる） -->
             <ScrollViewer x:Name="TabScroll" HorizontalScrollBarVisibility="Auto"
@@ -76,20 +76,20 @@
                         </Style>
                         <!-- 複数ファイルの結果のメイン（uvf の結果セット・uvp の束ねた本文）は灰色 -->
                         <Style Selector="TabStripItem.resultMain">
-                            <Setter Property="Background" Value="#C8C8C8" />
+                            <Setter Property="Background" Value="{DynamicResource Uv_C8C8C8}" />
                         </Style>
                     </TabStrip.Styles>
                     <TabStrip.ItemTemplate>
                         <DataTemplate x:DataType="vm:DocumentTabViewModel">
                             <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center"
                                         Background="Transparent" ToolTip.Tip="{Binding TabToolTip}">
-                                <TextBlock Text="{Binding TabTitle}" FontSize="14" Foreground="Black"
+                                <TextBlock Text="{Binding TabTitle}" FontSize="14" Foreground="{DynamicResource Uv_Text}"
                                            VerticalAlignment="Center" />
                                 <TextBlock Text="{Binding IndexProgress, StringFormat='{}{0:P0}'}" FontSize="14"
-                                           Foreground="Black" VerticalAlignment="Center"
+                                           Foreground="{DynamicResource Uv_Text}" VerticalAlignment="Center"
                                            IsVisible="{Binding IsIndexing}" />
                                 <Button Content="×" Padding="4,0" MinWidth="0" Background="Transparent"
-                                        Foreground="Black"
+                                        Foreground="{DynamicResource Uv_Text}"
                                         Command="{Binding CloseCommand}"
                                         IsVisible="{Binding CanClose}" />
                             </StackPanel>
@@ -100,59 +100,59 @@
         </Border>
 
         <!-- ツールバー -->
-        <Border DockPanel.Dock="Top" Background="#EEEEEE" BorderBrush="#CCCCCC"
+        <Border DockPanel.Dock="Top" Background="{DynamicResource Uv_EEEEEE}" BorderBrush="{DynamicResource Uv_CCCCCC}"
                 BorderThickness="0,0,0,1" Padding="6">
             <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                 <!-- アイコンはすべてフラット統一（Material Icons）。ラベルはツールチップ -->
                 <Button x:Name="OpenButton" Classes="icon" ToolTip.Tip="{loc:Localize Open}">
-                    <Image RenderOptions.BitmapInterpolationMode="HighQuality" Source="avares://UwView/Assets/Toolbar/open.png" />
+                    <Image RenderOptions.BitmapInterpolationMode="HighQuality" Source="{DynamicResource Icon_open}" />
                 </Button>
                 <Button x:Name="CloseButton" Classes="icon" ToolTip.Tip="{loc:Localize CloseTabMenu}"
                         IsEnabled="{Binding HasTabs}">
-                    <Image RenderOptions.BitmapInterpolationMode="HighQuality" Source="avares://UwView/Assets/Toolbar/close.png" />
+                    <Image RenderOptions.BitmapInterpolationMode="HighQuality" Source="{DynamicResource Icon_close}" />
                 </Button>
                 <ComboBox x:Name="EncodingCombo" MinWidth="130"
                           ToolTip.Tip="{loc:Localize EncodingLabel}"
                           ItemsSource="{Binding EncodingOptions}"
                           SelectedItem="{Binding SelectedEncoding, Mode=TwoWay}" />
-                <CheckBox x:Name="LineNumberCheck" Content="{loc:Localize LineNumbers}" IsChecked="True" Foreground="Black" />
-                <Rectangle Width="1" Fill="#CCCCCC" Margin="4,0" />
+                <CheckBox x:Name="LineNumberCheck" Content="{loc:Localize LineNumbers}" IsChecked="True" Foreground="{DynamicResource Uv_Text}" />
+                <Rectangle Width="1" Fill="{DynamicResource Uv_CCCCCC}" Margin="4,0" />
                 <Border Classes="inputGroup">
                     <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
                         <TextBox x:Name="JumpBox" Width="110" PlaceholderText="{loc:Localize JumpPlaceholder}"
                                  VerticalAlignment="Center" Text="{Binding JumpText, Mode=TwoWay}" />
                         <Button x:Name="JumpButton" Classes="icon" ToolTip.Tip="{loc:Localize JumpLabel}">
-                            <Image RenderOptions.BitmapInterpolationMode="HighQuality" Source="avares://UwView/Assets/Toolbar/go.png" />
+                            <Image RenderOptions.BitmapInterpolationMode="HighQuality" Source="{DynamicResource Icon_go}" />
                         </Button>
                     </StackPanel>
                 </Border>
-                <Rectangle Width="1" Fill="#CCCCCC" Margin="4,0" />
+                <Rectangle Width="1" Fill="{DynamicResource Uv_CCCCCC}" Margin="4,0" />
                 <Button x:Name="BookmarkToggleButton" Classes="icon" ToolTip.Tip="{loc:Localize BookmarkToggleTip}">
-                    <Image RenderOptions.BitmapInterpolationMode="HighQuality" Source="avares://UwView/Assets/Toolbar/bookmark.png" />
+                    <Image RenderOptions.BitmapInterpolationMode="HighQuality" Source="{DynamicResource Icon_bookmark}" />
                 </Button>
                 <Button x:Name="PrevBookmarkButton" Classes="icon" ToolTip.Tip="{loc:Localize PrevBookmarkTip}">
-                    <Image RenderOptions.BitmapInterpolationMode="HighQuality" Source="avares://UwView/Assets/Toolbar/prev.png" />
+                    <Image RenderOptions.BitmapInterpolationMode="HighQuality" Source="{DynamicResource Icon_prev}" />
                 </Button>
                 <Button x:Name="NextBookmarkButton" Classes="icon" ToolTip.Tip="{loc:Localize NextBookmarkTip}">
-                    <Image RenderOptions.BitmapInterpolationMode="HighQuality" Source="avares://UwView/Assets/Toolbar/next.png" />
+                    <Image RenderOptions.BitmapInterpolationMode="HighQuality" Source="{DynamicResource Icon_next}" />
                 </Button>
-                <Rectangle Width="1" Fill="#CCCCCC" Margin="4,0" />
+                <Rectangle Width="1" Fill="{DynamicResource Uv_CCCCCC}" Margin="4,0" />
                 <ToggleButton x:Name="TailToggle" Classes="icon" ToolTip.Tip="{loc:Localize TailTip}">
-                    <Image RenderOptions.BitmapInterpolationMode="HighQuality" Source="avares://UwView/Assets/Toolbar/tail.png" />
+                    <Image RenderOptions.BitmapInterpolationMode="HighQuality" Source="{DynamicResource Icon_tail}" />
                 </ToggleButton>
                 <ToggleButton x:Name="FavoriteToggle" Classes="icon"
                               ToolTip.Tip="{loc:Localize FavoriteTip}"
                         AutomationProperties.Name="{loc:Localize Favorite}">
-                    <Image RenderOptions.BitmapInterpolationMode="HighQuality" Source="avares://UwView/Assets/Toolbar/favorite.png" />
+                    <Image RenderOptions.BitmapInterpolationMode="HighQuality" Source="{DynamicResource Icon_favorite}" />
                 </ToggleButton>
-                <Rectangle Width="1" Fill="#CCCCCC" Margin="4,0" />
+                <Rectangle Width="1" Fill="{DynamicResource Uv_CCCCCC}" Margin="4,0" />
                 <Button x:Name="HighlighterButton" Classes="icon" ToolTip.Tip="{loc:Localize HighlighterTip}">
-                    <Image RenderOptions.BitmapInterpolationMode="HighQuality" Source="avares://UwView/Assets/Toolbar/highlighter.png" />
+                    <Image RenderOptions.BitmapInterpolationMode="HighQuality" Source="{DynamicResource Icon_highlighter}" />
                 </Button>
                 <Button x:Name="CommandLineButton" Classes="icon" ToolTip.Tip="{loc:Localize TipCmdButton}">
-                    <Image RenderOptions.BitmapInterpolationMode="HighQuality" Source="avares://UwView/Assets/Toolbar/terminal.png" />
+                    <Image RenderOptions.BitmapInterpolationMode="HighQuality" Source="{DynamicResource Icon_terminal}" />
                 </Button>
-                <Rectangle Width="1" Fill="#CCCCCC" Margin="4,0" />
+                <Rectangle Width="1" Fill="{DynamicResource Uv_CCCCCC}" Margin="4,0" />
                 <ComboBox x:Name="LanguageCombo" MinWidth="90"
                           ToolTip.Tip="{loc:Localize LanguageLabel}"
                           ItemsSource="{Binding Languages}"
@@ -161,7 +161,7 @@
         </Border>
 
         <!-- 検索バー（§11-①②⑥） -->
-        <Border DockPanel.Dock="Top" Background="#F5F5F5" BorderBrush="#CCCCCC"
+        <Border DockPanel.Dock="Top" Background="{DynamicResource Uv_F5F5F5}" BorderBrush="{DynamicResource Uv_CCCCCC}"
                 BorderThickness="0,0,0,1" Padding="6,4">
             <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                 <Border Classes="inputGroup">
@@ -179,10 +179,10 @@
                                  VerticalAlignment="Center"
                                  Text="{Binding SearchText, Mode=TwoWay}" />
                         <Button x:Name="SearchButton" Classes="icon" ToolTip.Tip="{loc:Localize SearchButton}">
-                            <Image RenderOptions.BitmapInterpolationMode="HighQuality" Source="avares://UwView/Assets/Toolbar/search.png" />
+                            <Image RenderOptions.BitmapInterpolationMode="HighQuality" Source="{DynamicResource Icon_search}" />
                         </Button>
                         <Button x:Name="ClearSearchButton" Classes="icon" ToolTip.Tip="{loc:Localize ClearSearchTip}">
-                            <Image RenderOptions.BitmapInterpolationMode="HighQuality" Source="avares://UwView/Assets/Toolbar/clear.png" />
+                            <Image RenderOptions.BitmapInterpolationMode="HighQuality" Source="{DynamicResource Icon_clear}" />
                         </Button>
                     </StackPanel>
                 </Border>
@@ -190,53 +190,59 @@
                           PlaceholderText="{loc:Localize PredefinedFilters}"
                           ItemsSource="{Binding PredefinedFilters}"
                           SelectedItem="{Binding SelectedPredefinedFilter, Mode=TwoWay}">
+                    <!-- 閉じた箱には名前だけ（行の「×」は一覧の中だけに出す） -->
+                    <ComboBox.SelectionBoxItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Name}" Foreground="{DynamicResource Uv_Text}" />
+                        </DataTemplate>
+                    </ComboBox.SelectionBoxItemTemplate>
                     <ComboBox.ItemTemplate>
                         <DataTemplate>
                             <!-- 行の「×」で消せる（既定のひな形も。v1.8.2 extFS E-1） -->
                             <DockPanel LastChildFill="True">
                                 <Button DockPanel.Dock="Right" Content="×" Padding="6,0" Margin="10,0,0,0"
                                         ToolTip.Tip="{loc:Localize PredefinedDeleteTip}" Click="OnPredefinedDeleteClick" />
-                                <TextBlock Text="{Binding Name}" Foreground="Black" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding Name}" Foreground="{DynamicResource Uv_Text}" VerticalAlignment="Center" />
                             </DockPanel>
                         </DataTemplate>
                     </ComboBox.ItemTemplate>
                 </ComboBox>
                 <Button x:Name="SaveFilterButton" Content="★" ToolTip.Tip="{loc:Localize SavePredefinedTip}" />
-                <CheckBox x:Name="RegexCheck" Content="{loc:Localize Regex}" Foreground="Black"
+                <CheckBox x:Name="RegexCheck" Content="{loc:Localize Regex}" Foreground="{DynamicResource Uv_Text}"
                           IsChecked="{Binding SearchIsRegex, Mode=TwoWay}" />
-                <CheckBox x:Name="CaseCheck" Content="{loc:Localize IgnoreCase}" Foreground="Black"
+                <CheckBox x:Name="CaseCheck" Content="{loc:Localize IgnoreCase}" Foreground="{DynamicResource Uv_Text}"
                           IsChecked="{Binding SearchIgnoreCase, Mode=TwoWay}" />
                 <Button x:Name="PrevHitButton" Classes="icon" ToolTip.Tip="{loc:Localize PrevHit}">
-                    <Image RenderOptions.BitmapInterpolationMode="HighQuality" Source="avares://UwView/Assets/Toolbar/prev.png" />
+                    <Image RenderOptions.BitmapInterpolationMode="HighQuality" Source="{DynamicResource Icon_prev}" />
                 </Button>
                 <Button x:Name="NextHitButton" Classes="icon" ToolTip.Tip="{loc:Localize NextHit}">
-                    <Image RenderOptions.BitmapInterpolationMode="HighQuality" Source="avares://UwView/Assets/Toolbar/next.png" />
+                    <Image RenderOptions.BitmapInterpolationMode="HighQuality" Source="{DynamicResource Icon_next}" />
                 </Button>
                 <Button x:Name="FilterResultsButton" Classes="icon"
                         ToolTip.Tip="{loc:Localize FilterResultsOpenTip}">
-                    <Image RenderOptions.BitmapInterpolationMode="HighQuality" Source="avares://UwView/Assets/Toolbar/results.png" />
+                    <Image RenderOptions.BitmapInterpolationMode="HighQuality" Source="{DynamicResource Icon_results}" />
                 </Button>
                 <!-- 複数ファイルの結果（uvf -open '*.log' 語）のときだけ出す -->
                 <Button x:Name="FileListButton" Classes="icon" IsVisible="False" ToolTip.Tip="{loc:Localize TipFileList}"
                         AutomationProperties.Name="{loc:Localize FileListButton}">
-                    <Image RenderOptions.BitmapInterpolationMode="HighQuality" Source="avares://UwView/Assets/Toolbar/filelist.png" />
+                    <Image RenderOptions.BitmapInterpolationMode="HighQuality" Source="{DynamicResource Icon_filelist}" />
                 </Button>
-                <TextBlock Text="{Binding SearchInfo}" VerticalAlignment="Center" Foreground="Black" />
+                <TextBlock Text="{Binding SearchInfo}" VerticalAlignment="Center" Foreground="{DynamicResource Uv_Text}" />
             </StackPanel>
         </Border>
 
         <!-- ステータスバー -->
-        <Border DockPanel.Dock="Bottom" Background="#EEEEEE" BorderBrush="#CCCCCC"
+        <Border DockPanel.Dock="Bottom" Background="{DynamicResource Uv_EEEEEE}" BorderBrush="{DynamicResource Uv_CCCCCC}"
                 BorderThickness="0,1,0,0" Padding="6,3">
             <DockPanel LastChildFill="True">
                 <!-- 直前の処理時間。ヒントに直近10件を出す（9.11修正） -->
                 <TextBlock x:Name="LastOpText" DockPanel.Dock="Right" Text=""
-                           VerticalAlignment="Center" Foreground="#4A5560" Margin="12,0,0,0" />
+                           VerticalAlignment="Center" Foreground="{DynamicResource Uv_4A5560}" Margin="12,0,0,0" />
                 <!-- 索引パネルを右に先に確保（左情報が食い込まない） -->
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8"
                             Margin="12,0,0,0" VerticalAlignment="Center"
                             IsVisible="{Binding IsIndexing}">
-                    <TextBlock Text="{loc:Localize Indexing}" VerticalAlignment="Center" Foreground="Black" />
+                    <TextBlock Text="{loc:Localize Indexing}" VerticalAlignment="Center" Foreground="{DynamicResource Uv_Text}" />
                     <ProgressBar Width="140" Minimum="0" Maximum="1"
                                  Value="{Binding IndexProgress}" />
                     <Button x:Name="CancelButton" Content="{loc:Localize Cancel}" />
@@ -244,11 +250,11 @@
                 <!-- 左情報は残り幅にクリップ（あふれても右へ重ならない） -->
                 <StackPanel Orientation="Horizontal" Spacing="14" ClipToBounds="True"
                             VerticalAlignment="Center">
-                    <TextBlock Text="{Binding FilePath}" Foreground="Black" />
-                    <TextBlock Text="{Binding ModeInfo}" Foreground="Black" />
-                    <TextBlock Text="{Binding PositionInfo}" Foreground="Black" />
-                    <TextBlock Text="{Binding EncodingInfo}" Foreground="Black" />
-                    <TextBlock Text="{Binding Notice}" Foreground="#1A6FE8" FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding FilePath}" Foreground="{DynamicResource Uv_Text}" />
+                    <TextBlock Text="{Binding ModeInfo}" Foreground="{DynamicResource Uv_Text}" />
+                    <TextBlock Text="{Binding PositionInfo}" Foreground="{DynamicResource Uv_Text}" />
+                    <TextBlock Text="{Binding EncodingInfo}" Foreground="{DynamicResource Uv_Text}" />
+                    <TextBlock Text="{Binding Notice}" Foreground="{DynamicResource Uv_1A6FE8}" FontWeight="SemiBold" />
                 </StackPanel>
             </DockPanel>
         </Border>
@@ -259,13 +265,13 @@
             <Grid ColumnDefinitions="*,Auto,Auto" RowDefinitions="Auto,*,Auto">
                 <!-- 外での変化の帯（切り詰め・作り直し・ローテーション・削除。v1.8.2 extFS E-0） -->
                 <Border x:Name="ChangeBanner" Grid.Row="0" Grid.ColumnSpan="3" IsVisible="False"
-                        Background="#FFF4CE" BorderBrush="#E0B000" BorderThickness="0,0,0,1" Padding="10,4">
+                        Background="{DynamicResource Uv_FFF4CE}" BorderBrush="{DynamicResource Uv_E0B000}" BorderThickness="0,0,0,1" Padding="10,4">
                     <DockPanel LastChildFill="True">
                         <Button x:Name="ChangeBannerClose" DockPanel.Dock="Right" Content="×" Padding="8,0" Margin="6,0,0,0"
                                 ToolTip.Tip="{loc:Localize BannerCloseTip}" />
                         <Button x:Name="ChangeBannerReload" DockPanel.Dock="Right" Content="{loc:Localize BannerReload}" Margin="12,0,0,0"
                                 ToolTip.Tip="{loc:Localize BannerReloadTip}" />
-                        <TextBlock x:Name="ChangeBannerText" VerticalAlignment="Center" Foreground="Black" TextWrapping="Wrap" />
+                        <TextBlock x:Name="ChangeBannerText" VerticalAlignment="Center" Foreground="{DynamicResource Uv_Text}" TextWrapping="Wrap" />
                     </DockPanel>
                 </Border>
                 <ctrl:TextView x:Name="TextView" Grid.Row="1" Grid.Column="0" />
@@ -277,26 +283,26 @@
             </Grid>
 
             <!-- スタート画面（ファイル未オープン時。最近使ったファイル・お気に入り） -->
-            <Border Background="#FAFAFA" IsVisible="{Binding IsEmpty}">
+            <Border Background="{DynamicResource Uv_FAFAFA}" IsVisible="{Binding IsEmpty}">
                 <Grid RowDefinitions="Auto,*" MaxWidth="720" Margin="24" VerticalAlignment="Center">
                     <StackPanel Grid.Row="0" Spacing="12" Margin="0,0,0,24">
-                        <TextBlock Text="UwView" FontSize="30" FontWeight="Bold" Foreground="Black" />
+                        <TextBlock Text="UwView" FontSize="30" FontWeight="Bold" Foreground="{DynamicResource Uv_Text}" />
                         <Button x:Name="StartOpenButton" Content="{loc:Localize StartOpen}"
                                 HorizontalAlignment="Left" Padding="16,8" />
                     </StackPanel>
                     <Grid Grid.Row="1" ColumnDefinitions="*,24,*">
                         <DockPanel Grid.Column="0" LastChildFill="True">
                             <TextBlock DockPanel.Dock="Top" Text="{loc:Localize StartRecentTitle}"
-                                       FontWeight="Bold" Foreground="Black" Margin="0,0,0,6" />
+                                       FontWeight="Bold" Foreground="{DynamicResource Uv_Text}" Margin="0,0,0,6" />
                             <TextBlock DockPanel.Dock="Top" Text="{loc:Localize StartHint}"
-                                       Foreground="#777777" FontSize="12" Margin="0,0,0,6" />
+                                       Foreground="{DynamicResource Uv_777777}" FontSize="12" Margin="0,0,0,6" />
                             <ListBox x:Name="StartRecentList" ItemsSource="{Binding StartRecent}"
-                                     Background="White" MinHeight="200">
+                                     Background="{DynamicResource Uv_Surface}" MinHeight="200">
                                 <ListBox.ItemTemplate>
                                     <DataTemplate>
                                         <StackPanel Spacing="0" Margin="2">
-                                            <TextBlock Text="{Binding DisplayName}" Foreground="Black" />
-                                            <TextBlock Text="{Binding Path}" Foreground="#888888" FontSize="11"
+                                            <TextBlock Text="{Binding DisplayName}" Foreground="{DynamicResource Uv_Text}" />
+                                            <TextBlock Text="{Binding Path}" Foreground="{DynamicResource Uv_888888}" FontSize="11"
                                                        TextTrimming="CharacterEllipsis" />
                                         </StackPanel>
                                     </DataTemplate>
@@ -305,16 +311,16 @@
                         </DockPanel>
                         <DockPanel Grid.Column="2" LastChildFill="True">
                             <TextBlock DockPanel.Dock="Top" Text="{loc:Localize StartFavoritesTitle}"
-                                       FontWeight="Bold" Foreground="Black" Margin="0,0,0,6" />
+                                       FontWeight="Bold" Foreground="{DynamicResource Uv_Text}" Margin="0,0,0,6" />
                             <TextBlock DockPanel.Dock="Top" Text="{loc:Localize StartHint}"
-                                       Foreground="#777777" FontSize="12" Margin="0,0,0,6" />
+                                       Foreground="{DynamicResource Uv_777777}" FontSize="12" Margin="0,0,0,6" />
                             <ListBox x:Name="StartFavoritesList" ItemsSource="{Binding StartFavorites}"
-                                     Background="White" MinHeight="200">
+                                     Background="{DynamicResource Uv_Surface}" MinHeight="200">
                                 <ListBox.ItemTemplate>
                                     <DataTemplate>
                                         <StackPanel Spacing="0" Margin="2">
-                                            <TextBlock Text="{Binding DisplayName}" Foreground="Black" />
-                                            <TextBlock Text="{Binding Path}" Foreground="#888888" FontSize="11"
+                                            <TextBlock Text="{Binding DisplayName}" Foreground="{DynamicResource Uv_Text}" />
+                                            <TextBlock Text="{Binding Path}" Foreground="{DynamicResource Uv_888888}" FontSize="11"
                                                        TextTrimming="CharacterEllipsis" />
                                         </StackPanel>
                                     </DataTemplate>

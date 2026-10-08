@@ -70,7 +70,7 @@ public sealed class CommandLineDialog : Window
         CanResize = true;
 
         // ── 基準フォルダー（表示＋［選ぶ…］。要裁定 §11-1）──
-        _baseFolder = new TextBlock { Foreground = Brushes.Black, VerticalAlignment = VerticalAlignment.Center,
+        _baseFolder = new TextBlock { Foreground = UwView.Services.ThemeColors.Text, VerticalAlignment = VerticalAlignment.Center,
                                       TextTrimming = TextTrimming.PrefixCharacterEllipsis };
         var pick = MakeButton("CmdPickFolderButton", L["CmdPickFolder"], L["TipCmdPickFolder"]);
         pick.Click += async (_, _) => await PickFolderAsync();
@@ -89,13 +89,13 @@ public sealed class CommandLineDialog : Window
         ToolTip.SetTip(_filePattern, L["TipCmdFilePattern"]);
         ToolTip.SetTip(_searchPattern, L["TipCmdSearchPattern"]);
 
-        _ignore = new CheckBox { Name = "CmdFollowIgnore", Content = L["CmdFollowIgnore"], Foreground = Brushes.Black,
+        _ignore = new CheckBox { Name = "CmdFollowIgnore", Content = L["CmdFollowIgnore"], Foreground = UwView.Services.ThemeColors.Text,
                                  IsChecked = vm.FollowIgnore };
         ToolTip.SetTip(_ignore, L["TipCmdFollowIgnore"]);
         _ignore.IsCheckedChanged += (_, _) => vm.FollowIgnore = _ignore.IsChecked == true;
 
         // ── コマンドの行（いちばん大事な表示。§3.2）──
-        _command = new SelectableTextBlock { Name = "CmdCommandText", FontFamily = Mono, Foreground = Brushes.Black,
+        _command = new SelectableTextBlock { Name = "CmdCommandText", FontFamily = Mono, Foreground = UwView.Services.ThemeColors.Text,
                                              TextWrapping = TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center };
         var copy = MakeButton("CmdCopyButton", L["CmdCopy"], L["TipCmdCopy"]);
         copy.Click += async (_, _) => await CopyAsync(vm.CommandText);
@@ -112,12 +112,12 @@ public sealed class CommandLineDialog : Window
         }
         commandRow.Children.Add(new Border
         {
-            Background = new SolidColorBrush(Color.FromRgb(0xF2, 0xF4, 0xF7)),
-            BorderBrush = new SolidColorBrush(Color.FromRgb(0xC8, 0xCE, 0xD8)),
+            Background = UwView.Services.ThemeColors.Get("Uv_F2F4F7", new SolidColorBrush(Color.FromRgb(0xF2, 0xF4, 0xF7))),
+            BorderBrush = UwView.Services.ThemeColors.Get("Uv_C8CED8", new SolidColorBrush(Color.FromRgb(0xC8, 0xCE, 0xD8))),
             BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(4),
             Padding = new Thickness(8, 5), Margin = new Thickness(0, 0, 8, 0), Child = _command,
         });
-        _error = new TextBlock { Name = "CmdErrorText", Foreground = new SolidColorBrush(Color.FromRgb(0xB0, 0x1E, 0x1E)),
+        _error = new TextBlock { Name = "CmdErrorText", Foreground = UwView.Services.ThemeColors.Get("Uv_B01E1E", new SolidColorBrush(Color.FromRgb(0xB0, 0x1E, 0x1E))),
                                  TextWrapping = TextWrapping.Wrap, Margin = new Thickness(2, 4, 0, 0) };
 
         // ── ファイル一覧・出力欄（タブで切り替える。§3.3・§3.4）──
@@ -149,9 +149,9 @@ public sealed class CommandLineDialog : Window
             Name = "CmdOutputList",
             FontFamily = Mono,
             ItemTemplate = new FuncDataTemplate<string>((line, _) =>
-                new SelectableTextBlock { Text = line ?? "", Foreground = Brushes.Black, FontFamily = Mono }, supportsRecycling: true),
+                new SelectableTextBlock { Text = line ?? "", Foreground = UwView.Services.ThemeColors.Text, FontFamily = Mono }, supportsRecycling: true),
         };
-        _notice = new TextBlock { Name = "CmdNotice", Foreground = new SolidColorBrush(Color.FromRgb(0x8A, 0x4B, 0x00)),
+        _notice = new TextBlock { Name = "CmdNotice", Foreground = UwView.Services.ThemeColors.Get("Uv_8A4B00", new SolidColorBrush(Color.FromRgb(0x8A, 0x4B, 0x00))),
                                   TextWrapping = TextWrapping.Wrap, Margin = new Thickness(2, 0, 0, 4) };
         var copyOut = MakeButton("CmdCopyOutputButton", L["CmdCopy"], L["TipCmdCopyOutput"]);
         copyOut.Click += async (_, _) => await CopyAsync(string.Join("\n", vm.OutputLines));
@@ -175,15 +175,15 @@ public sealed class CommandLineDialog : Window
         _tabs.Items.Add(outputTab);
         _tabs.SelectionChanged += (_, _) => vm.SelectedTab = _tabs.SelectedIndex;
 
-        _summary = new TextBlock { Name = "CmdFilesSummary", Foreground = Brushes.Black, TextWrapping = TextWrapping.Wrap,
+        _summary = new TextBlock { Name = "CmdFilesSummary", Foreground = UwView.Services.ThemeColors.Text, TextWrapping = TextWrapping.Wrap,
                                    Margin = new Thickness(2, 6, 0, 0) };
-        _status = new TextBlock { Name = "CmdStatus", Foreground = Brushes.Black, VerticalAlignment = VerticalAlignment.Center };
+        _status = new TextBlock { Name = "CmdStatus", Foreground = UwView.Services.ThemeColors.Text, VerticalAlignment = VerticalAlignment.Center };
         // Keep（元ファイルが減った）のときだけ出す。前の索引は .bak-日時 に退避してから作り直す（コマンドの --rebuild と同じ）
         _rebuild = MakeButton("CmdRebuildButton", L["CmdRebuild"], L["TipCmdRebuild"]);
         _rebuild.Margin = new Thickness(0, 6, 0, 0);
         _rebuild.Click += async (_, _) => await RebuildAsync();
         // 書いたファイル（-out・convert・［保存…］）：「書きました」＋［開く］［フォルダーを表示］（§5.1）
-        _written = new TextBlock { Name = "CmdWrittenText", Foreground = Brushes.Black, VerticalAlignment = VerticalAlignment.Center,
+        _written = new TextBlock { Name = "CmdWrittenText", Foreground = UwView.Services.ThemeColors.Text, VerticalAlignment = VerticalAlignment.Center,
                                    TextTrimming = TextTrimming.PrefixCharacterEllipsis };
         var openWritten = MakeButton("CmdOpenWrittenButton", L["CmdOpenWritten"], L["TipCmdOpenWritten"]);
         openWritten.Click += async (_, _) =>
@@ -428,7 +428,7 @@ public sealed class CommandLineDialog : Window
         if (_filesTab.GetVisualParent() is Layoutable strip) strip.InvalidateMeasure();
     }
 
-    private static TextBlock TabHeader(string text) => new() { Text = text, FontSize = 15, Foreground = Brushes.Black };
+    private static TextBlock TabHeader(string text) => new() { Text = text, FontSize = 15, Foreground = UwView.Services.ThemeColors.Text };
 
     private static Button MakeButton(string name, string label, string tip)
     {
@@ -440,7 +440,7 @@ public sealed class CommandLineDialog : Window
     private static Control Row(string label, Control field, Control? right = null)
     {
         var row = new DockPanel();
-        var caption = new TextBlock { Text = label, Width = 150, Foreground = Brushes.Black, VerticalAlignment = VerticalAlignment.Center };
+        var caption = new TextBlock { Text = label, Width = 150, Foreground = UwView.Services.ThemeColors.Text, VerticalAlignment = VerticalAlignment.Center };
         DockPanel.SetDock(caption, Dock.Left);
         row.Children.Add(caption);
         if (right is not null)
@@ -457,7 +457,7 @@ public sealed class CommandLineDialog : Window
     {
         var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("56,*,90") };
         AddCell(grid, 0, row.Label, HorizontalAlignment.Right);
-        var name = new TextBlock { Text = (row.Readable ? "" : "⚠ ") + row.Name, Foreground = Brushes.Black,
+        var name = new TextBlock { Text = (row.Readable ? "" : "⚠ ") + row.Name, Foreground = UwView.Services.ThemeColors.Text,
                                    Margin = new Thickness(10, 0, 0, 0), TextTrimming = TextTrimming.PrefixCharacterEllipsis };
         ToolTip.SetTip(name, row.FullPath);
         Grid.SetColumn(name, 1);
@@ -468,7 +468,7 @@ public sealed class CommandLineDialog : Window
 
     private static void AddCell(Grid grid, int column, string text, HorizontalAlignment align)
     {
-        var cell = new TextBlock { Text = text, Foreground = Brushes.Black, HorizontalAlignment = align };
+        var cell = new TextBlock { Text = text, Foreground = UwView.Services.ThemeColors.Text, HorizontalAlignment = align };
         Grid.SetColumn(cell, column);
         grid.Children.Add(cell);
     }

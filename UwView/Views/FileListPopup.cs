@@ -101,7 +101,7 @@ public sealed class FileListPopup : Window
         {
             Name = "FileListInTab",
             Content = L["FileListOpenInTab"],
-            Foreground = Brushes.Black,
+            Foreground = UwView.Services.ThemeColors.Text,
             IsChecked = AppSettingsRef.Current.FileListOpenInTab,
             HorizontalAlignment = HorizontalAlignment.Right,
         };
@@ -120,7 +120,7 @@ public sealed class FileListPopup : Window
                 Content = L.Format("FileListHitsOnly",
                                    _rows.Count(r => r.Item.Hits > 0).ToString("N0", L.Culture),
                                    _rows.Count.ToString("N0", L.Culture)),
-                Foreground = Brushes.Black,
+                Foreground = UwView.Services.ThemeColors.Text,
                 IsChecked = AppSettingsRef.Current.FileListHitsOnly,
                 HorizontalAlignment = HorizontalAlignment.Left,
             };
@@ -150,7 +150,7 @@ public sealed class FileListPopup : Window
             e.Handled = true;
         };
 
-        _tabs = new TextBlock { Foreground = Brushes.Black, VerticalAlignment = VerticalAlignment.Center };
+        _tabs = new TextBlock { Foreground = UwView.Services.ThemeColors.Text, VerticalAlignment = VerticalAlignment.Center };
 
         var close = new Button
         {
@@ -285,7 +285,7 @@ public sealed class FileListPopup : Window
         var cell = new TextBlock
         {
             Text = text,
-            Foreground = Brushes.Black,
+            Foreground = UwView.Services.ThemeColors.Text,
             HorizontalAlignment = align,
             VerticalAlignment = VerticalAlignment.Center,
             Margin = new Thickness(column == 0 ? 0 : 8, 0, 0, 0),

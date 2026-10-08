@@ -26,7 +26,7 @@ public sealed class PreferencesWindow : Window
         MinWidth = 600;
         MinHeight = 480;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
-        Background = Brushes.White;
+        Background = UwView.Services.ThemeColors.Surface;
 
         Tabs = new TabControl
         {
@@ -35,6 +35,7 @@ public sealed class PreferencesWindow : Window
             Items =
             {
                 new TabItem { Header = L["SettingsTabKeys"], Content = new KeyBindingsPanel() },
+                new TabItem { Header = L["SettingsTabAppearance"], Content = new AppearancePanel() },
             },
         };
         Content = Tabs;

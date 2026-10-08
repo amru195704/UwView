@@ -18,9 +18,9 @@ public sealed class HexToBrushConverter : IValueConverter
     {
         uint argb = CompiledHighlighter.ParseColor(value as string);
         if (argb == 0)
-            // 未指定: 文字色用途(parameter="fg")は黒を返す（null にすると文字が描かれず消える）。
-            // 背景用途は null（＝既定の白）でよい。
-            return (parameter as string) == "fg" ? Brushes.Black : null;
+            // 未指定: 文字色用途(parameter="fg")は本文の文字の色を返す（null にすると文字が描かれず消える。
+            // ダークでは黒だと見えない。v1.8.2 extFS E-4）。背景用途は null（＝既定の地）でよい。
+            return (parameter as string) == "fg" ? UwView.Services.ThemeColors.ViewText : null;
         return new SolidColorBrush(Color.FromArgb(
             (byte)(argb >> 24), (byte)(argb >> 16), (byte)(argb >> 8), (byte)argb));
     }

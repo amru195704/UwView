@@ -134,6 +134,14 @@ public sealed class AppSettings
     /// <summary>キーの割り当て（［標準］と違う操作だけ。操作の名前 → キー。v1.8.2 extFS E-3）。</summary>
     public Dictionary<string, List<string>>? KeyBindings { get; set; }
 
+    // ── v1.8.2 extFS E-4: フォントとテーマ ──
+    /// <summary>テーマ（System＝OS に合わせる・Light・Dark）。</summary>
+    public string Theme { get; set; } = "System";
+    /// <summary>本文のフォント（null なら既定の Cascadia Mono・Menlo・Consolas…）。</summary>
+    public string? BodyFontFamily { get; set; }
+    /// <summary>本文の文字の大きさ（null なら既定の 14。結果の一覧は 2 小さい）。</summary>
+    public double? BodyFontSize { get; set; }
+
     // ── Ver1.1: B Follow 中の自動更新 ──
     public bool FollowAutoRefresh { get; set; } = true;
 

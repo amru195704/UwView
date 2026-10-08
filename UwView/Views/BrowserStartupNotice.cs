@@ -80,7 +80,7 @@ public sealed class BrowserStartupNotice : UserControl
                     Text = T("ブラウザ版 UwView へようこそ", "Welcome to UwView for the browser"),
                     FontSize = 20,
                     FontWeight = FontWeight.Bold,
-                    Foreground = Brushes.Black,
+                    Foreground = UwView.Services.ThemeColors.Text,
                     VerticalAlignment = VerticalAlignment.Center,
                 },
                 new StackPanel
@@ -96,7 +96,7 @@ public sealed class BrowserStartupNotice : UserControl
         card.Children.Add(new TextBlock
         {
             Text = T("お使いになる前に4点だけ。", "Four things before you start."),
-            Foreground = Brushes.Black,
+            Foreground = UwView.Services.ThemeColors.Text,
             TextWrapping = TextWrapping.Wrap,
         });
 
@@ -135,7 +135,7 @@ public sealed class BrowserStartupNotice : UserControl
 
         return new Border
         {
-            Background = Brushes.White,
+            Background = UwView.Services.ThemeColors.Surface,
             CornerRadius = new CornerRadius(10),
             Padding = new Thickness(28, 24),
             MaxWidth = 620,
@@ -151,11 +151,11 @@ public sealed class BrowserStartupNotice : UserControl
         ColumnDefinitions = new ColumnDefinitions("26,*"),
         Children =
         {
-            new TextBlock { Text = mark, Foreground = Brushes.Black, FontWeight = FontWeight.Bold },
+            new TextBlock { Text = mark, Foreground = UwView.Services.ThemeColors.Text, FontWeight = FontWeight.Bold },
             new TextBlock
             {
                 Text = text,
-                Foreground = Brushes.Black,
+                Foreground = UwView.Services.ThemeColors.Text,
                 TextWrapping = TextWrapping.Wrap,
                 [Grid.ColumnProperty] = 1,
             },

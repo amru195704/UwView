@@ -17,6 +17,22 @@ public static class HighlightPresets
     private const string Purple = "#ECD9F5";  // 強調
     private const string Cyan = "#D2F0F0";    // 数値/ID
 
+    /// <summary>
+    /// ダークのときに替える色（同梱の淡い色 → 暗い背景で読める色。v1.8.2 extFS E-4）。
+    /// 描くときだけ替える（利用者の規則・設定の値は変えない）。同梱の色でなければ null。
+    /// </summary>
+    public static uint? DarkVariant(uint argb) => (argb & 0xFFFFFF) switch
+    {
+        0xFFD6D6 => 0xFF5C2828,   // 赤（致命/エラー）
+        0xFFE7C2 => 0xFF5A3F16,   // 橙（警告）
+        0xD6F5D6 => 0xFF214A28,   // 緑（正常/情報）
+        0xD6E4FF => 0xFF22355E,   // 青（補助）
+        0xE6E6E6 => 0xFF3C3C3C,   // 灰（デバッグ）
+        0xECD9F5 => 0xFF472A5C,   // 紫（強調）
+        0xD2F0F0 => 0xFF1F4848,   // 水色（数値/ID）
+        _ => null,
+    };
+
     public static List<HlSet> All() => new()
     {
         GeneralLog(), Syslog(), WebAccess(), JsonLog(), GeoJson(), Kml(), Nmea(),
