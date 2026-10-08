@@ -106,6 +106,7 @@ public partial class MainView : UserControl
         NextBookmarkButton.Click += (_, _) => GoToBookmark(next: true);
         PrevBookmarkButton.Click += (_, _) => GoToBookmark(next: false);
         AttachShortcuts();
+        AttachChangeBanner();
 
         // リアルタイム Tail（§11-③）
         TailToggle.IsCheckedChanged += (_, _) =>
@@ -225,6 +226,8 @@ public partial class MainView : UserControl
         TailToggle.IsChecked = tab?.Session.IsTailing ?? false;
         TailToggle.IsEnabled = tab?.Session.SupportsTail ?? false;
         _suppressToggleApply = false;
+
+        ApplyExternalChange(tab);   // 裏にいる間に外で変わっていたら、ここで帯を出す・読み直す
 
         // フィルタ結果ポップアップはアクティブタブに連動（公開版は1ウィンドウ）
         _filterResultsVm?.SetSession(tab?.Session);
@@ -981,6 +984,7 @@ public partial class MainView : UserControl
         {
             var tab = new DocumentTabViewModel(session, t => _vm!.RequestClose(t));
             AttachBookmarkMemory(session);
+            WatchExternalChanges(session);
             // 開いてから行索引ができるまでを測る（大きなファイルではここが一番待たされる）
             var watch = System.Diagnostics.Stopwatch.StartNew();
             session.IndexCompleted += (_, _) => OnIndexCompleted(tab, watch);

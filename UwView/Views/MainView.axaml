@@ -251,12 +251,23 @@
         <!-- 本文 + ミニマップ + 縦スクロールバー（＋ 未オープン時のスタート画面） -->
         <Panel>
             <!-- 2行目に横スクロールバー（本文の幅ぶんだけ。ミニマップ・縦バーの下には置かない） -->
-            <Grid ColumnDefinitions="*,Auto,Auto" RowDefinitions="*,Auto">
-                <ctrl:TextView x:Name="TextView" Grid.Row="0" Grid.Column="0" />
-                <ctrl:MinimapView x:Name="Minimap" Grid.Row="0" Grid.Column="1" />
-                <ScrollBar x:Name="VScroll" Grid.Row="0" Grid.Column="2" Orientation="Vertical"
+            <Grid ColumnDefinitions="*,Auto,Auto" RowDefinitions="Auto,*,Auto">
+                <!-- 外での変化の帯（切り詰め・作り直し・ローテーション・削除。v1.8.2 extFS E-0） -->
+                <Border x:Name="ChangeBanner" Grid.Row="0" Grid.ColumnSpan="3" IsVisible="False"
+                        Background="#FFF4CE" BorderBrush="#E0B000" BorderThickness="0,0,0,1" Padding="10,4">
+                    <DockPanel LastChildFill="True">
+                        <Button x:Name="ChangeBannerClose" DockPanel.Dock="Right" Content="×" Padding="8,0" Margin="6,0,0,0"
+                                ToolTip.Tip="{loc:Localize BannerCloseTip}" />
+                        <Button x:Name="ChangeBannerReload" DockPanel.Dock="Right" Content="{loc:Localize BannerReload}" Margin="12,0,0,0"
+                                ToolTip.Tip="{loc:Localize BannerReloadTip}" />
+                        <TextBlock x:Name="ChangeBannerText" VerticalAlignment="Center" Foreground="Black" TextWrapping="Wrap" />
+                    </DockPanel>
+                </Border>
+                <ctrl:TextView x:Name="TextView" Grid.Row="1" Grid.Column="0" />
+                <ctrl:MinimapView x:Name="Minimap" Grid.Row="1" Grid.Column="1" />
+                <ScrollBar x:Name="VScroll" Grid.Row="1" Grid.Column="2" Orientation="Vertical"
                            AllowAutoHide="False" Width="16" />
-                <ScrollBar x:Name="HScroll" Grid.Row="1" Grid.Column="0" Orientation="Horizontal"
+                <ScrollBar x:Name="HScroll" Grid.Row="2" Grid.Column="0" Orientation="Horizontal"
                            AllowAutoHide="False" Height="16" />
             </Grid>
 

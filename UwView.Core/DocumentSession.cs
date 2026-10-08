@@ -54,7 +54,8 @@ public sealed class DocumentSession : IAsyncDisposable
             // 走査を始めるたびに長さを取り直す（Tail の追記ぶんを取りこぼさない）
             if (_scanSource is SequentialFileByteSource seq) { seq.Refresh(); return seq; }
             if (_scanSource is not null) return _scanSource;
-            if (Source is not MmapByteSource || !File.Exists(FilePath)) return Source;
+            // 外で変わったあと（ローテーション等）は名前で開き直さない。表示と別のファイルを探すことになる
+            if (Source is not LiveFileByteSource || ExternalChange is not FileChange.None || !File.Exists(FilePath)) return Source;
             try { return _scanSource = new SequentialFileByteSource(FilePath); }
             catch (Exception e) when (e is IOException or UnauthorizedAccessException) { return Source; }
         }
@@ -72,10 +73,10 @@ public sealed class DocumentSession : IAsyncDisposable
         TopByteOffset = enc.BomLength;
     }
 
-    /// <summary>ファイルを開いて文字コード判定まで行う（索引は待たない）。Desktop 用（mmap）。</summary>
+    /// <summary>ファイルを開いて文字コード判定まで行う（索引は待たない）。Desktop 用（pread。切り詰められても落ちない）。</summary>
     public static DocumentSession Open(string path)
     {
-        var src = new MmapByteSource(path);
+        var src = new LiveFileByteSource(path);
         var detected = EncodingDetector.Detect(src);
         var newline = EncodingDetector.DetectNewline(src);
         var doc = new LineDocument(src, detected, newline);
@@ -459,34 +460,69 @@ public sealed class DocumentSession : IAsyncDisposable
         return i >= 0 ? _bookmarks[i] : null;
     }
 
-    // ── リアルタイム Tail（§11-③。Desktop=mmap のみ）──────────
+    // ── リアルタイム Tail（§11-③。Desktop のみ）と、外での変化の見張り（v1.8.2 extFS E-0）──
 
     /// <summary>Tail 可能か（Blob は不可＝スナップショットのため）。</summary>
-    public bool SupportsTail => Source is MmapByteSource;
+    public bool SupportsTail => Source is LiveFileByteSource;
     public bool IsTailing { get; private set; }
-    /// <summary>追記を検知して索引拡張が済んだときに発火（StartTail 呼び出し元スレッドへマーシャル）。</summary>
+    /// <summary>追記を検知して索引拡張が済んだときに発火（StartWatch 呼び出し元スレッドへマーシャル）。</summary>
     public event EventHandler? TailGrew;
+
+    /// <summary>
+    /// 外で起きた変化（切り詰め・書き換え・置き換わり・消された）。一度起きたら、このセッションでは戻らない
+    ///（読み直すと新しいセッションになる）。消されたあとに同じ名前のファイルができると <see cref="FileChange.Replaced"/> に変わる。
+    /// </summary>
+    public FileChange ExternalChange { get; private set; }
+    /// <summary><see cref="ExternalChange"/> が変わったとき（StartWatch 呼び出し元スレッドへマーシャル）。</summary>
+    public event EventHandler? ExternalChangeDetected;
 
     private CancellationTokenSource? _tailCts;
 
-    /// <summary>1 回ぶんのポーリング: 伸びていれば再マップ＋増分索引＋キャッシュ破棄して true。</summary>
+    /// <summary>
+    /// 1 回ぶんの見張り: 外での変化を確かめ、伸びただけなら（追従中は）読める長さを伸ばして索引も伸ばす。
+    /// 伸ばしたら true。変化を見つけたら <see cref="ExternalChange"/> に書いて false
+    ///（索引の作り直しは読み直しでする。古い索引のまま伸ばすと行の位置が食い違う）。
+    /// </summary>
     public async Task<bool> PollTailAsync(CancellationToken ct = default)
     {
-        if (Source is not MmapByteSource mmap || !mmap.TryExpand())
-            return false;
+        if (CheckExternalChange() is not FileChange.Grew || ExternalChange is not FileChange.None) return false;
+        if (Source is not LiveFileByteSource live || !live.TryExpand()) return false;
         if (Index is not null)
             await Index.ExtendAsync(Source, ct);
         Document.OnSourceExtended();
         return true;
     }
 
-    public void StartTail(int intervalMs = 1000)
+    /// <summary>外での変化を確かめて <see cref="ExternalChange"/> に書く（伸びただけなら書かずに Grew を返す）。</summary>
+    public FileChange CheckExternalChange()
     {
-        if (IsTailing || !SupportsTail) return;
-        IsTailing = true;
+        if (Source is not LiveFileByteSource live) return FileChange.None;
+        var change = live.Check();
+        // 開いている方そのものが変わった（切り詰め・書き換え）なら、それより後の知らせには替えない
+        if (change is not (FileChange.None or FileChange.Grew)
+            && ExternalChange is not (FileChange.Truncated or FileChange.Rewritten))
+            ExternalChange = change;
+        // 消されたあと、同じ名前でできたファイルが前と同じ中身でも、別のファイルとして開き直す
+        else if (ExternalChange is FileChange.Deleted && File.Exists(FilePath))
+            ExternalChange = change = FileChange.Replaced;
+        return change;
+    }
+
+    /// <summary>
+    /// 1 秒ごとの見張りを始める（開いたタブごとに 1 回。追従していなくても、外での変化は見る）。
+    /// 知らせは、これを呼んだスレッド（画面）へ送る。
+    /// </summary>
+    public void StartWatch(int intervalMs = 1000)
+    {
+        if (_tailCts is not null || !SupportsTail || _disposed) return;
         _tailCts = new CancellationTokenSource();
         var ct = _tailCts.Token;
         var syncCtx = SynchronizationContext.Current;
+        void Raise(EventHandler? handler)
+        {
+            if (syncCtx is null) handler?.Invoke(this, EventArgs.Empty);
+            else syncCtx.Post(_ => handler?.Invoke(this, EventArgs.Empty), null);
+        }
 
         _ = Task.Run(async () =>
         {
@@ -495,23 +531,26 @@ public sealed class DocumentSession : IAsyncDisposable
                 while (!ct.IsCancellationRequested)
                 {
                     await Task.Delay(intervalMs, ct);
-                    if (IsIndexing) continue; // 初期索引の構築中は拡張しない
-                    if (await PollTailAsync(ct))
-                    {
-                        if (syncCtx is null) TailGrew?.Invoke(this, EventArgs.Empty);
-                        else syncCtx.Post(_ => TailGrew?.Invoke(this, EventArgs.Empty), null);
-                    }
+                    var before = ExternalChange;
+                    // 初期索引の構築中は伸ばさない（変化だけ見る）
+                    if (IsTailing && !IsIndexing) { if (await PollTailAsync(ct)) Raise(TailGrew); }
+                    else CheckExternalChange();
+                    if (ExternalChange != before) Raise(ExternalChangeDetected);
                 }
             }
             catch (OperationCanceledException) { }
+            catch (ObjectDisposedException) { }
         }, ct);
     }
 
-    public void StopTail()
+    public void StartTail(int intervalMs = 1000)
     {
-        _tailCts?.Cancel();
-        IsTailing = false;
+        if (IsTailing || !SupportsTail) return;
+        IsTailing = true;
+        StartWatch(intervalMs);
     }
+
+    public void StopTail() => IsTailing = false;
 
     public async ValueTask DisposeAsync()
     {

@@ -255,6 +255,18 @@
   <data name="BookmarksExported" xml:space="preserve"><value>ブックマークを {0} 件書き出しました</value></data>
   <data name="Reloaded" xml:space="preserve"><value>ファイルを読み直しました</value></data>
   <data name="ReloadNotAvailable" xml:space="preserve"><value>このタブは読み直せません</value></data>
+  <data name="ChangeTruncated" xml:space="preserve"><value>{0} が切り詰められました</value></data>
+  <data name="ChangeRewritten" xml:space="preserve"><value>{0} が作り直されました</value></data>
+  <data name="ChangeReplaced" xml:space="preserve"><value>{0} は、同じ名前の別のファイルに置き換わりました（ローテーション）</value></data>
+  <data name="ChangeDeleted" xml:space="preserve"><value>{0} が消されました</value></data>
+  <data name="ChangeDeletedWaiting" xml:space="preserve"><value>{0} が消されました。同じ名前のファイルができたら開き直して追従します</value></data>
+  <data name="FollowReloadedTruncated" xml:space="preserve"><value>{0} が切り詰められたので読み直しました</value></data>
+  <data name="FollowReloadedRewritten" xml:space="preserve"><value>{0} が作り直されたので読み直しました</value></data>
+  <data name="FollowReopened" xml:space="preserve"><value>新しい {0} を開き直して追従しています</value></data>
+  <data name="SearchAgainAfterReload" xml:space="preserve"><value>ファイルが読み直されたので、検索し直してください</value></data>
+  <data name="BannerReload" xml:space="preserve"><value>読み直す</value></data>
+  <data name="BannerReloadTip" xml:space="preserve"><value>ファイルを開き直して、今の中身を見る（F5 と同じ）</value></data>
+  <data name="BannerCloseTip" xml:space="preserve"><value>この知らせを閉じる</value></data>
   <data name="CmdTitle" xml:space="preserve"><value>コマンドライン</value></data>
   <data name="CmdMenu" xml:space="preserve"><value>コマンドライン…</value></data>
   <data name="TipCmdButton" xml:space="preserve"><value>コマンドライン（uvf／uvp と同じ書き方で、ファイルを指定して検索する）</value></data>

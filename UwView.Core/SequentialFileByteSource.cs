@@ -5,7 +5,7 @@ namespace UwView.Core;
 /// <summary>
 /// 先頭から順に読むための IByteSource（RandomAccess＝pread 直読み）。
 ///
-/// 画面は <see cref="MmapByteSource"/>（好きな位置をすぐ覗ける・Tail で伸ばせる）を使うが、
+/// 画面は <see cref="LiveFileByteSource"/>（好きな位置をすぐ覗ける・Tail で伸ばせる・切り詰められても落ちない）を使うが、
 /// CLI の全文走査のように<b>大きなファイルを1回通しで読む</b>用途では mmap が不利になる。
 /// 実測（外付け USB SSD・50GB の OSM・8GB ずつ計測 2026-09-17）:
 /// <code>
@@ -25,7 +25,7 @@ internal sealed class SequentialFileByteSource : IByteSource
 
     public SequentialFileByteSource(string path)
     {
-        // 書き込み中のファイルでも開けるよう mmap 版と同じ共有指定にする
+        // 書き込み中のファイルでも開けるよう表示用と同じ共有指定にする
         _handle = File.OpenHandle(path, FileMode.Open, FileAccess.Read,
                                   FileShare.ReadWrite | FileShare.Delete, FileOptions.SequentialScan);
         _length = RandomAccess.GetLength(_handle);
@@ -42,7 +42,7 @@ internal sealed class SequentialFileByteSource : IByteSource
     /// <summary>
     /// 長さを取り直す（<b>走査を始める前に呼ぶ</b>）。
     /// Tail で追記されたぶんは、これを呼ばないと検索・索引の対象に入らない
-    /// （表示用 mmap は <see cref="MmapByteSource.TryExpand"/> で伸びるので、見えるのに探せない状態になる。
+    /// （表示用は <see cref="LiveFileByteSource.TryExpand"/> で伸びるので、見えるのに探せない状態になる。
     /// ソースレビュー 2026-09-19 の指摘1）。
     /// </summary>
     public long Refresh()

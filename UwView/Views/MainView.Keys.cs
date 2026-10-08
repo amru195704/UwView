@@ -78,7 +78,8 @@ public partial class MainView
     /// 今のタブのファイルを開き直す（F5）。同じ位置・同じタブの並びに戻す。ブックマークは覚えている分が戻る。
     /// 複数ファイルの結果のタブは組が崩れるので読み直さない。
     /// </summary>
-    internal DocumentTabViewModel? ReloadActiveTab()
+    /// <param name="follow">末尾追従のまま読み直す（外で切り詰められた等。末尾へ移り、追従を続ける。v1.8.2 extFS E-0）。</param>
+    internal DocumentTabViewModel? ReloadActiveTab(bool follow = false)
     {
         if (_vm?.ActiveTab is not { } tab) return null;
         string path = tab.FilePath;
@@ -96,9 +97,17 @@ public partial class MainView
         int index = _vm.Tabs.IndexOf(tab);
         if (OpenPath(path) is not { } fresh) return null;
         _vm.Tabs.Move(_vm.Tabs.IndexOf(fresh), index);
-        RestorePosition(fresh, new Services.OpenDoc { Path = path, LastTopOffset = top });
+        if (!follow) RestorePosition(fresh, new Services.OpenDoc { Path = path, LastTopOffset = top });
         _vm.RequestClose(tab);
         _vm.ActiveTab = fresh;
+        if (follow)
+        {
+            fresh.Session.StartTail();
+            _suppressToggleApply = true;
+            TailToggle.IsChecked = true;
+            _suppressToggleApply = false;
+            TextView.GoToEnd();
+        }
         SetTransientStatus(L["Reloaded"]);
         return fresh;
     }

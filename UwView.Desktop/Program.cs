@@ -28,6 +28,14 @@ sealed class Program
                 CliLanguage.IsJapanese(CliLanguage.FreeSettingsFolder));
         }
 
+        // 末尾追従と、外での変化の試験用の口（画面は出さない。v1.8.2 extFS E-0 §1.4）
+        if (args.Length > 0 && args[0] == UwView.Services.FollowTest.Marker)
+        {
+            UwView.Core.EncodingDetector.EnsureCodePagesRegistered();
+            return UwView.Services.FollowTest.Run(new UwView.Services.DesktopDocumentOpener(), s => s.BuildIndexAsync(),
+                args[1..], CliLanguage.IsJapanese(CliLanguage.FreeSettingsFolder));
+        }
+
         BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
         return 0;
     }

@@ -4,7 +4,9 @@ using Microsoft.Win32.SafeHandles;
 namespace UwView.Core;
 
 /// <summary>
-/// Desktop 用 mmap 実装（★優先）。ファイル全体を読み取り専用ビューにマップし、
+/// mmap 実装。1.8.1 までは画面の表示に使っていたが、外から切り詰められると SIGBUS で落ちるため、
+/// 1.8.2 から画面は <see cref="LiveFileByteSource"/>（pread）に替えた。今は測定（Bench・UV_SOURCE=mmap）だけで使う。
+/// ファイル全体を読み取り専用ビューにマップし、
 /// AcquirePointer の unsafe ポインタで高速コピーする。
 /// FileShare.ReadWrite で開くため、他プロセスが書き込み中のログでも開ける（Tail §11-③）。
 /// <see cref="TryExpand"/> でファイル成長分を再マップする（旧ビューは write ロック下で解放）。

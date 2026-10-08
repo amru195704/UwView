@@ -255,6 +255,18 @@
   <data name="BookmarksExported" xml:space="preserve"><value>Exported {0} bookmarks</value></data>
   <data name="Reloaded" xml:space="preserve"><value>Reloaded the file</value></data>
   <data name="ReloadNotAvailable" xml:space="preserve"><value>This tab cannot be reloaded</value></data>
+  <data name="ChangeTruncated" xml:space="preserve"><value>{0} was truncated</value></data>
+  <data name="ChangeRewritten" xml:space="preserve"><value>{0} was rewritten</value></data>
+  <data name="ChangeReplaced" xml:space="preserve"><value>{0} was replaced by another file with the same name (rotated)</value></data>
+  <data name="ChangeDeleted" xml:space="preserve"><value>{0} was deleted</value></data>
+  <data name="ChangeDeletedWaiting" xml:space="preserve"><value>{0} was deleted. It will be reopened and followed when a file with the same name appears</value></data>
+  <data name="FollowReloadedTruncated" xml:space="preserve"><value>Reloaded {0} because it was truncated</value></data>
+  <data name="FollowReloadedRewritten" xml:space="preserve"><value>Reloaded {0} because it was rewritten</value></data>
+  <data name="FollowReopened" xml:space="preserve"><value>Reopened the new {0} and following it</value></data>
+  <data name="SearchAgainAfterReload" xml:space="preserve"><value>The file was reloaded. Please search again</value></data>
+  <data name="BannerReload" xml:space="preserve"><value>Reload</value></data>
+  <data name="BannerReloadTip" xml:space="preserve"><value>Reopen the file to see its current content (same as F5)</value></data>
+  <data name="BannerCloseTip" xml:space="preserve"><value>Close this notice</value></data>
   <data name="CmdTitle" xml:space="preserve"><value>Command Line</value></data>
   <data name="CmdMenu" xml:space="preserve"><value>Command Line…</value></data>
   <data name="TipCmdButton" xml:space="preserve"><value>Command line (search files with the same syntax as uvf / uvp)</value></data>

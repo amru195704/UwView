@@ -132,7 +132,8 @@ public static class SearchService
                 pos += got;
                 int filled = carry + got;
                 if (filled == 0) break;
-                bool isEof = pos >= fileLength;
+                // 読めなかった（外で切り詰められた）ら、そこを終わりとする。続けると未完の行を抱えたまま回り続ける（v1.8.2 extFS E-0）
+                bool isEof = pos >= fileLength || (want > 0 && got == 0);
 
                 // 処理範囲＝完結行まで（最後の '\n'）。EOF なら残り全部
                 var span = buf.AsSpan(0, filled);
