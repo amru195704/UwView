@@ -200,6 +200,7 @@ public partial class MainView : UserControl
             _statusSession.IndexProgressChanged -= OnActiveIndexProgress;
             _statusSession.SearchUpdated -= OnSearchUpdated;
             _statusSession.TailGrew -= OnTailGrew;
+            _statusSession.BookmarksChanged -= OnBookmarksChanged;
             if (_statusSession.Source is INotifyDataArrived oldNotify)
                 oldNotify.DataArrived -= OnDataArrived;
         }
@@ -214,6 +215,7 @@ public partial class MainView : UserControl
             _statusSession.IndexProgressChanged += OnActiveIndexProgress;
             _statusSession.SearchUpdated += OnSearchUpdated;
             _statusSession.TailGrew += OnTailGrew;
+            _statusSession.BookmarksChanged += OnBookmarksChanged;
             // Blob 等の async I/O 実装: 裏でチャンクが届いたら再描画（WASM 用）
             if (_statusSession.Source is INotifyDataArrived notify)
                 notify.DataArrived += OnDataArrived;

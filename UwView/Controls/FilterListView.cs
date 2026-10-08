@@ -36,6 +36,7 @@ public sealed class FilterListView : Control
     private static readonly IBrush MatchBrush = new SolidColorBrush(Color.FromRgb(0xFF, 0xE0, 0x66));
     private static readonly IBrush SelBrush = new SolidColorBrush(Color.FromRgb(0xB4, 0xD5, 0xEE));
     private static readonly IBrush ContextBgBrush = new SolidColorBrush(Color.FromRgb(0xF2, 0xF2, 0xF2));
+    private static readonly IBrush BookmarkBrush = new SolidColorBrush(Color.FromRgb(0x1A, 0x6F, 0xE8)); // 本文・ミニマップと同じ青
 
     // メイン（TextView）と同じ等幅フォント指定。WASM では同梱の Noto Sans JP に落ちる。
     private readonly Typeface _typeface = new(new FontFamily("Cascadia Mono,Menlo,Consolas,Courier New,monospace"));
@@ -92,6 +93,9 @@ public sealed class FilterListView : Control
 
     /// <summary>コピー要求（Cmd/Ctrl+C）。</summary>
     public event Action? CopyRequested;
+
+    /// <summary>Delete（Backspace）：選んだ行のブックマークを外す（v1.8.2 extFS E-2）。</summary>
+    public event Action? DeleteRequested;
 
     /// <summary>スクロール位置・サイズが変わった（UVP の矩形選択オーバーレイが追従に使う）。</summary>
     public event EventHandler? ScrollChanged;
@@ -458,6 +462,10 @@ public sealed class FilterListView : Control
                 InvalidateVisual();
                 e.Handled = true;
                 return;
+            case Key.Delete or Key.Back when DeleteRequested is not null:
+                DeleteRequested.Invoke();
+                e.Handled = true;
+                return;
             case Key.Up: MoveCursor(-1, e); return;
             case Key.Down: MoveCursor(1, e); return;
             case Key.PageUp: MoveCursor(-rows, e); return;
@@ -561,10 +569,14 @@ public sealed class FilterListView : Control
             // 行背景: 選択 > 文脈行（±N の前後行は背景で区別する。文字は常に黒）
             if (_selected.Contains(i))
                 ctx.FillRectangle(SelBrush, new Rect(0, y, Bounds.Width, lh));
-            else if (!row.IsHit && !row.IsSeparator)
+            else if (!row.IsHit && !row.IsBookmark && !row.IsSeparator)
                 ctx.FillRectangle(ContextBgBrush, new Rect(0, y, Bounds.Width, lh));
 
             if (row.IsSeparator) continue;
+
+            // ブックマークの行は、行番号の左に青い印（当たりの番号と両方のこともある）
+            if (row.IsBookmark)
+                ctx.FillRectangle(BookmarkBrush, new Rect(hitRight + ColGap / 2 - 2, y + 2, 4, Math.Max(2, lh - 4)));
 
             string hitText = row.HitNumberText;
             if (hitText.Length > 0)

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -62,7 +63,32 @@ public partial class MainView
     private void ToggleBookmarkHere()
     {
         if (_vm?.ActiveTab is not { } t) return;
-        t.Session.ToggleBookmark(TextView.CurrentOffset);
+        // 本文で行の範囲を選んでいたら、選んだ行に全部付ける（全部に付いていれば全部外す。v1.8.2 extFS E-2）
+        if (TextView.SelectedLines is { } range && t.Session.Index is not null)
+        {
+            long count = range.Bottom - range.Top + 1;
+            if (count > MaxRangeBookmarks)
+            {
+                SetTransientStatus(L.Format("BookmarkRangeTooMany", N(MaxRangeBookmarks)));
+                return;
+            }
+            var doc = t.Session.Document;
+            var starts = new List<long>((int)count);
+            long at = doc.LineStartOffset(range.Top);
+            for (long i = 0; i < count && at < doc.Length; i++, at = doc.NextLineStart(at)) starts.Add(at);
+            t.Session.ToggleBookmarks(starts);
+        }
+        else t.Session.ToggleBookmark(TextView.CurrentOffset);
+        TextView.Refresh();
+        Minimap.InvalidateVisual();
+    }
+
+    /// <summary>範囲でまとめて付けられる行数（行のコピーの上限と同じ）。</summary>
+    private const long MaxRangeBookmarks = 100_000;
+
+    /// <summary>ブックマークが一覧の Delete などで変わったら、本文とミニマップの印を描き直す。</summary>
+    private void OnBookmarksChanged(object? sender, EventArgs e)
+    {
         TextView.Refresh();
         Minimap.InvalidateVisual();
     }

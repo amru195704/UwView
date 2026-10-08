@@ -255,6 +255,15 @@
   <data name="BookmarksWaitIndex" xml:space="preserve"><value>Line numbers are still being counted. Export again when they are done</value></data>
   <data name="BookmarksExported" xml:space="preserve"><value>Exported {0} bookmarks</value></data>
   <data name="Reloaded" xml:space="preserve"><value>Reloaded the file</value></data>
+  <data name="ResultBookmarksOnly" xml:space="preserve"><value>{0} bookmarks</value></data>
+  <data name="ResultBookmarksNote" xml:space="preserve"><value> · {0} bookmarks</value></data>
+  <data name="ResultShowBoth" xml:space="preserve"><value>Hits + bookmarks</value></data>
+  <data name="ResultShowBookmarks" xml:space="preserve"><value>Bookmarks only</value></data>
+  <data name="ResultShowHits" xml:space="preserve"><value>Hits only</value></data>
+  <data name="TipResultShowBoth" xml:space="preserve"><value>Show hits and bookmarks together in line order</value></data>
+  <data name="TipResultShowBookmarks" xml:space="preserve"><value>Show only bookmarked lines (also used when there is no search)</value></data>
+  <data name="TipResultShowHits" xml:space="preserve"><value>Show only search hits (bookmarked lines still get the mark)</value></data>
+  <data name="BookmarkRangeTooMany" xml:space="preserve"><value>You can bookmark up to {0} lines at once. Select a smaller range</value></data>
   <data name="ReloadNotAvailable" xml:space="preserve"><value>This tab cannot be reloaded</value></data>
   <data name="ChangeTruncated" xml:space="preserve"><value>{0} was truncated</value></data>
   <data name="ChangeRewritten" xml:space="preserve"><value>{0} was rewritten</value></data>

@@ -79,6 +79,12 @@ public partial class FilterResultsView : UserControl
         RowList.CursorChanged += row => _vm.OnCursor(row);
         FileListButton.Click += (_, _) => _vm.OpenFileList?.Invoke();
         RowList.CopyRequested += () => _ = CopySelectedAsync();
+        // 一覧の Delete：選んだ行（無ければカーソルの行）のブックマークを外す。本文の印も外れる（v1.8.2 extFS E-2）
+        RowList.DeleteRequested += () =>
+        {
+            var rows = RowList.HasSelection ? RowList.SelectedRowsInOrder() : RowList.CursorRow is { } r ? [r] : [];
+            _vm.RemoveBookmarks(rows);
+        };
         RowList.SelectionMenuRequested += ShowSelectionMenu;
 
         _vm.PropertyChanged += OnVmPropertyChanged;

@@ -18,6 +18,16 @@
             <WrapPanel x:Name="ToolbarPanel" Orientation="Horizontal" ItemSpacing="10" LineSpacing="4"
                        VerticalAlignment="Center">
                 <TextBlock Text="{Binding HitInfo}" VerticalAlignment="Center" Foreground="Black" />
+                <!-- 一覧に出すもの（当たり＋ブックマーク／ブックマークだけ／当たりだけ。v1.8.2 extFS E-2） -->
+                <StackPanel x:Name="ListModePanel" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center"
+                            IsVisible="{Binding !IsResultSet}">
+                    <RadioButton x:Name="ListModeBoth" GroupName="ResultListMode" ToolTip.Tip="{loc:Localize TipResultShowBoth}" Content="{loc:Localize ResultShowBoth}"
+                                 Foreground="Black" IsChecked="{Binding ShowHitsAndBookmarks, Mode=TwoWay}" />
+                    <RadioButton x:Name="ListModeBookmarks" GroupName="ResultListMode" ToolTip.Tip="{loc:Localize TipResultShowBookmarks}" Content="{loc:Localize ResultShowBookmarks}"
+                                 Foreground="Black" IsChecked="{Binding ShowBookmarksOnly, Mode=TwoWay}" />
+                    <RadioButton x:Name="ListModeHits" GroupName="ResultListMode" ToolTip.Tip="{loc:Localize TipResultShowHits}" Content="{loc:Localize ResultShowHits}"
+                                 Foreground="Black" IsChecked="{Binding ShowHitsOnly, Mode=TwoWay}" />
+                </StackPanel>
                 <!-- 複数ファイルの結果のとき、番号と実ファイルの対応表を開く -->
                 <Button x:Name="FileListButton"
                         ToolTip.Tip="{loc:Localize TipFileList}"

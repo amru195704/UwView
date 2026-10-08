@@ -79,6 +79,9 @@ public class TextView : Control
     private long SelTop => Math.Min(_selAnchor ?? 0, _selExtent ?? 0);
     private long SelBottom => Math.Max(_selAnchor ?? 0, _selExtent ?? 0);
 
+    /// <summary>選んでいる行の範囲（0 始まり・両端含む）。選んでいなければ null。</summary>
+    public (long Top, long Bottom)? SelectedLines => HasLineSelection ? (SelTop, SelBottom) : null;
+
     /// <summary>行選択の状態表示（ステータスバー用）。選択なしなら null。</summary>
     public string? SelectionInfo =>
         _selCopyStatus is not null ? _selCopyStatus

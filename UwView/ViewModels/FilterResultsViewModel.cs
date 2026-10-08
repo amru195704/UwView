@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -25,6 +26,8 @@ public sealed class FilterRow
     public bool IsSeparator { get; init; }
     /// <summary>ヒット行か（false＝文脈行。淡色表示）。</summary>
     public bool IsHit { get; init; }
+    /// <summary>ブックマークの行か（行番号の左に青い印。当たりと両方のこともある。v1.8.2 extFS E-2）。</summary>
+    public bool IsBookmark { get; init; }
     /// <summary>行番号（0始まり。行モード時のみ有効、それ以外 -1）。</summary>
     public long LineIndex { get; init; } = -1;
     /// <summary>LineIndex 未指定でも Offset から行番号を解決するか（行モードのヒット行）。</summary>
@@ -158,6 +161,9 @@ public sealed class FilterRow
     }
 }
 
+/// <summary>結果の一覧に出すもの（v1.8.2 extFS E-2）。検索していないときは「ブックマークだけ」と同じ。</summary>
+public enum ResultListMode { HitsAndBookmarks, BookmarksOnly, HitsOnly }
+
 /// <summary>
 /// フィルタ結果ポップアップの VM（機能修正指示書_検索フィルタPopup.md）。
 /// - データ源は Session の既存ヒット（再検索しない）
@@ -247,6 +253,106 @@ public sealed partial class FilterResultsViewModel : ObservableObject, IDisposab
     {
         _onJump = onJump;
         MaxContext = maxContext;
+        _listMode = (ResultListMode)Math.Clamp(Services.AppSettingsRef.Current.ResultListMode, 0, 2);
+    }
+
+    // ── ブックマークを一覧に出す（v1.8.2 extFS E-2）──────────────
+
+    /// <summary>一覧に出すもの（当たり＋ブックマーク／ブックマークだけ／当たりだけ）。設定に残す。</summary>
+    [ObservableProperty] private ResultListMode _listMode;
+
+    partial void OnListModeChanged(ResultListMode value)
+    {
+        Services.AppSettingsRef.Current.ResultListMode = (int)value;
+        Services.AppSettingsRef.Current.Save();
+        OnPropertyChanged(nameof(ShowHitsAndBookmarks));
+        OnPropertyChanged(nameof(ShowBookmarksOnly));
+        OnPropertyChanged(nameof(ShowHitsOnly));
+        Rebuild();
+    }
+
+    // 切り替えのボタン（ラジオボタン）用
+    public bool ShowHitsAndBookmarks
+    {
+        get => ListMode == ResultListMode.HitsAndBookmarks;
+        set { if (value) ListMode = ResultListMode.HitsAndBookmarks; }
+    }
+    public bool ShowBookmarksOnly
+    {
+        get => ListMode == ResultListMode.BookmarksOnly;
+        set { if (value) ListMode = ResultListMode.BookmarksOnly; }
+    }
+    public bool ShowHitsOnly
+    {
+        get => ListMode == ResultListMode.HitsOnly;
+        set { if (value) ListMode = ResultListMode.HitsOnly; }
+    }
+
+    /// <summary>次の切り替えへ（当たり＋ブックマーク → ブックマークだけ → 当たりだけ → …）。</summary>
+    public void CycleListMode() => ListMode = (ResultListMode)(((int)ListMode + 1) % 3);
+
+    /// <summary>選んだ行のうち、ブックマークの行のブックマークを外す（一覧の Delete。本文の印も外れる）。外した数。</summary>
+    public int RemoveBookmarks(IEnumerable<FilterRow> rows)
+    {
+        if (_session is not { } s) return 0;
+        var offsets = new List<long>();
+        foreach (var row in rows)
+            if (row.IsBookmark && row.ResolveJumpOffset() is >= 0 and var off && s.HasBookmark(off)) offsets.Add(off);
+        if (offsets.Count == 0) return 0;
+        s.SetBookmarks(s.Bookmarks.Except(offsets).ToList());
+        return offsets.Count;
+    }
+
+    /// <summary>ブックマークの行番号（前後±N の表示用。ブックマークが変わったら作り直す）。</summary>
+    private long[]? _markLines;
+
+    private void OnBookmarksChanged(object? sender, EventArgs e)
+    {
+        _markLines = null;
+        Rebuild();
+    }
+
+    private long[] MarkLines(LineDocument doc, IReadOnlyList<long> marks)
+    {
+        if (_markLines is { } cached && cached.Length == marks.Count) return cached;
+        var lines = new long[marks.Count];
+        for (int i = 0; i < marks.Count; i++) lines[i] = doc.OffsetToLineIndex(marks[i]);
+        return _markLines = lines;
+    }
+
+    /// <summary>当たりに無いブックマーク（どちらも昇順）。</summary>
+    private static long[] MarksNotIn(IReadOnlyList<long> hits, IReadOnlyList<long> marks)
+    {
+        var extra = new List<long>();
+        foreach (long m in marks)
+            if (IndexOfSorted(hits, m) < 0) extra.Add(m);
+        return [.. extra];
+    }
+
+    /// <summary>昇順に並んだ 2 つを合わせる（重なりは 1 つ）。</summary>
+    private static long[] Union(long[] a, long[] b)
+    {
+        var all = new long[a.Length + b.Length];
+        int i = 0, j = 0, k = 0;
+        while (i < a.Length || j < b.Length)
+        {
+            long v = j >= b.Length || (i < a.Length && a[i] <= b[j]) ? a[i++] : b[j++];
+            if (k == 0 || all[k - 1] != v) all[k++] = v;
+        }
+        return all[..k];
+    }
+
+    private static int IndexOfSorted(IReadOnlyList<long> sorted, long value)
+    {
+        int lo = 0, hi = sorted.Count - 1;
+        while (lo <= hi)
+        {
+            int mid = (lo + hi) >> 1;
+            if (sorted[mid] == value) return mid;
+            if (sorted[mid] < value) lo = mid + 1;
+            else hi = mid - 1;
+        }
+        return -1;
     }
 
     /// <summary>対象セッションを差し替える（タブ切替・公開版は1ウィンドウ連動）。</summary>
@@ -254,11 +360,18 @@ public sealed partial class FilterResultsViewModel : ObservableObject, IDisposab
     {
         if (ReferenceEquals(_session, session)) { Rebuild(); return; }
         InvalidateLineMapping();
+        _markLines = null;
         if (_session is not null)
+        {
             _session.SearchUpdated -= OnSearchUpdated;
+            _session.BookmarksChanged -= OnBookmarksChanged;
+        }
         _session = session;
         if (_session is not null)
+        {
             _session.SearchUpdated += OnSearchUpdated;
+            _session.BookmarksChanged += OnBookmarksChanged;
+        }
         if (_resultSet is null) DocumentName = _session?.DisplayName ?? "";
         Rebuild();
     }
@@ -381,38 +494,55 @@ public sealed partial class FilterResultsViewModel : ObservableObject, IDisposab
             return;
         }
         var s = _session;
-        if (s is null || s.SearchHits.Count == 0)
+        // 検索していないときは、ブックマークの一覧として使う（v1.8.2 extFS E-2）
+        var mode = s?.ActiveSearch is null ? ResultListMode.BookmarksOnly : ListMode;
+        bool showHits = s is not null && mode != ResultListMode.BookmarksOnly && s.SearchHits.Count > 0;
+        bool showMarks = s is not null && mode != ResultListMode.HitsOnly && s.Bookmarks.Count > 0;
+        if (s is null || (!showHits && !showMarks))
         {
+            CancelLineMapping();
             Rows = Array.Empty<FilterRow>();
-            HitInfo = s?.ActiveSearch is null ? "" : Localizer.Instance.Format("SearchHits", 0);
+            UpdateHitInfo();
             return;
         }
 
         var doc = s.Document;
         var regex = s.SearchHighlightRegex;
         int n = Math.Clamp(ContextN, 0, MaxContext);
+        var marks = s.Bookmarks;   // 印はどの切り替えでも付ける（当たりだけでも、ブックマークの行と分かる）
+
+        if (!showHits)
+        {
+            CancelLineMapping();
+            Rows = new BookmarkOnlyRowList(doc, marks, LineLabel);
+            UpdateHitInfo();
+            return;
+        }
 
         // CLI から渡された行番号があれば、索引の完成を待たずに行番号を出せる
         var known = s.SearchHitLines is { } sl && sl.Length == s.SearchHits.Count ? sl : null;
+        long[] extra = showMarks ? MarksNotIn(s.SearchHits, marks) : [];
 
         if (n <= 0 || !doc.IsIndexed)
         {
-            // ヒット行のみ: ヒット（行頭オフセット列）をそのまま1行=1ヒットで並べる
+            // ヒット行のみ: ヒット（行頭オフセット列）をそのまま1行=1ヒットで並べる（当たりに無いブックマークを行の順に挟む）
             CancelLineMapping();
-            Rows = new HitOnlyRowList(doc, s.SearchHits, regex, known, LineLabel);
+            Rows = new HitOnlyRowList(doc, s.SearchHits, regex, known, LineLabel, marks, extra);
         }
         else if (_hitLines is { } cached && cached.Length == s.SearchHits.Count)
         {
-            // 行番号への写像が済んでいる: ブロック結合 → 遅延展開
-            Rows = new BlockRowList(doc, FilterBlocks.Build(cached, n, doc.TotalLines ?? 0), regex,
-                s.SearchHits, LineLabel);
+            // 行番号への写像が済んでいる: ブロック結合 → 遅延展開。ブックマークの行も同じ前後付きで出す
+            long[] markLines = marks.Count > 0 ? MarkLines(doc, marks) : [];
+            var centers = showMarks ? Union(cached, markLines) : cached;
+            Rows = new BlockRowList(doc, FilterBlocks.Build(centers, n, doc.TotalLines ?? 0), regex,
+                s.SearchHits, cached, markLines, LineLabel);
         }
         else
         {
             // 写像がまだ: 先にヒット行のみを出しておき、裏で非同期に写像する。
             // 同期 Read で写像すると WASM の未取得チャンクで数え落とし、
             // DataArrived → Rebuild → また未取得… の無限ループになる（タブが固まる）。
-            Rows = new HitOnlyRowList(doc, s.SearchHits, regex, known, LineLabel);
+            Rows = new HitOnlyRowList(doc, s.SearchHits, regex, known, LineLabel, marks, extra);
             StartLineMapping(s, doc);
         }
 
@@ -537,20 +667,31 @@ public sealed partial class FilterResultsViewModel : ObservableObject, IDisposab
             return;
         }
         var s = _session;
-        if (s is null || s.SearchHits.Count == 0)
+        var culture = Localizer.Instance.Culture;
+        int markCount = s?.Bookmarks.Count ?? 0;
+        if (s?.ActiveSearch is null)
         {
-            HitInfo = s?.ActiveSearch is null ? "" : Localizer.Instance.Format("SearchHits", 0);
+            // 検索していない＝ブックマークの一覧
+            HitInfo = markCount > 0 ? Localizer.Instance.Format("ResultBookmarksOnly", markCount.ToString("N0", culture)) : "";
+            ShowChangeLimit = false;
+            return;
+        }
+        string marksNote = ListMode != ResultListMode.HitsOnly && markCount > 0
+            ? Localizer.Instance.Format("ResultBookmarksNote", markCount.ToString("N0", culture)) : "";
+        if (s.SearchHits.Count == 0)
+        {
+            HitInfo = Localizer.Instance.Format("SearchHits", 0) + marksNote;
             return;
         }
 
-        var culture = Localizer.Instance.Culture;
         string total = s.SearchHits.Count.ToString("N0", culture);
         HitInfo = (_currentOrdinal > 0
                 ? Localizer.Instance.Format("SearchHitsCurrent", _currentOrdinal.ToString("N0", culture), total)
                 : Localizer.Instance.Format("SearchHits", total))
             + (s.SearchTruncated
                 ? Localizer.Instance[OpenSearchLimitSettings is null ? "SearchTruncated" : "SearchTruncatedChangeable"]
-                : "");
+                : "")
+            + marksNote;
         ShowChangeLimit = s.SearchTruncated && OpenSearchLimitSettings is not null;
     }
 
@@ -624,8 +765,8 @@ public sealed partial class FilterResultsViewModel : ObservableObject, IDisposab
                 ct.ThrowIfCancellationRequested();
                 var row = rows[i];
 
-                // 文脈を外す＝ヒット行だけ。区切りの ⋯ も要らなくなる
-                if (!withContext && (row.IsSeparator || !row.IsHit))
+                // 文脈を外す＝ヒット行（とブックマークの行）だけ。区切りの ⋯ も要らなくなる
+                if (!withContext && (row.IsSeparator || !(row.IsHit || row.IsBookmark)))
                 {
                     if ((i & 1023) == 0) { SaveProgress = (double)i / rows.Count; await Task.Yield(); }
                     continue;
@@ -686,7 +827,7 @@ public sealed partial class FilterResultsViewModel : ObservableObject, IDisposab
         foreach (var row in rows)
         {
             if (row.IsSeparator) continue;
-            if (!withContext && !row.IsHit) continue;
+            if (!withContext && !(row.IsHit || row.IsBookmark)) continue;
             return row.EffectiveLineIndex == 0;
         }
         return false;
@@ -697,7 +838,10 @@ public sealed partial class FilterResultsViewModel : ObservableObject, IDisposab
         _saveCts?.Cancel();
         CancelLineMapping();
         if (_session is not null)
+        {
             _session.SearchUpdated -= OnSearchUpdated;
+            _session.BookmarksChanged -= OnBookmarksChanged;
+        }
         _session = null;
     }
 
@@ -768,22 +912,88 @@ public sealed partial class FilterResultsViewModel : ObservableObject, IDisposab
     /// 渡ってくる場合はこれがあるので、<b>索引ができる前でも行番号を出せる</b>
     /// （9.18修正「最初は行番号なし、後で行番号が出る」）。
     /// </param>
-    private sealed class HitOnlyRowList(LineDocument doc, IReadOnlyList<long> hits, Regex? regex,
-                                        IReadOnlyList<long>? lines = null, Func<long, string>? lineLabel = null)
-        : LazyRowList
+    /// <param name="marks">ブックマーク（印を付ける。昇順）。</param>
+    /// <param name="extra">
+    /// 当たりに無いブックマーク（昇順）。当たりの間に、ファイルの行の順で挟む（v1.8.2 extFS E-2）。
+    /// 当たりは 100 万件にもなるので並べ直さず、挟む位置だけ持つ（i 番目が当たりかブックマークかは二分探索で決まる）。
+    /// </param>
+    private sealed class HitOnlyRowList : LazyRowList
     {
-        public override int Count => hits.Count;
+        private readonly LineDocument _doc;
+        private readonly IReadOnlyList<long> _hits;
+        private readonly Regex? _regex;
+        private readonly IReadOnlyList<long>? _lines;
+        private readonly Func<long, string>? _lineLabel;
+        private readonly IReadOnlyList<long> _marks;
+        private readonly long[] _extra;
+        private readonly long[] _extraRow;   // 挟むブックマークの、一覧での行（昇順）
+
+        public HitOnlyRowList(LineDocument doc, IReadOnlyList<long> hits, Regex? regex,
+                              IReadOnlyList<long>? lines = null, Func<long, string>? lineLabel = null,
+                              IReadOnlyList<long>? marks = null, long[]? extra = null)
+        {
+            _doc = doc; _hits = hits; _regex = regex; _lines = lines; _lineLabel = lineLabel;
+            _marks = marks ?? [];
+            _extra = extra ?? [];
+            _extraRow = new long[_extra.Length];
+            for (int k = 0; k < _extra.Length; k++) _extraRow[k] = LowerBound(hits, _extra[k]) + k;
+        }
+
+        public override int Count => _hits.Count + _extra.Length;
 
         // 行番号は FilterRow 側で遅延解決する（未索引なら空欄、WASM の未到着時は到着後に再解決）
+        protected override FilterRow Create(int index)
+        {
+            int k = LowerBound(_extraRow, index);
+            if (k < _extra.Length && _extraRow[k] == index)
+                return new FilterRow(_doc)
+                {
+                    RowIndex = index,
+                    IsBookmark = true,
+                    Offset = _extra[k],
+                    ResolveLineFromOffset = _doc.IsIndexed,
+                    LineLabel = _lineLabel,
+                };
+            int hit = index - k;
+            return new FilterRow(_doc)
+            {
+                RowIndex = index,
+                IsHit = true,
+                IsBookmark = _marks.Count > 0 && IndexOfSorted(_marks, _hits[hit]) >= 0,
+                Offset = _hits[hit],
+                LineIndex = _lines is not null ? _lines[hit] : -1,
+                ResolveLineFromOffset = _doc.IsIndexed,
+                HitOrdinal = hit + 1,
+                HighlightRegex = _regex,
+                LineLabel = _lineLabel,
+            };
+        }
+
+        private static int LowerBound(IReadOnlyList<long> sorted, long value)
+        {
+            int lo = 0, hi = sorted.Count;
+            while (lo < hi)
+            {
+                int mid = (lo + hi) >> 1;
+                if (sorted[mid] < value) lo = mid + 1;
+                else hi = mid;
+            }
+            return lo;
+        }
+    }
+
+    /// <summary>ブックマークだけ（検索していないとき・「ブックマークだけ」の切り替え）。</summary>
+    private sealed class BookmarkOnlyRowList(LineDocument doc, IReadOnlyList<long> marks, Func<long, string>? lineLabel)
+        : LazyRowList
+    {
+        public override int Count => marks.Count;
+
         protected override FilterRow Create(int index) => new(doc)
         {
             RowIndex = index,
-            IsHit = true,
-            Offset = hits[index],
-            LineIndex = lines is not null ? lines[index] : -1,
+            IsBookmark = true,
+            Offset = marks[index],
             ResolveLineFromOffset = doc.IsIndexed,
-            HitOrdinal = index + 1,
-            HighlightRegex = regex,
             LineLabel = lineLabel,
         };
     }
@@ -811,29 +1021,30 @@ public sealed partial class FilterResultsViewModel : ObservableObject, IDisposab
         private readonly List<FilterBlock> _blocks;
         private readonly Regex? _regex;
         private readonly long[] _rowStart; // 各ブロックの先頭表示行 index（separator 込み）
-        private readonly long[] _hitStart; // 各ブロック先頭ヒットの通し番号（0始まり）
         private readonly int _count;
 
         private readonly IReadOnlyList<long> _hitOffsets; // ヒット通し番号(0始まり) → 行頭オフセット
+        private readonly long[] _hitLines;                // ヒット通し番号(0始まり) → 行番号（昇順）
+        private readonly long[] _markLines;               // ブックマークの行番号（昇順）
         private readonly Func<long, string>? _lineLabel;
 
+        /// <param name="blocks">当たり（と、出すならブックマーク）の行を中心に組んだブロック。</param>
         public BlockRowList(LineDocument doc, List<FilterBlock> blocks, Regex? regex,
-            IReadOnlyList<long> hitOffsets, Func<long, string>? lineLabel = null)
+            IReadOnlyList<long> hitOffsets, long[] hitLines, long[] markLines, Func<long, string>? lineLabel = null)
         {
             _lineLabel = lineLabel;
             _doc = doc;
             _blocks = blocks;
             _regex = regex;
             _hitOffsets = hitOffsets;
+            _hitLines = hitLines;
+            _markLines = markLines;
             _rowStart = new long[blocks.Count];
-            _hitStart = new long[blocks.Count];
-            long pos = 0, hitNo = 0;
+            long pos = 0;
             for (int b = 0; b < blocks.Count; b++)
             {
                 _rowStart[b] = pos;
-                _hitStart[b] = hitNo;
                 pos += blocks[b].LineCount + 1; // +1 = ブロック後の区切り行
-                hitNo += blocks[b].HitLines.Count;
             }
             _count = (int)Math.Min(int.MaxValue, Math.Max(0, pos - 1)); // 末尾の区切りは無し
         }
@@ -856,34 +1067,21 @@ public sealed partial class FilterResultsViewModel : ObservableObject, IDisposab
                 return new FilterRow(_doc) { RowIndex = index, IsSeparator = true };
 
             long line = block.StartLine + rel;
-            int hitIdx = IndexOfSorted(block.HitLines, line);
-            long hitNo = hitIdx >= 0 ? _hitStart[lo] + hitIdx : -1;
+            long hitNo = IndexOfSorted(_hitLines, line);
             // ヒット行は行頭オフセットが判っているので、索引を介さず直読みできる
             // （WASM でデータ未到着のとき行番号経由だと誤った行を読んでしまう）
             long offset = hitNo >= 0 && hitNo < _hitOffsets.Count ? _hitOffsets[(int)hitNo] : -1;
             return new FilterRow(_doc)
             {
                 RowIndex = index,
-                IsHit = hitIdx >= 0,
+                IsHit = hitNo >= 0,
+                IsBookmark = _markLines.Length > 0 && IndexOfSorted(_markLines, line) >= 0,
                 LineIndex = line,
                 Offset = offset,
                 HitOrdinal = hitNo >= 0 ? hitNo + 1 : -1,
-                HighlightRegex = hitIdx >= 0 ? _regex : null,
+                HighlightRegex = hitNo >= 0 ? _regex : null,
                 LineLabel = _lineLabel,
             };
-        }
-
-        private static int IndexOfSorted(IReadOnlyList<long> sorted, long value)
-        {
-            int lo = 0, hi = sorted.Count - 1;
-            while (lo <= hi)
-            {
-                int mid = (lo + hi) >> 1;
-                if (sorted[mid] == value) return mid;
-                if (sorted[mid] < value) lo = mid + 1;
-                else hi = mid - 1;
-            }
-            return -1;
         }
     }
 }

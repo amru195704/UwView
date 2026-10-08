@@ -442,6 +442,18 @@ public sealed class DocumentSession : IAsyncDisposable
         BookmarksChanged?.Invoke(this, EventArgs.Empty);
     }
 
+    /// <summary>
+    /// 行頭位置の組をまとめて付ける。全部に付いていれば全部外す（本文で範囲を選んで Ctrl＋B。v1.8.2 extFS E-2）。
+    /// 知らせは 1 回。付けたら true。
+    /// </summary>
+    public bool ToggleBookmarks(IReadOnlyCollection<long> lineStartOffsets)
+    {
+        if (lineStartOffsets.Count == 0) return false;
+        bool allMarked = lineStartOffsets.All(HasBookmark);
+        SetBookmarks(allMarked ? _bookmarks.Except(lineStartOffsets).ToList() : _bookmarks.Concat(lineStartOffsets).ToList());
+        return !allMarked;
+    }
+
     public bool HasBookmark(long lineStartOffset)
     {
         int i = LowerBound(_bookmarks, lineStartOffset);

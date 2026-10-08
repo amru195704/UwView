@@ -128,6 +128,9 @@ public sealed class AppSettings
     /// <summary>AND・NOT・OR のひな形を入れたか（入れるのは 1 回だけ。消したものは戻さない。v1.8.2 extFS E-1）。</summary>
     public bool PredefinedTemplatesAdded { get; set; }
 
+    /// <summary>結果の一覧に出すもの（0=当たり＋ブックマーク・1=ブックマークだけ・2=当たりだけ。v1.8.2 extFS E-2）。</summary>
+    public int ResultListMode { get; set; }
+
     // ── Ver1.1: B Follow 中の自動更新 ──
     public bool FollowAutoRefresh { get; set; } = true;
 
