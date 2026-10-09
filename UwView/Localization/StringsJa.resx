@@ -83,6 +83,8 @@
 
   <data name="OpenDialogTitle" xml:space="preserve"><value>テキストファイルを開く</value></data>
   <data name="NoFile" xml:space="preserve"><value>（ファイル未選択）</value></data>
+  <data name="TipPathLabel" xml:space="preserve"><value>押すと、ファイルの場所（フルパス）を出します（コピーできます）</value></data>
+  <data name="PathCopied" xml:space="preserve"><value>コピーしました</value></data>
   <data name="EncodingAuto" xml:space="preserve"><value>自動判定</value></data>
 
   <data name="ModePage" xml:space="preserve"><value>ページモード</value></data>

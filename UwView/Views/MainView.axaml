@@ -250,7 +250,7 @@
                 <!-- 左情報は残り幅にクリップ（あふれても右へ重ならない） -->
                 <StackPanel Orientation="Horizontal" Spacing="14" ClipToBounds="True"
                             VerticalAlignment="Center">
-                    <TextBlock Text="{Binding FilePath}" Foreground="{DynamicResource Uv_Text}" />
+                    <ctrl:PathLabel Path="{Binding FilePath}" />
                     <TextBlock Text="{Binding ModeInfo}" Foreground="{DynamicResource Uv_Text}" />
                     <TextBlock Text="{Binding PositionInfo}" Foreground="{DynamicResource Uv_Text}" />
                     <TextBlock Text="{Binding EncodingInfo}" Foreground="{DynamicResource Uv_Text}" />
