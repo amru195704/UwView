@@ -177,6 +177,7 @@ public static class UvfCli
             bz2 xz lzma zst lz4 br  同じく展開しながら探します（外部コマンドは使いません）
             zip          扱えません（展開してから探してください。zip は UwView Pro が扱います）
             pbf          扱えません（OSM の pbf は UwView Pro が XML にして扱います）
+            docx xlsx pdf 扱えません（Word・Excel・PDF は UwView Pro が文字を取り出して扱います）
             .uwvz        扱えません（UwView Pro のファイルです）
             tar.gz       扱えません（複数ファイルをまとめた tar のため。展開してから探してください）
             それ以外      テキストとして扱います
@@ -230,6 +231,7 @@ public static class UvfCli
             bz2 xz lzma zst lz4 br  the same, decompressed here (no external command is used)
             zip          not supported (extract it first; UwView Pro handles zip)
             pbf          not supported (UwView Pro turns OSM pbf into XML)
+            docx xlsx pdf not supported (UwView Pro extracts the text of Word, Excel and PDF files)
             .uwvz        not supported (it is a UwView Pro file)
             tar.gz       not supported (a tar bundles several files; extract it first)
             anything else treated as text
@@ -473,6 +475,12 @@ public static class UvfCli
         var compressed = CompressedKind.None;   // 展開しながら探す形式（gz・bz2・xz・lzma・zstd）
         if (many is null)
         {
+            // Word・Excel・PDF は UwView Pro の役目（v1.8.3 extFS E-5）。.docx・.xlsx の中身は zip なので、zip より先に見る
+            if (OfficeDocumentFile.Probe(inv.File!) is { IsOffice: true } office)
+            {
+                Err(OfficeNotice(office, inv.File!, T));
+                return UvfExit.Error;
+            }
             // pbf は UwView Pro の役目。テキストとして走査すると「1件も無い」と答えてしまう
             if (OsmPbfFile.Is(inv.File!))
             {
@@ -621,6 +629,12 @@ public static class UvfCli
                                        $"{env.ToolName}: pbf files are not searched (UwView Pro handles them): {file}"));
                 continue;
             }
+            if (looks[i].Office is { IsOffice: true } office)
+            {
+                compressed.Add(file);
+                env.StdErr.WriteLine($"{env.ToolName}: {OfficeNotice(office, file, t)}");
+                continue;
+            }
             var probe = looks[i].Probe;
             if (probe.Kind == CompressedKind.Zip || probe.IsRejected)
             {
@@ -655,10 +669,11 @@ public static class UvfCli
                 threads, w, ct, searchableKinds, verifyPlain: true);
 
         // 開いてみたら平文でなかったもの（中身が pbf・zip・受け付けない圧縮）を、並びどおりに知らせる
-        foreach (var (file, pbf, probe) in outcome.Skipped ?? [])
+        foreach (var (file, pbf, probe, office) in outcome.Skipped ?? [])
         {
             compressed.Add(file);
-            env.StdErr.WriteLine(pbf
+            env.StdErr.WriteLine(office.IsOffice ? $"{env.ToolName}: {OfficeNotice(office, file, t)}"
+                : pbf
                 ? t($"{env.ToolName}: pbf は対象外です（UwView Pro が扱います）: {file}",
                     $"{env.ToolName}: pbf files are not searched (UwView Pro handles them): {file}")
                 : probe.Kind == CompressedKind.Zip && !probe.IsRejected
@@ -702,15 +717,21 @@ public static class UvfCli
     /// pbf の判定・圧縮の判定・検索の前の判定で 1本ずつ順に3回開いていて、カーネル 8.6 万本で検索の前に
     /// 約 22 秒かかった（2026-10-02）。開くこと自体が重い（8.6 万本を1回開くだけで約 2 秒）ので、1回で済ませる。
     /// </summary>
-    private static (bool Pbf, CompressedProbe Probe)[] Survey(IReadOnlyList<string> files)
+    private static (bool Pbf, CompressedProbe Probe, OfficeProbe? Office)[] Survey(IReadOnlyList<string> files)
     {
-        var looks = new (bool Pbf, CompressedProbe Probe)[files.Count];
+        var looks = new (bool Pbf, CompressedProbe Probe, OfficeProbe? Office)[files.Count];
         Parallel.For(0, files.Count, new ParallelOptions { MaxDegreeOfParallelism = Math.Max(8, Environment.ProcessorCount * 2) }, i =>
         {
             string file = files[i];
+            // 名前が Word・Excel・PDF らしいものは中身で確かめる（名前で分からないものは、検索で開いたときに見る。v1.8.3）
+            if (OfficeDocumentFile.NameLooksOffice(file) && OfficeDocumentFile.Probe(file) is { IsOffice: true } office)
+            {
+                looks[i] = (false, CompressedProbe.Plain, office);
+                return;
+            }
             if (!CompressedInput.NameLooksCompressed(file) && !file.EndsWith(".pbf", StringComparison.OrdinalIgnoreCase))
             {
-                looks[i] = (false, CompressedProbe.Plain);   // 検索で開いたときに確かめる
+                looks[i] = (false, CompressedProbe.Plain, null);   // 検索で開いたときに確かめる
                 return;
             }
             Span<byte> head = stackalloc byte[OsmPbfFile.HeadBytes];
@@ -722,13 +743,25 @@ public static class UvfCli
             }
             catch (Exception e) when (e is IOException or UnauthorizedAccessException)
             {
-                looks[i] = (false, CompressedInput.Probe(file));   // 読めない理由は従来の判定で出す
+                looks[i] = (false, CompressedInput.Probe(file), null);   // 読めない理由は従来の判定で出す
                 return;
             }
-            if (OsmPbfFile.IsHead(head[..got])) { looks[i] = (true, CompressedProbe.Plain); return; }
-            looks[i] = (false, CompressedInput.PlainFromHead(file, head[..got]) ?? CompressedInput.Probe(file));
+            if (OsmPbfFile.IsHead(head[..got])) { looks[i] = (true, CompressedProbe.Plain, null); return; }
+            looks[i] = (false, CompressedInput.PlainFromHead(file, head[..got]) ?? CompressedInput.Probe(file), null);
         });
         return looks;
+    }
+
+    /// <summary>
+    /// Word・Excel・PDF の案内（v1.8.3 extFS E-5）。読めるものは「UwView Pro の機能です」、
+    /// 古い形式・パスワード付きは UwView Pro でも読めないので、その理由を出す。
+    /// </summary>
+    private static string OfficeNotice(OfficeProbe office, string path, Func<string, string, string> t)
+    {
+        string name = Path.GetFileName(path);
+        return office.IsRejected
+            ? t(OfficeDocumentFile.RejectText(office.Reject, name, true), OfficeDocumentFile.RejectText(office.Reject, name, false))
+            : t(OfficeDocumentFile.ProOnlyText(name, true), OfficeDocumentFile.ProOnlyText(name, false));
     }
 
     /// <summary>
@@ -901,7 +934,8 @@ public static class UvfCli
         {
             string file = files[i];
             var probe = CompressedInput.Probe(file);
-            bool canOpen = !OsmPbfFile.Is(file) && probe.Kind != CompressedKind.Zip && !probe.IsRejected;
+            bool canOpen = !OsmPbfFile.Is(file) && probe.Kind != CompressedKind.Zip && !probe.IsRejected
+                           && !OfficeDocumentFile.Probe(file).IsOffice;   // Word・Excel・PDF は UwView Pro（v1.8.3）
             var info = new FileInfo(file);
             entries[i] = new MultiHandoffFile(Path.GetFullPath(file), file, info.Exists ? info.Length : 0,
                                               info.Exists ? info.LastWriteTimeUtc.Ticks : 0,

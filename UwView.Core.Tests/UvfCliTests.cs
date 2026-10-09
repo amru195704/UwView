@@ -456,6 +456,58 @@ public class UvfCliTests : IDisposable
         Assert.Empty(run.Out);
     }
 
+    /// <summary>Word（中身は zip）。<c>word/document.xml</c> があれば Word（v1.8.3 extFS E-5）。</summary>
+    private void WriteDocx(string name, string text)
+    {
+        using var zip = new System.IO.Compression.ZipArchive(File.Create(P(name)), System.IO.Compression.ZipArchiveMode.Create);
+        using var w = new StreamWriter(zip.CreateEntry("word/document.xml").Open());
+        w.Write($"<w:document xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\"><w:body><w:p><w:r><w:t>{text}</w:t></w:r></w:p></w:body></w:document>");
+    }
+
+    /// <summary>
+    /// Word・Excel・PDF を探すのは UwView Pro の役目（v1.8.3 extFS E-5）。バイナリをテキストとして走査して
+    /// 「1件も無い」と答えないよう、中身で見分けて断る。.docx は中身が zip でも「zip です」とは言わない。
+    /// 古い形式（.doc）は Pro でも読めないので、その理由を出す。
+    /// </summary>
+    [Fact]
+    public async Task WordとExcelとPDFは断ってUwViewProを案内する()
+    {
+        WriteDocx("report.docx", "ERROR timeout");
+        File.WriteAllText(P("spec.pdf"), "%PDF-1.7\nERROR timeout\n");
+        File.WriteAllBytes(P("old.doc"), [0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1, .. new byte[504]]);
+
+        foreach (string name in new[] { "report.docx", "spec.pdf" })
+        {
+            var run = await InDir(name, "timeout");
+            Assert.Equal(UvfExit.Error, run.Exit);
+            Assert.Contains("UwView Pro", run.Err);
+            Assert.DoesNotContain("zip", run.Err);
+            Assert.Empty(run.Out);
+        }
+        var old = await InDir("old.doc", "timeout");
+        Assert.Equal(UvfExit.Error, old.Exit);
+        Assert.Contains("old Word", old.Err);
+    }
+
+    /// <summary>複数ファイルでは Word・Excel・PDF だけ飛ばして名指しで知らせる。名前で分からないものは開いたときに中身で見分ける。</summary>
+    [Fact]
+    public async Task 複数ファイルではWordとPDFを飛ばして知らせる()
+    {
+        File.WriteAllText(P("a.log"), "a timeout\n");
+        WriteDocx("b.docx", "b timeout");
+        File.WriteAllText(P("c.pdf"), "%PDF-1.7\nc timeout\n");
+        File.WriteAllText(P("d.dat"), "%PDF-1.7\nd timeout\n");    // 名前は普通・中身は PDF
+        WriteDocx("e.bin", "e timeout");                             // 名前は普通・中身は Word
+
+        var run = await InDir("*", "timeout");
+
+        Assert.Equal(UvfExit.Error, run.Exit);
+        Assert.Equal("a.log:1\ta timeout\n", run.Out);
+        foreach (string name in new[] { "b.docx", "c.pdf", "d.dat", "e.bin" })
+            Assert.Contains(name, run.Err);
+        Assert.Contains("UwView Pro", run.Err);
+    }
+
     /// <summary>
     /// 名前は普通でも中身が圧縮・pbf のものは、検索で開いたときに先頭で見分ける（v1.7.3.6.5 で検索の前の判定を省いた）。
     /// 圧縮はその場で展開して探し、出力は並びどおり。pbf は断って exit 2。

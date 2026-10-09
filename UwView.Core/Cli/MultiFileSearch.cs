@@ -53,10 +53,10 @@ public static class MultiFileSearch
     /// <param name="Failed">読めなかったファイルと理由。</param>
     /// <param name="Skipped">
     /// 開いてみたら平文でなかったので探さなかったもの（<c>verifyPlain</c> のときだけ。並びは指定順）。
-    /// Pbf なら pbf、そうでなければ <c>Probe</c> が zip か断る理由を持つ。
+    /// Pbf なら pbf、<c>Office</c> が Word・Excel・PDF なら UwView Pro の役目（v1.8.3）、そうでなければ <c>Probe</c> が zip か断る理由を持つ。
     /// </param>
     public readonly record struct Result(long Hits, bool Truncated, IReadOnlyList<(string File, string Reason)> Failed,
-                                         IReadOnlyList<(string File, bool Pbf, CompressedProbe Probe)>? Skipped = null);
+                                         IReadOnlyList<(string File, bool Pbf, CompressedProbe Probe, OfficeProbe Office)>? Skipped = null);
 
     /// <summary>
     /// これ以下のファイルは、作業役ごとの使い回しの領域に 1 回で読み、文字コードの判定・中身の確かめ・検索を
@@ -77,7 +77,7 @@ public static class MultiFileSearch
         // verifyPlain: kinds で平文としたものを、開いたときに先頭で確かめる（下調べで全部を開き直さないため。
         // 開くこと自体が重く、カーネル 8.6 万本を1回開くだけで約 2 秒かかる。2026-10-02）。
         // 中身が圧縮ならその場で展開して探し（並びは変えない）、pbf・zip・断るものは探さずに Skipped へ
-        var skipped = new (bool Pbf, CompressedProbe Probe)?[files.Count];
+        var skipped = new (bool Pbf, CompressedProbe Probe, OfficeProbe Office)?[files.Count];
         var trace = Environment.GetEnvironmentVariable("UV_TRACE") == "1" ? new Trace() : null;
         long allocatedBefore = trace is null ? 0 : GC.GetTotalAllocatedBytes();
         if (trace is not null) RawGrep.QuietTrace = true;
@@ -138,13 +138,13 @@ public static class MultiFileSearch
         long hits = 0;
         bool truncated = false;
         var failed = new List<(string, string)>();
-        var notSearched = new List<(string File, bool Pbf, CompressedProbe Probe)>();
+        var notSearched = new List<(string File, bool Pbf, CompressedProbe Probe, OfficeProbe Office)>();
         for (int i = 0; i < files.Count; i++)
         {
             hits += results[i].Hits;
             truncated |= results[i].Truncated;
             if (results[i].Reason is { } reason) failed.Add((files[i], reason));
-            if (skipped[i] is { } s) notSearched.Add((files[i], s.Pbf, s.Probe));
+            if (skipped[i] is { } s) notSearched.Add((files[i], s.Pbf, s.Probe, s.Office));
         }
         return new Result(hits, truncated, failed, notSearched);
     }
@@ -232,7 +232,7 @@ public static class MultiFileSearch
     private static async Task<(long Hits, bool Truncated, string? Reason)> OneFileAsync(
         string file, CompressedKind kind, PreparedSearch prepared, bool invert, bool json, bool lineNumbers, string? name,
         int index, OrderedOutput order, CancellationToken ct, int decodeThreads, byte[] small,
-        (bool Pbf, CompressedProbe Probe)?[]? skipped = null, Trace? trace = null)
+        (bool Pbf, CompressedProbe Probe, OfficeProbe Office)?[]? skipped = null, Trace? trace = null)
     {
         var buffer = new StringWriter { NewLine = "\n" };
         TextWriter writer = buffer;   // 自分の番が来るまでは手元に貯める
@@ -277,14 +277,18 @@ public static class MultiFileSearch
                 Span<byte> head = stackalloc byte[OsmPbfFile.HeadBytes];
                 int got = source.Read(0, head);
                 bool pbf = OsmPbfFile.IsHead(head[..got]);
-                if (pbf || CompressedInput.PlainFromHead(file, head[..got]) is null)
+                // Word・Excel・PDF（名前で分からなかったもの。v1.8.3）。PDF は先頭が %PDF-、.docx・.xlsx は中身が zip、古い形式は OLE
+                bool maybeOffice = head[..got].StartsWith("%PDF-"u8) || head[..got].StartsWith("PK\u0003\u0004"u8)
+                                   || head[..got].StartsWith((ReadOnlySpan<byte>)[0xD0, 0xCF, 0x11, 0xE0]);
+                if (pbf || maybeOffice || CompressedInput.PlainFromHead(file, head[..got]) is null)
                 {
                     await source.DisposeAsync();
                     inMemory = -1;
-                    var probe = pbf ? CompressedProbe.Plain : CompressedInput.Probe(file);
-                    if (pbf || probe.Kind == CompressedKind.Zip || probe.IsRejected)
+                    var office = pbf || !maybeOffice ? OfficeProbe.NotOffice : OfficeDocumentFile.Probe(file);
+                    var probe = pbf || office.IsOffice ? CompressedProbe.Plain : CompressedInput.Probe(file);
+                    if (pbf || office.IsOffice || probe.Kind == CompressedKind.Zip || probe.IsRejected)
                     {
-                        skipped[index] = (pbf, probe);
+                        skipped[index] = (pbf, probe, office);
                         source = new EmptyByteSource();     // 探さない（空として順番だけ通す）
                     }
                     else source = CompressedFormats.IsSingleStream(probe.Kind)

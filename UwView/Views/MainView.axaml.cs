@@ -891,6 +891,14 @@ public partial class MainView : UserControl
         DocumentTabViewModel? last = null;
         foreach (string path in paths)
         {
+            // Word・Excel・PDF は UwView Pro の役目（v1.8.3 extFS E-5）。バイナリのまま開かない。
+            // .docx・.xlsx は中身が zip なので、zip の判定より先に見る
+            if (OfficeDocumentFile.Probe(path) is { IsOffice: true } office)
+            {
+                await NoticeAsync(CompressedOpenDialog.OfficeMessage(office, System.IO.Path.GetFileName(path)));
+                continue;
+            }
+
             var probe = CompressedInput.Probe(path);
 
             if (probe.IsRejected)

@@ -136,6 +136,16 @@ public static class CompressedOpenDialog
         $"{fileName} is a zip file. Opening zip files directly is not available yet (coming in a later version). "
         + "Please extract it first.");
 
+    /// <summary>
+    /// Word・Excel・PDF を開こうとしたときの説明（v1.8.3 extFS E-5）。読めるものは UwView Pro の機能、
+    /// 古い形式・パスワード付きは Pro でも読めないので、その理由。
+    /// </summary>
+    public static string OfficeMessage(UwView.Core.OfficeProbe office, string fileName) => office.IsRejected
+        ? T(UwView.Core.OfficeDocumentFile.RejectText(office.Reject, fileName, true),
+            UwView.Core.OfficeDocumentFile.RejectText(office.Reject, fileName, false))
+        : T($"{fileName}：Word・Excel・PDF を探すのは UwView Pro の機能です（文字を取り出して開きます）。",
+            $"{fileName}: searching Word, Excel and PDF files is a UwView Pro feature (it extracts the text and opens it).");
+
     /// <summary>展開が最後まで進まなかったときの説明（切り詰め・別形式）。</summary>
     public static string CorruptAfterExpandMessage(string fileName, string format = "gzip") => T(
         $"{fileName} を最後まで読めませんでした（{format} として読み切れません）。"
