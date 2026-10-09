@@ -13,6 +13,7 @@ namespace UwView.ThemeShots;
 /// <summary>
 /// uvf の窓をライト／ダーク × 100%／150% で撮る（v1.8.2 extFS E-4 §5）。
 /// 出力: UV_THEME_SHOTS（無ければ一時フォルダーの uv-theme-shots）に <c>{OS}_uvf_{窓}_{テーマ}_{倍率}.png</c>。
+/// 説明書に使うときは UV_THEME_SHOTS_FILE（例 /tmp/logs/app.log）で開くファイルの場所を決める（題名・帯・ステータスに写る）。
 /// </summary>
 public class ThemeShotTests
 {
@@ -52,8 +53,16 @@ public class ThemeShotTests
     [InlineData(AppTheme.Dark)]
     public async Task 窓を撮る(string theme)
     {
-        string path = UiHarness.WriteTempFile(Enumerable.Range(1, 300).Select(i =>
-            $"2026-10-09 12:{i / 60:00}:{i % 60:00}.123 {(i % 7 == 0 ? "ERROR" : i % 5 == 0 ? "WARN" : "INFO")} worker-{i % 9} request id={i:00000} took {i % 97}ms"));
+        var lines = Enumerable.Range(1, 300).Select(i =>
+            $"2026-10-09 12:{i / 60:00}:{i % 60:00}.123 {(i % 7 == 0 ? "ERROR" : i % 5 == 0 ? "WARN" : "INFO")} worker-{i % 9} request id={i:00000} took {i % 97}ms");
+        string path;
+        if (Environment.GetEnvironmentVariable("UV_THEME_SHOTS_FILE") is { Length: > 0 } fixedPath)
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(fixedPath))!);
+            File.WriteAllLines(fixedPath, lines);
+            path = Path.GetFullPath(fixedPath);
+        }
+        else path = UiHarness.WriteTempFile(lines);
         var (w, v, vm) = UiHarness.OpenMainWindow();
         AppTheme.Apply(theme);
         try

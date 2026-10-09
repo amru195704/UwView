@@ -29,11 +29,12 @@ table{border-collapse:collapse;width:100%;font-size:12.5px} td,th{padding:4px 10
 """
 def ic(g,n): return f'<span class="ic"><b>{g}</b><i>{n}</i></span>'
 main=f"""<div class="win" id="w">
-<div class="title"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span>&nbsp; UwView(uvf)-Finder Scope(v1.8.1.9)</div>
-<div class="row"><span class="lab">メニュー</span>ファイル　ヘルプ</div>
+<div class="title"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span>&nbsp; UwView(uvf)-Finder Scope(v1.8.2.1)</div>
+<div class="row"><span class="lab">メニュー</span>ファイル　ツール　ヘルプ　（設定… は Mac はアプリ名メニュー）</div>
 <div class="row" style="padding-bottom:0"><span class="lab">タブ</span><span class="tab on">app.log ×</span><span class="tab">app-0902.log ×</span><span class="tab">…</span><span style="font-size:11px;color:#777;margin-left:8px">多いときは横にスクロール</span></div>
 <div class="row"><span class="lab">ツールバー</span>{ic('📂','開く')}{ic('✕','閉じる')}{ic('文','文字コード')}{ic('#','行番号')}{ic('↦','ジャンプ')}<span class="inp" style="min-width:70px">50% / 行</span>{ic('🔖','ブックマーク')}{ic('◀','前')}{ic('▶','次')}{ic('⤓','末尾追従')}{ic('♡','お気に入り')}{ic('🎨','ハイライタ')}{ic('&gt;_','コマンドライン')}{ic('あ','言語')}</div>
 <div class="row"><span class="lab">検索バー</span><span class="inp">検索語</span>{ic('🔍','検索')}{ic('⌫','クリア')}{ic('★','定義済み')}<span class="chk">☐ 正規表現</span><span class="chk">☐ 大小無視</span>{ic('◀','前へ')}{ic('▶','次へ')}{ic('☰','結果一覧')}{ic('≣','ファイル一覧')}<span style="font-size:12px">3/8,739 件</span></div>
+<div class="row" style="background:#fff4c2"><span class="lab">帯</span>app.log が切り詰められました<span style="font-size:11px;color:#777;margin-left:8px">外でファイルが変わったときだけ出る</span><span class="btn" style="margin-left:auto">読み直す</span><span class="btn">×</span></div>
 <div class="body"><div class="ln">128<br>129<br>130<br>131<br>132<br>133<br>134</div><div class="txt">2026-09-27 10:01:02 <span class="hl">ERROR</span> connection reset<br>2026-09-27 10:01:03 INFO retry 1<br>2026-09-27 10:01:04 INFO retry 2<br>2026-09-27 10:05:44 <span class="hl">ERROR</span> timeout<br>2026-09-27 10:05:45 WARN slow response<br>2026-09-27 10:06:00 INFO ok<br>……</div><div class="mm"><div class="h" style="top:22px"></div><div class="h" style="top:58px"></div><div class="bm" style="top:100px"></div><div class="h" style="top:130px"></div><div class="v"></div></div></div>
 <div class="st"><span class="lab">ステータス</span><span>パス</span><span>行モード</span><span>位置</span><span>文字コード</span><span>通知</span><span style="margin-left:auto">索引中… 42%　キャンセル</span><span>直前の処理時間</span></div>
 </div>
