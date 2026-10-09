@@ -40,7 +40,7 @@ main=f"""<div class="win" id="w">
 </div>
 <div style="margin:0 14px 10px;font-size:11.5px;color:#555">右端の縦の帯はミニマップ（橙＝検索の当たり、青＝ブックマーク、灰色＝今見ている位置）。ボタンはアイコンで、名前はマウスを乗せると出ます（図では下に名前を書いています）。</div>"""
 flist=f"""<div class="win" id="w" style="width:720px">
-<div class="title">ファイル一覧<span style="margin-left:auto" class="chk">☐ タブで開く</span></div>
+<div class="title">ファイル一覧<span style="margin-left:auto" class="chk">開く先: ◉ メイン　○ タブ　○ アプリ</span></div>
 <table><tr><th>番号</th><th>ファイル</th><th style="text-align:right">当たり</th><th style="text-align:right">大きさ</th><th></th></tr>
 <tr><td>1</td><td>logs/app-0901.log</td><td class="r">42</td><td class="r">1.2 GB</td><td><span class="mark">メイン</span></td></tr>
 <tr><td>2</td><td>logs/app-0902.log</td><td class="r">0</td><td class="r">1.1 GB</td><td></td></tr>

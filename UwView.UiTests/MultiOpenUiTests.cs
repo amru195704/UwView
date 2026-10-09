@@ -4,6 +4,7 @@ using Avalonia.Headless.XUnit;
 using UwView.Controls;
 using UwView.Core;
 using UwView.Core.Cli;
+using UwView.Services;
 using UwView.Views;
 
 namespace UwView.UiTests;
@@ -169,6 +170,58 @@ public class MultiOpenUiTests : IDisposable
         list.OpenAt(2);
         await UiHarness.WaitUntil(() => vm.Tabs[0].FilePath == F("f03.log"), "メインが3番になる");
         Assert.Equal(2, vm.Tabs.Count);
+    }
+
+    /// <summary>
+    /// 開く先「アプリ」は、元のファイルを外部のアプリで開く（索引ではない。タブは増えない）。
+    /// 選んだ開く先は設定に残り、見つからないファイルは開かずに知らせる（2026-10-10 オーナー依頼）。
+    /// </summary>
+    [AvaloniaFact]
+    public async Task ファイル一覧の開く先をアプリにすると元のファイルを外部のアプリで開く()
+    {
+        var launched = new List<string>();
+        FileListPopup.LaunchOverride = path => { launched.Add(path); return Task.FromResult(true); };
+        try
+        {
+            MakeFiles(3);
+            var (view, vm) = await Start(await Handoff("*.log", "ERROR", "-open"));
+            view.OpenFileList();
+            await UiHarness.Pump();
+            var list = FileListPopup.Current!;
+
+            list.Mode = FileListOpenMode.App;
+            Assert.Equal(FileListOpenMode.App, AppSettingsRefCurrent().FileListOpenMode);   // 設定に残る
+            Assert.False(AppSettingsRefCurrent().FileListOpenInTab);
+            list.OpenAt(1);
+            await UiHarness.WaitUntil(() => launched.Count == 1, "アプリで開く");
+
+            Assert.Equal(F("f02.log"), launched[0]);                // 元のファイル（.uwvz ではない）
+            Assert.Single(vm.Tabs);                                  // タブは増えない
+            Assert.Contains("f02.log", list.NoticeText);
+
+            File.Delete(F("f03.log"));
+            list.OpenAt(2);
+            await UiHarness.Pump();
+            Assert.Single(launched);
+            Assert.Contains("f03.log", list.NoticeText);
+
+            list.Mode = FileListOpenMode.Tab;                        // 前の「タブで開く」とも合わせる
+            Assert.True(AppSettingsRefCurrent().FileListOpenInTab);
+        }
+        finally { FileListPopup.LaunchOverride = null; }
+    }
+
+    [Fact]
+    public void 前の設定のタブで開くはタブとして引き継ぐ()
+    {
+        var old = System.Text.Json.JsonSerializer.Deserialize("{\"FileListOpenInTab\":true}", UwView.Services.SettingsJsonContext.Default.AppSettings)!;
+        Assert.Equal(FileListOpenMode.Tab, old.FileListOpenMode);
+        var fresh = new UwView.Services.AppSettings();
+        Assert.Equal(FileListOpenMode.Main, fresh.FileListOpenMode);
+        fresh.FileListOpenMode = FileListOpenMode.App;
+        string json = System.Text.Json.JsonSerializer.Serialize(fresh, UwView.Services.SettingsJsonContext.Default.AppSettings);
+        var back = System.Text.Json.JsonSerializer.Deserialize(json, UwView.Services.SettingsJsonContext.Default.AppSettings)!;
+        Assert.Equal(FileListOpenMode.App, back.FileListOpenMode);   // 書いて読み戻しても同じ
     }
 
     [AvaloniaFact]

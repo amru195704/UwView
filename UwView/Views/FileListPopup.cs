@@ -1,13 +1,16 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
 using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.Platform.Storage;
 using UwView.Core;
 using UwView.Localization;
 using UwView.Services;
@@ -30,7 +33,7 @@ public sealed class FileListSource
 {
     public required IReadOnlyList<FileListItem> Items { get; init; }
 
-    /// <summary>行を開く（番号の位置・「タブで開く」がオンか）。</summary>
+    /// <summary>行を開く（番号の位置・タブで開くか）。開く先が「アプリ」のときは呼ばない（一覧が自分で開く）。</summary>
     public required Action<int, bool> Open { get; init; }
 
     /// <summary>その行がどこに出ているか（右端の「メイン」「タブ」の印。無ければ null）。</summary>
@@ -47,16 +50,21 @@ public sealed class FileListSource
 /// 番号 → 実ファイルの対応表（ファイル一覧）。uvf の複数ファイルの結果と、uvp の束ねた索引の両方から開く。
 ///
 /// 行番号欄には番号しか出せない（名前は長すぎる）ので、対応はここで見せる。
-/// ダブルクリックか Enter で開く。右上の「タブで開く」で、追加タブかメインかを切り替える。
+/// ダブルクリックか Enter で開く。右上の「開く先」で、メイン・追加のタブ・アプリを切り替える。
+/// アプリは、元のファイルを拡張子に合った外部のアプリで開く（.uwvz ではない。2026-10-10 オーナー依頼）。
 /// </summary>
 public sealed class FileListPopup : Window
 {
     private readonly FileListSource _source;
     private readonly List<Row> _rows;
     private readonly ListBox _list;
-    private readonly CheckBox _inTab;
+    private readonly RadioButton _openMain, _openTab, _openApp;
     private readonly CheckBox? _hitsOnly;
     private readonly TextBlock _tabs;
+    private readonly TextBlock _notice;
+
+    /// <summary>自動テスト用: 外部のアプリで開く代わりに呼ぶ（開けたら true）。</summary>
+    internal static Func<string, Task<bool>>? LaunchOverride { get; set; }
 
     /// <summary>自動テスト用: いま開いている一覧（無ければ null）。</summary>
     internal static FileListPopup? Current { get; private set; }
@@ -97,19 +105,37 @@ public sealed class FileListPopup : Window
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
         CanResize = true;
 
-        _inTab = new CheckBox
+        // 開く先（メイン・タブ・アプリ）。前の「タブで開く」の設定はタブとして引き継ぐ
+        var mode = AppSettingsRef.Current.FileListOpenMode;
+        string group = "FileListOpen" + Guid.NewGuid().ToString("N");
+        RadioButton Choice(string name, string label, string tip, FileListOpenMode value)
         {
-            Name = "FileListInTab",
-            Content = L["FileListOpenInTab"],
-            Foreground = UwView.Services.ThemeColors.Text,
-            IsChecked = AppSettingsRef.Current.FileListOpenInTab,
-            HorizontalAlignment = HorizontalAlignment.Right,
-        };
-        ToolTip.SetTip(_inTab, L["TipFileListOpenInTab"]);
-        _inTab.IsCheckedChanged += (_, _) =>
+            var radio = new RadioButton
+            {
+                Name = name, GroupName = group, Content = L[label],
+                Foreground = UwView.Services.ThemeColors.Text,
+                IsChecked = mode == value, VerticalAlignment = VerticalAlignment.Center,
+            };
+            ToolTip.SetTip(radio, L[tip]);
+            radio.IsCheckedChanged += (_, _) =>
+            {
+                if (radio.IsChecked != true) return;
+                AppSettingsRef.Current.FileListOpenMode = value;
+                AppSettingsRef.Current.Save();
+            };
+            return radio;
+        }
+        _openMain = Choice("FileListOpenMain", "FileListOpenMain", "TipFileListOpenMain", FileListOpenMode.Main);
+        _openTab = Choice("FileListOpenTab", "FileListOpenTab", "TipFileListOpenTab", FileListOpenMode.Tab);
+        _openApp = Choice("FileListOpenApp", "FileListOpenApp", "TipFileListOpenApp", FileListOpenMode.App);
+        var openAt = new StackPanel
         {
-            AppSettingsRef.Current.FileListOpenInTab = _inTab.IsChecked == true;
-            AppSettingsRef.Current.Save();
+            Orientation = Orientation.Horizontal, Spacing = 8, HorizontalAlignment = HorizontalAlignment.Right,
+            Children =
+            {
+                new TextBlock { Text = L["FileListOpenAt"], Foreground = UwView.Services.ThemeColors.Text, VerticalAlignment = VerticalAlignment.Center },
+                _openMain, _openTab, _openApp,
+            },
         };
 
         if (source.OffersHitsOnly)
@@ -151,6 +177,12 @@ public sealed class FileListPopup : Window
         };
 
         _tabs = new TextBlock { Foreground = UwView.Services.ThemeColors.Text, VerticalAlignment = VerticalAlignment.Center };
+        _notice = new TextBlock
+        {
+            Name = "FileListNotice", Foreground = UwView.Services.ThemeColors.Text,
+            VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(16, 0, 8, 0),
+            TextTrimming = TextTrimming.CharacterEllipsis,
+        };
 
         var close = new Button
         {
@@ -170,11 +202,13 @@ public sealed class FileListPopup : Window
         var footer = new DockPanel();
         DockPanel.SetDock(close, Dock.Right);
         footer.Children.Add(close);
+        DockPanel.SetDock(_tabs, Dock.Left);
         footer.Children.Add(_tabs);
+        footer.Children.Add(_notice);
 
         var top = new DockPanel();
-        DockPanel.SetDock(_inTab, Dock.Right);
-        top.Children.Add(_inTab);
+        DockPanel.SetDock(openAt, Dock.Right);
+        top.Children.Add(openAt);
         if (_hitsOnly is not null) top.Children.Add(_hitsOnly);
 
         var body = new DockPanel { Margin = new Thickness(12), LastChildFill = true };
@@ -244,19 +278,72 @@ public sealed class FileListPopup : Window
     /// <summary>「タブ n / 8」の文字（自動テスト用）。</summary>
     internal string TabCountText => _tabs.Text ?? "";
 
-    /// <summary>「タブで開く」がオンか（自動テスト用に外から切り替えられる）。</summary>
+    /// <summary>開く先（自動テスト用に外から切り替えられる）。</summary>
+    internal FileListOpenMode Mode
+    {
+        get => _openApp.IsChecked == true ? FileListOpenMode.App
+             : _openTab.IsChecked == true ? FileListOpenMode.Tab : FileListOpenMode.Main;
+        set => (value switch { FileListOpenMode.App => _openApp, FileListOpenMode.Tab => _openTab, _ => _openMain }).IsChecked = true;
+    }
+
+    /// <summary>開く先がタブか（1.8.3.0 までの「タブで開く」。オフはメイン。自動テスト用）。</summary>
     internal bool OpenInTab
     {
-        get => _inTab.IsChecked == true;
-        set => _inTab.IsChecked = value;
+        get => Mode == FileListOpenMode.Tab;
+        set => Mode = value ? FileListOpenMode.Tab : FileListOpenMode.Main;
     }
+
+    /// <summary>下の行の知らせ（アプリで開いた・開けなかった。自動テスト用）。</summary>
+    internal string NoticeText => _notice.Text ?? "";
 
     /// <summary>番号の位置 i の行を開く（ダブルクリック・Enter と同じ。自動テスト用）。</summary>
     internal void OpenAt(int index)
     {
         if (index < 0 || index >= _rows.Count) return;
-        _source.Open(index, OpenInTab);
+        _notice.Text = "";
+        if (Mode == FileListOpenMode.App)
+        {
+            _ = OpenInAppAsync(index);
+            return;
+        }
+        _source.Open(index, Mode == FileListOpenMode.Tab);
         Refresh();
+    }
+
+    /// <summary>
+    /// 元のファイルを、拡張子に合った外部のアプリで開く（OS に任せる。.pdf なら PDF のアプリなど）。
+    /// zip の中のファイル（名前が <c>zip!エントリ</c>）と、見つからない元のファイルは開かずに知らせる。
+    /// </summary>
+    internal async Task OpenInAppAsync(int index)
+    {
+        var item = _source.Items[index];
+        string name = Path.GetFileName(item.Name);
+        // zip の中のファイル（名前が zip!エントリ。元のファイルとしては zip しか無い）
+        int bang = item.Name.IndexOf('!');
+        if (bang > 0 && item.FullPath is { } zipPath
+            && Path.GetFileName(zipPath).Equals(Path.GetFileName(item.Name[..bang]), StringComparison.OrdinalIgnoreCase))
+        {
+            _notice.Text = L.Format("FileListAppZipEntry", item.Name);
+            return;
+        }
+        if (item.FullPath is not { } path || !File.Exists(path))
+        {
+            _notice.Text = L.Format("FileListAppMissing", item.Name);
+            return;
+        }
+        bool opened;
+        try
+        {
+            opened = LaunchOverride is { } launch
+                ? await launch(path)
+                : TopLevel.GetTopLevel(this)?.Launcher is { } launcher && await launcher.LaunchFileInfoAsync(new FileInfo(path));
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidOperationException
+                                       or System.ComponentModel.Win32Exception)
+        {
+            opened = false;
+        }
+        _notice.Text = L.Format(opened ? "FileListAppOpened" : "FileListAppFailed", name);
     }
 
     private void OpenSelected()

@@ -231,8 +231,17 @@
   <data name="FileListButton" xml:space="preserve"><value>ファイル一覧</value></data>
   <data name="TipFileList" xml:space="preserve"><value>番号と実ファイルの対応表。ダブルクリックでそのファイルを開きます</value></data>
   <data name="FileListTitle" xml:space="preserve"><value>ファイル一覧</value></data>
-  <data name="FileListOpenInTab" xml:space="preserve"><value>タブで開く</value></data>
-  <data name="TipFileListOpenInTab" xml:space="preserve"><value>オン: 追加のタブで開く（タブは最大 8 個）／オフ: メインで開く</value></data>
+  <data name="FileListOpenAt" xml:space="preserve"><value>開く先:</value></data>
+  <data name="FileListOpenMain" xml:space="preserve"><value>メイン</value></data>
+  <data name="FileListOpenTab" xml:space="preserve"><value>タブ</value></data>
+  <data name="FileListOpenApp" xml:space="preserve"><value>アプリ</value></data>
+  <data name="TipFileListOpenMain" xml:space="preserve"><value>メインに出す（索引の本文）</value></data>
+  <data name="TipFileListOpenTab" xml:space="preserve"><value>追加のタブで開く（タブは最大 8 個。索引の本文）</value></data>
+  <data name="TipFileListOpenApp" xml:space="preserve"><value>元のファイルを、拡張子に合ったアプリで開く（PDF なら PDF のアプリ、.docx なら Word など）</value></data>
+  <data name="FileListAppZipEntry" xml:space="preserve"><value>{0} は zip の中のファイルなので、アプリでは開けません</value></data>
+  <data name="FileListAppMissing" xml:space="preserve"><value>{0} が見つかりません（消されたか、移されました）</value></data>
+  <data name="FileListAppFailed" xml:space="preserve"><value>{0} を開くアプリがありません</value></data>
+  <data name="FileListAppOpened" xml:space="preserve"><value>{0} をアプリで開きました</value></data>
   <data name="FileListHitsOnly" xml:space="preserve"><value>ヒットしたファイルだけ（{0} / {1}）</value></data>
   <data name="TipFileListHitsOnly" xml:space="preserve"><value>オン: ヒットしたファイルだけを出す（タブで開いているものは残す）／オフ: 全部のファイルを出す</value></data>
   <data name="FileListNumber" xml:space="preserve"><value>番号</value></data>

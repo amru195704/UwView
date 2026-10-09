@@ -105,6 +105,17 @@ public sealed class LicenseData
     public string? FirstRunSeal { get; set; }
 }
 
+/// <summary>ファイル一覧の開く先（メイン・追加のタブ・外部のアプリ）。</summary>
+public enum FileListOpenMode
+{
+    /// <summary>メインに出す（uvf はメインの中身を差し替え、uvp は束ねた本文の中でその先頭へ）。</summary>
+    Main,
+    /// <summary>追加のタブで開く（メイン＋7 個まで）。</summary>
+    Tab,
+    /// <summary>元のファイルを、拡張子に合った外部のアプリで開く（.uwvz ではない）。</summary>
+    App,
+}
+
 /// <summary>ユーザー設定（言語・Ver1.1 機能・UVPライセンス）を JSON で永続化。保存不可な環境は握りつぶす。</summary>
 public sealed class AppSettings
 {
@@ -169,10 +180,34 @@ public sealed class AppSettings
     public bool CommandModeEnabled { get; set; } = true;
 
     /// <summary>
-    /// ファイル一覧の「タブで開く」（オン＝追加タブ・オフ＝メイン。既定はオフ）。
-    /// 次に開いたときも同じ状態で始める（実装指示書_uvf複数ファイルGUI表示とタブ §5.2）。
+    /// ファイル一覧の「タブで開く」（1.8.3.0 まで。オン＝追加タブ・オフ＝メイン）。
+    /// 今は <see cref="FileListOpenMode"/> と同じ値に保つ（前の設定ファイルを読んだとき、ここから引き継ぐ）。
     /// </summary>
     public bool FileListOpenInTab { get; set; }
+
+    /// <summary>ファイル一覧の開く先（main・tab・app）。無ければ <see cref="FileListOpenInTab"/> から決める。</summary>
+    public string? FileListOpen { get; set; }
+
+    /// <summary>
+    /// ファイル一覧の開く先（メイン・タブ・アプリ。既定はメイン）。次に開いたときも同じ状態で始める
+    ///（実装指示書_uvf複数ファイルGUI表示とタブ §5.2。アプリは 2026-10-10 オーナー依頼）。
+    /// </summary>
+    [JsonIgnore]
+    public FileListOpenMode FileListOpenMode
+    {
+        get => FileListOpen switch
+        {
+            "main" => FileListOpenMode.Main,
+            "tab" => FileListOpenMode.Tab,
+            "app" => FileListOpenMode.App,
+            _ => FileListOpenInTab ? FileListOpenMode.Tab : FileListOpenMode.Main,
+        };
+        set
+        {
+            FileListOpen = value switch { FileListOpenMode.Tab => "tab", FileListOpenMode.App => "app", _ => "main" };
+            FileListOpenInTab = value == FileListOpenMode.Tab;
+        }
+    }
 
     /// <summary>
     /// ファイル一覧で、当たりのあったファイルだけを出すか（uvf の複数ファイルの結果。既定はオン）。
