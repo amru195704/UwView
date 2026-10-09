@@ -78,7 +78,7 @@ bc7f89ff811f2a7a89d7681be17925095b8bf8fb15f14b055997a8bed8c05f47  UwView-1.8.1.9
 
 ログの調査の 3 つの例（範囲＋除外＋伏せ字・近い行の AND と NOT・CSV への収集）で比べた結果です（cold＋hot の合計で、相手の時間 ÷ uvp の時間。uvp と ripgrep の結果は全件で同じ）。
 
-| 対象 | 例 | ripgrep（Mac） | ripgrep（Windows） | PowerGREP（Windows） |
+| 対象 | 例 | ripgrep（Mac） | ripgrep（Windows） | Windows用の高機能grepアプリ |
 |---|---|---:|---:|---:|
 | Linux カーネル 6 万本 | 範囲＋除外＋伏せ字 | 1.87 倍 | 1.85 倍 | 20.26 倍 |
 | Linux カーネル 6 万本 | 近い行の AND・NOT | 2.14 倍 | 1.65 倍 | 22.92 倍 |
@@ -87,7 +87,7 @@ bc7f89ff811f2a7a89d7681be17925095b8bf8fb15f14b055997a8bed8c05f47  UwView-1.8.1.9
 | 1GB の 1 本 | 近い行の AND・NOT | 1.46 倍 | 1.09 倍 | 8.62 倍 |
 | 1GB の 1 本 | CSV への収集 | 1.92 倍 | 2.27 倍 | 38.50 倍 |
 
-- 1 を超えると uvp が速いことを表します。ripgrep の列は、同じことを ripgrep と perl などを組み合わせて行った時間です。PowerGREP は同じ式の検索の時間だけです（収集・伏せ字・除外はしていません）。
+- 1 を超えると uvp が速いことを表します。ripgrep の列は、同じことを ripgrep と perl などを組み合わせて行った時間です。Windows用の高機能grepアプリは、同じ式の検索の時間だけです（収集・伏せ字・除外はしていません）。
 - Windows で Linux カーネル 6 万本を初めて探すとき（索引を作る 1 回目）は 65〜74 秒かかります（Mac は 6〜9 秒）。2 回目からは索引を使います。
 
 → [UwView Pro](https://uvp.y42u.net/pro/)（買い切り $129 ／ 月額 $9・**14日間の無料試用**つき）
@@ -174,7 +174,7 @@ The paid `uvp` and the UwView Pro window add:
 
 Three log-investigation examples (range + exclude + mask, nearby lines with AND and NOT, collecting into CSV), compared as the total of cold + hot, the other tool's time ÷ uvp's time (uvp and ripgrep gave identical results in every case):
 
-| Target | Example | ripgrep (Mac) | ripgrep (Windows) | PowerGREP (Windows) |
+| Target | Example | ripgrep (Mac) | ripgrep (Windows) | High-end grep app (Windows) |
 |---|---|---:|---:|---:|
 | Linux kernel, 60,000 files | range + exclude + mask | 1.87× | 1.85× | 20.26× |
 | Linux kernel, 60,000 files | nearby lines, AND, NOT | 2.14× | 1.65× | 22.92× |
@@ -183,7 +183,7 @@ Three log-investigation examples (range + exclude + mask, nearby lines with AND 
 | one 1 GB file | nearby lines, AND, NOT | 1.46× | 1.09× | 8.62× |
 | one 1 GB file | collect into CSV | 1.92× | 2.27× | 38.50× |
 
-- Above 1 means uvp is faster. The ripgrep columns are the time to do the same thing with ripgrep combined with perl and the like. PowerGREP is the time of the same search only (no collecting, masking or excluding).
+- Above 1 means uvp is faster. The ripgrep columns are the time to do the same thing with ripgrep combined with perl and the like. The high-end grep app for Windows is the time of the same search only (no collecting, masking or excluding).
 - On Windows, the first search of the 60,000 kernel files (which builds the index) takes 65–74 s (6–9 s on a Mac). From the second time on, the index is used.
 
 → [UwView Pro](https://uvp.y42u.net/pro/) (one-time $129 / $9 a month, **14-day free trial**)
