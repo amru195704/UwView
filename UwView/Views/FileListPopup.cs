@@ -11,6 +11,7 @@ using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
+using UwView.Controls;
 using UwView.Core;
 using UwView.Localization;
 using UwView.Services;
@@ -52,6 +53,7 @@ public sealed class FileListSource
 /// 行番号欄には番号しか出せない（名前は長すぎる）ので、対応はここで見せる。
 /// ダブルクリックか Enter で開く。右上の「開く先」で、メイン・追加のタブ・アプリを切り替える。
 /// アプリは、元のファイルを拡張子に合った外部のアプリで開く（.uwvz ではない。2026-10-10 オーナー依頼）。
+/// 行を右クリックすると、共通の操作の窓（フルパス・パスのコピー・フォルダー・ターミナル・アプリ）を出す。
 /// </summary>
 public sealed class FileListPopup : Window
 {
@@ -62,9 +64,6 @@ public sealed class FileListPopup : Window
     private readonly CheckBox? _hitsOnly;
     private readonly TextBlock _tabs;
     private readonly TextBlock _notice;
-
-    /// <summary>自動テスト用: 外部のアプリで開く代わりに呼ぶ（開けたら true）。</summary>
-    internal static Func<string, Task<bool>>? LaunchOverride { get; set; }
 
     /// <summary>自動テスト用: いま開いている一覧（無ければ null）。</summary>
     internal static FileListPopup? Current { get; private set; }
@@ -331,18 +330,7 @@ public sealed class FileListPopup : Window
             _notice.Text = L.Format("FileListAppMissing", item.Name);
             return;
         }
-        bool opened;
-        try
-        {
-            opened = LaunchOverride is { } launch
-                ? await launch(path)
-                : TopLevel.GetTopLevel(this)?.Launcher is { } launcher && await launcher.LaunchFileInfoAsync(new FileInfo(path));
-        }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidOperationException
-                                       or System.ComponentModel.Win32Exception)
-        {
-            opened = false;
-        }
+        bool opened = await FileActions.LaunchAsync(TopLevel.GetTopLevel(this), path);
         _notice.Text = L.Format(opened ? "FileListAppOpened" : "FileListAppFailed", name);
     }
 
@@ -364,7 +352,25 @@ public sealed class FileListPopup : Window
         var mark = AddCell(grid, 4, row.Mark, HorizontalAlignment.Right);
         mark.FontWeight = FontWeight.SemiBold;
         row.PropertyChanged += (_, _) => mark.Text = row.Mark;
+        // 右クリックで共通の操作の窓（左クリック・ダブルクリックは今までどおり開く）。中身は開くときに作る
+        if (item.FullPath is not null)
+        {
+            grid.Background = Brushes.Transparent;   // 文字の隙間でも右クリックを受ける
+            var flyout = new Flyout();
+            flyout.Opening += (_, _) => flyout.Content = ActionsFor(item);
+            grid.ContextFlyout = flyout;
+        }
         return grid;
+    }
+
+    /// <summary>行の共通の操作の窓の中身（zip の中のファイルは zip!エントリ を出し、アプリでは開かない）。</summary>
+    internal static FileActionsPanel ActionsFor(FileListItem item)
+    {
+        string file = item.FullPath!;
+        int bang = item.Name.IndexOf('!');
+        bool zipEntry = bang > 0
+                        && Path.GetFileName(file).Equals(Path.GetFileName(item.Name[..bang]), StringComparison.OrdinalIgnoreCase);
+        return new FileActionsPanel(zipEntry ? file + item.Name[bang..] : file, file, zipEntry);
     }
 
     private static TextBlock AddCell(Grid grid, int column, string text, HorizontalAlignment align)

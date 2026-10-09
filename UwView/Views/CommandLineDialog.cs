@@ -353,18 +353,7 @@ public sealed class CommandLineDialog : Window
     }
 
     /// <summary>ファイルのあるフォルダーを、OS のファイル画面で開く（Mac は選んだ状態で）。</summary>
-    private static void RevealInFolder(string path)
-    {
-        try
-        {
-            var start = OperatingSystem.IsMacOS() ? new System.Diagnostics.ProcessStartInfo("open", ["-R", path])
-                : OperatingSystem.IsWindows() ? new System.Diagnostics.ProcessStartInfo("explorer.exe", $"/select,\"{path}\"")
-                : new System.Diagnostics.ProcessStartInfo("xdg-open", [Path.GetDirectoryName(path) ?? "."]);
-            start.UseShellExecute = false;
-            System.Diagnostics.Process.Start(start);
-        }
-        catch (Exception e) when (e is System.ComponentModel.Win32Exception or InvalidOperationException) { }
-    }
+    private static void RevealInFolder(string path) => UwView.Services.FileActions.Reveal(path);
 
     private async Task PickFolderAsync()
     {

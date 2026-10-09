@@ -83,8 +83,22 @@
 
   <data name="OpenDialogTitle" xml:space="preserve"><value>テキストファイルを開く</value></data>
   <data name="NoFile" xml:space="preserve"><value>（ファイル未選択）</value></data>
-  <data name="TipPathLabel" xml:space="preserve"><value>押すと、ファイルの場所（フルパス）を出します（コピーできます）</value></data>
-  <data name="PathCopied" xml:space="preserve"><value>コピーしました</value></data>
+  <data name="TipPathLabel" xml:space="preserve"><value>押すと、ファイルの場所（フルパス）と操作（パスのコピー・フォルダー・ターミナル・アプリ）を出します</value></data>
+  <data name="TipFileActionsPath" xml:space="preserve"><value>ファイルの場所（選んでコピーできます）</value></data>
+  <data name="FileActCopy" xml:space="preserve"><value>パスをコピー</value></data>
+  <data name="TipFileActCopy" xml:space="preserve"><value>上のフルパスをクリップボードに写す</value></data>
+  <data name="FileActFolder" xml:space="preserve"><value>フォルダーを開く</value></data>
+  <data name="TipFileActFolder" xml:space="preserve"><value>ファイルのあるフォルダーを、Finder・エクスプローラーなどで開く（ファイルを選んだ状態で）</value></data>
+  <data name="FileActTerminal" xml:space="preserve"><value>ターミナルで開く</value></data>
+  <data name="TipFileActTerminal" xml:space="preserve"><value>ファイルのあるフォルダーに移ったターミナルを開く</value></data>
+  <data name="FileActApp" xml:space="preserve"><value>アプリで開く</value></data>
+  <data name="TipFileActApp" xml:space="preserve"><value>ファイルを、拡張子に合ったアプリで開く（PDF なら PDF のアプリ、.docx なら Word など）</value></data>
+  <data name="TipFileActAppOriginal" xml:space="preserve"><value>元のファイル {0} を、拡張子に合ったアプリで開く</value></data>
+  <data name="FileActAppIndexOnly" xml:space="preserve"><value>索引（.uwvz）だけで、隣に元のファイルがありません（アプリで開けるのは元のファイルです）</value></data>
+  <data name="FileActCopied" xml:space="preserve"><value>パスをコピーしました</value></data>
+  <data name="FileActFolderOpened" xml:space="preserve"><value>フォルダーを開きました</value></data>
+  <data name="FileActTerminalOpened" xml:space="preserve"><value>{0} でターミナルを開きました</value></data>
+  <data name="FileActFailed" xml:space="preserve"><value>開けませんでした</value></data>
   <data name="EncodingAuto" xml:space="preserve"><value>自動判定</value></data>
 
   <data name="ModePage" xml:space="preserve"><value>ページモード</value></data>

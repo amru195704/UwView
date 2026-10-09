@@ -1,18 +1,34 @@
-using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input.Platform;
 using Avalonia.LogicalTree;
 using UwView.Controls;
+using UwView.Services;
 
 namespace UwView.UiTests;
 
 /// <summary>
-/// ステータスバーのファイルの名前（2026-10-10 オーナー依頼）。ふだんはファイル名だけ、押すとフルパスを出してコピーできる。
+/// ステータスバーのファイルの名前と、共通の操作の窓（2026-10-10 オーナー依頼）。
+/// ふだんはファイル名だけ。押すとフルパスと［パスをコピー］［フォルダーを開く］［ターミナルで開く］［アプリで開く］。
 /// </summary>
-public class PathLabelTests
+public class PathLabelTests : IDisposable
 {
+    private readonly List<(string Action, string Path)> _done = [];
+
+    public PathLabelTests()
+    {
+        FileActions.Override = (action, path) => { _done.Add((action, path)); return true; };
+        FileActions.LaunchOverride = path => { _done.Add(("app", path)); return Task.FromResult(true); };
+    }
+
+    public void Dispose()
+    {
+        FileActions.Override = null;
+        FileActions.LaunchOverride = null;
+        GC.SuppressFinalize(this);
+    }
+
     [AvaloniaFact]
-    public async Task ステータスバーはファイル名だけで押すとフルパスを出しコピーできる()
+    public async Task ステータスバーはファイル名だけで押すと操作の窓を出す()
     {
         string path = UiHarness.WriteTempFile(["line 1", "line 2"]);
         var (w, v, vm) = UiHarness.OpenMainWindow();
@@ -26,13 +42,41 @@ public class PathLabelTests
             await UiHarness.Pump();
             Assert.Equal(Path.GetFileName(path), label.ShownText);
 
-            label.ShowFull();
+            label.ShowActions();
             await UiHarness.Pump();
-            Assert.Equal(path, label.FullText);
+            var actions = label.Actions!;
 
-            await label.CopyAsync();
+            await actions.CopyAsync();
             Assert.Equal(path, await w.Clipboard!.TryGetTextAsync());
+
+            actions.Reveal();
+            actions.Terminal();
+            await actions.OpenAppAsync();
+            Assert.Equal([("reveal", path), ("terminal", Path.GetDirectoryName(path)!), ("app", path)], _done);
+            Assert.Contains(Path.GetFileName(path), actions.ResultText);
         }
         finally { w.Close(); File.Delete(path); }
+    }
+
+    /// <summary>取り出した索引（report.pdf.uwvz）の［アプリで開く］は、隣の元のファイル（report.pdf）を開く。元が無ければ押せない。</summary>
+    [AvaloniaFact]
+    public void 索引のアプリで開くは元のファイルを開き元が無ければ押せない()
+    {
+        string dir = Path.Combine(Path.GetTempPath(), "uvf-actions-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        try
+        {
+            string pdf = Path.Combine(dir, "report.pdf"), index = pdf + ".uwvz", bundle = Path.Combine(dir, "uw-x.uwvz");
+            File.WriteAllText(pdf, "%PDF-1.7");
+            File.WriteAllText(index, "x");
+            File.WriteAllText(bundle, "x");
+
+            Assert.Equal(pdf, new FileActionsPanel(index, index).AppTargetPath);
+            var only = new FileActionsPanel(bundle, bundle);
+            Assert.False(only.AppEnabled);
+            Assert.Null(only.AppTargetPath);
+            Assert.False(new FileActionsPanel(Path.Combine(dir, "gone.log"), Path.Combine(dir, "gone.log")).AppEnabled);
+        }
+        finally { Directory.Delete(dir, recursive: true); }
     }
 }

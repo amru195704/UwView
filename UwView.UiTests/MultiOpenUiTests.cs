@@ -180,7 +180,7 @@ public class MultiOpenUiTests : IDisposable
     public async Task ファイル一覧の開く先をアプリにすると元のファイルを外部のアプリで開く()
     {
         var launched = new List<string>();
-        FileListPopup.LaunchOverride = path => { launched.Add(path); return Task.FromResult(true); };
+        UwView.Services.FileActions.LaunchOverride = path => { launched.Add(path); return Task.FromResult(true); };
         try
         {
             MakeFiles(3);
@@ -208,7 +208,7 @@ public class MultiOpenUiTests : IDisposable
             list.Mode = FileListOpenMode.Tab;                        // 前の「タブで開く」とも合わせる
             Assert.True(AppSettingsRefCurrent().FileListOpenInTab);
         }
-        finally { FileListPopup.LaunchOverride = null; }
+        finally { UwView.Services.FileActions.LaunchOverride = null; }
     }
 
     [Fact]
