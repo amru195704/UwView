@@ -30,7 +30,7 @@ public enum UvfMode
 public sealed record UvfInvocation(UvfMode Mode, string? File, string? Pattern,
                                    bool IgnoreCase = false, bool Regex = false, bool Invert = false,
                                    bool Json = false, bool? FileNames = null, bool ListFiles = false,
-                                   IgnoreOptions? Ignore = null);
+                                   IgnoreOptions? Ignore = null, bool Raw = false);
 
 /// <summary>終了コード（grep 互換。UwView Pro の uvp と同じ）。</summary>
 public static class UvfExit
@@ -177,7 +177,10 @@ public static class UvfCli
             bz2 xz lzma zst lz4 br  同じく展開しながら探します（外部コマンドは使いません）
             zip          扱えません（展開してから探してください。zip は UwView Pro が扱います）
             pbf          扱えません（OSM の pbf は UwView Pro が XML にして扱います）
-            docx xlsx pdf 扱えません（Word・Excel・PDF は UwView Pro が文字を取り出して扱います）
+            docx xlsx pdf Word・Excel・PDF。文字を取り出しながら探します（v1.8.3.2 から。元の形式には書き出しません）
+                         Word：段落を 1 行ずつ・表は 1 行をセルのタブ区切りで・脚注とコメントは [脚注] [コメント] を付けて
+                         Excel：シート名!行番号<TAB>セル<TAB>…（表示されている値。--raw で元の値）
+                         PDF：## page N のあとにページの行（画像だけの PDF・パスワード付き・.doc・.xls は断ります）
             .uwvz        扱えません（UwView Pro のファイルです）
             tar.gz       扱えません（複数ファイルをまとめた tar のため。展開してから探してください）
             それ以外      テキストとして扱います
@@ -231,7 +234,10 @@ public static class UvfCli
             bz2 xz lzma zst lz4 br  the same, decompressed here (no external command is used)
             zip          not supported (extract it first; UwView Pro handles zip)
             pbf          not supported (UwView Pro turns OSM pbf into XML)
-            docx xlsx pdf not supported (UwView Pro extracts the text of Word, Excel and PDF files)
+            docx xlsx pdf Word, Excel, PDF; the text is extracted while searching (from v1.8.3.2; never written back)
+                         Word: one line per paragraph; a table row is one line with tab-separated cells; footnotes and
+                         comments follow with a prefix. Excel: sheet!row<TAB>cell<TAB>… (displayed values; --raw for the
+                         stored ones). PDF: ## page N, then the page's lines (image-only, password-protected, .doc and .xls are refused)
             .uwvz        not supported (it is a UwView Pro file)
             tar.gz       not supported (a tar bundles several files; extract it first)
             anything else treated as text
@@ -274,7 +280,7 @@ public static class UvfCli
             return (null, "-open は先頭か末尾に書いてください", "Put -open at the start or at the end");
 
         // 検索の指定（uvp と同じ綴り）。同じものを2回書いても害はないので黙って受ける
-        bool icase = false, regex = false, invert = false, json = false, listFiles = false;
+        bool icase = false, regex = false, invert = false, json = false, listFiles = false, raw = false;
         bool? fileNames = null;
         for (int i = args.Count - 1; i >= 0; i--)
         {
@@ -287,6 +293,7 @@ public static class UvfCli
                 case "-H": fileNames = true; break;    // 常にファイル名を付ける（grep と同じ）
                 case "-h": fileNames = false; break;   // 常に付けない（同上）
                 case "--files": listFiles = true; break;
+                case "--raw": raw = true; break;       // Excel のセルを元の値で（v1.8.3.2。uvp と同じ）
                 default: continue;
             }
             args.RemoveAt(i);
@@ -315,7 +322,7 @@ public static class UvfCli
 
 
         return (new UvfInvocation(open ? UvfMode.SearchInGui : UvfMode.Search, args[0], args[1],
-                                  icase, regex, invert, json, fileNames, listFiles, ignore), null, null);
+                                  icase, regex, invert, json, fileNames, listFiles, ignore, raw), null, null);
     }
 
     public static async Task<int> RunAsync(IReadOnlyList<string> argv, UvfEnvironment env, CancellationToken ct = default)
@@ -454,7 +461,8 @@ public static class UvfCli
                 env.SearchOptionLetters = OptionLetters(inv);
                 var check = CompressedInput.Probe(file);
                 CommandProgress.Current?.Plan(1, CommandProgress.SizeOf(file));
-                if (!check.IsCompressed && !check.IsRejected)
+                // Word・Excel・PDF は画面が文字を取り出してから探す（中身はバイナリなので、ここでは集めない）
+                if (!check.IsCompressed && !check.IsRejected && !OfficeDocumentFile.Probe(file).IsOffice)
                     env.HandoffPath = await CollectForGuiAsync(file, inv, ct);
             }
 
@@ -473,14 +481,19 @@ public static class UvfCli
         // 中身が gzip でない .gz にも同じ文が出て分からない。9.21修正）。
         // 複数ファイルのときは、この判定を通さない（1ファイル専用の経路）
         var compressed = CompressedKind.None;   // 展開しながら探す形式（gz・bz2・xz・lzma・zstd）
-        if (many is null)
+        var officeKind = OfficeKind.None;       // 文字を取り出しながら探す形式（Word・Excel・PDF。v1.8.3.2）
+        if (many is null && OfficeDocumentFile.Probe(inv.File!) is { IsOffice: true } office)
         {
-            // Word・Excel・PDF は UwView Pro の役目（v1.8.3 extFS E-5）。.docx・.xlsx の中身は zip なので、zip より先に見る
-            if (OfficeDocumentFile.Probe(inv.File!) is { IsOffice: true } office)
+            // .docx・.xlsx の中身は zip なので、zip より先に見る。古い形式・パスワード付きは理由を出して断る
+            if (office.IsRejected)
             {
                 Err(OfficeNotice(office, inv.File!, T));
                 return UvfExit.Error;
             }
+            officeKind = office.Kind;
+        }
+        if (many is null && officeKind == OfficeKind.None)
+        {
             // pbf は UwView Pro の役目。テキストとして走査すると「1件も無い」と答えてしまう
             if (OsmPbfFile.Is(inv.File!))
             {
@@ -508,7 +521,13 @@ public static class UvfCli
         {
             if (many is not null) return await SearchManyAsync(many, inv, env, T, ct);
             CommandProgress.Current?.Plan(1, CommandProgress.SizeOf(inv.File!));
-            return await SearchToStdoutAsync(inv.File!, compressed, inv, env, T, Err, ct);
+            return await SearchToStdoutAsync(inv.File!, compressed, inv, env, T, Err, ct, officeKind);
+        }
+        catch (Documents.OfficeRejectedException e)
+        {
+            // Word・Excel・PDF が読めない（パスワード付き・文字の無い PDF・壊れている）
+            Err(e.Text(ja));
+            return UvfExit.Error;
         }
         catch (InvalidDataException) when (compressed != CompressedKind.None)
         {
@@ -618,6 +637,7 @@ public static class UvfCli
         var compressed = new List<string>();
         var searchable = new List<string>();
         var searchableKinds = new List<CompressedKind>();
+        var searchableOffices = new List<OfficeKind>();   // Word・Excel・PDF は取り出しながら探す（v1.8.3.2）
         var looks = Survey(files);
         for (int i = 0; i < files.Count; i++)
         {
@@ -629,10 +649,17 @@ public static class UvfCli
                                        $"{env.ToolName}: pbf files are not searched (UwView Pro handles them): {file}"));
                 continue;
             }
-            if (looks[i].Office is { IsOffice: true } office)
+            if (looks[i].Office is { IsRejected: true } rejectedOffice)
             {
                 compressed.Add(file);
-                env.StdErr.WriteLine($"{env.ToolName}: {OfficeNotice(office, file, t)}");
+                env.StdErr.WriteLine($"{env.ToolName}: {OfficeNotice(rejectedOffice, file, t)}");
+                continue;
+            }
+            if (looks[i].Office is { IsDocument: true } office)
+            {
+                searchable.Add(file);
+                searchableKinds.Add(CompressedKind.None);
+                searchableOffices.Add(office.Kind);
                 continue;
             }
             var probe = looks[i].Probe;
@@ -648,6 +675,7 @@ public static class UvfCli
             {
                 searchable.Add(file);
                 searchableKinds.Add(probe.Kind);
+                searchableOffices.Add(OfficeKind.None);
             }
         }
         if (searchable.Count == 0) return NoSearchable();
@@ -666,7 +694,7 @@ public static class UvfCli
                 files, options, inv.Invert, inv.Json, lineNumbers: true,
                 // 外したファイルがあっても出力の形を変えない（grep と同じく、当たった件数で決める）
                 withFileName: inv.FileNames ?? requested > 1,
-                threads, w, ct, searchableKinds, verifyPlain: true);
+                threads, w, ct, searchableKinds, verifyPlain: true, searchableOffices, inv.Raw);
 
         // 開いてみたら平文でなかったもの（中身が pbf・zip・受け付けない圧縮）を、並びどおりに知らせる
         foreach (var (file, pbf, probe, office) in outcome.Skipped ?? [])
@@ -930,12 +958,15 @@ public static class UvfCli
         IReadOnlyList<string> files, UvfInvocation inv, int limit, int threads, CancellationToken ct)
     {
         var entries = new MultiHandoffFile[files.Count];
+        var offices = new OfficeKind[files.Count];   // Word・Excel・PDF は取り出した文字を探す（画面も同じ文字を開く。v1.8.3.2）
         for (int i = 0; i < files.Count; i++)
         {
             string file = files[i];
             var probe = CompressedInput.Probe(file);
-            bool canOpen = !OsmPbfFile.Is(file) && probe.Kind != CompressedKind.Zip && !probe.IsRejected
-                           && !OfficeDocumentFile.Probe(file).IsOffice;   // Word・Excel・PDF は UwView Pro（v1.8.3）
+            var office = OfficeDocumentFile.Probe(file);
+            offices[i] = office.Kind;
+            bool canOpen = office.IsOffice ? office.IsDocument
+                : !OsmPbfFile.Is(file) && probe.Kind != CompressedKind.Zip && !probe.IsRejected;
             var info = new FileInfo(file);
             entries[i] = new MultiHandoffFile(Path.GetFullPath(file), file, info.Exists ? info.Length : 0,
                                               info.Exists ? info.LastWriteTimeUtc.Ticks : 0,
@@ -969,7 +1000,9 @@ public static class UvfCli
                     var hits = new List<MultiHandoffHit>();
                     perFile[index] = hits;
                     var kind = entries[index].Kind;
-                    await using IByteSource src = kind != CompressedKind.None
+                    await using IByteSource src = offices[index] != OfficeKind.None
+                        ? new CompressedStreamByteSource(files[index], offices[index], inv.Raw)
+                        : kind != CompressedKind.None
                         ? new CompressedStreamByteSource(files[index], kind, decodeThreads)
                         : new SequentialFileByteSource(files[index]);
                     var detected = EncodingDetector.Detect(src);
@@ -1024,11 +1057,13 @@ public static class UvfCli
     /// </summary>
     private static async Task<int> SearchToStdoutAsync(
         string path, CompressedKind compressed, UvfInvocation inv, UvfEnvironment env,
-        Func<string, string, string> t, Action<string> err, CancellationToken ct)
+        Func<string, string, string> t, Action<string> err, CancellationToken ct, OfficeKind office = OfficeKind.None)
     {
         var options = new SearchOptions(inv.Pattern!, UseRegex: inv.Regex, IgnoreCase: inv.IgnoreCase);
         var watch = Stopwatch.StartNew();
-        await using IByteSource src = compressed != CompressedKind.None
+        await using IByteSource src = office != OfficeKind.None
+            ? new CompressedStreamByteSource(path, office, inv.Raw)    // Word・Excel・PDF は取り出した文字を探す
+            : compressed != CompressedKind.None
             ? new CompressedStreamByteSource(path, compressed)
             // 調べる用：UV_SOURCE=mmap なら mmap で読む（既定は pread。実装指示書 2026-10-03「hot の読み速度」）
             : Environment.GetEnvironmentVariable("UV_SOURCE") == "mmap" ? new MmapByteSource(path)
@@ -1049,6 +1084,13 @@ public static class UvfCli
             {
                 await w.FlushAsync(ct);
                 err(NotReadable(path, compressed, t, partialOutput: true));
+                return UvfExit.Error;
+            }
+            catch (Documents.OfficeRejectedException e)
+            {
+                // 文字の無い PDF は、読み終えたところで分かる（それまでに出した行はそのまま）
+                await w.FlushAsync(ct);
+                err(t(e.Japanese, e.English));
                 return UvfExit.Error;
             }
 

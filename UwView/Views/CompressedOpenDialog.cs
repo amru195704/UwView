@@ -137,8 +137,8 @@ public static class CompressedOpenDialog
         + "Please extract it first.");
 
     /// <summary>
-    /// Word・Excel・PDF を開こうとしたときの説明（v1.8.3 extFS E-5）。読めるものは UwView Pro の機能、
-    /// 古い形式・パスワード付きは Pro でも読めないので、その理由。
+    /// Word・Excel・PDF を開けないときの説明。古い形式・パスワード付きはその理由
+    ///（v1.8.3.2 から uvf でも読めるものは文字を取り出して開くので、読めるものの文は使わない）。
     /// </summary>
     public static string OfficeMessage(UwView.Core.OfficeProbe office, string fileName) => office.IsRejected
         ? T(UwView.Core.OfficeDocumentFile.RejectText(office.Reject, fileName, true),

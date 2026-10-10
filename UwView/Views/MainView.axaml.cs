@@ -891,11 +891,11 @@ public partial class MainView : UserControl
         DocumentTabViewModel? last = null;
         foreach (string path in paths)
         {
-            // Word・Excel・PDF は UwView Pro の役目（v1.8.3 extFS E-5）。バイナリのまま開かない。
+            // Word・Excel・PDF は文字を取り出して開く（v1.8.3.2。それまでは UwView Pro の役目として断っていた）。
             // .docx・.xlsx は中身が zip なので、zip の判定より先に見る
             if (OfficeDocumentFile.Probe(path) is { IsOffice: true } office)
             {
-                await NoticeAsync(CompressedOpenDialog.OfficeMessage(office, System.IO.Path.GetFileName(path)));
+                last = await OpenOfficeAsync(path, office) ?? last;
                 continue;
             }
 

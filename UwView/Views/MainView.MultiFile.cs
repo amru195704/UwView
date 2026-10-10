@@ -278,7 +278,10 @@ public partial class MainView
             return null;
         }
 
-        string path = file.Kind == CompressedKind.None ? file.Path : await ExpandForMultiAsync(file, ct) ?? "";
+        // Word・Excel・PDF は取り出した文字（コマンドと同じ取り出し方なので、行番号と当たりの位置がそのまま合う。v1.8.3.2）
+        string path = OfficeDocumentFile.Probe(file.Path) is { IsDocument: true } office
+            ? await ExtractOfficeAsync(file.Path, office.Kind, ct) ?? ""
+            : file.Kind == CompressedKind.None ? file.Path : await ExpandForMultiAsync(file, ct) ?? "";
         if (path.Length == 0 || ct.IsCancellationRequested) return null;
         if (UwView.App.DocumentOpener.OpenLocalPath(path) is not { } session) return null;
         var tab = AddSessions([session]);

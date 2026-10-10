@@ -173,6 +173,28 @@ public class MultiOpenUiTests : IDisposable
     }
 
     /// <summary>
+    /// 複数ファイルの結果の Word は、取り出した文字を開いて、コマンドが見つけた行へ移る（v1.8.3.2）。
+    /// 取り出し方がコマンドと同じなので、行番号と当たりの位置がそのまま合う。
+    /// </summary>
+    [AvaloniaFact]
+    public async Task 複数ファイルの結果のWordは取り出した文字を開いて当たりの行へ移る()
+    {
+        File.WriteAllText(Path.Combine(_dir, "a.log"), "a INFO\n");
+        using (var zip = new System.IO.Compression.ZipArchive(File.Create(Path.Combine(_dir, "b.docx")), System.IO.Compression.ZipArchiveMode.Create))
+        using (var w = new StreamWriter(zip.CreateEntry("word/document.xml").Open()))
+            w.Write("<w:document xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\"><w:body>"
+                    + "<w:p><w:r><w:t>表題</w:t></w:r></w:p><w:p><w:r><w:t>二行目 ERROR</w:t></w:r></w:p></w:body></w:document>");
+        var (view, vm) = await Start(await Handoff("*", "ERROR", "-open"));
+        await UiHarness.WaitUntil(() => vm.Tabs.Count == 1, "メインが開く");
+
+        Assert.Equal(F("b.docx"), OfficeTextCache.OriginalOf(vm.Tabs[0].FilePath));   // 当たりのある b.docx がメイン
+        Assert.Equal("表題", vm.Tabs[0].Session.Document.GetLineAtOffset(0));
+        Assert.Single(vm.Tabs[0].Session.SearchHits);
+        long second = vm.Tabs[0].Session.Document.LineStartOffset(1);
+        Assert.Equal(second, vm.Tabs[0].Session.SearchHits[0]);                       // 2 行目（コマンドの 2:二行目 ERROR）
+    }
+
+    /// <summary>
     /// 開く先「アプリ」は、元のファイルを外部のアプリで開く（索引ではない。タブは増えない）。
     /// 選んだ開く先は設定に残り、見つからないファイルは開かずに知らせる（2026-10-10 オーナー依頼）。
     /// </summary>

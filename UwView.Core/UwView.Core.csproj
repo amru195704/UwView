@@ -13,6 +13,7 @@
     <PackageReference Include="SharpCompress" />
     <PackageReference Include="ZstdSharp.Port" />
     <PackageReference Include="K4os.Compression.LZ4.Streams" />
+    <PackageReference Include="PdfPig" />
   </ItemGroup>
 
   <ItemGroup>

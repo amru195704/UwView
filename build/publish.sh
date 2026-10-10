@@ -57,7 +57,14 @@ publish_one() {
     done
   fi
   add_cli "$rid" "$pubdir"
+  add_third_party "$pubdir"
   echo "$pubdir"
+}
+
+# 同梱するライブラリのライセンス文書（PdfPig・Apache 2.0。v1.8.3.2）。Linux・Windows は本体の隣の third-party/、
+# mac は .app の Contents/Resources/third-party/ に移す（Contents/MacOS には実行するものだけを置く。署名のため）
+add_third_party() { # $1=発行先
+  mkdir -p "$1/third-party" && cp third-party/* "$1/third-party/"
 }
 
 # CLI（uvf）を GUI の隣に置く。uvf は「同じフォルダの UwView 本体を --uvf 付きで起動する」だけの
@@ -104,6 +111,7 @@ pack_mac() { # $1=rid  $2=arch-label
   local macos="$app/Contents/MacOS"
   rm -rf "$app"; mkdir -p "$macos" "$app/Contents/Resources"
   cp -R "$pub/." "$macos/"
+  mv "$macos/third-party" "$app/Contents/Resources/third-party"
   cat > "$app/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">

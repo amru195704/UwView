@@ -24,6 +24,8 @@ namespace UwView.Core.Cli;
 /// 展開は <see cref="CompressedFormats.Open(string, CompressedKind)"/>（gz は macOS なら OS 標準の zlib）。
 /// gz 以外は形式そのものが切れ目を知っている（xz はフッター、bzip2 はブロックの CRC、zstd はフレームの終端）ので、
 /// 末尾の照合はライブラリに任せる。
+///
+/// v1.8.3.2 から、Word・Excel・PDF から取り出した文字も同じ口で流す（uvf は索引を作らず、取り出しながら探す）。
 /// </summary>
 internal sealed class CompressedStreamByteSource : IByteSource
 {
@@ -47,6 +49,8 @@ internal sealed class CompressedStreamByteSource : IByteSource
     private bool _eof;
 
     private readonly CompressedKind _kind;
+    private readonly OfficeKind _office;      // Word・Excel・PDF（None なら圧縮ファイル）
+    private readonly bool _officeRaw;
 
     private readonly int _threads;
 
@@ -62,15 +66,33 @@ internal sealed class CompressedStreamByteSource : IByteSource
         _producer = Task.Run(() => Produce(file), CancellationToken.None);
     }
 
-    private void Produce(FileStream file)
+    /// <summary>Word・Excel・PDF から取り出した文字を流す（v1.8.3.2）。</summary>
+    /// <param name="raw">Excel のセルを、表示されている値ではなく元の値で出す（<c>--raw</c>）。</param>
+    public CompressedStreamByteSource(string path, OfficeKind office, bool raw)
+    {
+        _path = path;
+        _office = office;
+        _officeRaw = raw;
+        _producer = Task.Run(() => Produce(null), CancellationToken.None);
+    }
+
+    private string FormatName => _office switch
+    {
+        OfficeKind.Docx => "Word", OfficeKind.Xlsx => "Excel", OfficeKind.Pdf => "PDF",
+        _ => CompressedFormats.Name(_kind),
+    };
+
+    private void Produce(FileStream? file)
     {
         var ct = _stop.Token;
         try
         {
-            bool verified = true;    // gz 以外はライブラリが照らす
-            using (var gz = _kind == CompressedKind.Gzip
-                       ? GzipDecoder.Open(file, out verified)
-                       : CompressedFormats.Open(file, _kind, _path, _threads))
+            bool verified = true;    // gz 以外はライブラリが照らす（取り出した文字も照らすものは無い）
+            using (var gz = _office != OfficeKind.None
+                       ? Documents.OfficeText.OpenStream(_path, _office, _officeRaw)
+                       : _kind == CompressedKind.Gzip
+                       ? GzipDecoder.Open(file!, out verified)
+                       : CompressedFormats.Open(file!, _kind, _path, _threads))
             {
                 // lz4 は塊（最大 4MB）ごと受けられる器にする。小さいと liblz4 が内部で展開してから写し直す
                 int chunk = _kind == CompressedKind.Lz4 ? 4 << 20 : Chunk;
@@ -112,7 +134,7 @@ internal sealed class CompressedStreamByteSource : IByteSource
             long at = offset + written;
             if (at < _windowStart)
                 throw new InvalidDataException(
-                    $"{CompressedFormats.Name(_kind)}: cannot re-read data more than {WindowBytes >> 20} MB back (a line may be too long)");
+                    $"{FormatName}: cannot re-read data more than {WindowBytes >> 20} MB back (a line may be too long)");
             if (at < _total)
             {
                 // 後ろから探す（検索はほぼ最後のかたまりを読んでいる）

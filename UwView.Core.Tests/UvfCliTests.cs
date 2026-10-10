@@ -465,47 +465,53 @@ public class UvfCliTests : IDisposable
     }
 
     /// <summary>
-    /// Word・Excel・PDF を探すのは UwView Pro の役目（v1.8.3 extFS E-5）。バイナリをテキストとして走査して
-    /// 「1件も無い」と答えないよう、中身で見分けて断る。.docx は中身が zip でも「zip です」とは言わない。
-    /// 古い形式（.doc）は Pro でも読めないので、その理由を出す。
+    /// Word・Excel・PDF は、文字を取り出しながら探す（v1.8.3.2 から。それまでは UwView Pro の役目として断っていた）。
+    /// .docx は中身が zip でも「zip です」とは言わない。古い形式（.doc）は読めないので、その理由を出して終了コード 2。
     /// </summary>
     [Fact]
-    public async Task WordとExcelとPDFは断ってUwViewProを案内する()
+    public async Task WordとExcelとPDFを取り出しながら探す()
     {
         WriteDocx("report.docx", "ERROR timeout");
-        File.WriteAllText(P("spec.pdf"), "%PDF-1.7\nERROR timeout\n");
+        File.Copy(OfficeSamples.Fixture("office-ja.pdf"), P("spec.pdf"));
+        OfficeSamples.WriteXlsx(P("sales.xlsx"));
         File.WriteAllBytes(P("old.doc"), [0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1, .. new byte[504]]);
 
-        foreach (string name in new[] { "report.docx", "spec.pdf" })
-        {
-            var run = await InDir(name, "timeout");
-            Assert.Equal(UvfExit.Error, run.Exit);
-            Assert.Contains("UwView Pro", run.Err);
-            Assert.DoesNotContain("zip", run.Err);
-            Assert.Empty(run.Out);
-        }
+        var word = await InDir("report.docx", "timeout");
+        Assert.Equal(UvfExit.Found, word.Exit);
+        Assert.Equal("1\tERROR timeout\n", word.Out);
+
+        var pdf = await InDir("spec.pdf", "文章");          // 康煕部首（⽂）のままだと当たらない
+        Assert.Equal(UvfExit.Found, pdf.Exit);
+        Assert.Contains("左の段の文章です", pdf.Out);
+
+        var shown = await InDir("sales.xlsx", "2025/1/21");   // Excel は表示されている値
+        Assert.Contains("売上!2\tりんご\t2025/1/21\t1,234,567円", shown.Out);
+        Assert.Equal(UvfExit.NotFound, (await InDir("sales.xlsx", "45678")).Exit);
+        Assert.Equal(UvfExit.Found, (await InDir("sales.xlsx", "45678", "--raw")).Exit);
+
         var old = await InDir("old.doc", "timeout");
         Assert.Equal(UvfExit.Error, old.Exit);
         Assert.Contains("old Word", old.Err);
     }
 
-    /// <summary>複数ファイルでは Word・Excel・PDF だけ飛ばして名指しで知らせる。名前で分からないものは開いたときに中身で見分ける。</summary>
+    /// <summary>複数ファイルでも Word・Excel・PDF を取り出しながら探す。名前で分からないものは開いたときに中身で見分ける。</summary>
     [Fact]
-    public async Task 複数ファイルではWordとPDFを飛ばして知らせる()
+    public async Task 複数ファイルでもWordとPDFを取り出しながら探し古い形式は飛ばす()
     {
         File.WriteAllText(P("a.log"), "a timeout\n");
         WriteDocx("b.docx", "b timeout");
-        File.WriteAllText(P("c.pdf"), "%PDF-1.7\nc timeout\n");
-        File.WriteAllText(P("d.dat"), "%PDF-1.7\nd timeout\n");    // 名前は普通・中身は PDF
-        WriteDocx("e.bin", "e timeout");                             // 名前は普通・中身は Word
+        File.Copy(OfficeSamples.Fixture("office-ja.pdf"), P("c.pdf"));
+        File.Copy(OfficeSamples.Fixture("office-ja.pdf"), P("d.dat"));    // 名前は普通・中身は PDF
+        WriteDocx("e.bin", "e timeout");                                   // 名前は普通・中身は Word
+        File.WriteAllBytes(P("old.doc"), [0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1, .. new byte[504]]);
+        const string pdfLine = "本契約は、甲と乙の間で締結される。timeout は 30 秒とする。";
 
         var run = await InDir("*", "timeout");
 
-        Assert.Equal(UvfExit.Error, run.Exit);
-        Assert.Equal("a.log:1\ta timeout\n", run.Out);
-        foreach (string name in new[] { "b.docx", "c.pdf", "d.dat", "e.bin" })
-            Assert.Contains(name, run.Err);
-        Assert.Contains("UwView Pro", run.Err);
+        Assert.Equal(UvfExit.Error, run.Exit);                             // 飛ばしたもの（old.doc）があるので 2
+        Assert.Equal($"a.log:1\ta timeout\nb.docx:1\tb timeout\nc.pdf:3\t{pdfLine}\nd.dat:3\t{pdfLine}\ne.bin:1\te timeout\n", run.Out);
+        Assert.Contains("old.doc", run.Err);
+        Assert.DoesNotContain("UwView Pro", run.Err);
     }
 
     /// <summary>

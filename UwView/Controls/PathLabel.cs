@@ -55,10 +55,16 @@ public sealed class PathLabel : Border
         };
     }
 
+    /// <summary>
+    /// 窓に出すファイル。uvf で開いた Word・Excel・PDF は一時フォルダーの取り出した文字なので、元のファイルを指す
+    ///（フォルダー・ターミナル・アプリは元のファイルについて行う。v1.8.3.2）。
+    /// </summary>
+    private string? Target => Path is { } path && IsPath(path) ? OfficeTextCache.OriginalOf(path) ?? path : Path;
+
     /// <summary>操作の窓を出す（押したときと同じ。自動テスト用にも）。</summary>
     internal void ShowActions()
     {
-        if (Path is not { } path || !IsPath(path)) return;
+        if (Target is not { } path || !IsPath(path)) return;
         var panel = new FileActionsPanel(path, path);
         panel.FitTo(TopLevel.GetTopLevel(this));
         _flyout.Content = panel;
@@ -95,7 +101,7 @@ public sealed class PathLabel : Border
     /// <summary>ファイル名・押せるか・ヒントを今のパスと言語に合わせる。</summary>
     private void UpdateShown()
     {
-        string? path = Path;
+        string? path = Target;
         bool isPath = IsPath(path);
         _name.Text = isPath ? System.IO.Path.GetFileName(path!.TrimEnd('/', '\\')) : path ?? "";
         Cursor = isPath ? new Cursor(StandardCursorType.Hand) : Cursor.Default;
