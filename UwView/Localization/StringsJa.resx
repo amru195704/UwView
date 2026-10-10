@@ -85,14 +85,14 @@
   <data name="NoFile" xml:space="preserve"><value>（ファイル未選択）</value></data>
   <data name="TipPathLabel" xml:space="preserve"><value>押すと、ファイルの場所（フルパス）と操作（パスのコピー・フォルダー・ターミナル・アプリ）を出します</value></data>
   <data name="TipFileActionsPath" xml:space="preserve"><value>ファイルの場所（選んでコピーできます）</value></data>
-  <data name="FileActCopy" xml:space="preserve"><value>パスをコピー</value></data>
-  <data name="TipFileActCopy" xml:space="preserve"><value>上のフルパスをクリップボードに写す</value></data>
-  <data name="FileActFolder" xml:space="preserve"><value>フォルダーを開く</value></data>
-  <data name="TipFileActFolder" xml:space="preserve"><value>ファイルのあるフォルダーを、Finder・エクスプローラーなどで開く（ファイルを選んだ状態で）</value></data>
-  <data name="FileActTerminal" xml:space="preserve"><value>ターミナルで開く</value></data>
-  <data name="TipFileActTerminal" xml:space="preserve"><value>ファイルのあるフォルダーに移ったターミナルを開く</value></data>
-  <data name="FileActApp" xml:space="preserve"><value>アプリで開く</value></data>
-  <data name="TipFileActApp" xml:space="preserve"><value>ファイルを、拡張子に合ったアプリで開く（PDF なら PDF のアプリ、.docx なら Word など）</value></data>
+  <data name="FileActCopy" xml:space="preserve"><value>コピー</value></data>
+  <data name="TipFileActCopy" xml:space="preserve"><value>パスをコピー：上のフルパスをクリップボードに写す</value></data>
+  <data name="FileActFolder" xml:space="preserve"><value>フォルダー</value></data>
+  <data name="TipFileActFolder" xml:space="preserve"><value>フォルダーを開く：ファイルのあるフォルダーを、Finder・エクスプローラーなどで開く（ファイルを選んだ状態で）</value></data>
+  <data name="FileActTerminal" xml:space="preserve"><value>ターミナル</value></data>
+  <data name="TipFileActTerminal" xml:space="preserve"><value>ターミナルで開く：ファイルのあるフォルダーに移ったターミナルを開く</value></data>
+  <data name="FileActApp" xml:space="preserve"><value>アプリ</value></data>
+  <data name="TipFileActApp" xml:space="preserve"><value>アプリで開く：ファイルを、拡張子に合ったアプリで開く（PDF なら PDF のアプリ、.docx なら Word など）</value></data>
   <data name="TipFileActAppOriginal" xml:space="preserve"><value>元のファイル {0} を、拡張子に合ったアプリで開く</value></data>
   <data name="FileActAppIndexOnly" xml:space="preserve"><value>索引（.uwvz）だけで、隣に元のファイルがありません（アプリで開けるのは元のファイルです）</value></data>
   <data name="FileActCopied" xml:space="preserve"><value>パスをコピーしました</value></data>

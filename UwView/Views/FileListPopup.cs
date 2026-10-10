@@ -357,7 +357,12 @@ public sealed class FileListPopup : Window
         {
             grid.Background = Brushes.Transparent;   // 文字の隙間でも右クリックを受ける
             var flyout = new Flyout();
-            flyout.Opening += (_, _) => flyout.Content = ActionsFor(item);
+            flyout.Opening += (_, _) =>
+            {
+                var panel = ActionsFor(item);
+                panel.FitTo(TopLevel.GetTopLevel(grid));
+                flyout.Content = panel;
+            };
             grid.ContextFlyout = flyout;
         }
         return grid;

@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using System.Threading.Tasks;
 using Avalonia;
@@ -12,7 +13,7 @@ namespace UwView.Controls;
 
 /// <summary>
 /// ファイルについての共通の操作の窓の中身（2026-10-10 オーナー依頼）。
-/// 上にフルパス（選んでコピーできる）、下に［パスをコピー］［フォルダーを開く］［ターミナルで開く］［アプリで開く］、
+/// 上にフルパス（選んでコピーできる）、下に［コピー］［フォルダー］［ターミナル］［アプリ］（何をするかはヒントに）、
 /// いちばん下に結果の 1 行。ステータスバーのファイル名を押したときと、ファイル一覧の行を右クリックしたときに出す。
 /// </summary>
 public sealed class FileActionsPanel : StackPanel
@@ -34,8 +35,7 @@ public sealed class FileActionsPanel : StackPanel
         _file = file;
         Name = "FileActions";
         Spacing = 8;
-        MinWidth = 360;
-        MaxWidth = 640;
+        Width = 480;               // 出すときに親の窓に収まる幅にする（FitTo）
 
         var path = new TextBox
         {
@@ -92,6 +92,16 @@ public sealed class FileActionsPanel : StackPanel
         AppTargetProblem.IndexOnly => L["FileActAppIndexOnly"],
         _ => L.Format("FileListAppMissing", Path.GetFileName(_display)),
     };
+
+    /// <summary>
+    /// 親の窓に収まる幅にする（窓の外にはみ出すと右が切れて見えない。2026-10-10 オーナー指摘）。
+    /// パスはこの幅で折り返す。
+    /// </summary>
+    public void FitTo(TopLevel? top)
+    {
+        double room = top is null ? 480 : top.Bounds.Width - 48;
+        Width = Math.Clamp(room, 260, 560);
+    }
 
     /// <summary>出しているパス（自動テスト用）。</summary>
     internal string PathText => _display;

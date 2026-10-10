@@ -13,7 +13,7 @@ namespace UwView.Controls;
 /// <summary>
 /// ステータスバーのファイルの名前（2026-10-10 オーナー依頼）。長いパスで右の情報が押し出されないよう、
 /// ふだんは<b>ファイル名だけ</b>を出す。押すと（左でも右でも）共通の操作の窓（<see cref="FileActionsPanel"/>）を出す：
-/// フルパスと［パスをコピー］［フォルダーを開く］［ターミナルで開く］［アプリで開く］。
+/// フルパスと［コピー］［フォルダー］［ターミナル］［アプリ］。
 /// パスでないもの（「（ファイル未選択）」など）はそのまま出し、押しても何もしない。
 /// </summary>
 public sealed class PathLabel : Border
@@ -59,7 +59,9 @@ public sealed class PathLabel : Border
     internal void ShowActions()
     {
         if (Path is not { } path || !IsPath(path)) return;
-        _flyout.Content = new FileActionsPanel(path, path);
+        var panel = new FileActionsPanel(path, path);
+        panel.FitTo(TopLevel.GetTopLevel(this));
+        _flyout.Content = panel;
         FlyoutBase.ShowAttachedFlyout(this);
     }
 

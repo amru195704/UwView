@@ -85,14 +85,14 @@
   <data name="NoFile" xml:space="preserve"><value>(no file)</value></data>
   <data name="TipPathLabel" xml:space="preserve"><value>Click to show where the file is (its full path) and what to do with it (copy the path, folder, terminal, app)</value></data>
   <data name="TipFileActionsPath" xml:space="preserve"><value>Where the file is (you can select and copy it)</value></data>
-  <data name="FileActCopy" xml:space="preserve"><value>Copy path</value></data>
-  <data name="TipFileActCopy" xml:space="preserve"><value>Copy the full path above to the clipboard</value></data>
-  <data name="FileActFolder" xml:space="preserve"><value>Open folder</value></data>
-  <data name="TipFileActFolder" xml:space="preserve"><value>Open the folder of the file in Finder, Explorer or the like (with the file selected)</value></data>
-  <data name="FileActTerminal" xml:space="preserve"><value>Open in Terminal</value></data>
-  <data name="TipFileActTerminal" xml:space="preserve"><value>Open a terminal in the folder of the file</value></data>
-  <data name="FileActApp" xml:space="preserve"><value>Open in app</value></data>
-  <data name="TipFileActApp" xml:space="preserve"><value>Open the file in the app for its type (a PDF viewer for .pdf, Word for .docx, …)</value></data>
+  <data name="FileActCopy" xml:space="preserve"><value>Copy</value></data>
+  <data name="TipFileActCopy" xml:space="preserve"><value>Copy path: copy the full path above to the clipboard</value></data>
+  <data name="FileActFolder" xml:space="preserve"><value>Folder</value></data>
+  <data name="TipFileActFolder" xml:space="preserve"><value>Open folder: open the folder of the file in Finder, Explorer or the like (with the file selected)</value></data>
+  <data name="FileActTerminal" xml:space="preserve"><value>Terminal</value></data>
+  <data name="TipFileActTerminal" xml:space="preserve"><value>Open in Terminal: open a terminal in the folder of the file</value></data>
+  <data name="FileActApp" xml:space="preserve"><value>App</value></data>
+  <data name="TipFileActApp" xml:space="preserve"><value>Open in app: open the file in the app for its type (a PDF viewer for .pdf, Word for .docx, …)</value></data>
   <data name="TipFileActAppOriginal" xml:space="preserve"><value>Open the original file {0} in the app for its type</value></data>
   <data name="FileActAppIndexOnly" xml:space="preserve"><value>This is only an index (.uwvz) and its original file is not next to it (only the original file can be opened in an app)</value></data>
   <data name="FileActCopied" xml:space="preserve"><value>Copied the path</value></data>

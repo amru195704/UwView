@@ -58,6 +58,27 @@ public class PathLabelTests : IDisposable
         finally { w.Close(); File.Delete(path); }
     }
 
+    /// <summary>窓の幅は親の窓に収め、長いパスはその幅で折り返す（右が切れて見えなかった。2026-10-10 オーナー指摘）。</summary>
+    [AvaloniaFact]
+    public void 長いパスは窓の幅で折り返し親の窓からはみ出さない()
+    {
+        string path = "/Volumes/BIWIN/26work/cmc296data/2608/20260805result/cmcOut0805_296_4/依頼②-⑤_調査と修正案.pdf";
+        var window = new Avalonia.Controls.Window { Width = 400, Height = 300 };
+        window.Show();
+        try
+        {
+            var panel = new FileActionsPanel(path, path);
+            panel.FitTo(window);
+            Assert.True(panel.Width <= 400 - 48);
+            window.Content = panel;
+            window.UpdateLayout();
+            var box = panel.GetLogicalDescendants().OfType<Avalonia.Controls.TextBox>().Single(b => b.Name == "FileActionsPath");
+            Assert.True(box.Bounds.Width <= panel.Width + 0.5);
+            Assert.True(box.Bounds.Height > 40, $"折り返していない（高さ {box.Bounds.Height}）");
+        }
+        finally { window.Close(); }
+    }
+
     /// <summary>取り出した索引（report.pdf.uwvz）の［アプリで開く］は、隣の元のファイル（report.pdf）を開く。元が無ければ押せない。</summary>
     [AvaloniaFact]
     public void 索引のアプリで開くは元のファイルを開き元が無ければ押せない()
