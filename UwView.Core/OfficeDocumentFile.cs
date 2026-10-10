@@ -25,6 +25,8 @@ public enum OfficeReject
     LegacyExcel,
     /// <summary>パスワード付きの Word・Excel（中身が暗号化されて OLE の形になっている）。</summary>
     Encrypted,
+    /// <summary>名前は Word・Excel で中身も zip だが、zip として読めない（途中で切れている・壊れている）。</summary>
+    Corrupt,
 }
 
 /// <summary>判定の結果。</summary>
@@ -80,13 +82,21 @@ public static class OfficeDocumentFile
             if (head.StartsWith(OleMagic)) return new(OfficeKind.None, OleReject(path));
             if (!head.StartsWith(ZipMagic)) return OfficeProbe.NotOffice;
             file.Position = 0;
-            return new(ZipKind(file));
+            try { return new(ZipKind(file)); }
+            catch (InvalidDataException) when (NameLooksOoxml(path))
+            {
+                // 壊れた .docx・.xlsx を「普通のファイル」として探すと、黙って 0 件になる（2026-10-10 レビュー指摘）
+                return new(OfficeKind.None, OfficeReject.Corrupt);
+            }
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidDataException)
         {
             return OfficeProbe.NotOffice;
         }
     }
+
+    private static bool NameLooksOoxml(string path)
+        => Path.GetExtension(path).ToLowerInvariant() is ".docx" or ".docm" or ".xlsx" or ".xlsm";
 
     /// <summary>zip の中の目印で Word・Excel を見分ける（どちらでもなければ普通の zip）。</summary>
     private static OfficeKind ZipKind(Stream zip)
@@ -120,6 +130,9 @@ public static class OfficeDocumentFile
         OfficeReject.Encrypted => japanese
             ? $"{name} はパスワード付きです。読めません（パスワードを外して保存し直してください）"
             : $"{name} is password-protected and cannot be read (remove the password and save it again)",
+        OfficeReject.Corrupt => japanese
+            ? $"{name} は壊れているので読めません（途中で切れているか、Word・Excel の形になっていません）"
+            : $"{name} is damaged and cannot be read (it is cut short or not in the Word/Excel form)",
         _ => "",
     };
 

@@ -134,6 +134,36 @@ public class OfficeTextTests : IDisposable
         Assert.Throws<OfficeRejectedException>(() => Lines(P("cut.docx"), OfficeKind.Docx));
     }
 
+    /// <summary>切れた・壊れた .docx・.xlsx は「普通のファイル」ではなく、壊れた Word・Excel として断る（2026-10-10 レビュー指摘）。</summary>
+    [Fact]
+    public void 切れたWordとExcelは壊れていると見分ける()
+    {
+        OfficeSamples.WriteDocx(P("a.docx"));
+        var bytes = File.ReadAllBytes(P("a.docx"));
+        File.WriteAllBytes(P("cut.docx"), bytes[..(bytes.Length / 2)]);
+        File.WriteAllBytes(P("cut.zip"), bytes[..(bytes.Length / 2)]);
+
+        Assert.Equal(OfficeReject.Corrupt, OfficeDocumentFile.Probe(P("cut.docx")).Reject);
+        Assert.False(OfficeDocumentFile.Probe(P("cut.zip")).IsOffice);       // 名前が zip なら zip の扱いに任せる
+        var e = Assert.Throws<OfficeRejectedException>(() => OfficeText.Check(P("cut.docx")));
+        Assert.Contains("壊れている", e.Japanese);
+    }
+
+    /// <summary>zip として開けなかったファイルは閉じる（1,000 回で 1,000 本開いたままになった。2026-10-10 レビュー指摘）。</summary>
+    [Fact]
+    public void 壊れたWordを何度読んでも開いたファイルが増えない()
+    {
+        if (OperatingSystem.IsWindows()) return;            // 数えるのは /dev/fd（mac・Linux）
+        OfficeSamples.WriteDocx(P("a.docx"));
+        var bytes = File.ReadAllBytes(P("a.docx"));
+        File.WriteAllBytes(P("cut.docx"), bytes[..(bytes.Length / 2)]);
+        int before = Directory.GetFiles("/dev/fd").Length;
+        for (int i = 0; i < 200; i++)
+            Assert.Throws<OfficeRejectedException>(() => OfficeText.Lines(P("cut.docx"), OfficeKind.Docx, raw: false).ToList());
+        int after = Directory.GetFiles("/dev/fd").Length;   // GC には任せない（閉じ忘れは後片付けで見えなくなる）
+        Assert.True(after - before < 20, $"開いたままのファイルが増えた（{before} → {after}）");
+    }
+
     [Fact]
     public void 部首の字だけ直して全角英数字はそのまま()
     {

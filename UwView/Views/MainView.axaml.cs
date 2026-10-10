@@ -1041,10 +1041,16 @@ public partial class MainView : UserControl
 
     // ── V1.1.1: セッション復元・最近使ったファイル・お気に入り ─────────
 
+    /// <summary>
+    /// 設定に残すパス。Word・Excel・PDF は一時フォルダーの取り出した文字を開いているので、元のファイルに戻す
+    ///（一時の .txt を残すと、元が変わっても古い取り出しを開き続け、一時フォルダーが消えると無効になる。2026-10-10 レビュー指摘）。
+    /// </summary>
+    private static string PersistedPath(string path) => Services.OfficeTextCache.OriginalOf(path) ?? path;
+
     private void RecordRecent(string path)
     {
         if (string.IsNullOrEmpty(path)) return;
-        UwView.App.Settings.PushRecentFile(path, DateTime.UtcNow.Ticks);
+        UwView.App.Settings.PushRecentFile(PersistedPath(path), DateTime.UtcNow.Ticks);
         UwView.App.Settings.Save();
         _vm?.RefreshStartLists();
     }
@@ -1059,7 +1065,7 @@ public partial class MainView : UserControl
             if (string.IsNullOrEmpty(tab.FilePath)) continue; // Browser Blob 等は復元不可
             s.Docs.Add(new Services.OpenDoc
             {
-                Path = tab.FilePath,
+                Path = PersistedPath(tab.FilePath),
                 LastTopLine = tab.Session.TopLine,
                 LastTopOffset = TopOffsetOf(tab.Session), // 復元の主キー（索引不要で戻せる）
             });
@@ -1108,7 +1114,7 @@ public partial class MainView : UserControl
     private void ToggleFavorite()
     {
         if (_vm?.ActiveTab?.FilePath is not { Length: > 0 } path) return;
-        UwView.App.Settings.ToggleFavorite(path);
+        UwView.App.Settings.ToggleFavorite(PersistedPath(path));
         UwView.App.Settings.Save();
         _vm.RefreshStartLists();
         UpdateFavoriteButton();
@@ -1116,7 +1122,7 @@ public partial class MainView : UserControl
 
     private void UpdateFavoriteButton()
     {
-        bool fav = _vm?.ActiveTab?.FilePath is { Length: > 0 } p && UwView.App.Settings.IsFavorite(p);
+        bool fav = _vm?.ActiveTab?.FilePath is { Length: > 0 } p && UwView.App.Settings.IsFavorite(PersistedPath(p));
         _suppressFavApply = true;
         FavoriteToggle.IsChecked = fav;
         _suppressFavApply = false;
@@ -1186,7 +1192,10 @@ public partial class MainView : UserControl
         {
             var d = last.Docs[i];
             if (!System.IO.File.Exists(d.Path)) { missing++; continue; }
-            var tab = OpenPath(d.Path);
+            // Word・Excel・PDF は元のファイルで残してあるので、取り出して開く（取り出し済みならすぐ）
+            var tab = OfficeDocumentFile.Probe(d.Path) is { IsOffice: true } office
+                ? await OpenOfficeAsync(d.Path, office)
+                : OpenPath(d.Path);
             if (tab is not null)
             {
                 RestorePosition(tab, d); // 前回位置へ（バイト位置基準＝索引を待たない）

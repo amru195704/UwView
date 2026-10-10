@@ -492,6 +492,13 @@ public class UvfCliTests : IDisposable
         var old = await InDir("old.doc", "timeout");
         Assert.Equal(UvfExit.Error, old.Exit);
         Assert.Contains("old Word", old.Err);
+
+        // 切れた .docx は「0 件」ではなく、壊れていると知らせて終了コード 2（2026-10-10 レビュー指摘）
+        var bytes = File.ReadAllBytes(P("report.docx"));
+        File.WriteAllBytes(P("cut.docx"), bytes[..(bytes.Length / 2)]);
+        var cut = await InDir("cut.docx", "ERROR");
+        Assert.Equal(UvfExit.Error, cut.Exit);
+        Assert.Contains("damaged", cut.Err);
     }
 
     /// <summary>複数ファイルでも Word・Excel・PDF を取り出しながら探す。名前で分からないものは開いたときに中身で見分ける。</summary>

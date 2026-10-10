@@ -56,14 +56,16 @@ public static class OfficeText
 
     private static IEnumerable<string> ZipLines(string path, Func<ZipArchive, IEnumerable<string>> lines)
     {
-        FileStream file;
+        var file = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
         ZipArchive zip;
-        try
+        try { zip = new ZipArchive(file, ZipArchiveMode.Read); }
+        catch (Exception e)
         {
-            file = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
-            zip = new ZipArchive(file, ZipArchiveMode.Read);
+            // zip として開けなければ、ここで閉じる（下の using まで行かない。1,000 回で 1,000 本開いたままになった。2026-10-10 レビュー指摘）
+            file.Dispose();
+            if (e is InvalidDataException) throw Broken(path, e);
+            throw;
         }
-        catch (InvalidDataException e) { throw Broken(path, e); }
         using (file)
         using (zip)
         {
