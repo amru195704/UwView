@@ -154,7 +154,7 @@ public static class UvfCli
             --no-ignore-files  --ignore-file で足した規則も使わない
             -open     結果を stdout ではなく GUI で表示する（-i/-E/-v と併用できます）
 
-          ファイルの指定: '*.log'（今のフォルダー）'**/*.log'（サブフォルダーも）'a.log,b.log'（複数）
+          ファイルの指定: '*.log'（今のフォルダー）'**/*.log'（サブフォルダーも）'a.log,b.log'（複数）'*.{txt,log}'（どちらか）
             必ず引用符で囲みます。詳しくは uvf --help files
 
           複数ファイル（引用符で囲むこと。シェルに展開させない）:
@@ -211,7 +211,7 @@ public static class UvfCli
             --no-ignore-files  do not use the rules added with --ignore-file either
             -open     show the results in the app instead of stdout (can be combined with -i/-E/-v)
 
-          Files: '*.log' (this folder) '**/*.log' (subfolders too) 'a.log,b.log' (several)
+          Files: '*.log' (this folder) '**/*.log' (subfolders too) 'a.log,b.log' (several) '*.{txt,log}' (either)
             Always quote them. For details: uvf --help files
 
           Several files (quote them; do not let the shell expand them):
@@ -375,9 +375,18 @@ public static class UvfCli
             && (FileSet.IsMultiple(specification) || inv.FileNames == true || inv.ListFiles))
         {
             long te = Stopwatch.GetTimestamp();
-            var found = env.Expanded is { } pre && pre.Specification == specification
-                ? pre.Result
-                : FileSet.Expand(specification, ignore: inv.Ignore);
+            FileSet.Result found;
+            try
+            {
+                found = env.Expanded is { } pre && pre.Specification == specification
+                    ? pre.Result
+                    : FileSet.Expand(specification, ignore: inv.Ignore);
+            }
+            catch (BraceLimitException e)
+            {
+                Err(e.MessageFor(ja));
+                return UvfExit.Error;
+            }
             if (Environment.GetEnvironmentVariable("UV_TRACE") == "1")
                 env.StdErr.WriteLine($"uv_trace: multi files={found.Files.Count} t_expand={Stopwatch.GetElapsedTime(te).TotalSeconds:F3}");
             // 調べる用：UV_LISTONLY=1 なら広げるだけで探さない（広げる時間だけを測る）

@@ -214,7 +214,14 @@ public sealed partial class CommandLineViewModel : ObservableObject
         if (FileArgument() is not { } spec) { Files = []; FilesSummary = L["CmdNoFiles"]; return; }
         var ignore = IgnoreFor(argv ?? []);
         var watch = Stopwatch.StartNew();
-        var list = await WorkingFolder.Run(BaseFolder, () => _backend.Expand(spec, ignore, Japanese));
+        CommandFileList list;
+        try { list = await WorkingFolder.Run(BaseFolder, () => _backend.Expand(spec, ignore, Japanese)); }
+        catch (BraceLimitException e)
+        {
+            Files = [];
+            FilesSummary = e.MessageFor(Japanese);   // 波かっこの組み合わせが多すぎる
+            return;
+        }
         watch.Stop();
         ShowFiles(list);
         // コマンド（uvf／uvp --files）と比べられるよう、所要時間を出す

@@ -143,7 +143,8 @@ public static class CompiledRegexRoute
                    && (ShortClueIsDense(file, plan) || LookaheadCluesAreDense(file, pattern, inv.IgnoreCase));
         if (plan.Method != SearchMethod.EveryLine) return false;
         if (single) return Estimate(file) >= MinTextBytes;
-        expanded = new ExpandedInput(file, FileSet.Expand(file, ignore: inv.Ignore));
+        try { expanded = new ExpandedInput(file, FileSet.Expand(file, ignore: inv.Ignore)); }
+        catch (BraceLimitException) { return false; }   // 波かっこが多すぎる。任せずに、本体側で知らせる
         return TextBytes(expanded.Result.Files) >= MinTextBytes;
     }
 
@@ -152,7 +153,10 @@ public static class CompiledRegexRoute
     /// <see cref="Estimate"/> で見積もる。目安を超えたところで数えるのをやめる。
     /// </summary>
     public static long TextBytes(string specification, Func<string, long?>? sizeOf = null)
-        => TextBytes(FileSet.IsMultiple(specification) ? FileSet.Expand(specification).Files : [specification], sizeOf);
+    {
+        try { return TextBytes(FileSet.IsMultiple(specification) ? FileSet.Expand(specification).Files : [specification], sizeOf); }
+        catch (BraceLimitException) { return 0; }   // 波かっこが多すぎる（見積もらない。本体側で知らせる）
+    }
 
     /// <summary>広げた一覧の、展開後のおおよその大きさ（目安を超えたところで数えるのをやめる）。</summary>
     public static long TextBytes(IReadOnlyList<string> files, Func<string, long?>? sizeOf = null)

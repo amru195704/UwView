@@ -24,6 +24,7 @@ public static class CliHelpTopics
             区切り
               空白かカンマで複数書けます。カンマがあるときはカンマだけで区切ります。
               名前に空白を含むパス（Program Files など）はカンマで区切ってください。
+              波かっこ { } の中のカンマ・空白では区切りません。
                 uvf 'a.log b.log' 語
                 uvf 'C:/Program Files/app/*.log,D:/logs/*.log' 語
 
@@ -31,7 +32,8 @@ public static class CliHelpTopics
               *     任意の文字の並び（フォルダーの区切り / はまたがない）
               ?     任意の1文字
               **    フォルダーを何段でも（0段も含む）
-              [ ] { } は使えません（文字どおりの名前として扱います）
+              {a,b} a か b（例 '**/*.{txt,log}'）。入れ子・空の選択肢（{,.gz}）も書けます。1つの指定から1,000通りまで
+              [ ] は使えません（文字どおりの名前として扱います）
 
             例
               '*.log'              今のフォルダーの .log
@@ -42,13 +44,18 @@ public static class CliHelpTopics
               'logs/**'            logs 以下のすべてのファイル
               '**/2026-09/*.log'   どこかにある 2026-09 フォルダーの直下の .log
               'app.log,app.log.*.gz'  平文と gz を混ぜて
+              '**/*.{txt,log}'     今のフォルダー以下すべての .txt と .log
+              'app.log{,.*.gz}'    app.log と app.log.*.gz（'app.log,app.log.*.gz' と同じ）
+              'logs/2026-{09,10}/*.log'  logs/2026-09 と logs/2026-10 の .log
 
             決まりごと
               ・並びは書いた順。1つの指定の中は名前順です。同じファイルは1回だけ探します
               ・隠しファイルと隠しフォルダー（. で始まる名前など）は対象外です
               ・大文字と小文字：Linux は区別します。Mac と Windows は区別しません
               ・.uwvz はワイルドカードでは拾いません（名前を書けば使えます）
-              ・1件も当たらない指定は、その指定を名前で知らせます
+              ・1件も当たらない指定は、その指定を名前で知らせます（波かっこは書いたままの形で。選択肢の一部だけ0件なら知らせません）
+              ・波かっこ：閉じていないもの・カンマの無いもの（{} {a}）は文字どおりの名前です。
+                指定と同じ名前のファイルが実在すれば、展開せずにそのファイルを使います
               ・1,000本を超えると知らせます（止めません。目安は UVF_MANY_FILES で変えられます）
               ・フォルダー名だけ（'logs'）は使えません。'logs/**' と書いてください
               ・シンボリックリンクのフォルダーはたどりません
@@ -72,6 +79,7 @@ public static class CliHelpTopics
             Separators
               Write several items separated by spaces or commas. If there is a comma, only commas separate.
               Use commas for paths that contain spaces (such as Program Files).
+              Commas and spaces inside braces { } do not separate.
                 uvf 'a.log b.log' word
                 uvf 'C:/Program Files/app/*.log,D:/logs/*.log' word
 
@@ -79,7 +87,8 @@ public static class CliHelpTopics
               *     any run of characters (does not cross the folder separator /)
               ?     any single character
               **    any number of folders (including none)
-              [ ] { } are not wildcards (they are taken as part of the name)
+              {a,b} a or b (e.g. '**/*.{txt,log}'). Nesting and empty choices ({,.gz}) are allowed; up to 1,000 combinations per item
+              [ ] is not a wildcard (it is taken as part of the name)
 
             Examples
               '*.log'              .log files in this folder
@@ -90,13 +99,18 @@ public static class CliHelpTopics
               'logs/**'            every file under logs
               '**/2026-09/*.log'   .log files directly in any folder named 2026-09
               'app.log,app.log.*.gz'  plain and gz files mixed
+              '**/*.{txt,log}'     every .txt and .log file here and below
+              'app.log{,.*.gz}'    app.log and app.log.*.gz (same as 'app.log,app.log.*.gz')
+              'logs/2026-{09,10}/*.log'  .log files in logs/2026-09 and logs/2026-10
 
             Rules
               - Items are searched in the order written; within one item, in name order. Each file only once
               - Hidden files and folders (such as names starting with .) are skipped
               - Case: Linux is case-sensitive; Mac and Windows are not
               - Wildcards never pick up .uwvz files (write the name to use one)
-              - An item that matches nothing is reported by name
+              - An item that matches nothing is reported by name (braces as written; not reported when only some choices match nothing)
+              - Braces: unclosed ones and ones without a comma ({} {a}) are part of the name.
+                If a file with exactly the written name exists, it is used as is (no expansion)
               - More than 1,000 files is reported (not stopped; change the threshold with UVF_MANY_FILES)
               - A folder name alone ('logs') is not accepted; write 'logs/**'
               - Symbolic links to folders are not followed

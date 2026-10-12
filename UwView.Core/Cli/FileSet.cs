@@ -13,7 +13,8 @@ namespace UwView.Core.Cli;
 ///   <item><b>並びは「書いた順」→「名前順」</b>（ロケールに依存しないバイト順）。重複は先に出た側を採る</item>
 ///   <item>ワイルドカードは <c>*</c>（1段の中の任意の文字の並び）・<c>?</c>（任意の1文字）・<c>**</c>（フォルダーを何段でも。0段も含む）。
 ///         <c>*</c> はフォルダーの区切りをまたがない（シェルと同じ。<c>*/*.log</c> はちょうど1段下）。
-///         <c>[ ]</c> <c>{ }</c> は使えない（文字どおりの名前）。照合は段ごとに進め、必要な段だけ読む（指示書 §9）</item>
+///         <c>{a,b}</c> は「a か b」（展開してからワイルドカードを当てる。入れ子・複数・空の選択肢あり。1 つの指定から 1,000 通りまで。
+///         指示書「ファイル指定の波かっこ」2026-10-11）。<c>[ ]</c> は使えない（文字どおりの名前）。照合は段ごとに進め、必要な段だけ読む（指示書 §9）</item>
 ///   <item>隠しファイル・隠しフォルダーは対象外。シンボリックリンクのフォルダーはたどらない（ループを避ける）</item>
 ///   <item>パス区切りは <c>/</c> と <c>\</c> の両方を受ける（Windows で <c>\</c> を書く人がいる）</item>
 ///   <item><b>ワイルドカードで広げたものは <c>.ignore</c>・<c>.gitignore</c> に従って外す</b>（ripgrep と同じ規則。
@@ -85,12 +86,20 @@ public static class FileSet
     ///
     /// <b>カンマがあれば、カンマだけで割る。</b>こうしないと <c>Program Files/app.log</c> のように
     /// 名前に空白を含むパスを書けない（空白でも割ると4つに割れて全部外れる。指示書 §2.2b）。
-    /// カンマが無いときは空白で割る。
+    /// カンマが無いときは空白で割る。<b>閉じた波かっこの中のカンマ・空白では割らない</b>
+    ///（<c>'**/*.{txt,log},data/*.csv'</c> は 2 つ）。閉じていない波かっこがあれば、今までどおり波かっこを気にせず割る。
     /// </summary>
     public static string[] Split(string specification)
-        => specification.Contains(',')
-            ? specification.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            : specification.Split([' ', '\t'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+    {
+        bool braces = Braces.Balanced(specification);
+        bool comma = braces ? Braces.HasTopLevel(specification, ',') : specification.Contains(',');
+        if (!braces)
+            return comma
+                ? specification.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                : specification.Split([' ', '\t'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        return comma ? Braces.SplitTopLevel(specification, c => c == ',')
+                     : Braces.SplitTopLevel(specification, c => c is ' ' or '\t');
+    }
 
     /// <summary>
     /// (A) が複数のファイル・ワイルドカードを含むか（単一ファイルの経路を変えないための判定）。
@@ -101,7 +110,8 @@ public static class FileSet
     public static bool IsMultiple(string specification)
     {
         if (!specification.Contains(',') && File.Exists(specification)) return false;
-        return Split(specification).Length > 1 || HasWildcard(specification) || specification.Contains(',');
+        return Split(specification).Length > 1 || HasWildcard(specification) || specification.Contains(',')
+               || Braces.HasAlternatives(specification);
     }
 
     /// <summary>ワイルドカードを含むか（<c>*</c> と <c>?</c>。<c>[ ]</c> は文字どおりの名前として扱う）。</summary>
@@ -140,14 +150,17 @@ public static class FileSet
         foreach (string fragment in Split(specification))
         {
             int ignoredBefore = walk.IgnoredFiles.Count + walk.IgnoredFolders.Count;
-            var matched = ExpandOne(fragment, root, walk);
+            // 波かっこは選択肢ごとに展開して、書いた順に並べる（1 つの選択肢の中は名前順）。0 件の知らせは書いた断片のままで出す
+            var matched = new List<(string Full, string Path)>();
+            foreach (string alternative in Alternatives(fragment, root))
+                matched.AddRange(ExpandOne(alternative, root, walk));
             if (matched.Count == 0)
             {
                 missing.Add(fragment);
                 if (walk.IgnoredFiles.Count + walk.IgnoredFolders.Count > ignoredBefore) missingByIgnore.Add(fragment);
                 continue;
             }
-            char separator = SeparatorOf(fragment);
+            char separator = SeparatorOf(fragment);   // 波かっこの選択肢も、書いた断片の区切りで返す
             foreach (var (full, path) in matched)
                 // 重複は先に出た側を採る。突き合わせは<b>展開の起点</b>から見た絶対パスで行う
                 //（カレントから見ると、別の場所を起点に展開したときに同じものを二重に数える）
@@ -158,6 +171,17 @@ public static class FileSet
         bool extraRules = options.ExtraEnabled && options.ExtraFiles is { Count: > 0 };
         return new Result(files, missing, walk.IgnoredFiles.Count, walk.IgnoredFolders.Count, missingByIgnore, extraRules,
                           walk.LinkedFiles.Count);
+    }
+
+    /// <summary>
+    /// 断片の波かっこを展開した選択肢（波かっこが無い・閉じていない・断片と同じ名前のファイルが実在するなら、断片そのもの 1 つ）。
+    /// </summary>
+    private static IReadOnlyList<string> Alternatives(string fragment, string root)
+    {
+        if (!Braces.HasAlternatives(fragment)) return [fragment];
+        string literal = fragment.Replace('\\', Path.DirectorySeparatorChar).Replace('/', Path.DirectorySeparatorChar);
+        if (File.Exists(Path.IsPathRooted(literal) ? literal : Path.Combine(root, literal))) return [fragment];   // 名前に波かっこを含む実在ファイルを優先
+        return Braces.Expand(fragment);
     }
 
     /// <summary>1回の展開で共有するもの（除外ファイルはフォルダーごとに1回だけ読む）。</summary>
