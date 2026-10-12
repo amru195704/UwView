@@ -37,9 +37,6 @@ public static class CliSettings
     public static int ReadIntFrom(string settingsPath, string key, int fallback)
         => Read(settingsPath, key) is JsonValue v && v.TryGetValue(out int n) ? n : fallback;
 
-    public static bool ReadBool(string appDataFolder, string key)
-        => Read(PathFor(appDataFolder), key) is JsonValue v && v.TryGetValue(out bool b) && b;
-
     public static string? ReadStringFrom(string settingsPath, string key)
         => Read(settingsPath, key) is JsonValue v && v.TryGetValue(out string? s) ? s : null;
 

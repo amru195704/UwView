@@ -230,12 +230,6 @@ public sealed class AppSettings
     public int MaxThreads { get; set; }
 
     /// <summary>
-    /// UVP: 索引（.uwvz）を元の文字コードのまま作る（既定 false＝Shift_JIS・EUC-JP・UTF-16 は UTF-8 にそろえて作る）。
-    /// CLI（uvp）も同じ値を読む（--keep-encoding・UVP_KEEP_ENCODING=1 と同じ。指示書「.uwvz の UTF-8 統一」§4）。
-    /// </summary>
-    public bool KeepSidecarEncoding { get; set; }
-
-    /// <summary>
     /// 設定フォルダ名（%AppData%/&lt;この名前&gt;/settings.json）。
     /// 既定は "UwView"（UVF）。UVP は起動時に "UwViewPro" へ変更し、UVF と設定・ライセンスを分離する。
     /// </summary>
