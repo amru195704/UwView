@@ -177,7 +177,7 @@ public static class UvfCli
             bz2 xz lzma zst lz4 br  同じく展開しながら探します（外部コマンドは使いません）
             zip          扱えません（展開してから探してください。zip は UwView Pro が扱います）
             pbf          扱えません（OSM の pbf は UwView Pro が XML にして扱います）
-            docx xlsx pdf Word・Excel・PDF。文字を取り出しながら探します（v1.8.3.2 から。元の形式には書き出しません）
+            docx xlsx pdf Word・Excel・PDF。文字を取り出しながら探します（元の形式には書き出しません）
                          Word：段落を 1 行ずつ・表は 1 行をセルのタブ区切りで・脚注とコメントは [脚注] [コメント] を付けて
                          Excel：シート名!行番号<TAB>セル<TAB>…（表示されている値。--raw で元の値）
                          PDF：## page N のあとにページの行（画像だけの PDF・パスワード付き・.doc・.xls は断ります）
@@ -234,7 +234,7 @@ public static class UvfCli
             bz2 xz lzma zst lz4 br  the same, decompressed here (no external command is used)
             zip          not supported (extract it first; UwView Pro handles zip)
             pbf          not supported (UwView Pro turns OSM pbf into XML)
-            docx xlsx pdf Word, Excel, PDF; the text is extracted while searching (from v1.8.3.2; never written back)
+            docx xlsx pdf Word, Excel, PDF; the text is extracted while searching (never written back)
                          Word: one line per paragraph; a table row is one line with tab-separated cells; footnotes and
                          comments follow with a prefix. Excel: sheet!row<TAB>cell<TAB>… (displayed values; --raw for the
                          stored ones). PDF: ## page N, then the page's lines (image-only, password-protected, .doc and .xls are refused)
