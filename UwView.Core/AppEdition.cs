@@ -44,8 +44,8 @@ public static class AppEdition
     /// <summary>名前に呼び名を添える（<c>UwView</c> → <c>UwView (Wide Field)</c>）。本番はそのまま。</summary>
     public static string Decorate(string name) => IsTestBuild ? $"{name} ({Name})" : name;
 
-    /// <summary>この系列の呼び名（ペット名）。1.7 系は Wide Field、1.8 系は Finder Scope。</summary>
-    public const string PetName = "Finder Scope";
+    /// <summary>この系列の呼び名（ペット名）。1.7 系は Wide Field、1.8 系は Finder Scope、1.9 系は Full Spectrum。</summary>
+    public const string PetName = "Full Spectrum";
 
     /// <summary>
     /// ウィンドウの題名（<c>UwView(uvf)</c> → <c>UwView(uvf)-Wide Field(v1.7.3.3)</c>）。

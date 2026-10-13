@@ -25,8 +25,8 @@ public class AppEditionTests : IDisposable
         AppEdition.Version = "1.7.3.3";
 
         Assert.False(AppEdition.IsTestBuild);
-        Assert.Equal("UwView(uvf)-Finder Scope(v1.7.3.3)", AppEdition.TitleFor("UwView(uvf)"));
-        Assert.Equal("UwView Pro(uvp)-Finder Scope(v1.7.3.3)", AppEdition.TitleFor("UwView Pro(uvp)"));
+        Assert.Equal("UwView(uvf)-Full Spectrum(v1.7.3.3)", AppEdition.TitleFor("UwView(uvf)"));
+        Assert.Equal("UwView Pro(uvp)-Full Spectrum(v1.7.3.3)", AppEdition.TitleFor("UwView Pro(uvp)"));
         Assert.Equal("UwView", AppEdition.Decorate("UwView"));             // 題名以外（About・--version）は足さない
     }
 
