@@ -59,13 +59,13 @@ sudo snap install uwview                         # Linux（更新は snap refres
 手で入れる場合は、このページの下の **Assets** から取ってください。Mac は dmg（Apple シリコン〈M1〜M4〉用の `arm64`・Intel 用の `x64`）、Windows は zip（`x64`・`arm64`）、Linux は tar.gz（`x86_64`・`aarch64`）です。チェックサムは `SHA256SUMS-1.9.0.txt` にあります。
 
 ```
-ce190359416b46c84e21898c456f75e35f87402f81ce53e176a2922ff447bc86  UwView-1.9.0-linux-aarch64.tar.gz
-b09c50f2e8f09ddd655712595a706e501021a7f02ea300cc6fc64cd59d11a025  UwView-1.9.0-linux-x86_64.tar.gz
-55bc456a37940d35ad34cc3ae665620bbe13b74025f0cf34fb3af6353e574c49  UwView-1.9.0-mac-arm64.dmg
-dbc162d73ec59afc460827c61e36f47261ff937934ccce1074a713afc6f87ebd  UwView-1.9.0-mac-x64.dmg
-0dc610df1408f386adc3e1e8fd883009a6f50bf39c126cb62e509ac5cd7a687e  UwView-1.9.0-win-arm64.zip
-85cc6274211b2aa7be09bc436082398af3ecde883eeedf399afce91442d26cf9  UwView-1.9.0-win-x64.zip
-（2026-10-13 作成。macOS 版は署名・公証済み。ビルド番号はすべて 26.10.13.13（日本時間）です）
+bdca9d8b0799c8060155eb06f45e0bb0eac256210887d38ff1b45533ece94e39  UwView-1.9.0-linux-aarch64.tar.gz
+ab6364819829ea6eb266c267a14c2259a139ff4709f090b4a3a10df53b306b1f  UwView-1.9.0-linux-x86_64.tar.gz
+c11d0fac461c30f7a6f9964e4d095a15b91b4a2cb23979319bbaba1b6ca483ba  UwView-1.9.0-mac-arm64.dmg
+498561fe84a3d478c4077dcd6ea19c162c1b8cbb68d0581355f83f577b56d887  UwView-1.9.0-mac-x64.dmg
+5ba6d99fc6389d347d02e7f5d74cf9d78eb33f0846af5d12436e4d5e0413bb49  UwView-1.9.0-win-arm64.zip
+cabc06b9419c3f0d4e999515290b8680f45ff6284976cedb956ecc0a378e5503  UwView-1.9.0-win-x64.zip
+（2026-10-13 作成。macOS 版は署名・公証済み。ビルド番号はすべて 26.10.13.16（日本時間）です）
 ```
 
 > **配布は GitHub Releases が元です。** Homebrew・Scoop・Snap も、ここのファイルを使います（Homebrew と Scoop は SHA256 を照合します）。操作説明と最新情報は blog サイト（https://uvp.y42u.net/）に載せています。
@@ -80,17 +80,19 @@ dbc162d73ec59afc460827c61e36f47261ff937934ccce1074a713afc6f87ebd  UwView-1.9.0-m
 
 ripgrep との比較です（cold＋hot の合計で、ripgrep の時間 ÷ uvp の時間。出力は全件で ripgrep と同じ）。
 
-| 対象 | ripgrep ÷ uvp |
-|---|---:|
-| 3GB・10GB の 1 本（30 項目の合計） | 2.47 倍・2.42 倍 |
-| Shift-JIS・EUC-JP の 3GB（7 パターン） | 5.2〜23 倍 |
-| UTF-16 の 6GB（7 パターン） | 8.1〜37.6 倍 |
-| 集計・並べ替え（`-uniq`・`-sort`。3GB・10GB） | 4.3〜5.4 倍 |
-| ログの 3 例（範囲＋除外＋伏せ字・近い行・CSV への収集。Linux カーネル 6 万本） | 2.32〜3.71 倍 |
+| 対象（ripgrep ÷ uvp） | **Mac** | Windows（参考） | Linux（参考） |
+|---|---:|---:|---:|
+| 3GB の 1 本（30〜32 項目の合計） | 2.47 倍 | 2.18 倍 | 1.55 倍 |
+| 10GB の 1 本（30 項目の合計） | 2.42 倍 | 3.16 倍 | 1.96 倍 |
+| Shift-JIS・EUC-JP の 3GB（7 パターン・2 回目から） | 5.2〜23 倍 | （未測定） | 1.8〜11.4 倍 |
+| UTF-16 の 6GB（同） | 8.1〜37.6 倍 | （未測定） | 3.1〜12.3 倍 |
+| 集計・並べ替え（`-uniq`・`-sort`。3GB・10GB） | 4.3〜5.4 倍 | 2.0〜3.6 倍 | 1.4〜3.2 倍 |
+| ログの 3 例（範囲＋除外＋伏せ字・近い行・CSV への収集。Linux カーネル 6 万本） | 2.32〜3.71 倍 | 1.86〜2.08 倍 | 1/1.94〜1/2.43（rg が速い） |
 
 - ripgrep の列は、同じことを ripgrep と perl・awk・sort などを組み合わせて行った時間です。Shift-JIS などは `rg -E 文字コード` と比べました。
-- 1 回目（索引を作る分を含む）は ripgrep と同じくらいで、2 回目から差が開きます。
-- 秒数は、ある 1 台の Mac（Apple M4・メモリ 32GB・外付け USB SSD）で 2026 年 10 月 13 日に測った値です。**秒数を環境をまたいで比べないでください。**
+- 1 回目（索引を作る分を含む）は ripgrep と同じくらいで（Mac）、2 回目から差が開きます。
+- **Windows・Linux は、正常に動くことの確認のために流しました**（正しさのテストがすべて合格、出力は ripgrep と不一致 0）。Windows・Linux の速さは、機械も条件も Mac と違うので参考値です。参考の Linux では、1 回目（Shift-JIS などで 1/5〜1/8）とログの 3 例（6 問中 5 問）で ripgrep が速い値も出ました。
+- 秒数は 2026 年 10 月 13 日に、Mac（Apple M4・メモリ 32GB・外付け USB SSD）・Windows（x64・8 スレッド・16GB）・Linux（aarch64・2 コア・7GB）の 1 台ずつで測った値です。**秒数を環境をまたいで比べないでください。**
 
 → [UwView Pro](https://uvp.y42u.net/pro/)（買い切り $129 ／ 月額 $9・**14日間の無料試用**つき）
 
@@ -157,13 +159,13 @@ sudo snap install uwview                         # Linux (update: snap refresh u
 To install by hand, get the files from **Assets** below: a dmg for the Mac (`arm64` for Apple silicon M1–M4, `x64` for Intel), a zip for Windows (`x64`, `arm64`), a tar.gz for Linux (`x86_64`, `aarch64`). Checksums are in `SHA256SUMS-1.9.0.txt`.
 
 ```
-ce190359416b46c84e21898c456f75e35f87402f81ce53e176a2922ff447bc86  UwView-1.9.0-linux-aarch64.tar.gz
-b09c50f2e8f09ddd655712595a706e501021a7f02ea300cc6fc64cd59d11a025  UwView-1.9.0-linux-x86_64.tar.gz
-55bc456a37940d35ad34cc3ae665620bbe13b74025f0cf34fb3af6353e574c49  UwView-1.9.0-mac-arm64.dmg
-dbc162d73ec59afc460827c61e36f47261ff937934ccce1074a713afc6f87ebd  UwView-1.9.0-mac-x64.dmg
-0dc610df1408f386adc3e1e8fd883009a6f50bf39c126cb62e509ac5cd7a687e  UwView-1.9.0-win-arm64.zip
-85cc6274211b2aa7be09bc436082398af3ecde883eeedf399afce91442d26cf9  UwView-1.9.0-win-x64.zip
-(built 2026-10-13; the macOS builds are signed and notarized. Build number: 26.10.13.13 (JST) for all builds)
+bdca9d8b0799c8060155eb06f45e0bb0eac256210887d38ff1b45533ece94e39  UwView-1.9.0-linux-aarch64.tar.gz
+ab6364819829ea6eb266c267a14c2259a139ff4709f090b4a3a10df53b306b1f  UwView-1.9.0-linux-x86_64.tar.gz
+c11d0fac461c30f7a6f9964e4d095a15b91b4a2cb23979319bbaba1b6ca483ba  UwView-1.9.0-mac-arm64.dmg
+498561fe84a3d478c4077dcd6ea19c162c1b8cbb68d0581355f83f577b56d887  UwView-1.9.0-mac-x64.dmg
+5ba6d99fc6389d347d02e7f5d74cf9d78eb33f0846af5d12436e4d5e0413bb49  UwView-1.9.0-win-arm64.zip
+cabc06b9419c3f0d4e999515290b8680f45ff6284976cedb956ecc0a378e5503  UwView-1.9.0-win-x64.zip
+(built 2026-10-13; the macOS builds are signed and notarized. Build number: 26.10.13.16 (JST) for all builds)
 ```
 
 > **GitHub Releases is the source.** Homebrew, Scoop and Snap use the files here (Homebrew and Scoop check the SHA256). Instructions and news are on the blog (https://uvp.y42u.net/).
@@ -178,16 +180,18 @@ The paid `uvp` and the UwView Pro window take the free edition's formula and mul
 
 Compared with ripgrep (total of cold + hot, ripgrep's time ÷ uvp's time; output identical to ripgrep in every case):
 
-| Target | ripgrep ÷ uvp |
-|---|---:|
-| one 3 GB / 10 GB file (total of 30 items) | 2.47× / 2.42× |
-| Shift-JIS and EUC-JP, 3 GB (7 patterns) | 5.2–23× |
-| UTF-16, 6 GB (7 patterns) | 8.1–37.6× |
-| tally and sort (`-uniq`, `-sort`; 3 GB and 10 GB) | 4.3–5.4× |
-| three log examples (range + exclude + mask, nearby lines, collect into CSV; Linux kernel, 60,000 files) | 2.32–3.71× |
+| Target (ripgrep ÷ uvp) | **Mac** | Windows (reference) | Linux (reference) |
+|---|---:|---:|---:|
+| one 3 GB file (total of 30–32 items) | 2.47× | 2.18× | 1.55× |
+| one 10 GB file (total of 30 items) | 2.42× | 3.16× | 1.96× |
+| Shift-JIS and EUC-JP, 3 GB (7 patterns, from the 2nd run) | 5.2–23× | (not measured) | 1.8–11.4× |
+| UTF-16, 6 GB (same) | 8.1–37.6× | (not measured) | 3.1–12.3× |
+| tally and sort (`-uniq`, `-sort`; 3 GB and 10 GB) | 4.3–5.4× | 2.0–3.6× | 1.4–3.2× |
+| three log examples (range + exclude + mask, nearby lines, collect into CSV; Linux kernel, 60,000 files) | 2.32–3.71× | 1.86–2.08× | 1/1.94–1/2.43 (ripgrep faster) |
 
 - The ripgrep column is the time to do the same thing with ripgrep combined with perl, awk, sort and the like. Shift-JIS and the others were compared with `rg -E <encoding>`.
-- The first search (which builds the index) takes about as long as ripgrep; the gap opens from the second search on.
-- Times were measured on one Mac (Apple M4, 32 GB, external USB SSD) on 13 October 2026. **Do not compare times across environments.**
+- The first search (which builds the index) takes about as long as ripgrep (Mac); the gap opens from the second.
+- **Windows and Linux were run to confirm correct operation** (all correctness tests passed, zero output mismatches against ripgrep). Their speeds are for reference only, since the machines and conditions differ from the Mac. In the reference Linux run, ripgrep was faster on the first run (1/5–1/8 for Shift-JIS and the like) and on 5 of the 6 log examples.
+- Times were measured on 13 October 2026 on one machine each: Mac (Apple M4, 32 GB, external USB SSD), Windows (x64, 8 threads, 16 GB), Linux (aarch64, 2 cores, 7 GB). **Do not compare times across environments.**
 
 → [UwView Pro](https://uvp.y42u.net/pro/) (one-time $129 / $9 a month, **14-day free trial**)
