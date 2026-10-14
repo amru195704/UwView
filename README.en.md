@@ -116,24 +116,24 @@ This is where **ripgrep is slightly faster** (under 1.5×, so on par). In v1.7.3
 
 ### Results on three operating systems
 
-**v1.9.0 "Full Spectrum" (13 October 2026)**
+**v1.9.0 "Full Spectrum" (14 October 2026)**
 
-The latest results, measured on a Mac (13 October 2026; Apple M4, 32 GB, external USB SSD). Ratios are ripgrep's (or the other tool's) time ÷ `uvf` / `uvp`'s time (total of cold + hot); under 1.5× counts as on par.
+The latest results, measured with v1.9.0 on a Mac (14 October 2026; Apple M4, 32 GB, external USB SSD). Ratios are ripgrep's (or the other tool's) time ÷ `uvf` / `uvp`'s time (total of cold + hot); under 1.5× counts as on par.
 
 The same test suite was also run on Windows and Linux to confirm that **everything works correctly** (correctness tests: 66 input-type checks, 34–36 multi-file checks and 43 exclusion checks all passed, and the speed runs had zero mismatches against ripgrep). Windows and Linux speeds are shown in the two right-hand columns **for reference only**, since the machines and conditions differ from the Mac.
 
 | ripgrep ÷ uvf / uvp (total of cold + hot) | **Mac** | Windows (reference) | Linux (reference) |
 |---|---:|---:|---:|
-| One 3 GB file, overall (30–32 items) | **2.47** | 2.18 | 1.55 |
-| One 10 GB file, overall (30 items) | **2.42** | 3.16 | 1.96 |
-| Free `uvf`, seven searches (3 GB / 10 GB) | **1.06 / 1.21** (on par) | 1.41 / 1.93 | 1.36 / 1.07 |
-| `uvp`, seven searches (3 GB / 10 GB, incl. building the index) | **3.10 / 3.51** | 2.40 / 2.32 | 1.51 / 1.78 |
-| `uvp`, tally and sort (3 GB and 10 GB) | **4.3–5.4** | 2.0–3.6 | 1.4–3.2 |
-| `uvp`, Shift-JIS / EUC-JP / UTF-16 (3–6 GB, from the 2nd run) | **5.2–37.6** | not measured | 1.8–12.3 |
-| `uvp`, three log examples (Linux kernel, 60,000 files) | **2.32–3.71** | 1.86–2.08 | 1/1.94–1/2.43 |
+| One 3 GB file, overall (30–32 items) | **2.56** | 2.24 | 1.50 |
+| One 10 GB file, overall (30 items) | **2.51** | 3.17 | 1.96 |
+| Free `uvf`, seven searches (3 GB / 10 GB) | **1.08 / 1.08** (on par) | 1.46 / 1.92 | 1.32 / 1.06 |
+| `uvp`, seven searches (3 GB / 10 GB, incl. building the index) | **3.44 / 3.55** | 2.48 / 2.48 | 1.42 / 2.06 |
+| `uvp`, tally and sort (3 GB and 10 GB) | **4.2–4.9** | 2.0–3.6 | 1.4–3.3 |
+| `uvp`, Shift-JIS / EUC-JP / UTF-16 (3–6 GB, from the 2nd run) | **5.4–38.8** | 2.2–14.1 | 2.0–15.3 |
+| `uvp`, three log examples (Linux kernel, 60,000 files) | **2.35–4.56** | 1.26–2.48 | 1/2.85–1/3.21 |
 | Output check | **0 mismatches** | 0 mismatches | 0 mismatches |
 
-**On the Mac, the only loss by more than 1.5×** is searching 1,000 files ten times in a row (`uvp` 1/1.7). `uvp`'s first run (building the index) is 1/1.44 on 3 GB and fast-to-decompress lz4 is 1/1.43, both on par. In the reference Windows and Linux runs, `uvp`'s first run, zst, lz4 and first-time bundling of many files also showed losses beyond 1.5×.
+**On the Mac, nothing lost to ripgrep by more than 1.5×.** The slowest items are EUC-JP 3 GB including the first run that builds the index (1/1.51) and fast-to-decompress lz4 (1/1.4). In the reference Windows and Linux runs, `uvp`'s first run, zst, lz4 and first-time bundling of many files showed losses beyond 1.5×.
 
 Details: [the v1.9.0 "Full Spectrum" article](https://uvp.y42u.net/en/blog/uwview-v190-full-spectrum-en/).
 
