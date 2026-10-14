@@ -471,4 +471,8 @@ Bundling puts them into one index (.uwvz) that you search as number:line (they g
   <data name="CmdExpandedIn" xml:space="preserve"><value>Expanded ({0} s)</value></data>
   <data name="CmdRanIn" xml:space="preserve"><value>took {0} s</value></data>
   <data name="CmdShownIn" xml:space="preserve"><value>{0} s to show in the window</value></data>
+  <data name="WatchOriginalFile" xml:space="preserve"><value>Watch the original of converted files</value></data>
+  <data name="WatchOriginalFileHint" xml:space="preserve"><value>Word, Excel and PDF files (opened through their extracted text) and files stored as UTF-8 (UwView Pro) are shown from a converted copy. When this is on, a banner tells you when the original file changes, and Reload extracts it again and reopens it.</value></data>
+  <data name="TipWatchOriginalFile" xml:space="preserve"><value>Tell me when the original of a converted file changes</value></data>
+  <data name="OriginalChanged" xml:space="preserve"><value>The original {0} has changed (Reload to open it again)</value></data>
 </root>

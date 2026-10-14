@@ -114,6 +114,12 @@ public partial class MainView
             SetTransientStatus(L["ReloadNotAvailable"]);
             return null;
         }
+        // Word・Excel・PDF から取り出した文字のタブは、元のファイルから取り出し直す（取り出した文字を開き直しても古いまま）
+        if (Services.OfficeTextCache.OriginalOf(path) is { } original && File.Exists(original))
+        {
+            _ = ReopenOfficeAsync(tab, original);
+            return null;
+        }
         if (!File.Exists(path))
         {
             SetTransientStatus(L.Format("FileMissing", Path.GetFileName(path)));

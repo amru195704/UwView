@@ -471,4 +471,8 @@
   <data name="CmdExpandedIn" xml:space="preserve"><value>展開しました（所要 {0} 秒）</value></data>
   <data name="CmdRanIn" xml:space="preserve"><value>所要 {0} 秒</value></data>
   <data name="CmdShownIn" xml:space="preserve"><value>窓に出すまで {0} 秒</value></data>
+  <data name="WatchOriginalFile" xml:space="preserve"><value>変換して開いたファイルの元を見張る</value></data>
+  <data name="WatchOriginalFileHint" xml:space="preserve"><value>Word・Excel・PDF（文字を取り出して開いたもの）や、UTF-8 にそろえて開いたファイル（UwView Pro）は、変換した中身を開いています。オンにすると、元のファイルが変わったときに帯で知らせ、［読み直す］で取り出し直して開き直します。</value></data>
+  <data name="TipWatchOriginalFile" xml:space="preserve"><value>変換して開いたファイルの、元のファイルが変わったら知らせる</value></data>
+  <data name="OriginalChanged" xml:space="preserve"><value>元の {0} が変わりました（［読み直す］で開き直します）</value></data>
 </root>

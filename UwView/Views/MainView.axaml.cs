@@ -108,6 +108,7 @@ public partial class MainView : UserControl
         PrevBookmarkButton.Click += (_, _) => GoToBookmark(next: false);
         AttachShortcuts();
         AttachChangeBanner();
+        StartOriginalWatch();
 
         // リアルタイム Tail（§11-③）
         TailToggle.IsCheckedChanged += (_, _) =>

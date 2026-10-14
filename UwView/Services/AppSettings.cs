@@ -216,6 +216,13 @@ public sealed class AppSettings
     public bool FileListHitsOnly { get; set; } = true;
 
     /// <summary>
+    /// 変換して開いたタブの元のファイルを見張る（既定 true）。uvf は Word・Excel・PDF から取り出した文字のタブ、
+    /// uvp はそれに加えて UTF-8 にそろえた .uwvz・gz・pbf から変換した .uwvz を単独で開いたタブ。
+    /// 元が変わったら帯で知らせ、［読み直す］で取り出し直し・作り直す（2026-10-14 レビュー P2）。
+    /// </summary>
+    public bool WatchOriginalFile { get; set; } = true;
+
+    /// <summary>
     /// UVP: 1回の検索で保持する最大ヒット数（0＝無制限）。CLI（uvp）も同じ値を読む
     /// （指示書 2026-09-15「検索上限のパラメータ化」）。無料版では使わない。
     /// </summary>

@@ -34,6 +34,7 @@ public sealed class PreferencesWindow : Window
             Margin = new Thickness(12),
             Items =
             {
+                new TabItem { Header = L["SettingsTabGeneral"], Content = GeneralPanel() },
                 new TabItem { Header = L["SettingsTabKeys"], Content = new KeyBindingsPanel() },
                 new TabItem { Header = L["SettingsTabAppearance"], Content = new AppearancePanel() },
             },
@@ -42,6 +43,34 @@ public sealed class PreferencesWindow : Window
         KeyDown += (_, e) => { if (e.Key == Key.Escape && e.Source is not Border) { Close(); e.Handled = true; } };
         Opened += (_, _) => Current = this;
         Closed += (_, _) => { if (ReferenceEquals(Current, this)) Current = null; };
+    }
+
+    /// <summary>全般: 変換して開いたファイルの元を見張るか（2026-10-14）。</summary>
+    private static Control GeneralPanel()
+    {
+        var L = Localizer.Instance;
+        var settings = UwView.Services.AppSettingsRef.Current;
+        var box = new CheckBox
+        {
+            Name = "WatchOriginalBox", Content = L["WatchOriginalFile"], IsChecked = settings.WatchOriginalFile,
+            Foreground = UwView.Services.ThemeColors.Text,
+        };
+        ToolTip.SetTip(box, L["TipWatchOriginalFile"]);
+        box.IsCheckedChanged += (_, _) =>
+        {
+            var s = UwView.Services.AppSettingsRef.Current;
+            s.WatchOriginalFile = box.IsChecked == true;
+            s.Save();
+        };
+        return new StackPanel
+        {
+            Margin = new Thickness(6, 12, 6, 0), Spacing = 6,
+            Children =
+            {
+                box,
+                new TextBlock { Text = L["WatchOriginalFileHint"], TextWrapping = TextWrapping.Wrap, Foreground = UwView.Services.ThemeColors.Text },
+            },
+        };
     }
 
     /// <summary>開く（開いていれば前に出す）。</summary>
