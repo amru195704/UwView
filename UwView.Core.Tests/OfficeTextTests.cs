@@ -134,6 +134,27 @@ public class OfficeTextTests : IDisposable
         Assert.Throws<OfficeRejectedException>(() => Lines(P("cut.docx"), OfficeKind.Docx));
     }
 
+    /// <summary>
+    /// 名前が .docx・.xlsx なら、0 バイト・zip でない・Word／Excel の中身が無い zip も壊れたものとして知らせる（2026-10-14 レビュー指摘）。
+    /// 名前が違えば今までどおり普通のファイル。
+    /// </summary>
+    [Fact]
+    public void 中身が合わないWordとExcelの名前は壊れていると見分ける()
+    {
+        File.WriteAllBytes(P("empty.docx"), []);
+        File.WriteAllText(P("text.xlsx"), "not a workbook\n");
+        using (var zip = new System.IO.Compression.ZipArchive(File.Create(P("other.docx")), System.IO.Compression.ZipArchiveMode.Create))
+            using (var w = new StreamWriter(zip.CreateEntry("readme.txt").Open())) w.Write("hello");
+        File.Copy(P("other.docx"), P("other.zip"));
+        File.WriteAllText(P("plain.txt"), "hello\n");
+
+        foreach (string name in new[] { "empty.docx", "text.xlsx", "other.docx" })
+            Assert.Equal(OfficeReject.Corrupt, OfficeDocumentFile.Probe(P(name)).Reject);
+        Assert.False(OfficeDocumentFile.Probe(P("other.zip")).IsOffice);
+        Assert.Equal(OfficeReject.None, OfficeDocumentFile.Probe(P("other.zip")).Reject);
+        Assert.Equal(OfficeReject.None, OfficeDocumentFile.Probe(P("plain.txt")).Reject);
+    }
+
     /// <summary>切れた・壊れた .docx・.xlsx は「普通のファイル」ではなく、壊れた Word・Excel として断る（2026-10-10 レビュー指摘）。</summary>
     [Fact]
     public void 切れたWordとExcelは壊れていると見分ける()

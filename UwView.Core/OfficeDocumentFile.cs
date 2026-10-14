@@ -80,20 +80,22 @@ public static class OfficeDocumentFile
             head = head[..got];
             if (head.IndexOf(PdfMagic) >= 0) return new(OfficeKind.Pdf);
             if (head.StartsWith(OleMagic)) return new(OfficeKind.None, OleReject(path));
-            if (!head.StartsWith(ZipMagic)) return OfficeProbe.NotOffice;
+            // 壊れた .docx・.xlsx を「普通のファイル」として探すと、黙って 0 件になる（2026-10-10・10-14 レビュー指摘）。
+            // 名前が .docx・.xlsx なら、zip でない（0 バイト・途中で切れた）・zip が読めない・Word／Excel の中身が無い、はどれも壊れたものとして知らせる
+            if (!head.StartsWith(ZipMagic)) return NameLooksOoxml(path) ? Corrupt : OfficeProbe.NotOffice;
             file.Position = 0;
-            try { return new(ZipKind(file)); }
-            catch (InvalidDataException) when (NameLooksOoxml(path))
-            {
-                // 壊れた .docx・.xlsx を「普通のファイル」として探すと、黙って 0 件になる（2026-10-10 レビュー指摘）
-                return new(OfficeKind.None, OfficeReject.Corrupt);
-            }
+            OfficeKind kind;
+            try { kind = ZipKind(file); }
+            catch (Exception e) when (e is InvalidDataException or IOException && NameLooksOoxml(path)) { return Corrupt; }
+            return kind == OfficeKind.None && NameLooksOoxml(path) ? Corrupt : new(kind);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidDataException)
         {
             return OfficeProbe.NotOffice;
         }
     }
+
+    private static OfficeProbe Corrupt => new(OfficeKind.None, OfficeReject.Corrupt);
 
     private static bool NameLooksOoxml(string path)
         => Path.GetExtension(path).ToLowerInvariant() is ".docx" or ".docm" or ".xlsx" or ".xlsm";
