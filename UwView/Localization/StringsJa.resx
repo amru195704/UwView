@@ -282,16 +282,16 @@
   <data name="Reloaded" xml:space="preserve"><value>ファイルを読み直しました</value></data>
   <data name="ResultBookmarksOnly" xml:space="preserve"><value>ブックマーク {0} 件</value></data>
   <data name="ResultBookmarksNote" xml:space="preserve"><value>・ブックマーク {0}</value></data>
-  <data name="ResultShowBoth" xml:space="preserve"><value>当たり＋ブックマーク</value></data>
+  <data name="ResultShowBoth" xml:space="preserve"><value>ヒット＋ブックマーク</value></data>
   <data name="ResultShowBookmarks" xml:space="preserve"><value>ブックマークだけ</value></data>
-  <data name="ResultShowHits" xml:space="preserve"><value>当たりだけ</value></data>
-  <data name="TipResultShowBoth" xml:space="preserve"><value>当たりとブックマークを、ファイルの行の順に混ぜて出す</value></data>
+  <data name="ResultShowHits" xml:space="preserve"><value>ヒットだけ</value></data>
+  <data name="TipResultShowBoth" xml:space="preserve"><value>ヒットとブックマークを、ファイルの行の順に混ぜて出す</value></data>
   <data name="TipResultShowBookmarks" xml:space="preserve"><value>ブックマークの行だけを出す（検索していないときもこれと同じ）</value></data>
-  <data name="TipResultShowHits" xml:space="preserve"><value>検索の当たりだけを出す（ブックマークの行には印だけ付く）</value></data>
+  <data name="TipResultShowHits" xml:space="preserve"><value>検索のヒットだけを出す（ブックマークの行には印だけ付く）</value></data>
   <data name="BookmarkRangeTooMany" xml:space="preserve"><value>まとめて付けられるのは {0} 行までです。範囲を狭めてください</value></data>
   <data name="KeyAction_FocusSearch" xml:space="preserve"><value>検索欄へ</value></data>
-  <data name="KeyAction_NextHit" xml:space="preserve"><value>次の当たり</value></data>
-  <data name="KeyAction_PrevHit" xml:space="preserve"><value>前の当たり</value></data>
+  <data name="KeyAction_NextHit" xml:space="preserve"><value>次のヒット</value></data>
+  <data name="KeyAction_PrevHit" xml:space="preserve"><value>前のヒット</value></data>
   <data name="KeyAction_FocusJump" xml:space="preserve"><value>ジャンプ欄へ</value></data>
   <data name="KeyAction_ToggleBookmark" xml:space="preserve"><value>ブックマークを付ける・外す（選んだ範囲なら全部）</value></data>
   <data name="KeyAction_PrevBookmark" xml:space="preserve"><value>前のブックマーク</value></data>
