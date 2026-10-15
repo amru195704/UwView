@@ -90,8 +90,11 @@ public class ThemeShotTests
 
             PreferencesWindow.Open(w);
             var prefs = PreferencesWindow.Current!;
-            Save(prefs, "settings-keys", theme);
+            Save(prefs, "settings-general", theme);   // 全般・キー・表示の順（全般は 1.9.0 から）
             prefs.Tabs.SelectedIndex = 1;
+            await UiHarness.Pump();
+            Save(prefs, "settings-keys", theme);
+            prefs.Tabs.SelectedIndex = 2;
             await UiHarness.Pump();
             Save(prefs, "settings-display", theme);
             prefs.Close();
