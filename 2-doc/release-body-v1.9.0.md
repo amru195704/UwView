@@ -2,6 +2,9 @@
 
 ## UwView v1.9.0 — Full Spectrum
 
+> **2026-10-15 に配布物を差し替えました（build 26.10.13.22 → 26.10.14.16・版数は 1.9.0 のまま）。** 画面の「当たり」を「ヒット」に直し、見つかった不具合を直し、変換して開いたファイル（Word・Excel・PDF など）の元が変わったら知らせる設定を足しました。
+> 10/14〜10/15 にダウンロードした方は、About または `uvf --version` の build で見分けられます。入れ直すときは、Homebrew は `brew reinstall --cask uwview`、Scoop は `scoop update uwview --force` です。
+
 **（プレーン＋Word・Excel・PDF＋圧縮[gz・bz2・xz・lzma・zst・lz4・br]）×（CLI＋GUI）×（巨大＋多数）のファイルを、無料で、ripgrep と同等以上の速さで。**
 v1.9.0 では、無料版でも **Word・Excel・PDF の中の文字を探せる**ようになりました。あわせて、ダークテーマ・フォント・キーの割り当て（vi・less 風のひな形つき）の設定、結果一覧へのブックマークの表示、ファイルの操作（パスのコピー・フォルダー・ターミナル・アプリで開く）、ファイル指定の波かっこ `{a,b}` が入りました。開いているログが外で切り詰められたり、ローテーションされたりしても落ちず、末尾追従がついていきます。
 （前の安定版は v1.8.1.9 です → [v1.8.1.9 で何が変わったか](https://github.com/amru195704/UwView/blob/main/2-doc/release-body-v1.8.1.9.md)）
@@ -29,7 +32,7 @@ Windows・Linux は「ツール → 設定…」（Ctrl＋,）、Mac はアプ�
 
 ### 📑 結果一覧とブックマーク・定義済み★のひな形
 
-- 結果一覧の上に［当たり＋ブックマーク］［ブックマークだけ］［当たりだけ］の切り替え。当たりとブックマークをファイルの行の順に混ぜて出します。行の範囲を選んで Ctrl＋B で、まとめて付け外しできます。
+- 結果一覧の上に［ヒット＋ブックマーク］［ブックマークだけ］［ヒットだけ］の切り替え。ヒットとブックマークをファイルの行の順に混ぜて出します。行の範囲を選んで Ctrl＋B で、まとめて付け外しできます。
 - 定義済み★に AND・NOT・OR の正規表現のひな形が最初から入ります（`^(?=.*語1)(?=.*語2)` など）。
 
 ### 📂 ファイルの操作・ファイル指定
@@ -59,13 +62,13 @@ sudo snap install uwview                         # Linux（更新は snap refres
 手で入れる場合は、このページの下の **Assets** から取ってください。Mac は dmg（Apple シリコン〈M1〜M4〉用の `arm64`・Intel 用の `x64`）、Windows は zip（`x64`・`arm64`）、Linux は tar.gz（`x86_64`・`aarch64`）です。チェックサムは `SHA256SUMS-1.9.0.txt` にあります。
 
 ```
-d6a936039e3196798ff5a7d3b6d87825c77a0e70684ec37487f38291225d7d17  UwView-1.9.0-linux-aarch64.tar.gz
-1e875fc303b5f785b28e997f0b95258159309df275cf6a03fa9e0f4384b91595  UwView-1.9.0-linux-x86_64.tar.gz
-cf360a106f42ee46267a0ef98e5109767964d1df82a152ffedc5d51d75d01f77  UwView-1.9.0-mac-arm64.dmg
-05dba5a732e0f201460a481905e091ca86718b97e28f528d07d3c0124f400e54  UwView-1.9.0-mac-x64.dmg
-9e087e1e259b8617c2cff47442a68ef653b3bb53704431eedccc41add10e94a7  UwView-1.9.0-win-arm64.zip
-3eaa7261db77af16d8c7b0c31914a28a56fe34ba7ceb40954857a80aa1608462  UwView-1.9.0-win-x64.zip
-（2026-10-13 作成。macOS 版は署名・公証済み。ビルド番号はすべて 26.10.13.22（日本時間）です）
+8896bf79d1f2a4f92a23f4e0dae74641c9663f29b8b4fe6b0da3b8e5aa030862  UwView-1.9.0-linux-aarch64.tar.gz
+a37bba83ed5989ab0cbdfb19230f4edfa4cf92ca04fd23ddcac1eb2a4434fa81  UwView-1.9.0-linux-x86_64.tar.gz
+ffe839aa6a9673e00e373cd4c2841851050edc559f70df17d227b87f13a10967  UwView-1.9.0-mac-arm64.dmg
+22d042884819aef62be472d7356e439698bdf4a8ab2814646582b3175ee8af04  UwView-1.9.0-mac-x64.dmg
+a8c77b28ac0c51e4cb58fe6c538b7c3688304a34fc45b90e4d5f8c12dfca6a66  UwView-1.9.0-win-arm64.zip
+cfcce7416d3ddb2457a10ba1070ff5ddd1cd869506e934f67feeba2adb2b3b06  UwView-1.9.0-win-x64.zip
+（2026-10-14 作成・2026-10-15 差し替え。macOS 版は署名・公証済み。ビルド番号はすべて 26.10.14.16（日本時間）です）
 ```
 
 > **配布は GitHub Releases が元です。** Homebrew・Scoop・Snap も、ここのファイルを使います（Homebrew と Scoop は SHA256 を照合します）。操作説明と最新情報は blog サイト（https://uvp.y42u.net/）に載せています。
@@ -90,7 +93,7 @@ ripgrep との比較です（cold＋hot の合計で、ripgrep の時間 ÷ uvp 
 | ログの 3 例（範囲＋除外＋伏せ字・近い行・CSV への収集。Linux カーネル 6 万本） | 2.35〜4.56 倍 | 1.26〜2.48 倍 | 1/2.85〜1/3.21（rg が速い） |
 
 - ripgrep の列は、同じことを ripgrep と perl・awk・sort などを組み合わせて行った時間です。Shift-JIS などは `rg -E 文字コード` と比べました。
-- 1 回目（索引を作る分を含む）は ripgrep と同じくらいで（Mac）、2 回目から差が開きます。
+- 1 回目（索引の作成込み）は、Shift-JIS・EUC-JP で ripgrep の 1/1.4〜1/1.7 ほどです（Mac で 3 回測った幅）。2 回目から差が開きます。
 - **Windows・Linux は、正常に動くことの確認のために流しました**（正しさのテストがすべて合格、出力は ripgrep と不一致 0）。Windows・Linux の速さは、機械も条件も Mac と違うので参考値です。参考の Linux では、1 回目（Shift-JIS などで 1/5〜1/9）とログの 3 例（6 問中 5 問）で ripgrep が速い値も出ました。
 - 秒数は 2026 年 10 月 13〜14 日に、Mac（Apple M4・メモリ 32GB・外付け USB SSD）で v1.9.0 を測った値です（Windows・Linux は参考）。**秒数を環境をまたいで比べないでください。**
 
@@ -99,6 +102,9 @@ ripgrep との比較です（cold＋hot の合計で、ripgrep の時間 ÷ uvp 
 ---
 
 ## UwView v1.9.0 — Full Spectrum (English)
+
+> **The downloads were replaced on 2026-10-15 (build 26.10.13.22 → 26.10.14.16; the version stays 1.9.0).** This build fixes issues found in review and adds a setting that tells you when the original of a converted file (Word, Excel, PDF and so on) changes.
+> If you downloaded on Oct 14–15, check the build in About or with `uvf --version`. To reinstall: Homebrew `brew reinstall --cask uwview`; Scoop `scoop update uwview --force`.
 
 *[日本語](#uwview-v190--full-spectrum) ｜ English*
 
@@ -159,13 +165,13 @@ sudo snap install uwview                         # Linux (update: snap refresh u
 To install by hand, get the files from **Assets** below: a dmg for the Mac (`arm64` for Apple silicon M1–M4, `x64` for Intel), a zip for Windows (`x64`, `arm64`), a tar.gz for Linux (`x86_64`, `aarch64`). Checksums are in `SHA256SUMS-1.9.0.txt`.
 
 ```
-d6a936039e3196798ff5a7d3b6d87825c77a0e70684ec37487f38291225d7d17  UwView-1.9.0-linux-aarch64.tar.gz
-1e875fc303b5f785b28e997f0b95258159309df275cf6a03fa9e0f4384b91595  UwView-1.9.0-linux-x86_64.tar.gz
-cf360a106f42ee46267a0ef98e5109767964d1df82a152ffedc5d51d75d01f77  UwView-1.9.0-mac-arm64.dmg
-05dba5a732e0f201460a481905e091ca86718b97e28f528d07d3c0124f400e54  UwView-1.9.0-mac-x64.dmg
-9e087e1e259b8617c2cff47442a68ef653b3bb53704431eedccc41add10e94a7  UwView-1.9.0-win-arm64.zip
-3eaa7261db77af16d8c7b0c31914a28a56fe34ba7ceb40954857a80aa1608462  UwView-1.9.0-win-x64.zip
-(built 2026-10-13; the macOS builds are signed and notarized. Build number: 26.10.13.22 (JST) for all builds)
+8896bf79d1f2a4f92a23f4e0dae74641c9663f29b8b4fe6b0da3b8e5aa030862  UwView-1.9.0-linux-aarch64.tar.gz
+a37bba83ed5989ab0cbdfb19230f4edfa4cf92ca04fd23ddcac1eb2a4434fa81  UwView-1.9.0-linux-x86_64.tar.gz
+ffe839aa6a9673e00e373cd4c2841851050edc559f70df17d227b87f13a10967  UwView-1.9.0-mac-arm64.dmg
+22d042884819aef62be472d7356e439698bdf4a8ab2814646582b3175ee8af04  UwView-1.9.0-mac-x64.dmg
+a8c77b28ac0c51e4cb58fe6c538b7c3688304a34fc45b90e4d5f8c12dfca6a66  UwView-1.9.0-win-arm64.zip
+cfcce7416d3ddb2457a10ba1070ff5ddd1cd869506e934f67feeba2adb2b3b06  UwView-1.9.0-win-x64.zip
+(built 2026-10-14, replaced 2026-10-15; the macOS builds are signed and notarized. Build number: 26.10.14.16 (JST) for all builds)
 ```
 
 > **GitHub Releases is the source.** Homebrew, Scoop and Snap use the files here (Homebrew and Scoop check the SHA256). Instructions and news are on the blog (https://uvp.y42u.net/).
@@ -190,7 +196,7 @@ Compared with ripgrep (total of cold + hot, ripgrep's time ÷ uvp's time; output
 | three log examples (range + exclude + mask, nearby lines, collect into CSV; Linux kernel, 60,000 files) | 2.35–4.56× | 1.26–2.48× | 1/2.85–1/3.21 (ripgrep faster) |
 
 - The ripgrep column is the time to do the same thing with ripgrep combined with perl, awk, sort and the like. Shift-JIS and the others were compared with `rg -E <encoding>`.
-- The first search (which builds the index) takes about as long as ripgrep (Mac); the gap opens from the second.
+- The first run (including building the index) is about 1/1.4–1/1.7 of ripgrep for Shift-JIS and EUC-JP (the range over three runs on a Mac); the gap opens from the second.
 - **Windows and Linux were run to confirm correct operation** (all correctness tests passed, zero output mismatches against ripgrep). Their speeds are for reference only, since the machines and conditions differ from the Mac. In the reference Linux run, ripgrep was faster on the first run (1/5–1/9 for Shift-JIS and the like) and on 5 of the 6 log examples.
 - Times were measured on 13–14 October 2026 with v1.9.0 on a Mac (Apple M4, 32 GB, external USB SSD); Windows and Linux are for reference. **Do not compare times across environments.**
 

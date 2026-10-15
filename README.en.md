@@ -133,7 +133,7 @@ The same test suite was also run on Windows and Linux to confirm that **everythi
 | `uvp`, three log examples (Linux kernel, 60,000 files) | **2.35–4.56** | 1.26–2.48 | 1/2.85–1/3.21 |
 | Output check | **0 mismatches** | 0 mismatches | 0 mismatches |
 
-**On the Mac, only one item lost to ripgrep by more than 1.5×:** EUC-JP 3 GB including the first run that builds the index (1/1.51). The next slowest is fast-to-decompress lz4 (1/1.4). In the reference Windows and Linux runs, `uvp`'s first run, zst, lz4 and first-time bundling of many files showed losses beyond 1.5×.
+**The first run (including building the index) is about 1/1.4–1/1.7 of ripgrep for Shift-JIS and EUC-JP** (the range over three runs on a Mac). Fast-to-decompress lz4 including the first run is 1/1.4. In the reference Windows and Linux runs, `uvp`'s first run, zst, lz4 and first-time bundling of many files showed losses beyond 1.5×.
 
 Details: [the v1.9.0 "Full Spectrum" article](https://uvp.y42u.net/en/blog/uwview-v190-full-spectrum-en/).
 

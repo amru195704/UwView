@@ -1,0 +1,39 @@
+{
+    "version": "1.9.0",
+    "description": "Open and search huge text/log files (verified up to 258 GB). GUI viewer plus the uvf command.",
+    "homepage": "https://github.com/amru195704/UwView",
+    "license": {
+        "identifier": "PolyForm-Internal-Use-1.0.0",
+        "url": "https://github.com/amru195704/UwView/blob/main/LICENSE"
+    },
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/amru195704/UwView/releases/download/v1.9.0/UwView-1.9.0-win-x64.zip",
+            "hash": "3eaa7261db77af16d8c7b0c31914a28a56fe34ba7ceb40954857a80aa1608462"
+        },
+        "arm64": {
+            "url": "https://github.com/amru195704/UwView/releases/download/v1.9.0/UwView-1.9.0-win-arm64.zip",
+            "hash": "a8c77b28ac0c51e4cb58fe6c538b7c3688304a34fc45b90e4d5f8c12dfca6a66"
+        }
+    },
+    "bin": "uvf.exe",
+    "shortcuts": [
+        [
+            "UwView.Desktop.exe",
+            "UwView"
+        ]
+    ],
+    "checkver": {
+        "github": "https://github.com/amru195704/UwView"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/amru195704/UwView/releases/download/v$version/UwView-$version-win-x64.zip"
+            },
+            "arm64": {
+                "url": "https://github.com/amru195704/UwView/releases/download/v$version/UwView-$version-win-arm64.zip"
+            }
+        }
+    }
+}
