@@ -38,10 +38,10 @@ main=f"""<div class="win" id="w">
 <div class="body"><div class="ln">128<br>129<br>130<br>131<br>132<br>133<br>134</div><div class="txt">2026-09-27 10:01:02 <span class="hl">ERROR</span> connection reset<br>2026-09-27 10:01:03 INFO retry 1<br>2026-09-27 10:01:04 INFO retry 2<br>2026-09-27 10:05:44 <span class="hl">ERROR</span> timeout<br>2026-09-27 10:05:45 WARN slow response<br>2026-09-27 10:06:00 INFO ok<br>……</div><div class="mm"><div class="h" style="top:22px"></div><div class="h" style="top:58px"></div><div class="bm" style="top:100px"></div><div class="h" style="top:130px"></div><div class="v"></div></div></div>
 <div class="st"><span class="lab">ステータス</span><span>パス</span><span>行モード</span><span>位置</span><span>文字コード</span><span>通知</span><span style="margin-left:auto">索引中… 42%　キャンセル</span><span>直前の処理時間</span></div>
 </div>
-<div style="margin:0 14px 10px;font-size:11.5px;color:#555">右端の縦の帯はミニマップ（橙＝検索の当たり、青＝ブックマーク、灰色＝今見ている位置）。ボタンはアイコンで、名前はマウスを乗せると出ます（図では下に名前を書いています）。</div>"""
+<div style="margin:0 14px 10px;font-size:11.5px;color:#555">右端の縦の帯はミニマップ（橙＝検索のヒット、青＝ブックマーク、灰色＝今見ている位置）。ボタンはアイコンで、名前はマウスを乗せると出ます（図では下に名前を書いています）。</div>"""
 flist=f"""<div class="win" id="w" style="width:720px">
 <div class="title">ファイル一覧<span style="margin-left:auto" class="chk">開く先: ◉ メイン　○ タブ　○ アプリ</span></div>
-<table><tr><th>番号</th><th>ファイル</th><th style="text-align:right">当たり</th><th style="text-align:right">大きさ</th><th></th></tr>
+<table><tr><th>番号</th><th>ファイル</th><th style="text-align:right">ヒット</th><th style="text-align:right">大きさ</th><th></th></tr>
 <tr><td>1</td><td>logs/app-0901.log</td><td class="r">42</td><td class="r">1.2 GB</td><td><span class="mark">メイン</span></td></tr>
 <tr><td>2</td><td>logs/app-0902.log</td><td class="r">0</td><td class="r">1.1 GB</td><td></td></tr>
 <tr><td>3</td><td>logs/app-0903.log.gz</td><td class="r">86</td><td class="r">0.2 GB</td><td><span class="mark">タブ</span></td></tr></table>
