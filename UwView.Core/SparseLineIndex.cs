@@ -88,7 +88,7 @@ public readonly record struct LineSeparator(byte Value, int UnitSize, int ByteIn
     /// <summary>span に含まれる区切りの数。</summary>
     public long CountSeparators(ReadOnlySpan<byte> span, int unitPhase = 0)
     {
-        if (UnitSize == 1) return span.Count(Value);
+        if (UnitSize == 1) return Value == (byte)'\n' ? NewlineCounter.Count(span) : span.Count(Value);   // Span.Count は ARM で遅い（NewlineCounter 参照）
         long n = 0;
         for (int i = 0; i < span.Length; )
         {
