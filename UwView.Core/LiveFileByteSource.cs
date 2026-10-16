@@ -104,14 +104,11 @@ public sealed class LiveFileByteSource : IByteSource
         if (_handle.IsClosed) return FileChange.None;
         long len = Length;
         long handleLen;
-        try { handleLen = LengthOf(_handle); }
+        try { handleLen = RandomAccess.GetLength(_handle); }
         catch (IOException) { return FileChange.None; }
 
         if (handleLen < len) return FileChange.Truncated;
-        if (!Same(_handle, 0, _head) || !Same(_handle, len - _tail.Length, _tail))
-            // 長さが古いまま見えることがある（VMware の共有フォルダー vmhgfs-fuse で、切り詰めた直後も元の長さを返した。2026-10-13 Linux）。
-            // 元の最後の 1 バイトが読めなければ、中身の書き換えではなく切り詰め
-            return EndsBefore(len) ? FileChange.Truncated : FileChange.Rewritten;
+        if (!Same(_handle, 0, _head) || !Same(_handle, len - _tail.Length, _tail)) return FileChange.Rewritten;
 
         switch (SameNameDiffers())
         {
@@ -138,18 +135,6 @@ public sealed class LiveFileByteSource : IByteSource
         }
         catch (Exception e) when (e is FileNotFoundException or DirectoryNotFoundException) { return null; }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException) { return false; }
-    }
-
-    /// <summary>ハンドルの長さ（試験で古い長さを返させるために差し替えられる）。</summary>
-    internal Func<SafeFileHandle, long> LengthOf { get; set; } = RandomAccess.GetLength;
-
-    /// <summary>今の中身が <paramref name="length"/> より短いか（最後の 1 バイトを実際に読んで確かめる）。</summary>
-    private bool EndsBefore(long length)
-    {
-        if (length <= 0) return false;
-        Span<byte> one = stackalloc byte[1];
-        try { return RandomAccess.Read(_handle, one, length - 1) <= 0; }
-        catch (IOException) { return false; }
     }
 
     private static bool Same(SafeFileHandle handle, long offset, byte[] expected)

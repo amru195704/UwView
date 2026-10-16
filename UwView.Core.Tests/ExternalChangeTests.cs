@@ -96,38 +96,6 @@ public class ExternalChangeTests : IDisposable
         Assert.Equal(FileChange.None, session.CheckExternalChange());
     }
 
-    /// <summary>
-    /// 切り詰めた直後に長さが古いまま見えても、切り詰めと見る（VMware の共有フォルダー vmhgfs-fuse で起きた。
-    /// Linux の全体テスト F6（F2）で「作り直されました」になっていた。2026-10-13）。
-    /// </summary>
-    [Fact]
-    public async Task 切り詰めた直後に長さが古いまま見えても切り詰めと見る()
-    {
-        Write(Lines("old", 1000));
-        await using var session = DocumentSession.Open(_path);
-        var live = Assert.IsType<LiveFileByteSource>(session.Source);
-        long stale = live.Length;
-        live.LengthOf = _ => stale;                                       // 共有フォルダーのように元の長さを返す
-        File.WriteAllText(_path, "");                                     // : > app.log
-        Append(Lines("f2", 100));                                         // 元より短い中身を足す
-
-        Assert.Equal(FileChange.Truncated, live.Check());
-    }
-
-    [Fact]
-    public async Task 長さが古いまま見えても元より長い書き換えは作り直されたと見る()
-    {
-        Write(Lines("old", 100));
-        await using var session = DocumentSession.Open(_path);
-        var live = Assert.IsType<LiveFileByteSource>(session.Source);
-        long stale = live.Length;
-        live.LengthOf = _ => stale;
-        using (var fs = new FileStream(_path, FileMode.Open, FileAccess.Write, FileShare.ReadWrite))
-            fs.Write(Encoding.UTF8.GetBytes(Lines("new", 200)));
-
-        Assert.Equal(FileChange.Rewritten, live.Check());
-    }
-
     [Fact]
     public async Task 同じ長さ以上で中身が変わったら作り直されたと見る()
     {
