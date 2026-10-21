@@ -1,7 +1,7 @@
 class Uwview < Formula
   desc "巨大なログ・テキストを調べるビューア（GUI本体 + CLIの uvf を同梱）"
   homepage "https://uvp.y42u.net/"
-  version "1.9.0"
+  version "1.9.1"
   license :cannot_represent # PolyForm Internal Use License 1.0.0（OSI非準拠のため）
 
   on_macos do
@@ -10,10 +10,10 @@ class Uwview < Formula
 
   if Hardware::CPU.arm?
     url "https://github.com/amru195704/UwView/releases/download/v#{version}/UwView-#{version}-linux-aarch64.tar.gz"
-    sha256 "8896bf79d1f2a4f92a23f4e0dae74641c9663f29b8b4fe6b0da3b8e5aa030862"
+    sha256 "d378779916d2798ca23efe92823bed83ebcdba12e8de2ba1b4cb1b6f5c6913b7"
   else
     url "https://github.com/amru195704/UwView/releases/download/v#{version}/UwView-#{version}-linux-x86_64.tar.gz"
-    sha256 "a37bba83ed5989ab0cbdfb19230f4edfa4cf92ca04fd23ddcac1eb2a4434fa81"
+    sha256 "7e86ba9860b77ac350f2c07939bf8207bceae07de5f8b072ddd9c7bb11d33043"
   end
 
   def install
