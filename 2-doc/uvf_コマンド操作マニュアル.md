@@ -592,7 +592,7 @@ Windows の **cmd（コマンドプロンプト）** と **PowerShell** では�
 | シェル | 最初に打つもの | しないと |
 |---|---|---|
 | cmd | `chcp 65001` | ファイル名や検索語の日本語が化けて、「ファイルが見つかりません」になる |
-| PowerShell | `[Console]::OutputEncoding = [Text.Encoding]::UTF8` | 当たっても何も表示されないことがある |
+| PowerShell | `[Console]::OutputEncoding = [Text.Encoding]::UTF8` | ヒットしても何も表示されないことがある |
 
 PowerShell は、プロファイル（`notepad $PROFILE`）に書いておくと毎回打たずに済みます。
 

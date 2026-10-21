@@ -250,7 +250,8 @@ the GUI (search, hit list, file list and tabs, highlighter, keys) is covered in 
 | You want to… | Use |
 |---|---|
 | **Search in the CLI only** | **`uvf`** (free) — on par with ripgrep |
-| **Search many files or compressed logs together** | **`uvf '*.log' word`** (free, 7 compressed formats) |
+| **Search many files, compressed logs and files in different encodings together** | **`uvf '*.log' word`** (free; 7 compressed formats plus docx, xlsx and pdf; UTF-8, Shift-JIS, EUC-JP and UTF-16 are detected automatically) |
+| **Search zip and pbf (OSM)** | **[UwView Pro](https://uvp.y42u.net/en/pro-en/)** (`uvp`) |
 | **Search in the CLI and read the hits in the GUI** | **`uvf … -open`** (free) — **the shortest path** |
 | **Open a file in the GUI and look around** | **UwView GUI** (free) — scroll to the end the moment it opens |
 | **Keep coming back to the same file or logs / keep them compressed** | **[UwView Pro](https://uvp.y42u.net/en/pro-en/)** (`uvp`) |
