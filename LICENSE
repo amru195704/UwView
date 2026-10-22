@@ -7,11 +7,46 @@ Summary (this summary is NOT a substitute for the full license text below):
 - You may NOT distribute the software: redistribution, bundling into a product or
   service, resale, hosting/offering to third parties, or OEM embedding are NOT
   permitted under this license.
+- Exception: the official, unmodified binary releases MAY be redistributed
+  free of charge as packages (Flathub, Snap, AUR, distro repositories,
+  Homebrew, Scoop, winget, ...). See "Additional Permission" below.
 - Those uses require a separate COMMERCIAL (redistribution/OEM) license from the author.
 
 Software: UwView — https://github.com/amru195704/UwView
 Commercial / redistribution licensing: https://github.com/amru195704/UwView/issues
 SPDX-License-Identifier: PolyForm-Internal-Use-1.0.0
+(with an additional packaging permission — see "Additional Permission")
+
+------------------------------------------------------------------------------
+
+Additional Permission: Packaging of Official Binaries
+
+In addition to the licenses granted under the PolyForm Internal Use
+License 1.0.0 below, which this permission does not otherwise modify,
+the licensor grants you permission to redistribute the official binary
+releases of the software, free of charge, as packages in software
+repositories, package managers and app stores (for example Flathub,
+the Snap Store, the AUR, Linux distribution repositories, Homebrew,
+Scoop and winget), on these conditions:
+
+1. The files are the official release files published at
+   https://github.com/amru195704/UwView/releases, and the program files
+   are not modified. Unpacking them, placing them in the package's
+   layout, and adding desktop entries, icons, metadata or launcher
+   scripts are allowed.
+2. The SHA-256 hash of each file matches the SHA256SUMS file published
+   with that release.
+3. The package includes this LICENSE file or links to it, and states
+   that the software is not open source software.
+4. The package does not suggest that it is made or endorsed by the
+   licensor, unless the licensor has said so.
+5. No fee is charged for the software itself.
+
+This permission does not cover the source code, modified or rebuilt
+binaries, bundling the software into another product or service, or
+UwView Pro. Those still require a separate commercial license from the
+licensor. Anyone who installs such a package receives the software
+under these same terms.
 
 ==============================================================================
 

@@ -322,14 +322,20 @@ Development is funded mainly by sales of [UwView Pro](https://uvp.y42u.net/en/pr
 [PolyForm Internal Use License 1.0.0](LICENSE). **Free for personal use and internal business use.**
 **Redistribution, bundling into a product or service, resale and supply to third parties are not permitted** — those
 require a separate commercial (redistribution) license → [Issues](https://github.com/amru195704/UwView/issues).
+**Packaging the unmodified official binaries is allowed, though** — see below.
 Japanese reference translation: [LICENSEjp.txt](LICENSEjp.txt) (the English text is binding).
 
-> **On package-manager submissions (clarification)**
+> **On packaging and package-manager submissions**
 > **A Homebrew, Scoop or winget manifest that points at the official download
 > ([GitHub Releases](https://github.com/amru195704/UwView/releases/latest)) is not redistribution** — the user's own
 > machine fetches the file from the official source. **Submissions and pull requests of that kind are welcome.**
 > For the hash in the manifest, use the `SHA256SUMS` attached to each release.
-> Hosting a copy of the file anywhere other than the official source is the case that needs to be discussed first, as above.
+> **Packages that carry an unmodified copy of the official binaries (Flathub, Snap, AUR, distribution repositories and so on) are welcome too.**
+> The conditions are in the "Additional Permission" section of [LICENSE](LICENSE): use the official release files without modifying the program
+> (unpacking, placing them in the package layout and adding desktop entries or icons is fine), make sure the hashes match the release's `SHA256SUMS`,
+> include or link the LICENSE and state that the software is not open source, do not suggest the package is made or endorsed by the author,
+> and charge no fee for the software itself.
+> Building from source, modified binaries, bundling into another product, and UwView Pro are not covered — please get in touch for those.
 
 ## Other products by the same author
 

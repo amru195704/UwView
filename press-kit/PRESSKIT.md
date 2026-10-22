@@ -25,7 +25,7 @@ Last updated: 2026-07 ・ Maintainer: **y4u (amru195704)**
 | 対応OS / Platforms | Windows, macOS, Linux (desktop) ＋ Browser (WASM) |
 | 技術 / Tech | .NET 10, Avalonia UI 12 (custom Skia rendering) |
 | 言語 / UI languages | 日本語 / English（実行時切替）|
-| ライセンス / License | PolyForm Internal Use License 1.0.0（個人・社内業務利用は無料 / free for personal & internal business use；再配布・組込みは別ライセンス / redistribution & embedding require a separate commercial license） |
+| ライセンス / License | PolyForm Internal Use License 1.0.0（個人・社内業務利用は無料 / free for personal & internal business use；公式バイナリを無改変のまま無償でパッケージとして再配布することは可〔LICENSE の Additional Permission〕/ the unmodified official binaries may be redistributed free of charge as packages, per the "Additional Permission" in LICENSE；それ以外の再配布・組込みは別ライセンス / other redistribution & embedding require a separate commercial license；オープンソースではない / not open source） |
 | 価格 / Price | 本体無料 / Free（将来 Pro 版・GitHub Sponsors を予定） |
 | 開発者 / Author | y4u（丸山 — GitHub: amru195704）|
 | 起源 / Origin | Windows95 時代に Vector で公開していたビューアを Avalonia で再構築 |
@@ -96,9 +96,9 @@ Synthetic 200 M lines / 5.1 GB: index build 9.7 s, random GetLine avg 0.005 ms, 
 
 ## 8. Boilerplate / 定型文（そのまま引用可）
 
-> **EN:** UwView is a cross-platform, memory-thrifty viewer for gigantic text files, verified to open a 258.68 GB / 4.5-billion-line file. Free for personal and internal business use under the PolyForm Internal Use License. Windows / macOS / Linux and a browser build. https://github.com/amru195704/UwView
+> **EN:** UwView is a cross-platform, memory-thrifty viewer for gigantic text files, verified to open a 258.68 GB / 4.5-billion-line file. Free for personal and internal business use under the PolyForm Internal Use License, with an added permission to package the unmodified official binaries (not open source). Windows / macOS / Linux and a browser build. https://github.com/amru195704/UwView
 
-> **JA:** UwView は、258.68GB・45億行のファイルを**端末で探して、画面で読む**ための道具。CLI `uvf` が探した結果をそのまま画面へ渡すので、同じファイルを2度読みません。PolyForm Internal Use License のもと個人・社内業務利用は無料。Windows / macOS / Linux とブラウザ版。https://github.com/amru195704/UwView
+> **JA:** UwView は、258.68GB・45億行のファイルを**端末で探して、画面で読む**ための道具。CLI `uvf` が探した結果をそのまま画面へ渡すので、同じファイルを2度読みません。PolyForm Internal Use License のもと個人・社内業務利用は無料で、公式バイナリを無改変のままパッケージとして再配布することもできます（オープンソースではありません）。Windows / macOS / Linux とブラウザ版。https://github.com/amru195704/UwView
 
 ---
 
