@@ -31,6 +31,10 @@ public class AppearanceTests : IDisposable
     [AvaloniaFact]
     public void テーマを切り替えると色が替わり設定に残る()
     {
+        // 始めにライトにしてから数える。OS がダークの機械（クラウドの Linux など）では、前のテストの後片付けで System に戻しても
+        // 実際のテーマはダークのままで、ダークに替えても実際のテーマが変わらず知らせが来ない（製品としてはそれで正しい。2026-10-23）
+        AppTheme.Set(AppTheme.Light);
+        Dispatcher.UIThread.RunJobs();
         int changed = 0;
         void Count() => changed++;
         ThemeColors.Changed += Count;
