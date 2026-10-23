@@ -13,32 +13,33 @@ namespace UwView.Views;
 public enum CompressedOpenMethod
 {
     Cancel,
-    /// <summary>テキストに展開してから通常オープン（無料・UVF/UVP 共通）。</summary>
+    /// <summary>テキストに展開してから通常オープン。</summary>
     Expand,
-    /// <summary>.uwvz へ直接変換して開く（Pro のみ・平文を作らない）。</summary>
-    ConvertToUwvz,
+    /// <summary>差し込まれた変換で開く（<see cref="CompressedOpenDialog.ConverterAvailable"/> が立っているときだけ）。</summary>
+    Convert,
 }
 
 /// <summary>
 /// 圧縮ファイル（gz / zip）を開くときの方式選択。
 ///
-/// 「テキストに展開して開く」は無料の基本機能——`gunzip` してから開く手作業を1クリックにする。
-/// 「.uwvz に変換して開く」は Pro 機能（平文を一度も作らないのでディスクが約1/9・次回は瞬時）。
+/// 「テキストに展開して開く」は基本機能——`gunzip` してから開く手作業を1クリックにする。
 ///
-/// Pro 行は<b>公開リポジトリ側には実装を持たない</b>。UVP が起動時に
-/// <see cref="ProConverterAvailable"/> を立てるまでは、行はグレーアウトのまま
-/// クリックで Pro 案内を出す（UVF ビルドと未購入時はここに留まる）。
+/// 2つ目の行は<b>ここには実装を持たない</b>。呼び手が起動時に
+/// <see cref="ConverterAvailable"/> を立て、<see cref="ConverterLabel"/> を入れるまでは、
+/// 行はグレーアウトのまま、クリックで有料版の案内を出す。
 /// </summary>
 public static class CompressedOpenDialog
 {
-    /// <summary>
-    /// Pro の「.uwvz へ直接変換」が使えるか。UVP が起動時に設定する
-    /// （ライセンスが閲覧可のときだけ true）。公開版は常に false。
-    /// </summary>
-    public static Func<bool>? ProConverterAvailable { get; set; }
+    /// <summary>差し込まれた変換が使えるか（呼び手が起動時に設定する。null なら使えない）。</summary>
+    public static Func<bool>? ConverterAvailable { get; set; }
 
-    /// <summary>Pro 案内を開く（UVP 未購入時の案内。公開版は購入ページ）。</summary>
-    public static Action? ShowProInfo { get; set; }
+    /// <summary>
+    /// 2つ目の行の見出しと説明（日本語・英語）。null なら製品名だけの案内を出す。
+    /// </summary>
+    public static (string Ja, string En, string DetailJa, string DetailEn)? ConverterLabel { get; set; }
+
+    /// <summary>有料版の案内を開く（グレーアウトした行を押したとき）。</summary>
+    public static Action? ShowUpgradeInfo { get; set; }
 
     /// <summary>前回選んだ方式（設定から復元して次回の既定にする）。</summary>
     public static CompressedOpenMethod LastChoice { get; set; } = CompressedOpenMethod.Expand;
@@ -53,16 +54,16 @@ public static class CompressedOpenDialog
     internal static Action<string>? NoticeOverride { get; set; }
 
     /// <summary>
-    /// 同じ差し替えを UVP 側のテストからも使うための口（別アセンブリなので internal では届かない）。
+    /// 同じ差し替えを別のアセンブリのテストからも使うための口（internal では届かない）。
     /// </summary>
-    public static Action<string>? NoticeOverrideForPro
+    public static Action<string>? NoticeOverridePublic
     {
         get => NoticeOverride;
         set => NoticeOverride = value;
     }
 
-    /// <summary>方式選択の差し替え（UVP 側のテスト用）。</summary>
-    public static Func<string, CompressedKind, Task<CompressedOpenMethod>>? AskOverrideForPro
+    /// <summary>方式選択の差し替え（別のアセンブリのテスト用）。</summary>
+    public static Func<string, CompressedKind, Task<CompressedOpenMethod>>? AskOverridePublic
     {
         get => AskOverride;
         set => AskOverride = value;
@@ -143,8 +144,8 @@ public static class CompressedOpenDialog
     public static string OfficeMessage(UwView.Core.OfficeProbe office, string fileName) => office.IsRejected
         ? T(UwView.Core.OfficeDocumentFile.RejectText(office.Reject, fileName, true),
             UwView.Core.OfficeDocumentFile.RejectText(office.Reject, fileName, false))
-        : T($"{fileName}：Word・Excel・PDF を探すのは UwView Pro の機能です（文字を取り出して開きます）。",
-            $"{fileName}: searching Word, Excel and PDF files is a UwView Pro feature (it extracts the text and opens it).");
+        : T(UwView.Core.OfficeDocumentFile.UnsupportedText(fileName, true),
+            UwView.Core.OfficeDocumentFile.UnsupportedText(fileName, false));
 
     /// <summary>展開が最後まで進まなかったときの説明（切り詰め・別形式）。</summary>
     public static string CorruptAfterExpandMessage(string fileName, string format = "gzip") => T(
@@ -172,7 +173,7 @@ public static class CompressedOpenDialog
         if (AskOverride is { } stub) return await stub(fileName, kind);
 
         var result = CompressedOpenMethod.Cancel;
-        bool proOk = ProConverterAvailable?.Invoke() ?? false;
+        bool proOk = ConverterAvailable?.Invoke() ?? false;
 
         var dialog = new Window
         {
@@ -189,13 +190,12 @@ public static class CompressedOpenDialog
               "Writes the decompressed file next to the original, then opens it (same result as running `gunzip` first)."));
         expand.Click += (_, _) => { result = CompressedOpenMethod.Expand; dialog.Close(); };
 
-        var convert = MethodButton(
-            T(".uwvz に変換して開く（Pro）", "Convert to .uwvz and open (Pro)"),
-            T("平文を一度も作らずに圧縮キャッシュへ直接変換します。ディスクは約1/9で、次回からは瞬時に開きます。",
-              "Converts straight into the compressed cache without ever writing the plain text. About 1/9 the disk, and instant to reopen."));
+        var label = ConverterLabel ?? ("有料版（UwView Pro）で開く", "Open with the paid edition, UwView Pro",
+                                       "有料版（UwView Pro）の機能です。", "A feature of the paid edition, UwView Pro.");
+        var convert = MethodButton(T(label.Ja, label.En), T(label.DetailJa, label.DetailEn));
         convert.IsEnabled = proOk;
         if (proOk)
-            convert.Click += (_, _) => { result = CompressedOpenMethod.ConvertToUwvz; dialog.Close(); };
+            convert.Click += (_, _) => { result = CompressedOpenMethod.Convert; dialog.Close(); };
 
         // グレーアウトした行は押せないので、行ごと包んで案内を拾う
         Control convertRow = convert;
@@ -209,9 +209,9 @@ public static class CompressedOpenDialog
                 Padding = new Thickness(14, 10),
                 Foreground = UwView.Services.ThemeColors.Get("Uv_8A8A8A", new SolidColorBrush(Color.FromRgb(0x8A, 0x8A, 0x8A))),
             };
-            ToolTip.SetTip(upsell, T("UwView Pro の機能です（クリックで案内）",
-                                     "A UwView Pro feature — click for details"));
-            upsell.Click += (_, _) => ShowProInfo?.Invoke();
+            ToolTip.SetTip(upsell, T("有料版（UwView Pro）の機能です（クリックで案内）",
+                                     "A feature of the paid edition, UwView Pro — click for details"));
+            upsell.Click += (_, _) => ShowUpgradeInfo?.Invoke();
             convertRow = upsell;
         }
 
@@ -235,7 +235,7 @@ public static class CompressedOpenDialog
             Text = head, TextWrapping = TextWrapping.Wrap,
             Foreground = UwView.Services.ThemeColors.Text, FontWeight = FontWeight.Bold,
         });
-        // Pro が使えるときは「.uwvz に変換」を上（＝既定の勧め）に置く
+        // 差し込まれた変換が使えるときは、それを上（＝既定の勧め）に置く
         if (proOk) { body.Children.Add(convertRow); body.Children.Add(expand); }
         else { body.Children.Add(expand); body.Children.Add(convertRow); }
         body.Children.Add(new StackPanel

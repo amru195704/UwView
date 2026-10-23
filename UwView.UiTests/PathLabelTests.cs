@@ -79,15 +79,17 @@ public class PathLabelTests : IDisposable
         finally { window.Close(); }
     }
 
-    /// <summary>取り出した索引（report.pdf.uwvz）の［アプリで開く］は、隣の元のファイル（report.pdf）を開く。元が無ければ押せない。</summary>
+    /// <summary>別のファイルから作ったもの（OriginalOf で見分ける）の［アプリで開く］は、隣の元のファイルを開く。元が無ければ押せない。</summary>
     [AvaloniaFact]
-    public void 索引のアプリで開くは元のファイルを開き元が無ければ押せない()
+    public void 作ったファイルのアプリで開くは元のファイルを開き元が無ければ押せない()
     {
         string dir = Path.Combine(Path.GetTempPath(), "uvf-actions-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(dir);
         try
         {
-            string pdf = Path.Combine(dir, "report.pdf"), index = pdf + ".uwvz", bundle = Path.Combine(dir, "uw-x.uwvz");
+            const string ext = ".pathlabel-derived";   // このテストだけの拡張子
+            FileActions.OriginalOf = p => p.EndsWith(ext, StringComparison.Ordinal) ? p[..^ext.Length] : null;
+            string pdf = Path.Combine(dir, "report.pdf"), index = pdf + ext, bundle = Path.Combine(dir, "uw-x" + ext);
             File.WriteAllText(pdf, "%PDF-1.7");
             File.WriteAllText(index, "x");
             File.WriteAllText(bundle, "x");
@@ -98,6 +100,6 @@ public class PathLabelTests : IDisposable
             Assert.Null(only.AppTargetPath);
             Assert.False(new FileActionsPanel(Path.Combine(dir, "gone.log"), Path.Combine(dir, "gone.log")).AppEnabled);
         }
-        finally { Directory.Delete(dir, recursive: true); }
+        finally { FileActions.OriginalOf = null; Directory.Delete(dir, recursive: true); }
     }
 }

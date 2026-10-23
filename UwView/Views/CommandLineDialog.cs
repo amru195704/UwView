@@ -19,9 +19,9 @@ using UwView.ViewModels;
 namespace UwView.Views;
 
 /// <summary>
-/// 「コマンドライン」ダイアログ（v1.8.0 Finder Scope §3）。uvf／uvp のコマンドと同じ書き方で、
+/// 「コマンドライン」ダイアログ（v1.8.0 Finder Scope §3）。コマンドと同じ書き方で、
 /// ファイル指定パターンと検索パターンを入れて実行する。<b>開いたまま本体を操作できる</b>（モードレス・1 つの窓に 1 つ）。
-/// 中身は <see cref="CommandLineViewModel"/>、uvf と uvp の違いは <see cref="ICommandLineBackend"/>。
+/// 中身は <see cref="CommandLineViewModel"/>、コマンドごとの違いは <see cref="ICommandLineBackend"/>。
 /// </summary>
 public sealed class CommandLineDialog : Window
 {
@@ -178,7 +178,7 @@ public sealed class CommandLineDialog : Window
         _summary = new TextBlock { Name = "CmdFilesSummary", Foreground = UwView.Services.ThemeColors.Text, TextWrapping = TextWrapping.Wrap,
                                    Margin = new Thickness(2, 6, 0, 0) };
         _status = new TextBlock { Name = "CmdStatus", Foreground = UwView.Services.ThemeColors.Text, VerticalAlignment = VerticalAlignment.Center };
-        // Keep（元ファイルが減った）のときだけ出す。前の索引は .bak-日時 に退避してから作り直す（コマンドの --rebuild と同じ）
+        // バックエンドが［作り直す…］を出すと決めたときだけ出す（中身はバックエンドに任せる）
         _rebuild = MakeButton("CmdRebuildButton", L["CmdRebuild"], L["TipCmdRebuild"]);
         _rebuild.Margin = new Thickness(0, 6, 0, 0);
         _rebuild.Click += async (_, _) => await RebuildAsync();

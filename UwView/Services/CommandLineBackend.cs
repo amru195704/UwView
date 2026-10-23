@@ -9,7 +9,7 @@ using UwView.Core.Cli;
 namespace UwView.Services;
 
 /// <summary>［ファイル展開］の一覧の 1 行。</summary>
-/// <param name="Label">番号（開いたあとの行番号欄・ファイル一覧の番号と同じ。uvp の zip の中は <c>n-m</c>）。</param>
+/// <param name="Label">番号（開いたあとの行番号欄・ファイル一覧の番号と同じ）。</param>
 /// <param name="Name">基準フォルダーからの相対パス（書いたとおり）。</param>
 /// <param name="FullPath">絶対パス（ツールチップ）。</param>
 /// <param name="Size">大きさ（読めなければ null）。</param>
@@ -20,8 +20,8 @@ public sealed record CommandFileRow(string Label, string Name, string FullPath, 
 /// <param name="Notices">広げたときの知らせ（当たらなかった断片・除外の本数・多すぎる本数など。コマンドの標準エラーと同じ言葉）。</param>
 /// <param name="Ignored">除外したファイル・フォルダーの数。</param>
 /// <param name="IgnoredNames">除外したものの名前（分かる範囲で）。</param>
-/// <param name="Index">束ねる前の予告（uvp で複数ファイルのとき。Reuse・Append・Rebuild・Keep・新規。§3.3）。</param>
-/// <param name="OffersRebuild">［作り直す…］を出すか（Keep のとき）。</param>
+/// <param name="Index">走らせる前の予告（バックエンドが出すとき。§3.3）。</param>
+/// <param name="OffersRebuild">［作り直す…］を出すか（バックエンドが決める）。</param>
 public sealed record CommandFileList(IReadOnlyList<CommandFileRow> Rows, IReadOnlyList<string> Notices, int Ignored,
                                      IReadOnlyList<string> IgnoredNames, string? Index = null, bool OffersRebuild = false);
 
@@ -46,30 +46,28 @@ public sealed record CommandRunResult(int ExitCode, Func<Task>? ShowInGui = null
 public sealed record CommandSavePlan(IReadOnlyList<string> Argv, bool WritesItself);
 
 /// <summary>
-/// 「コマンドライン」ダイアログ（v1.8.0 Finder Scope）の、uvf と uvp で違う所。画面は共通で、解釈・展開・実行をここに任せる。
+/// 「コマンドライン」ダイアログ（v1.8.0 Finder Scope）の、コマンドごとに違う所。画面は共通で、解釈・展開・実行をここに任せる。
 /// <b>新しい検索の処理は作らない</b>——コマンドの部品（解釈・展開・判定・実行）をそのまま呼ぶ（§7）。
 /// </summary>
 public interface ICommandLineBackend
 {
-    /// <summary>コマンドの名前（<c>uvf</c>・<c>uvp</c>）。コマンドの行の先頭に出す。</summary>
+    /// <summary>コマンドの名前（<c>uvf</c> など）。コマンドの行の先頭に出す。</summary>
     string Tool { get; }
 
     /// <summary>検索パターンがファイルを取らないもの（<c>--help</c> <c>--version</c> <c>--tune</c>）か。</summary>
     bool TakesNoFile(IReadOnlyList<string> searchArgs);
 
-    /// <summary>検索パターンの先頭に書くと、ファイルより前に置く語か（uvp の <c>convert</c> <c>cat</c> <c>search</c>）。</summary>
+    /// <summary>検索パターンの先頭に書くと、ファイルより前に置く語か（既定は無し）。</summary>
     bool IsSubcommand(string word) => false;
 
     /// <summary>
-    /// 検索パターンに検索語も段も無いときの引数（§4「検索語なし」）。uvf は一覧だけ（<c>--files</c>）、
-    /// uvp は束ねて（1 本ならそのまま）開くだけ（先頭の <c>-open</c>）。
+    /// 検索パターンに検索語も段も無いときの引数（§4「検索語なし」）。uvf は一覧だけ（<c>--files</c>）。
     /// </summary>
     IReadOnlyList<string> WithoutSearch(string file);
 
     /// <summary>
     /// 走らせる前の支度（UI のスレッドで呼ぶ。尋ねることがあればここで尋ねる）。
-    /// uvp は、束ねる索引を基準フォルダーに置けないとき保存先を尋ね（§6）、既にある <c>-out</c> 先は上書きしてよいか、
-    /// <c>--rebuild</c> は作り直してよいかを尋ねる（§5.1）。
+    /// 上書きなどの確認はここで尋ねる（§5.1・§6）。
     /// 書き換えた引数を返す（上書きの確認で「はい」なら <c>--force</c> を足す など）。null なら走らせない。
     /// </summary>
     Task<IReadOnlyList<string>?> PrepareAsync(IReadOnlyList<string> argv, string baseFolder, bool japanese)
@@ -78,7 +76,7 @@ public interface ICommandLineBackend
     /// <summary>［保存…］で、この引数の結果を path に書く走らせ方（無ければ出力欄をそのまま写す）。</summary>
     CommandSavePlan? SavePlan(IReadOnlyList<string> argv, string path) => null;
 
-    /// <summary>書き方の誤り（コマンドと同じ言葉）。無料版で Pro の書き方を書いたときの案内もここ。無ければ null。</summary>
+    /// <summary>書き方の誤り（コマンドと同じ言葉）。この版で使えない書き方の案内もここ。無ければ null。</summary>
     (string Ja, string En)? Check(IReadOnlyList<string> argv);
 
     /// <summary>ファイル指定パターンを広げる（作業フォルダーは呼び手が基準フォルダーにしてある）。</summary>
@@ -93,7 +91,7 @@ public interface ICommandLineBackend
                                     bool toWindow = true);
 }
 
-/// <summary>ファイル一覧を作る共通の手順（uvf・uvp とも、番号は広げた順）。</summary>
+/// <summary>ファイル一覧を作る共通の手順（番号は広げた順）。</summary>
 public static class CommandFileLists
 {
     public static CommandFileList From(FileSet.Result found, bool japanese, string tool)

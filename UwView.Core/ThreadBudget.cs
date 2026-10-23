@@ -17,11 +17,8 @@ public static class ThreadBudget
     /// <summary>設定ファイルのキー名（画面の設定と同じ名前）。</summary>
     public const string SettingsKey = "MaxThreads";
 
-    /// <summary>uvf 側の環境変数名。</summary>
+    /// <summary>uvf の環境変数名（ほかの入口は自分の名前を <see cref="Resolve(string?, int, Action{string}?)"/> へ渡す）。</summary>
     public const string FreeEnvironmentVariable = "UVF_MAX_THREADS";
-
-    /// <summary>uvp 側の環境変数名。</summary>
-    public const string ProEnvironmentVariable = "UVP_MAX_THREADS";
 
     /// <summary>この機械の論理プロセッサ数（上限）。テストで差し替えられる。</summary>
     public static int LogicalProcessors { get; set; } = Environment.ProcessorCount;
@@ -42,11 +39,6 @@ public static class ThreadBudget
         }
         return configured > 0 ? Clamp(configured, warn) : Clamp(Default, warn: null);
     }
-
-    /// <summary>環境変数と設定ファイルから決める（CLI 用の入口）。</summary>
-    public static int Resolve(bool pro, string appDataFolder, Action<string>? warn = null)
-        => Resolve(Environment.GetEnvironmentVariable(pro ? ProEnvironmentVariable : FreeEnvironmentVariable),
-                   Cli.CliSettings.ReadInt(appDataFolder, SettingsKey, 0), warn);
 
     private static int Clamp(int value, Action<string>? warn)
     {

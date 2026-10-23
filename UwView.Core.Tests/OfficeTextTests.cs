@@ -5,7 +5,7 @@ namespace UwView.Core.Tests;
 /// <summary>Word・Excel・PDF の見分けと文字の取り出し（v1.8.3 extFS E-5。指示書 §6.1・§9-3・§9-4）。</summary>
 public class OfficeTextTests : IDisposable
 {
-    private readonly string _dir = Path.Combine(Path.GetTempPath(), "uvp-office-" + Guid.NewGuid().ToString("N"));
+    private readonly string _dir = Path.Combine(Path.GetTempPath(), "uvf-office-" + Guid.NewGuid().ToString("N"));
 
     public OfficeTextTests() => Directory.CreateDirectory(_dir);
 

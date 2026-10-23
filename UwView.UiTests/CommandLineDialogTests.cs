@@ -69,8 +69,8 @@ public class CommandLineDialogTests : IDisposable
     }
 
     [Theory]
-    [InlineData("a.log", "ERROR -uniq", "-uniq は UwView Pro の機能です")]
-    [InlineData("a.log", "ERROR -out x.txt", "-out は UwView Pro の機能です")]
+    [InlineData("a.log", "ERROR -uniq", "-uniq は有料版（UwView Pro）の機能です")]
+    [InlineData("a.log", "ERROR -out x.txt", "-out は有料版（UwView Pro）の機能です")]
     [InlineData("a.log", "ERROR extra words", "ファイルと検索パターンを1つずつ指定してください")]   // uvf と同じ言葉
     [InlineData("a.log", "'ERROR", "引用符 ' が閉じていません")]
     [InlineData("", "ERROR", "ファイルを指定してください")]

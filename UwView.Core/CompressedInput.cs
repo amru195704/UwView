@@ -135,7 +135,7 @@ public static class CompressedInput
 
     /// <summary>
     /// 読み込み済みの先頭だけで「ただの平文」と決まるなら <see cref="CompressedProbe.Plain"/>、決まらなければ null
-    /// （そのときは <see cref="Probe"/> で確かめる）。たくさんのファイルを束ねるとき、1本につき開くのを1回で済ませる。
+    /// （そのときは <see cref="Probe"/> で確かめる）。もう読んである先頭を使い回し、ファイルを開き直さないための近道。
     /// </summary>
     public static CompressedProbe? PlainFromHead(string path, ReadOnlySpan<byte> head)
     {

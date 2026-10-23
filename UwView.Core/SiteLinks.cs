@@ -3,8 +3,7 @@ using System;
 namespace UwView.Core;
 
 /// <summary>
-/// UwView 公式サイト・外部リンクの URL を集約（UVF/UVP 共有）。
-/// 指示書 2-ops/管理部/指示書_UVF-UVP_アプリ内ヘルプに公式サイトリンク追加.md（2026-07-20）。
+/// UwView 公式サイト・外部リンクの URL を集約（2026-07-20）。
 ///
 /// サイトは日英2言語。英語ページは <c>/en/&lt;slug&gt;-en/</c> に実在するので、
 /// アプリの表示言語に合わせて <see cref="For"/> で選ぶ（英語UIから日本語ページへ飛ばさない）。
@@ -28,9 +27,9 @@ public static class SiteLinks
     public const string Support = "https://uvp.y42u.net/support/";
     public const string SupportEn = "https://uvp.y42u.net/en/support-en/";
 
-    /// <summary>Pro 版の紹介。</summary>
-    public const string Pro = "https://uvp.y42u.net/pro/";
-    public const string ProEn = "https://uvp.y42u.net/en/pro-en/";
+    /// <summary>有料版の紹介。</summary>
+    public const string PaidEdition = "https://uvp.y42u.net/pro/";
+    public const string PaidEditionEn = "https://uvp.y42u.net/en/pro-en/";
 
     /// <summary>ダウンロード。</summary>
     public const string Download = "https://uvp.y42u.net/download/";
@@ -71,7 +70,7 @@ public static class SiteLinks
     public static string AboutLink => Pick(About, AboutEn);
     public static string HelpLink => Pick(Help, HelpEn);
     public static string SupportLink => Pick(Support, SupportEn);
-    public static string ProLink => Pick(Pro, ProEn);
+    public static string PaidEditionLink => Pick(PaidEdition, PaidEditionEn);
     public static string DownloadLink => Pick(Download, DownloadEn);
     public static string PrivacyLink => Pick(Privacy, PrivacyEn);
     public static string GitHubRepoLink => Pick(GitHubRepo, GitHubRepoEn);

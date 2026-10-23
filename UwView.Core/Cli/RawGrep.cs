@@ -68,8 +68,8 @@ public static class RawGrep
     /// （9.18修正「-open が最後にある場合、検索時に index も同時に作成する」）。
     /// </param>
     /// <param name="observer">
-    /// 読んだバイトを<b>順番どおり・隙間なく</b>受け取る係（Pro の CLI が .uwvz を同時に作るのに使う）。
-    /// 一度渡したところをもう一度渡すことはある（受け手が重なりを捨てる約束。<c>SidecarAppender</c> と同じ規約）。
+    /// 読んだバイトを<b>順番どおり・隙間なく</b>受け取る係（検索のついでに別の処理へ流すとき）。
+    /// 一度渡したところをもう一度渡すことはある（受け手が重なりを捨てる約束）。
     /// </param>
     /// <param name="prepared">
     /// 検索の準備（正規表現・手がかり）。多数ファイルの検索は 1 つ作って全ファイルに渡す
@@ -80,7 +80,7 @@ public static class RawGrep
         LineSink sink, CancellationToken ct = default, IndexMarks? index = null,
         LongLine.Observer? observer = null, PreparedSearch? prepared = null)
     {
-        // 判定の道具立て（探し方は SearchService・uvp と同じところで決める）
+        // 判定の道具立て（探し方は SearchService と同じところで決める）
         var plan = (prepared ?? PreparedSearch.Create(options)).For(encoding);
         bool literal = plan.IsLiteral;
         Regex? regex = literal ? null : plan.Prepared.RentRegex();   // 多数ファイルの作業役どうしで Regex を共有しない

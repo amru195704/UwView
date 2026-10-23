@@ -7,7 +7,7 @@ using Avalonia.Styling;
 namespace UwView.Services;
 
 /// <summary>
-/// 自前で描く部品（本文・ミニマップ・結果の一覧・Pro の編集）が使う色（v1.8.2 extFS E-4）。
+/// 自前で描く部品（本文・ミニマップ・結果の一覧など）が使う色（v1.8.2 extFS E-4）。
 /// 値は Themes/Palette.axaml（ライト／ダーク）。テーマが替わったら <see cref="Changed"/> で描き直す。
 /// </summary>
 public static class ThemeColors

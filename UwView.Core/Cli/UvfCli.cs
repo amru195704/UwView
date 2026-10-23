@@ -32,7 +32,7 @@ public sealed record UvfInvocation(UvfMode Mode, string? File, string? Pattern,
                                    bool Json = false, bool? FileNames = null, bool ListFiles = false,
                                    IgnoreOptions? Ignore = null, bool Raw = false);
 
-/// <summary>終了コード（grep 互換。UwView Pro の uvp と同じ）。</summary>
+/// <summary>終了コード（grep 互換）。</summary>
 public static class UvfExit
 {
     public const int Found = 0;
@@ -52,7 +52,7 @@ public sealed class UvfEnvironment
     /// <summary>
     /// -open のとき、CLI が見つけた結果を書いたファイル（<see cref="CliHandoff"/>）。
     /// <see cref="LaunchGui"/> はこれが入っていれば GUI へ一緒に渡す（画面が検索し直さずに済む）。
-    /// UwView Pro の uvp は自前の受け渡しを持っているので、こちらは見ない。
+    /// 自前の受け渡しを持つ呼び手は、ここを見なくてよい。
     /// </summary>
     public string? HandoffPath { get; set; }
 
@@ -67,7 +67,7 @@ public sealed class UvfEnvironment
 
     public bool Japanese { get; init; } = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ja";
 
-    /// <summary><c>--version</c> で出す版数（本体が渡す。uvp と同じ形で出す）。</summary>
+    /// <summary><c>--version</c> で出す版数（本体が渡す）。</summary>
     public string AppVersion { get; init; } = "";
 
     /// <summary><c>--version</c> で版数の後ろに出すビルド番号（画面の About と同じ値。無ければ出さない）。</summary>
@@ -79,24 +79,23 @@ public sealed class UvfEnvironment
     /// </summary>
     public CompiledRegexRoute.ExpandedInput? Expanded { get; init; }
 
-    /// <summary>設定ファイルの置き場（<c>--tune --apply</c> の保存先）。uvp は自分のフォルダを渡す。</summary>
+    /// <summary>設定ファイルの置き場（<c>--tune --apply</c> の保存先）。別の設定フォルダを持つ呼び手はそれを渡す。</summary>
     public string SettingsFolder { get; init; } = CliLanguage.FreeSettingsFolder;
 
     /// <summary>
     /// <c>--tune</c> が1回ぶんの走査に使う処理（null なら平文の走査＝無料版の経路）。
-    /// uvp は <c>.uwvz</c> の検索を渡す（本番と同じ経路で測らないと勧める本数がずれる）。
+    /// 別の経路で探す呼び手はその処理を渡す（本番と同じ経路で測らないと勧める本数がずれる）。
     /// </summary>
     public TuneRunner.Scan? TuneScan { get; init; }
 
     /// <summary><c>--tune</c> で測った経路の呼び名（表示用）。</summary>
     public string TuneScanName { get; init; } = "";
 
-    /// <summary>媒体から読む量に対する走査量の倍率（<c>.uwvz</c> は約9倍。平文は 1）。</summary>
+    /// <summary>媒体から読む量に対する走査量の倍率（平文は 1。圧縮したものを読む経路なら 1 より大きい）。</summary>
     public double TuneMediumRatio { get; init; } = 1;
 
     /// <summary>
-    /// 表示に使うコマンド名。UwView Pro の uvp も、ライセンスが無いときはこの2つの形で動く
-    /// （画面の未購入時が無料版と同じ動きなのに合わせる）ので、その場合は "uvp" と名乗る。
+    /// 表示に使うコマンド名（既定は "uvf"）。同じ動きを別の名前のコマンドから使うときは、その名前を入れる。
     /// </summary>
     public string ToolName { get; init; } = "uvf";
 }
@@ -115,10 +114,16 @@ public sealed class UvfEnvironment
 /// 検索は GUI と同じ <see cref="DocumentSession.StartSearchAsync"/>（大文字小文字を区別する、
 /// 正規表現ではない普通の検索）。GUI で開くときも GUI 側で同じ検索をやり直すので、結果は一致する。
 ///
-/// 絞り込み・集計などの段、.uwvz の読み書きは UwView Pro（uvp）の機能で、ここには無い。
+/// ここにある機能は上の2つの形だけ。
 /// </summary>
 public static class UvfCli
 {
+    /// <summary>
+    /// 1 本のファイルを探す前に断る判定（既定は null＝断らない）。断るときは日本語・英語の文を返す。
+    /// 呼び手が、この CLI では扱わない種類のファイルを起動時に登録する。
+    /// </summary>
+    public static Func<string, (string Ja, string En)?>? RejectFile { get; set; }
+
     /// <summary>索引の目印の間隔（画面の既定と同じ。<see cref="LineDocument"/> の blockLines）。</summary>
     private const int IndexBlockLines = 256;
 
@@ -167,7 +172,7 @@ public static class UvfCli
             出力は「ファイル名:行番号<TAB>本文」。並びは指定した順です
             uvf -open '*.log' ERROR        結果を画面で見る（ダブルクリックで元のファイルのその行へ）
               行番号欄は「ファイル番号:行番号」。番号と実ファイルの対応は画面の「ファイル一覧」で見られます
-              元のファイルを開き直してから移るので、大きいファイルは少し待ちます（uvp は束ねた索引ですぐ移ります）
+              元のファイルを開き直してから移るので、大きいファイルは少し待ちます
             zip は対象外です（1つずつ展開してから探してください）
             ワイルドカードで広げたファイルのうち、.ignore・.gitignore に当たるものは探しません
             （ripgrep と同じ規則。名前を書いたファイルは除外しません。詳しくは uvf --help files）
@@ -175,13 +180,12 @@ public static class UvfCli
           入力の種類（拡張子で見分けます。.gz なのに中身が gzip でなければ知らせます）:
             gz           展開しながら探します（1つでも、複数ファイルに混ぜても）
             bz2 xz lzma zst lz4 br  同じく展開しながら探します（外部コマンドは使いません）
-            zip          扱えません（展開してから探してください。zip は UwView Pro が扱います）
-            pbf          扱えません（OSM の pbf は UwView Pro が XML にして扱います）
+            zip          扱えません（展開してから探してください。この形式は有料版（UwView Pro）で扱えます）
+            pbf          扱えません（OSM の pbf。この形式は有料版（UwView Pro）で扱えます）
             docx xlsx pdf Word・Excel・PDF。文字を取り出しながら探します（元の形式には書き出しません）
                          Word：段落を 1 行ずつ・表は 1 行をセルのタブ区切りで・脚注とコメントは [脚注] [コメント] を付けて
                          Excel：シート名!行番号<TAB>セル<TAB>…（表示されている値。--raw で元の値）
                          PDF：## page N のあとにページの行（画像だけの PDF・パスワード付き・.doc・.xls は断ります）
-            .uwvz        扱えません（UwView Pro のファイルです）
             tar.gz       扱えません（複数ファイルをまとめた tar のため。展開してから探してください）
             それ以外      テキストとして扱います
 
@@ -224,7 +228,7 @@ public static class UvfCli
             Output is "file:line<TAB>text", in the order you wrote them.
             uvf -open '*.log' ERROR        see the results in the app (double-click to go to that line of the file)
               The line column shows "file number:line"; the app's file list maps numbers to files.
-              The file is reopened before moving, so large files take a moment (uvp moves at once in its bundled index).
+              The file is reopened before moving, so large files take a moment.
             zip files are not searched (extract them first).
             Files found by wildcards are skipped when .ignore / .gitignore exclude them
             (the same rules as ripgrep; files you name are never excluded; see uvf --help files).
@@ -232,13 +236,12 @@ public static class UvfCli
           Input types (decided by the file extension; a .gz that is not gzip is reported):
             gz           searched while decompressing (alone or mixed with plain files)
             bz2 xz lzma zst lz4 br  the same, decompressed here (no external command is used)
-            zip          not supported (extract it first; UwView Pro handles zip)
-            pbf          not supported (UwView Pro turns OSM pbf into XML)
+            zip          not supported (extract it first; the paid edition, UwView Pro, supports this format)
+            pbf          not supported (OSM pbf; the paid edition, UwView Pro, supports this format)
             docx xlsx pdf Word, Excel, PDF; the text is extracted while searching (never written back)
                          Word: one line per paragraph; a table row is one line with tab-separated cells; footnotes and
                          comments follow with a prefix. Excel: sheet!row<TAB>cell<TAB>… (displayed values; --raw for the
                          stored ones). PDF: ## page N, then the page's lines (image-only, password-protected, .doc and .xls are refused)
-            .uwvz        not supported (it is a UwView Pro file)
             tar.gz       not supported (a tar bundles several files; extract it first)
             anything else treated as text
 
@@ -279,7 +282,7 @@ public static class UvfCli
         if (args.Contains("-open"))
             return (null, "-open は先頭か末尾に書いてください", "Put -open at the start or at the end");
 
-        // 検索の指定（uvp と同じ綴り）。同じものを2回書いても害はないので黙って受ける
+        // 検索の指定。同じものを2回書いても害はないので黙って受ける
         bool icase = false, regex = false, invert = false, json = false, listFiles = false, raw = false;
         bool? fileNames = null;
         for (int i = args.Count - 1; i >= 0; i--)
@@ -293,7 +296,7 @@ public static class UvfCli
                 case "-H": fileNames = true; break;    // 常にファイル名を付ける（grep と同じ）
                 case "-h": fileNames = false; break;   // 常に付けない（同上）
                 case "--files": listFiles = true; break;
-                case "--raw": raw = true; break;       // Excel のセルを元の値で（v1.8.3.2。uvp と同じ）
+                case "--raw": raw = true; break;       // Excel のセルを元の値で（v1.8.3.2）
                 default: continue;
             }
             args.RemoveAt(i);
@@ -303,7 +306,7 @@ public static class UvfCli
         if (listFiles && args.Count == 1)
             return (new UvfInvocation(UvfMode.Search, args[0], null, ListFiles: true, Ignore: ignore), null, null);
 
-        // シェルが展開してしまった形（uvf a.log b.log c.log 語）。黙って受けると .uwvz の名前が決まらない
+        // シェルが展開してしまった形（uvf a.log b.log c.log 語）。黙って受けると指定 (A) が分からない
         //（指示書 §2.2b）。引用符で囲むよう促す
         if (args.Count > 2 && args.Take(args.Count - 1).All(File.Exists))
             return (null,
@@ -344,7 +347,7 @@ public static class UvfCli
             return UvfExit.Found;
         }
 
-        // --version / --help（uvp と同じ綴り。無かったので入れた。9.21修正）
+        // --version / --help（無かったので入れた。9.21修正）
         if (argv.Count == 1)
         {
             switch (argv[0])
@@ -428,11 +431,9 @@ public static class UvfCli
             Err(T($"ファイルが見つかりません: {inv.File}", $"File not found: {inv.File}"));
             return UvfExit.Error;
         }
-        if (many is null && inv.File is not null
-            && inv.File.EndsWith(".uwvz", StringComparison.OrdinalIgnoreCase))
+        if (many is null && inv.File is not null && RejectFile?.Invoke(inv.File) is { } rejected)
         {
-            Err(T(".uwvz は UwView Pro のファイルです（無料版では開けません）",
-                  ".uwvz files belong to UwView Pro (the free edition cannot open them)"));
+            Err(T(rejected.Ja, rejected.En));
             return UvfExit.Error;
         }
         if (inv.Pattern is { Length: 0 })
@@ -503,13 +504,11 @@ public static class UvfCli
         }
         if (many is null && officeKind == OfficeKind.None)
         {
-            // pbf は UwView Pro の役目。テキストとして走査すると「1件も無い」と答えてしまう
+            // pbf はここでは探さない。テキストとして走査すると「1件も無い」と答えてしまう
             if (OsmPbfFile.Is(inv.File!))
             {
-                Err(T($"{Path.GetFileName(inv.File!)} は OSM の pbf です。UwView Pro（uvp）が扱います: "
-                      + $"uvp {inv.File} 語",
-                      $"{Path.GetFileName(inv.File!)} is an OSM pbf file; UwView Pro (uvp) handles it: "
-                      + $"uvp {inv.File} pattern"));
+                Err(T($"{Path.GetFileName(inv.File!)} は OSM の pbf です。この形式は有料版（UwView Pro）で扱えます",
+                      $"{Path.GetFileName(inv.File!)} is an OSM pbf file; the paid edition, UwView Pro, supports this format"));
                 return UvfExit.Error;
             }
             var probe = CompressedInput.Probe(inv.File!);
@@ -640,7 +639,7 @@ public static class UvfCli
                                                    CancellationToken ct)
     {
         // .gz は展開しながら探す（段階5・9.23修正「uvf でも '*.log,*.gz' を」）。
-        // zip（複数エントリは uvp のみ）と、受け付けないもの（tar.gz など）は<b>黙って素通りさせず</b>、
+        // zip と、受け付けないもの（tar.gz など）は<b>黙って素通りさせず</b>、
         // 名指しして外す——平文として走査すると1件も当たらず「エラーは無い」と誤読させる
         int requested = files.Count;     // 名前を前に付けるかは<b>指定が何件に当たったか</b>で決める
         var compressed = new List<string>();
@@ -654,8 +653,8 @@ public static class UvfCli
             if (looks[i].Pbf)
             {
                 compressed.Add(file);
-                env.StdErr.WriteLine(t($"{env.ToolName}: pbf は対象外です（UwView Pro が扱います）: {file}",
-                                       $"{env.ToolName}: pbf files are not searched (UwView Pro handles them): {file}"));
+                env.StdErr.WriteLine(t($"{env.ToolName}: pbf は対象外です（この形式は有料版（UwView Pro）で扱えます）: {file}",
+                                       $"{env.ToolName}: pbf files are not searched (the paid edition, UwView Pro, supports this format): {file}"));
                 continue;
             }
             if (looks[i].Office is { IsRejected: true } rejectedOffice)
@@ -711,8 +710,8 @@ public static class UvfCli
             compressed.Add(file);
             env.StdErr.WriteLine(office.IsOffice ? $"{env.ToolName}: {OfficeNotice(office, file, t)}"
                 : pbf
-                ? t($"{env.ToolName}: pbf は対象外です（UwView Pro が扱います）: {file}",
-                    $"{env.ToolName}: pbf files are not searched (UwView Pro handles them): {file}")
+                ? t($"{env.ToolName}: pbf は対象外です（この形式は有料版（UwView Pro）で扱えます）: {file}",
+                    $"{env.ToolName}: pbf files are not searched (the paid edition, UwView Pro, supports this format): {file}")
                 : probe.Kind == CompressedKind.Zip && !probe.IsRejected
                     ? t($"{env.ToolName}: zip は検索の対象外です（展開してから検索してください）: {file}",
                         $"{env.ToolName}: zip files are not searched (extract them first): {file}")
@@ -790,15 +789,15 @@ public static class UvfCli
     }
 
     /// <summary>
-    /// Word・Excel・PDF の案内（v1.8.3 extFS E-5）。読めるものは「UwView Pro の機能です」、
-    /// 古い形式・パスワード付きは UwView Pro でも読めないので、その理由を出す。
+    /// Word・Excel・PDF の案内（v1.8.3 extFS E-5）。読めるものは「この版では探せない」、
+    /// 古い形式・パスワード付きは読めないので、その理由を出す。
     /// </summary>
     private static string OfficeNotice(OfficeProbe office, string path, Func<string, string, string> t)
     {
         string name = Path.GetFileName(path);
         return office.IsRejected
             ? t(OfficeDocumentFile.RejectText(office.Reject, name, true), OfficeDocumentFile.RejectText(office.Reject, name, false))
-            : t(OfficeDocumentFile.ProOnlyText(name, true), OfficeDocumentFile.ProOnlyText(name, false));
+            : t(OfficeDocumentFile.UnsupportedText(name, true), OfficeDocumentFile.UnsupportedText(name, false));
     }
 
     /// <summary>

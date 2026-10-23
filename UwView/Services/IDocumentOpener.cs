@@ -21,13 +21,13 @@ public interface IDocumentOpener
     DocumentSession? OpenLocalPath(string path);
 
     /// <summary>
-    /// パスを扱える head か（Desktop/Pro は true・Browser は false）。
-    /// 圧縮ファイル（.gz/.zip）は「展開して開く／.uwvz に変換して開く」を尋ねてから開くので、
+    /// パスを扱える head か（Desktop は true・Browser は false）。
+    /// 圧縮ファイル（.gz/.zip）は開き方を尋ねてから開くので、
     /// セッションを作る前にパスを見る必要がある。
     /// </summary>
     /// <remarks>
-    /// <b>既定の実装は持たせない。</b>以前は「空を返す」既定にしていたため、UVP のオープナーが
-    /// 実装し忘れたまま通り、UVP の「開く」ボタンが何もしない状態で配布しかけた（2026-09-14）。
+    /// <b>既定の実装は持たせない。</b>以前は「空を返す」既定にしていたため、別のオープナーが
+    /// 実装し忘れたまま通り、「開く」ボタンが何もしない状態で配布しかけた（2026-09-14）。
     /// 実装し忘れはコンパイルエラーで気づけるようにする。
     /// </remarks>
     bool SupportsPathPicking { get; }

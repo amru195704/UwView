@@ -125,12 +125,12 @@ public sealed class FilterListView : Control
     /// <summary>Delete（Backspace）：選んだ行のブックマークを外す（v1.8.2 extFS E-2）。</summary>
     public event Action? DeleteRequested;
 
-    /// <summary>スクロール位置・サイズが変わった（UVP の矩形選択オーバーレイが追従に使う）。</summary>
+    /// <summary>スクロール位置・サイズが変わった（重ねて描く部品が追従に使う）。</summary>
     public event EventHandler? ScrollChanged;
 
     public double FontSize { get; set; }
 
-    /// <summary>描く本文を書き換える（UVP の「伏せる…」）。</summary>
+    /// <summary>描く本文を書き換える（差し込み用）。</summary>
     public Func<string, string>? TextTransform { get; set; }
 
     public IReadOnlyList<FilterRow>? Rows

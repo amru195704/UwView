@@ -8,7 +8,7 @@ namespace UwView.Views;
 
 /// <summary>
 /// uvf の設定の画面（v1.8.2 extFS E-3 §4.1。メニュー：Windows・Linux は「ツール → 設定…」、Mac はアプリ名の「設定…」・⌘,）。
-/// 中身は Pro の設定の画面と同じ部品（<see cref="KeyBindingsPanel"/> ほか）。以後の設定もここに足す。
+/// 中身は共通の部品（<see cref="KeyBindingsPanel"/> ほか）。以後の設定もここに足す。
 /// </summary>
 public sealed class PreferencesWindow : Window
 {

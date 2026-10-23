@@ -3,7 +3,7 @@
 #
 # 生成物: dist/UwView-<ver>-mac-<arch>.dmg(.app内包) / -linux-<arch>.tar.gz / -win-<arch>.zip
 #         どれにも CLI の uvf を GUI 実行ファイルの隣に入れる。
-#         mac は DMG のみ（UVP に合わせた。zip は作らない）。
+#         mac は DMG のみ（zip は作らない）。
 #         ＋ dist/SHA256SUMS.uwview。バージョンは UwView/UwView.csproj <Version> と一致。
 #
 # 注意: UVF の dist/ はリリース資産としてトラック済みのため、dist 全体は消さない
@@ -11,7 +11,7 @@
 #
 # 署名・公証は環境変数がある時のみ（mac: MAC_SIGN_ID / AC_PROFILE、win: EV は publish-win.ps1）。
 #   MAC_SIGN_ID=9737970DAE0495030DFF12A5BB6B442C62B044F0 \
-#   AC_PROFILE=uwviewpro-notary build/publish.sh osx-arm64 osx-x64
+#   AC_PROFILE=<notarytool のキーチェーンプロファイル名> build/publish.sh osx-arm64 osx-x64
 # 使い方: build/publish.sh [rids...]   既定: osx-arm64 osx-x64 win-x64 win-arm64 linux-x64 linux-arm64
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -129,7 +129,7 @@ pack_mac() { # $1=rid  $2=arch-label
   <!-- Finder の「このアプリケーションで開く」、アイコンへのドラッグ&ドロップ、
        open -a UwView file.log を受けるための宣言。これが無いと Finder が候補に出さない。
        テキストは LSHandlerRank=Alternate（既定のアプリを奪わない）。
-       .uwvz / .uwvhl は自前の形式なので Owner として宣言する。 -->
+       .uwvhl は自前の形式なので Owner として宣言する。 -->
   <key>CFBundleDocumentTypes</key>
   <array>
     <dict>
@@ -155,22 +155,9 @@ pack_mac() { # $1=rid  $2=arch-label
       <key>LSHandlerRank</key><string>Alternate</string>
       <key>LSItemContentTypes</key><array><string>public.data</string></array>
     </dict>
-    <dict>
-      <key>CFBundleTypeName</key><string>UwView Compressed Cache</string>
-      <key>CFBundleTypeRole</key><string>Viewer</string>
-      <key>LSHandlerRank</key><string>Owner</string>
-      <key>LSItemContentTypes</key><array><string>$BUNDLE_ID.uwvz</string></array>
-    </dict>
   </array>
   <key>UTExportedTypeDeclarations</key>
   <array>
-    <dict>
-      <key>UTTypeIdentifier</key><string>$BUNDLE_ID.uwvz</string>
-      <key>UTTypeDescription</key><string>UwView Compressed Cache</string>
-      <key>UTTypeConformsTo</key><array><string>public.data</string></array>
-      <key>UTTypeTagSpecification</key>
-      <dict><key>public.filename-extension</key><array><string>uwvz</string></array></dict>
-    </dict>
     <dict>
       <key>UTTypeIdentifier</key><string>$BUNDLE_ID.uwvhl</string>
       <key>UTTypeDescription</key><string>UwView Highlighter Set</string>
@@ -227,7 +214,7 @@ PLIST
     echo "  ⚠ MAC_SIGN_ID 未設定 → 未署名（配布前に署名・公証が必要）"
   fi
 
-  # 配布物は DMG（UVP と同じ形。Applications へのリンクを置いてドラッグで入れられるようにする）
+  # 配布物は DMG（Applications へのリンクを置いてドラッグで入れられるようにする）
   local out="$OUT/$NAME-$VER-mac-$arch.dmg"
   rm -f "$out"
 

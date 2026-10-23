@@ -1,7 +1,7 @@
 namespace UwView.Core.Cli;
 
 /// <summary>
-/// 除外の設定（<c>--no-ignore</c>・<c>--ignore-file</c>・<c>--no-ignore-files</c>。指示書 WideField v1.7 §12）。uvf・uvp 共通。
+/// 除外の設定（<c>--no-ignore</c>・<c>--ignore-file</c>・<c>--no-ignore-files</c>。指示書 WideField v1.7 §12）。
 /// ripgrep 15 と同じく、<c>--no-ignore</c> は <c>.ignore</c>・<c>.gitignore</c> 類だけを止め、
 /// <c>--ignore-file</c> で足した規則は止めない（止めるのは <c>--no-ignore-files</c>。外部レビュー 2026-09-27 で指摘）。
 /// </summary>
@@ -267,7 +267,7 @@ public sealed class IgnoreFile
 }
 
 /// <summary>
-/// フォルダーごとの除外ファイルを束ね、ripgrep と同じ強さの順で判定する（指示書 §12.1・§12.2）。
+/// フォルダーごとの除外ファイルをまとめ、ripgrep と同じ強さの順で判定する（指示書 §12.1・§12.2）。
 ///
 /// 強さ（先に当たったものが勝つ）: <c>.ignore</c>（深いフォルダーから）→ <c>.gitignore</c>（深いフォルダーから・
 /// git のリポジトリの根まで）→ <c>.git/info/exclude</c> → git の全体設定 → <c>--ignore-file</c>（後に書いたものから）。

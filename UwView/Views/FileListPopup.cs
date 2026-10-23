@@ -19,7 +19,7 @@ using UwView.Services;
 namespace UwView.Views;
 
 /// <summary>ファイル一覧の1行。</summary>
-/// <param name="Label">番号（uvp の zip の中は <c>n-m</c>）。</param>
+/// <param name="Label">番号。</param>
 /// <param name="Name">表示用の名前（相対パスのまま）。</param>
 /// <param name="FullPath">絶対パス（ツールチップに出す。分からなければ null）。</param>
 /// <param name="Hits">当たりの件数（検索していなければ null）。</param>
@@ -27,7 +27,7 @@ namespace UwView.Views;
 public sealed record FileListItem(string Label, string Name, string? FullPath, long? Hits, long? Size);
 
 /// <summary>
-/// ファイル一覧の中身と、行を開いたときの動き。uvf は受け渡しの <c>files[]</c>、uvp は束ねた索引から作る
+/// ファイル一覧の中身と、行を開いたときの動き。受け渡しの <c>files[]</c> などから作る
 /// （実装指示書_uvf複数ファイルGUI表示とタブ §5.1）。
 /// </summary>
 public sealed class FileListSource
@@ -48,11 +48,11 @@ public sealed class FileListSource
 }
 
 /// <summary>
-/// 番号 → 実ファイルの対応表（ファイル一覧）。uvf の複数ファイルの結果と、uvp の束ねた索引の両方から開く。
+/// 番号 → 実ファイルの対応表（ファイル一覧）。複数ファイルの結果から開く。
 ///
 /// 行番号欄には番号しか出せない（名前は長すぎる）ので、対応はここで見せる。
 /// ダブルクリックか Enter で開く。右上の「開く先」で、メイン・追加のタブ・アプリを切り替える。
-/// アプリは、元のファイルを拡張子に合った外部のアプリで開く（.uwvz ではない。2026-10-10 オーナー依頼）。
+/// アプリは、元のファイルを拡張子に合った外部のアプリで開く（2026-10-10 オーナー依頼）。
 /// 行を右クリックすると、共通の操作の窓（フルパス・パスのコピー・フォルダー・ターミナル・アプリ）を出す。
 /// </summary>
 public sealed class FileListPopup : Window
@@ -258,7 +258,7 @@ public sealed class FileListPopup : Window
     }
 
     /// <summary>一覧の中身（自動テスト用）。</summary>
-    internal IReadOnlyList<FileListItem> Items => _source.Items;
+    public IReadOnlyList<FileListItem> Items => _source.Items;
 
     /// <summary>いま出している行の番号（自動テスト用）。</summary>
     internal IReadOnlyList<string> ShownLabels
@@ -272,13 +272,13 @@ public sealed class FileListPopup : Window
     }
 
     /// <summary>その行の右端の印（自動テスト用）。</summary>
-    internal string MarkAt(int index) => _rows[index].Mark;
+    public string MarkAt(int index) => _rows[index].Mark;
 
     /// <summary>「タブ n / 8」の文字（自動テスト用）。</summary>
-    internal string TabCountText => _tabs.Text ?? "";
+    public string TabCountText => _tabs.Text ?? "";
 
     /// <summary>開く先（自動テスト用に外から切り替えられる）。</summary>
-    internal FileListOpenMode Mode
+    public FileListOpenMode Mode
     {
         get => _openApp.IsChecked == true ? FileListOpenMode.App
              : _openTab.IsChecked == true ? FileListOpenMode.Tab : FileListOpenMode.Main;
@@ -286,17 +286,17 @@ public sealed class FileListPopup : Window
     }
 
     /// <summary>開く先がタブか（1.8.3.0 までの「タブで開く」。オフはメイン。自動テスト用）。</summary>
-    internal bool OpenInTab
+    public bool OpenInTab
     {
         get => Mode == FileListOpenMode.Tab;
         set => Mode = value ? FileListOpenMode.Tab : FileListOpenMode.Main;
     }
 
     /// <summary>下の行の知らせ（アプリで開いた・開けなかった。自動テスト用）。</summary>
-    internal string NoticeText => _notice.Text ?? "";
+    public string NoticeText => _notice.Text ?? "";
 
     /// <summary>番号の位置 i の行を開く（ダブルクリック・Enter と同じ。自動テスト用）。</summary>
-    internal void OpenAt(int index)
+    public void OpenAt(int index)
     {
         if (index < 0 || index >= _rows.Count) return;
         _notice.Text = "";
@@ -369,7 +369,7 @@ public sealed class FileListPopup : Window
     }
 
     /// <summary>行の共通の操作の窓の中身（zip の中のファイルは zip!エントリ を出し、アプリでは開かない）。</summary>
-    internal static FileActionsPanel ActionsFor(FileListItem item)
+    public static FileActionsPanel ActionsFor(FileListItem item)
     {
         string file = item.FullPath!;
         int bang = item.Name.IndexOf('!');

@@ -39,7 +39,7 @@ public sealed class FilterRow
     /// <summary>ヒット行のハイライト用（文脈行・separator は null）。</summary>
     public Regex? HighlightRegex { get; init; }
 
-    /// <summary>行番号欄の文字を差し替える（束ねた .uwvz の「ファイル番号:行番号」用。0 始まりで渡す）。</summary>
+    /// <summary>行番号欄の文字を差し替える（「ファイル番号:行番号」など。0 始まりで渡す）。</summary>
     public Func<long, string>? LineLabel { get; init; }
 
     /// <summary>
@@ -168,13 +168,13 @@ public enum ResultListMode { HitsAndBookmarks, BookmarksOnly, HitsOnly }
 /// フィルタ結果ポップアップの VM（機能修正指示書_検索フィルタPopup.md）。
 /// - データ源は Session の既存ヒット（再検索しない）
 /// - 行リストは仮想化前提の遅延リスト（100万件でも展開しない）
-/// - 前後±N（AllowContext=true のとき有効。Pro 限定機能）は FilterBlocks で
+/// - 前後±N（AllowContext=true のとき有効。上限は MaxContext）は FilterBlocks で
 ///   表示・保存共通のブロックに展開する
 /// </summary>
 public sealed partial class FilterResultsViewModel : ObservableObject, IDisposable
 {
     /// <summary>
-    /// 出す本文を書き換える（UVP の「伏せる…」＝ <c>-mask</c>）。表示・保存・コピーの本文に当てる。本体の本文・判定は変えない。
+    /// 出す本文を書き換える（差し込み用）。表示・保存・コピーの本文に当てる。本体の本文・判定は変えない。
     /// </summary>
     public Func<string, string>? TextTransform
     {
@@ -206,7 +206,7 @@ public sealed partial class FilterResultsViewModel : ObservableObject, IDisposab
     /// </summary>
     public int SavedTopRow { get; set; }
 
-    // ── UVP v1.5.0: 抽出保存のオプション（指示書 F4）──
+    // ── 抽出保存のオプション（指示書 F4）──
 
     /// <summary>
     /// 1行目（ファイルの先頭行）をヘッダーとして出力の先頭に置く。CSV/TSV を
@@ -224,14 +224,14 @@ public sealed partial class FilterResultsViewModel : ObservableObject, IDisposab
     [ObservableProperty] private bool _includeContextOnSave = true;
 
     /// <summary>
-    /// 抽出保存のオプションを出すか。<b>UVP だけ true</b>。
+    /// 抽出保存のオプションを出すか（既定 false）。
     /// ±N の <see cref="AllowContext"/> は UVF でも 1 まで許しているので、
-    /// これを流用すると無料版にも出てしまう（F4 は Pro の機能）。
+    /// これを流用すると出してはいけないところにも出てしまう。
     /// </summary>
     public bool AllowExtractOptions { get; init; }
 
     /// <summary>
-    /// 最大ヒット数を変える設定画面を開く（UVP が起動時に入れる。無料版は null＝導線を出さない）。
+    /// 最大ヒット数を変える設定画面を開く（呼び手が起動時に入れる。null なら導線を出さない）。
     /// </summary>
     public static Action? OpenSearchLimitSettings { get; set; }
 
@@ -244,7 +244,7 @@ public sealed partial class FilterResultsViewModel : ObservableObject, IDisposab
     /// <summary>前後±N を UI で使えるか（MaxContext > 0）。</summary>
     public bool AllowContext => MaxContext > 0;
 
-    /// <summary>前後±N の上限（UVF=1 / UVP=64）。0 でヒット行のみ。</summary>
+    /// <summary>前後±N の上限（uvf は 1）。0 でヒット行のみ。</summary>
     public int MaxContext { get; }
 
     public DocumentSession? Session => _session;
@@ -468,7 +468,7 @@ public sealed partial class FilterResultsViewModel : ObservableObject, IDisposab
     public void RefreshTexts() => UpdateHitInfo();
 
     /// <summary>
-    /// 行番号欄の文字を差し替える（束ねた .uwvz の「ファイル番号:行番号」用。0 始まりの行番号で呼ばれる）。
+    /// 行番号欄の文字を差し替える（「ファイル番号:行番号」など。0 始まりの行番号で呼ばれる）。
     ///
     /// 本体の行番号欄（<see cref="UwView.Controls.TextView.LineLabel"/>）と同じものを渡し、
     /// 検索結果の一覧でも同じ番号が出るようにする（9.23修正）。
@@ -569,7 +569,7 @@ public sealed partial class FilterResultsViewModel : ObservableObject, IDisposab
     }
 
     /// <summary>
-    /// 写像済みの行番号列を外から渡す（Pro 拡張用）。
+    /// 写像済みの行番号列を外から渡す（拡張用）。
     /// 多段階検索はタブ切替のたびにヒット列を差し替えるため、そのたびに
     /// 10万件を写像し直すと巨大ファイルで固まる。段側にキャッシュした結果を
     /// ここから注入すれば即ブロック表示になる。件数が合わないものは無視。

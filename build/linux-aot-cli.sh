@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Linux 向けの CLI（uvf・uvp）を NativeAOT でビルドする（UwView・UwView Pro の publish.sh から呼ぶ）。
+# Linux 向けの CLI（uvf）を NativeAOT でビルドする（build/publish.sh から呼ぶ）。
 #
 # NativeAOT はその OS の上でしかビルドできないので、Mac の中の Linux（Colima＋Docker・arm64）で作る。
 # x86_64（linux-x64）も同じ arm64 の中からクロスでつなぐ。
@@ -46,8 +46,6 @@ docker run --rm \
     # 各リポ直下の共通設定と、CLI に要るプロジェクトだけ（bin・obj は写さない）
     tar -cf - --exclude=bin --exclude=obj \
         UwView/Directory.Packages.props UwView/global.json UwView/UwView.Core UwView/UwView.Cli \
-        UwViewPro/Directory.Packages.props UwViewPro/global.json \
-        UwViewPro/src/UwView.Pro.Core UwViewPro/src/UwView.Pro.Cli \
       | tar -C /work -xf -
     dotnet publish '/work/${PROJ}' -c Release -r '${RID}' -p:DebugType=none ${CROSS} -o /tmp/pub 1>&2
     cp /tmp/pub/* /out/

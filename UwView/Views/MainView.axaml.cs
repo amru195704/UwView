@@ -263,11 +263,11 @@ public partial class MainView : UserControl
         ToolTip.SetTip(LastOpText, OperationLog.Tip(Ja));
     }
 
-    // ── 時間のかかる処理の進捗ダイアログ（UVP と同じ出し方）──────────
+    // ── 時間のかかる処理の進捗ダイアログ ──────────
     //
     // 検索が終わったことと所要時間は、これまでステータスバーにしか出ていなかった。
     // 終わると同時に結果一覧が前に出るので、その表示は読む前に隠れてしまう。
-    // UVP と同じく、件数と所要時間を出したダイアログを残し、
+    // 件数と所要時間を出したダイアログを残し、
     // 閉じてから結果一覧を出す（読んでから次へ進む）。
 
     private EditProgressWindow? _taskWindow;      // デスクトップ
@@ -659,7 +659,7 @@ public partial class MainView : UserControl
                 if (_vm?.ActiveTab is { } t) { SetCurrentHitOrdinal(t.Session, off); UpdateSearchInfo(); }
                 TextView.Focus();
             },
-            maxContext: 1); // UVF は前後±1 まで（±N は Pro 限定）
+            maxContext: 1); // 前後は ±1 まで
         _filterResultsVm.SetSession(_vm?.ActiveTab?.Session);
 
         if (TopLevel.GetTopLevel(this) is Window owner)   // デスクトップ: 別ウィンドウ
@@ -875,16 +875,16 @@ public partial class MainView : UserControl
         AddSessions(sessions);
     }
 
-    // ── 圧縮ファイルを開く（指示書 0-doc/実装指示書_UVP_圧縮読み込み.md 工程A）──
+    // ── 圧縮ファイルを開く ──
     //
-    // gz/zip は「展開してから開く」か「.uwvz へ直接変換して開く（Pro）」を選ばせる。
-    // 展開は無料の基本機能——gunzip してから開く手作業を1クリックにするのが値打ち。
+    // gz/zip は「展開してから開く」か、差し込まれた変換で開くかを選ばせる。
+    // 展開は基本機能——gunzip してから開く手作業を1クリックにするのが値打ち。
 
     /// <summary>
-    /// .uwvz への直接変換（Pro）。UVP が起動時に差し込む。
-    /// 戻り値は開いたタブ（失敗・中止なら null）。公開版では null のまま＝選択肢はグレーアウト。
+    /// 「変換して開く」の処理（呼び手が起動時に差し込む）。
+    /// 戻り値は開いたタブ（失敗・中止なら null）。null のままなら選択肢はグレーアウト。
     /// </summary>
-    public static Func<MainView, string, CompressedKind, Task<DocumentTabViewModel?>>? ProConvertAndOpen { get; set; }
+    public static Func<MainView, string, CompressedKind, Task<DocumentTabViewModel?>>? ConvertAndOpenHandler { get; set; }
 
     /// <summary>パスをまとめて開く。圧縮ファイルは方式を尋ねてから開く。</summary>
     public async Task OpenPathsAsync(System.Collections.Generic.IReadOnlyList<string> paths)
@@ -892,7 +892,7 @@ public partial class MainView : UserControl
         DocumentTabViewModel? last = null;
         foreach (string path in paths)
         {
-            // Word・Excel・PDF は文字を取り出して開く（v1.8.3.2。それまでは UwView Pro の役目として断っていた）。
+            // Word・Excel・PDF は文字を取り出して開く（v1.8.3.2。それまでは断っていた）。
             // .docx・.xlsx は中身が zip なので、zip の判定より先に見る
             if (OfficeDocumentFile.Probe(path) is { IsOffice: true } office)
             {
@@ -933,8 +933,8 @@ public partial class MainView : UserControl
         var method = await CompressedOpenDialog.AskAsync(owner, name, kind);
         if (method == CompressedOpenMethod.Cancel) return null;
 
-        if (method == CompressedOpenMethod.ConvertToUwvz)
-            return ProConvertAndOpen is null ? null : await ProConvertAndOpen(this, path, kind);
+        if (method == CompressedOpenMethod.Convert)
+            return ConvertAndOpenHandler is null ? null : await ConvertAndOpenHandler(this, path, kind);
 
         return await ExpandAndOpenAsync(owner, path, name, kind);
     }

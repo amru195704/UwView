@@ -47,8 +47,7 @@ public sealed record OfficeProbe(OfficeKind Kind, OfficeReject Reject = OfficeRe
 /// <summary>
 /// Word（.docx）・Excel（.xlsx）・PDF かどうかの見分け（v1.8.3 extFS E-5）。
 ///
-/// 文字を取り出して探すのは UwView Pro（uvp）の役目。無料版（uvf）は、黙ってバイナリを
-/// テキストとして走査しないよう、ここで見分けて断る。.docx・.xlsx の中身は zip なので、
+/// 黙ってバイナリをテキストとして走査しないよう、ここで見分ける（文字を取り出して探すか断るかは呼び手が決める）。.docx・.xlsx の中身は zip なので、
 /// <b>zip の判定より先に</b>ここで見ること。名前ではなく中身で見る
 ///（PDF は先頭の <c>%PDF-</c>、Word・Excel は zip の中の <c>word/document.xml</c>・<c>xl/workbook.xml</c>）。
 /// 古い形式とパスワード付きは、どちらも OLE（複合ファイル）の形なので、名前で分ける。
@@ -120,7 +119,7 @@ public static class OfficeDocumentFile
         _ => OfficeReject.None,          // msg・古い ppt など。Word・Excel ではないので普通に扱う
     };
 
-    /// <summary>読めない理由（uvf・uvp の CLI と画面で共通）。</summary>
+    /// <summary>読めない理由（CLI と画面で共通）。</summary>
     public static string RejectText(OfficeReject reject, string name, bool japanese) => reject switch
     {
         OfficeReject.LegacyWord => japanese
@@ -138,8 +137,8 @@ public static class OfficeDocumentFile
         _ => "",
     };
 
-    /// <summary>無料版で断るときの文（Word・Excel・PDF を探すのは UwView Pro の機能）。</summary>
-    public static string ProOnlyText(string name, bool japanese) => japanese
-        ? $"{name}: Word・Excel・PDF を探すのは UwView Pro の機能です（uvp {name} 語）"
-        : $"{name}: searching Word, Excel and PDF files is a UwView Pro feature (uvp {name} pattern)";
+    /// <summary>この版では探さないときの文（製品名だけで有料版を案内する）。</summary>
+    public static string UnsupportedText(string name, bool japanese) => japanese
+        ? $"{name}: Word・Excel・PDF を探すのは有料版（UwView Pro）の機能です"
+        : $"{name}: searching Word, Excel and PDF files is a feature of the paid edition, UwView Pro";
 }

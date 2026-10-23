@@ -11,7 +11,7 @@
 
     <DockPanel LastChildFill="True">
 
-        <!-- ツールバー: 件数 / 前後±N（Pro のみ表示）/ 保存（閉じるは右下。ポップアップの決まり） -->
+        <!-- ツールバー: 件数 / 前後±N/ 保存（閉じるは右下。ポップアップの決まり） -->
         <Border DockPanel.Dock="Top" Background="{DynamicResource Uv_EEEEEE}" BorderBrush="{DynamicResource Uv_CCCCCC}"
                 BorderThickness="0,0,0,1" Padding="6">
             <!-- 幅が足りないとき折り返す（WASM の小さいウィンドウで「閉じる」が切れないように） -->
@@ -35,7 +35,7 @@
                         AutomationProperties.Name="{loc:Localize FileListButton}">
                     <Image Width="22" Height="22" RenderOptions.BitmapInterpolationMode="HighQuality" Source="{DynamicResource Icon_filelist}" />
                 </Button>
-                <!-- 上限で打ち切ったとき、上限を変える設定画面へ（UVP のみ） -->
+                <!-- 上限で打ち切ったとき、上限を変える設定画面へ（差し込まれたときだけ） -->
                 <Button x:Name="ChangeLimitButton"
                         ToolTip.Tip="{loc:Localize TipChangeSearchLimit}"
                         IsVisible="{Binding ShowChangeLimit}"
@@ -53,7 +53,7 @@
                 <CheckBox Content="{loc:Localize IncludeLineNumbers}" Foreground="{DynamicResource Uv_Text}"
                           ToolTip.Tip="{loc:Localize TipIncludeLineNumbers}"
                           IsChecked="{Binding IncludeLineNumbersOnSave, Mode=TwoWay}" />
-                <!-- 抽出保存のオプション（Pro のみ。±N と同じ AllowContext で出し分ける） -->
+                <!-- 抽出保存のオプション（±N と同じ AllowContext で出し分ける） -->
                 <CheckBox Content="{loc:Localize IncludeHeaderOnSave}" Foreground="{DynamicResource Uv_Text}"
                           ToolTip.Tip="{loc:Localize TipIncludeHeader}"
                           IsChecked="{Binding IncludeHeaderOnSave, Mode=TwoWay}"
@@ -87,7 +87,7 @@
 
         <!-- 結果リスト（自前描画。メインの TextView と同じ方式で可視行だけ描く。
              ダブルクリック/Enter でメインへジャンプ、左ドラッグで行範囲選択、右クリックで copy/save。
-             ListArea は Pro の矩形選択オーバーレイ挿入先 -->
+             ListArea は重ねて描く部品の挿入先 -->
         <Grid x:Name="ListArea" ColumnDefinitions="*,Auto" RowDefinitions="*,Auto">
             <ctrl:FilterListView x:Name="RowList" Grid.Row="0" Grid.Column="0" />
             <ScrollBar x:Name="RowScroll" Grid.Row="0" Grid.Column="1" Orientation="Vertical"

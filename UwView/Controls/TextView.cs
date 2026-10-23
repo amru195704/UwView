@@ -30,7 +30,7 @@ public class TextView : Control
             _emphasizedOffset = null; // 強調行は別ドキュメントへ持ち越さない
             _wordSel = null; _wordStage = 0; // 語選択も持ち越さない
             ClearLineSelection();     // 行選択も持ち越さない
-            OnSessionChanged();       // 派生クラス（Pro等）の状態リセット用フック
+            OnSessionChanged();       // 派生クラスの状態リセット用フック
             InvalidateVisual();
             NotifyChanged();
         }
@@ -42,7 +42,7 @@ public class TextView : Control
     /// <summary>セッション差し替え時に派生クラスが状態をリセットするためのフック。</summary>
     protected virtual void OnSessionChanged() { }
 
-    // ── 派生クラス（ProTextView 等）向けの描画メトリクス公開 ──────────
+    // ── 派生クラス向けの描画メトリクス公開 ──────────
     /// <summary>1行の高さ（ピクセル）。</summary>
     protected double RowHeight => LineHeight;
     /// <summary>半角1セルの幅（ピクセル）。</summary>
@@ -70,7 +70,7 @@ public class TextView : Control
     private bool _selCopying;
     private string? _selCopyStatus;
 
-    /// <summary>派生クラス（Pro の矩形モード等）が行選択を無効化するためのフック。</summary>
+    /// <summary>派生クラスが行選択を無効化するためのフック。</summary>
     protected virtual bool AllowLineSelection => true;
 
     /// <summary>行選択があるか。</summary>
@@ -124,7 +124,7 @@ public class TextView : Control
 
     private (long Line, int Start, int End)? _wordSel; // 着色対象語（ダブルクリック/キャレット語）
 
-    /// <summary>派生クラス（Pro 矩形モード等）が語ターゲティングを無効化するフック。</summary>
+    /// <summary>派生クラスが語ターゲティングを無効化するフック。</summary>
     protected virtual bool AllowTextTargeting => true;
 
     /// <summary>語の着色対象を取れる状態か（行モード＋索引済み・フィルタ表示中は不可）。</summary>
@@ -300,7 +300,7 @@ public class TextView : Control
     private bool _updatingScroll;
 
     /// <summary>
-    /// 行番号欄に出す文字を差し替える（束ねた .uwvz のとき、uvp が「ファイル番号:行番号」を返す）。
+    /// 行番号欄に出す文字を差し替える（複数ファイルを1つにまとめた本文のとき「ファイル番号:行番号」など）。
     /// null なら行番号だけ（従来どおり）。引数は1始まりの通し行番号。
     /// </summary>
     public Func<long, string>? LineLabel { get; set; }

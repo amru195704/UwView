@@ -217,7 +217,7 @@ public class MultiOpenUiTests : IDisposable
             list.OpenAt(1);
             await UiHarness.WaitUntil(() => launched.Count == 1, "アプリで開く");
 
-            Assert.Equal(F("f02.log"), launched[0]);                // 元のファイル（.uwvz ではない）
+            Assert.Equal(F("f02.log"), launched[0]);                // 元のファイル
             Assert.Single(vm.Tabs);                                  // タブは増えない
             Assert.Contains("f02.log", list.NoticeText);
 

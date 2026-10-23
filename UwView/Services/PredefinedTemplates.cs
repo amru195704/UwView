@@ -4,10 +4,10 @@ using System.Linq;
 namespace UwView.Services;
 
 /// <summary>
-/// 定義済み★に既定で入れる AND・NOT・OR のひな形（v1.8.2 extFS E-1。uvf・uvp の画面で共用）。
+/// 定義済み★に既定で入れる AND・NOT・OR のひな形（v1.8.2 extFS E-1）。
 ///
 /// 論理式（<c>-L</c>）は作らないと決めた（2026-10-08・先読みの正規表現で同じ速さが出たため）。
-/// 代わりに、その正規表現の書き方をひな形で出す。書き方は説明書（uvf 7.1・uvp 13 章）の表と同じ。
+/// 代わりに、その正規表現の書き方をひな形で出す。書き方は説明書（uvf 7.1）の表と同じ。
 /// </summary>
 public static class PredefinedTemplates
 {

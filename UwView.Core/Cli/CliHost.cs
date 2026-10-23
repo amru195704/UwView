@@ -5,7 +5,7 @@ using System.Text;
 namespace UwView.Core.Cli;
 
 /// <summary>
-/// GUI 本体を CLI として動かすときの、プロセス環境まわり（UVF の uvf・UVP の uvp で共通）。
+/// GUI 本体を CLI として動かすときの、プロセス環境まわり。
 /// </summary>
 public static class CliHost
 {

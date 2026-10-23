@@ -9,8 +9,8 @@ using UwView.Localization;
 namespace UwView.Views;
 
 /// <summary>
-/// メニュー「コマンドライン設定…」。uvf / uvp を、コンソールで名前だけ打って使えるようにする／解除する
-/// （UVF・UVP 共通。中身は <see cref="CliCommandSetup"/>）。
+/// メニュー「コマンドライン設定…」。コマンドを、コンソールで名前だけ打って使えるようにする／解除する
+/// （中身は <see cref="CliCommandSetup"/>）。
 /// </summary>
 public static class CliCommandDialog
 {
@@ -121,7 +121,8 @@ public static class CliCommandDialog
 
         string examples = s.Tool == "uvf"
             ? (Ja ? "  uvf -open\n  uvf ファイル 検索パターン" : "  uvf -open\n  uvf file pattern")
-            : (Ja ? "  uvp ファイル 検索パターン\n  uvp ファイル 検索パターン -open" : "  uvp file pattern\n  uvp file pattern -open");
+            : (Ja ? $"  {s.Tool} ファイル 検索パターン\n  {s.Tool} ファイル 検索パターン -open"
+                  : $"  {s.Tool} file pattern\n  {s.Tool} file pattern -open");
         string fresh = OperatingSystem.IsWindows()
             ? (Ja ? "新しく開いたコマンドプロンプト／PowerShell から使えます（開いたままの画面には反映されません）。"
                   : "Open a new Command Prompt / PowerShell window (windows already open do not see the change).")

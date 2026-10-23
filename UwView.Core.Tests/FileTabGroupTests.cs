@@ -55,7 +55,7 @@ public class FileTabGroupTests
     }
 
     [Fact]
-    public void 束ねた本文のメインはどのファイルにも印を付けない()
+    public void 一本に決まらないメインはどのファイルにも印を付けない()
     {
         var group = new FileTabGroup<Tab>(new Tab("merged"));   // MainFile = -1
         Assert.Null(group.Placement(0));

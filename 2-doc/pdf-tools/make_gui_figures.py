@@ -1,4 +1,4 @@
-# 操作マニュアルの図（模式図）を PNG で作る。出力: uvf-gui-screen.png・uvf-gui-filelist.png・uvp-gui-results.png（カレント）
+# 操作マニュアルの図（模式図）を PNG で作る。出力: uvf-gui-screen.png・uvf-gui-filelist.png（カレント）
 # 版数や画面が変わったら、この HTML を直して作り直す。必要: playwright（chromium）・Noto Sans CJK JP
 from playwright.sync_api import sync_playwright
 CSS="""
@@ -47,19 +47,9 @@ flist=f"""<div class="win" id="w" style="width:720px">
 <tr><td>3</td><td>logs/app-0903.log.gz</td><td class="r">86</td><td class="r">0.2 GB</td><td><span class="mark">タブ</span></td></tr></table>
 <div class="row" style="border-top:1px solid #dde1e5;border-bottom:none">タブ 2 / 8<span class="btn" style="margin-left:auto">閉じる</span></div></div>
 <div class="win" style="width:720px"><div class="row" style="padding-bottom:0;border-bottom:none"><span class="tab on gray">1:app-0901.log</span><span class="tab">3:app-0903.log.gz ×</span><span style="font-size:11px;color:#666;margin-left:10px">メインのタブは灰色で閉じられない。追加のタブは <code>番号:ファイル名</code></span></div></div>"""
-pro=f"""<div class="win" id="w">
-<div class="title">多段階・シーケンシャル検索</div>
-<div class="row" style="padding-bottom:0"><span class="tab on">Tab1: ERROR (8,739)</span><span class="tab">Tab2: timeout (412)</span><span class="tab">Tab3: 含まない: dev2 (398)</span></div>
-<div class="row"><span class="chk">◉ 多段階</span><span class="chk">○ シーケンシャル</span><span class="inp">語</span><span class="chk">☐ Regex</span><span class="chk">☐ 大小無視</span><span class="chk">☐ 単語</span><span class="chk">☐ 含まない</span>{ic('▶','実行')}{ic('≣','ファイル一覧')}</div>
-<div class="row">{ic('Σ','集計')}<span class="inp">式</span>上位 <span class="inp" style="min-width:40px">20</span>{ic('▶','実行')}<span class="btn">CSV保存</span>{ic('←','戻る')}</div>
-<div class="row">{ic('⇅','並べ替え')}<span class="inp" style="min-width:70px">式</span>{ic('▶','実行')}{ic('1.','順序')}<span class="inp" style="min-width:90px">a,b,c</span>{ic('▶','実行')}<span class="btn">保存</span></div>
-<div class="row"><span>件数</span><span>前後 ±</span><span class="inp" style="min-width:40px">N</span><span>行</span><span class="chk">☑ 行番号を含める</span><span class="chk">☐ 1行目をヘッダーに</span><span class="chk">☐ 前後も保存</span><span class="btn">保存…</span></div>
-<div class="body" style="height:110px"><div class="ln">128<br>512<br>7</div><div class="txt">2026-09-27 10:01:02 <span class="hl">ERROR</span> connection reset<br>2026-09-27 10:05:44 <span class="hl">ERROR</span> timeout<br>……</div></div>
-</div>
-<div style="margin:0 14px 10px;font-size:11.5px;color:#555">アイコンのボタンは、図では下に名前を書いています（実際の画面ではマウスを乗せると出ます）。</div>"""
 with sync_playwright() as p:
     b=p.chromium.launch(); pg=b.new_page(device_scale_factor=2, viewport={'width':980,'height':800})
-    for name,html in [('uvf-gui-screen',main),('uvf-gui-filelist',flist),('uvp-gui-results',pro)]:
+    for name,html in [('uvf-gui-screen',main),('uvf-gui-filelist',flist)]:
         pg.set_content(f"<style>{CSS}</style><div id='all' style='display:inline-block'>{html}</div>")
         pg.locator('#all').screenshot(path=f'{name}.png')
     b.close()

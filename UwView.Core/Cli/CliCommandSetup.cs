@@ -8,7 +8,7 @@ namespace UwView.Core.Cli;
 /// <summary>いまの状態（<see cref="CliCommandSetup.Inspect"/> の結果）。</summary>
 public enum CliCommandState
 {
-    /// <summary>アプリの隣に uvf / uvp が無い（開発中のビルドなど）。</summary>
+    /// <summary>アプリの隣にコマンドが無い（開発中のビルドなど）。</summary>
     Missing,
     /// <summary>ディスクイメージや隔離された場所（App Translocation）から起動している。移してからでないと、リンク先がすぐ消える。</summary>
     AppNotInPlace,
@@ -35,7 +35,7 @@ public sealed record CliCommandResult(bool Ok, bool Cancelled = false, string? E
 }
 
 /// <summary>
-/// uvf / uvp を、コンソールで名前だけ打って使えるようにする（UVF・UVP 共通）。
+/// uvf などのコマンドを、コンソールで名前だけ打って使えるようにする。
 ///
 /// 配布はインストーラではなく dmg / zip / tar.gz なので、置き場所はアプリ自身が登録する。
 /// <list type="bullet">
@@ -46,7 +46,7 @@ public sealed record CliCommandResult(bool Ok, bool Cancelled = false, string? E
 ///   <c>~/.local/bin</c> だけにしないのは、Ubuntu はログインした時点でそのフォルダがあるときしか PATH に足さず、
 ///   登録してもログインし直すまで使えなかったため（9.14修正・Ubuntu 実機確認）。</item>
 /// </list>
-/// uvf / uvp の起動アプリはリンクをたどって本体を探すので、リンク経由でもそのまま動く。
+/// コマンドの起動アプリはリンクをたどって本体を探すので、リンク経由でもそのまま動く。
 /// </summary>
 public static class CliCommandSetup
 {
@@ -60,7 +60,7 @@ public static class CliCommandSetup
     /// <summary>
     /// アプリ本体の隣にある起動アプリ（uvf / uvf.exe）。無ければ null。
     ///
-    /// <b>試験用ビルドは別名で入っている</b>（uvfWF / uvpWF。9.22修正）。
+    /// <b>試験用ビルドは別名で入っている</b>（uvfWF など。9.22修正）。
     /// 名前ちょうどが無ければ <c>uvf*</c> を探して実物を返す——
     /// ここで諦めると「この版には uvf が入っていません」と嘘を言うことになる。
     /// </summary>

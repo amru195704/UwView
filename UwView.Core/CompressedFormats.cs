@@ -75,9 +75,9 @@ public static class CompressedFormats
         => path.EndsWith(extension, StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
-    /// 展開に使ってよいスレッド数（xz の並列展開が使う）。段階1の設定（UVF_MAX_THREADS / UVP_MAX_THREADS・
+    /// 展開に使ってよいスレッド数（xz の並列展開が使う）。段階1の設定（UVF_MAX_THREADS・
     /// 設定の MaxThreads）をそのまま入れる——この機能のための別の設定は作らない（指示書 §4.2）。
-    /// 入口（uvf / uvp の CLI・画面）が起動時に入れる。入れなければ既定（8、論理プロセッサ数まで）。
+    /// 入口（CLI・画面）が起動時に入れる。入れなければ既定（8、論理プロセッサ数まで）。
     /// </summary>
     public static int DecodeThreads { get; set; } = ThreadBudget.Resolve(null, 0);
 

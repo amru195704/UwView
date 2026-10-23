@@ -71,7 +71,7 @@ public class SearchPlanTests : IDisposable
     [Fact]
     public void 作業役ごとに別の正規表現を貸して_返されたものを使い回す()
     {
-        // 1 つの Regex を何本もの作業役で同時に使うと、.NET は呼ぶたびに照合の係を作り直す（uvp の -E -v が 8 倍遅くなった。2026-10-05）
+        // 1 つの Regex を何本もの作業役で同時に使うと、.NET は呼ぶたびに照合の係を作り直す（並列の -E -v が 8 倍遅くなった。2026-10-05）
         var prepared = PreparedSearch.Create(new SearchOptions("^ +<", UseRegex: true));
         var a = prepared.RentRegex();
         var b = prepared.RentRegex();

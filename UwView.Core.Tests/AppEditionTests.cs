@@ -26,7 +26,7 @@ public class AppEditionTests : IDisposable
 
         Assert.False(AppEdition.IsTestBuild);
         Assert.Equal("UwView(uvf)-Full Spectrum(v1.7.3.3)", AppEdition.TitleFor("UwView(uvf)"));
-        Assert.Equal("UwView Pro(uvp)-Full Spectrum(v1.7.3.3)", AppEdition.TitleFor("UwView Pro(uvp)"));
+        Assert.Equal("Other(cmd)-Full Spectrum(v1.7.3.3)", AppEdition.TitleFor("Other(cmd)"));   // 名前は渡されたまま
         Assert.Equal("UwView", AppEdition.Decorate("UwView"));             // 題名以外（About・--version）は足さない
     }
 
@@ -38,7 +38,7 @@ public class AppEditionTests : IDisposable
 
         Assert.True(AppEdition.IsTestBuild);
         Assert.Equal("UwView(uvf)-Wide Field(v1.7.0.1)", AppEdition.TitleFor("UwView(uvf)"));
-        Assert.Equal("UwView Pro(uvp)-Wide Field(v1.7.0.1)", AppEdition.TitleFor("UwView Pro(uvp)"));
+        Assert.Equal("Other(cmd)-Wide Field(v1.7.0.1)", AppEdition.TitleFor("Other(cmd)"));
         Assert.Equal("UwView (Wide Field)", AppEdition.Decorate("UwView"));
     }
 

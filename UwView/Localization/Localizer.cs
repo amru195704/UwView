@@ -1,3 +1,4 @@
+using System;
 using System.ComponentModel;
 using System.Globalization;
 using System.Resources;
@@ -31,6 +32,9 @@ public sealed class Localizer : INotifyPropertyChanged
     private readonly ResourceManager _ja =
         new("UwView.Localization.StringsJa", typeof(Localizer).Assembly);
 
+    /// <summary>あとから足した文字列（先に足したものより後に足したものを先に引く）。</summary>
+    private volatile (ResourceManager En, ResourceManager Ja)[] _extra = [];
+
     private CultureInfo _culture = CultureInfo.CurrentUICulture;
     private bool _isJa = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ja";
 
@@ -46,13 +50,36 @@ public sealed class Localizer : INotifyPropertyChanged
         {
             // InvariantCulture 指定＝各リソースの neutral（＝そのまま格納値）を引く。
             // サテライト解決を一切使わないので WASM でも確実に取れる。
+            var extra = _extra;
             if (_isJa)
             {
+                foreach (var (_, xja) in extra)
+                    if (xja.GetString(key, CultureInfo.InvariantCulture) is { Length: > 0 } x) return x;
                 var ja = _ja.GetString(key, CultureInfo.InvariantCulture);
                 if (!string.IsNullOrEmpty(ja)) return ja;
             }
+            foreach (var (xen, _) in extra)
+                if (xen.GetString(key, CultureInfo.InvariantCulture) is { } x) return x;
             return _en.GetString(key, CultureInfo.InvariantCulture) ?? key;
         }
+    }
+
+    /// <summary>
+    /// 文字列を足す（英語・日本語の組）。同じキーは足したものが優先する。
+    /// 別のアセンブリが自分の文字列を持つときに、起動時に1回呼ぶ。
+    /// </summary>
+    public void AddResources(ResourceManager en, ResourceManager ja)
+    {
+        lock (this)
+        {
+            if (Array.Exists(_extra, e => e.En.BaseName == en.BaseName)) return;
+            var next = new (ResourceManager, ResourceManager)[_extra.Length + 1];
+            next[0] = (en, ja);
+            Array.Copy(_extra, 0, next, 1, _extra.Length);
+            _extra = next;
+        }
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(null));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("Item[]"));
     }
 
     /// <summary>合成書式（数値は現在カルチャで整形して渡すこと）。</summary>

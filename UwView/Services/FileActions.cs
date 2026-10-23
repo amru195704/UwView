@@ -17,7 +17,7 @@ public static class FileActions
     internal static Func<string, string, bool>? Override { get; set; }
 
     /// <summary>自動テスト用: 外部のアプリで開く代わりに呼ぶ（開けたら true）。</summary>
-    internal static Func<string, Task<bool>>? LaunchOverride { get; set; }
+    public static Func<string, Task<bool>>? LaunchOverride { get; set; }
 
     /// <summary>ファイルを、拡張子に合った OS の既定のアプリで開く。</summary>
     public static async Task<bool> LaunchAsync(TopLevel? top, string path)
@@ -73,17 +73,22 @@ public static class FileActions
     }
 
     /// <summary>
-    /// アプリで開くファイル。索引（<c>report.pdf.uwvz</c>）なら隣の元のファイル（<c>report.pdf</c>）。
-    /// 開けないときは null と理由（zip の中・見つからない・元のファイルの無い索引）。
+    /// 別のファイルから作ったファイルなら、その元のファイルのパスを返す（既定は null＝そういうファイルは無い）。
+    /// 呼び手が、自分の作るファイルの見分け方を起動時に入れる。
+    /// </summary>
+    public static Func<string, string?>? OriginalOf { get; set; }
+
+    /// <summary>
+    /// アプリで開くファイル。別のファイルから作ったもの（<see cref="OriginalOf"/>）なら隣の元のファイル。
+    /// 開けないときは null と理由（zip の中・見つからない・元のファイルが無い）。
     /// </summary>
     public static string? AppTarget(string path, out AppTargetProblem problem)
     {
         problem = AppTargetProblem.None;
-        if (path.EndsWith(".uwvz", StringComparison.OrdinalIgnoreCase))
+        if (OriginalOf?.Invoke(path) is { } original)
         {
-            string original = path[..^".uwvz".Length];
             if (File.Exists(original)) return original;
-            problem = AppTargetProblem.IndexOnly;
+            problem = AppTargetProblem.NoOriginal;
             return null;
         }
         if (!File.Exists(path)) { problem = AppTargetProblem.Missing; return null; }
@@ -111,8 +116,8 @@ public enum AppTargetProblem
     None,
     /// <summary>ファイルが見つからない（消された・移された）。</summary>
     Missing,
-    /// <summary>索引（.uwvz）だけで、元のファイルが隣に無い（束ねた索引など）。</summary>
-    IndexOnly,
+    /// <summary>別のファイルから作ったもので、元のファイルが隣に無い。</summary>
+    NoOriginal,
     /// <summary>zip の中のファイル。</summary>
     ZipEntry,
 }

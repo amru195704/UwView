@@ -1,7 +1,7 @@
 namespace UwView.Core.Cli;
 
 /// <summary>
-/// <c>--help files</c>・<c>--help regex</c> の詳しい説明（uvf・uvp 共通。指示書 WideField v1.7 §9.3・§10.3）。
+/// <c>--help files</c>・<c>--help regex</c> の詳しい説明（指示書 WideField v1.7 §9.3・§10.3）。
 /// <c>--help</c> 本体が長くなりすぎるので、ファイルの指定と正規表現はここに分ける。例のコマンド名だけ差し替える。
 /// </summary>
 public static class CliHelpTopics
@@ -14,7 +14,13 @@ public static class CliHelpTopics
         _ => null,
     };
 
-    public static string Files(bool ja, string tool) => (ja
+    /// <summary>
+    /// 「決まりごと」に足す行（日本語・英語の組。行頭の「・」「- 」も含めて書く）。呼ぶ側が起動時に足す。
+    /// 足した行は「大文字と小文字」の行のすぐ後に、足した順で並ぶ。
+    /// </summary>
+    public static List<(string Ja, string En)> ExtraFileRules { get; } = [];
+
+    public static string Files(bool ja, string tool) => WithExtraRules((ja
         ? """
           ファイルの指定（第1引数）
             必ず引用符で囲みます。シェルに展開させず、uvf が自分で広げます。
@@ -52,7 +58,7 @@ public static class CliHelpTopics
               ・並びは書いた順。1つの指定の中は名前順です。同じファイルは1回だけ探します
               ・隠しファイルと隠しフォルダー（. で始まる名前など）は対象外です
               ・大文字と小文字：Linux は区別します。Mac と Windows は区別しません
-              ・.uwvz はワイルドカードでは拾いません（名前を書けば使えます）
+              {{extra-rules}}
               ・1件も当たらない指定は、その指定を名前で知らせます（波かっこは書いたままの形で。選択肢の一部だけ0件なら知らせません）
               ・波かっこ：閉じていないもの・カンマの無いもの（{} {a}）は文字どおりの名前です。
                 指定と同じ名前のファイルが実在すれば、展開せずにそのファイルを使います
@@ -107,7 +113,7 @@ public static class CliHelpTopics
               - Items are searched in the order written; within one item, in name order. Each file only once
               - Hidden files and folders (such as names starting with .) are skipped
               - Case: Linux is case-sensitive; Mac and Windows are not
-              - Wildcards never pick up .uwvz files (write the name to use one)
+              {{extra-rules}}
               - An item that matches nothing is reported by name (braces as written; not reported when only some choices match nothing)
               - Braces: unclosed ones and ones without a comma ({} {a}) are part of the name.
                 If a file with exactly the written name exists, it is used as is (no expansion)
@@ -124,7 +130,21 @@ public static class CliHelpTopics
               --no-ignore-files      do not use the --ignore-file rules either
               (.rgignore is not read; it is ripgrep's own name, so write the same rules in .ignore)
               --files                check what is covered (the number of excluded files is shown too)
-          """).Replace("uvf ", tool + " ");
+          """).Replace("uvf ", tool + " "), ja);
+
+    private static string WithExtraRules(string text, bool ja)
+    {
+        const string mark = "{{extra-rules}}";
+        int at = text.IndexOf(mark, StringComparison.Ordinal);
+        if (at < 0) return text;
+        int lineStart = text.LastIndexOf('\n', at) + 1;
+        string indent = text[lineStart..at];
+        int lineEnd = text.IndexOf('\n', at);
+        string rest = lineEnd < 0 ? "" : text[(lineEnd + 1)..];
+        var sb = new System.Text.StringBuilder(text, 0, lineStart, text.Length + 256);
+        foreach (var (j, e) in ExtraFileRules) sb.Append(indent).Append(ja ? j : e).Append('\n');
+        return sb.Append(rest).ToString();
+    }
 
     public static string Regex(bool ja, string tool) => (ja
         ? """

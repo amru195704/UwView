@@ -3,7 +3,7 @@ using UwView.Core.Cli;
 namespace UwView.Core.Tests;
 
 /// <summary>
-/// uvf / uvp をコンソールで名前だけ打って使えるようにする（9.14修正）。
+/// コマンドをコンソールで名前だけ打って使えるようにする（9.14修正）。
 /// 配布はインストーラではないので、アプリ自身が PATH（Windows）かリンク（macOS / Linux）を登録する。
 /// 本物の /usr/local/bin やレジストリには触らず、一時フォルダと文字列で確かめる。
 /// </summary>
@@ -34,7 +34,7 @@ public class CliCommandSetupTests : IDisposable
         string launcher = MakeLauncher("app");
         string gui = Path.Combine(Path.GetDirectoryName(launcher)!, "UwView.Desktop");
         Assert.Equal(launcher, CliCommandSetup.FindLauncher("uvf", gui));
-        Assert.Null(CliCommandSetup.FindLauncher("uvp", gui));
+        Assert.Null(CliCommandSetup.FindLauncher("other", gui));
     }
 
     [Fact]
@@ -45,7 +45,7 @@ public class CliCommandSetupTests : IDisposable
         string launcher = MakeLauncher("wf", "uvfWF");
         string gui = Path.Combine(Path.GetDirectoryName(launcher)!, "UwView.Desktop");
         Assert.Equal(launcher, CliCommandSetup.FindLauncher("uvf", gui));
-        Assert.Null(CliCommandSetup.FindLauncher("uvp", gui));
+        Assert.Null(CliCommandSetup.FindLauncher("other", gui));
     }
 
     [Fact]
@@ -199,8 +199,8 @@ public class CliCommandSetupTests : IDisposable
     [Fact]
     public void 管理者実行へ渡す文字列は空白と引用符を守る()
     {
-        string path = "/Applications/UwView Pro.app/Contents/MacOS/uvp";
-        Assert.Equal("'/Applications/UwView Pro.app/Contents/MacOS/uvp'", CliCommandSetup.ShellQuote(path));
+        string path = "/Applications/Some App.app/Contents/MacOS/uvf";
+        Assert.Equal("'/Applications/Some App.app/Contents/MacOS/uvf'", CliCommandSetup.ShellQuote(path));
         Assert.Equal("'it'\\''s'", CliCommandSetup.ShellQuote("it's"));
         Assert.Equal("\"ln -s 'a\\\\b' \\\"c\\\"\"", CliCommandSetup.AppleScriptString("ln -s 'a\\b' \"c\""));
     }

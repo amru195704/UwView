@@ -1,8 +1,8 @@
 namespace UwView.Services;
 
 /// <summary>
-/// 共有 ViewModel（UVF/UVP 両用）から現在の AppSettings を参照するための間接ホルダ。
-/// App（UVF）・ProApp（UVP）が起動時に自分の Settings を設定する。
+/// 共有 ViewModel から現在の AppSettings を参照するための間接ホルダ。
+/// アプリが起動時に自分の Settings を設定する。
 /// </summary>
 public static class AppSettingsRef
 {

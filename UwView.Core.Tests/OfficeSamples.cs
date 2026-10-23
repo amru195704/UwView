@@ -6,7 +6,7 @@ namespace UwView.Core.Tests;
 /// <summary>
 /// テスト用の Word・Excel・PDF（v1.8.3 extFS E-5）。
 /// Word・Excel は中身が zip と XML なので、ここで組み立てる（何が入っているかがテストの横で読めるように）。
-/// uvf（UwView.Core.Tests）と uvp（UwView.Pro.Core.Tests がこのファイルと TestData をリンク）の両方のテストが使う。
+/// Word・Excel・PDF のテスト用の見本（TestData と一緒に、ほかのテストからリンクして使ってもよい）。
 /// PDF は TestData の実物（mac の Chrome で日本語・2 段組の HTML から作ったもの。元は office-ja.source.html）。
 /// </summary>
 internal static class OfficeSamples

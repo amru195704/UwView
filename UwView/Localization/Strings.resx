@@ -75,9 +75,6 @@
   <data name="FilterTip" xml:space="preserve"><value>Show only matching lines</value></data>
 
   <data name="Indexing" xml:space="preserve"><value>Indexing</value></data>
-  <data name="MergedFilesButton" xml:space="preserve"><value>Files</value></data>
-  <data name="MergedFilesTip" xml:space="preserve"><value>Show which file each number is</value></data>
-  <data name="MergedFilesTitle" xml:space="preserve"><value>Bundled files</value></data>
   <data name="ScrollDisabledWhileIndexing" xml:space="preserve"><value>The scrollbar is disabled while the index is being built</value></data>
   <data name="Cancel" xml:space="preserve"><value>Cancel</value></data>
 
@@ -94,7 +91,7 @@
   <data name="FileActApp" xml:space="preserve"><value>App</value></data>
   <data name="TipFileActApp" xml:space="preserve"><value>Open in app: open the file in the app for its type (a PDF viewer for .pdf, Word for .docx, …)</value></data>
   <data name="TipFileActAppOriginal" xml:space="preserve"><value>Open the original file {0} in the app for its type</value></data>
-  <data name="FileActAppIndexOnly" xml:space="preserve"><value>This is only an index (.uwvz) and its original file is not next to it (only the original file can be opened in an app)</value></data>
+  <data name="FileActAppNoOriginal" xml:space="preserve"><value>This file was made from another file, and that original file is not next to it (only the original file can be opened in an app)</value></data>
   <data name="FileActCopied" xml:space="preserve"><value>Copied the path</value></data>
   <data name="FileActFolderOpened" xml:space="preserve"><value>Opened the folder</value></data>
   <data name="FileActTerminalOpened" xml:space="preserve"><value>Opened a terminal in {0}</value></data>
@@ -127,23 +124,12 @@
   <data name="ContextLinesSuffix" xml:space="preserve"><value>lines</value></data>
   <data name="IncludeLineNumbers" xml:space="preserve"><value>Line numbers</value></data>
   <data name="SaveEllipsis" xml:space="preserve"><value>Save…</value></data>
-  <data name="TipLineNumbers" xml:space="preserve"><value>Show line numbers on the left of the text</value></data>
-  <data name="TipSearchRegex" xml:space="preserve"><value>Treat the search word as a regular expression (off = the fast byte search)</value></data>
-  <data name="TipSearchCase" xml:space="preserve"><value>Ignore upper/lower case while searching</value></data>
   <data name="TipIncludeLineNumbers" xml:space="preserve"><value>Put the line number in front of each saved line</value></data>
   <data name="TipIncludeHeader" xml:space="preserve"><value>Put the file's first line at the top of the saved file (for CSV/TSV)</value></data>
   <data name="TipIncludeContext" xml:space="preserve"><value>Save the ±N context lines too, not just the hits</value></data>
-  <data name="TipCloseTabX" xml:space="preserve"><value>Close this tab</value></data>
-  <data name="TipCancelIndex" xml:space="preserve"><value>Stop building the index (the file stays open)</value></data>
-  <data name="TipStartOpen" xml:space="preserve"><value>Choose a file to open</value></data>
   <data name="TipSaveFilter" xml:space="preserve"><value>Save the list to a text file</value></data>
   <data name="TipCancelSave" xml:space="preserve"><value>Stop saving (the partial file is kept)</value></data>
   <data name="TipCloseList" xml:space="preserve"><value>Close this list (the search results are kept)</value></data>
-  <data name="TipLicActivate" xml:space="preserve"><value>Register the key entered above and unlock the Pro features</value></data>
-  <data name="TipLicRevalidate" xml:space="preserve"><value>Ask the server about the current state of the registered keys</value></data>
-  <data name="TipLicDeactivate" xml:space="preserve"><value>Release this machine from the key so it can be used on another one</value></data>
-  <data name="TipLicBuy" xml:space="preserve"><value>Open the purchase page in your browser</value></data>
-  <data name="TipCloseWindow" xml:space="preserve"><value>Close this window</value></data>
   <data name="IncludeHeaderOnSave" xml:space="preserve"><value>First line as header</value></data>
   <data name="IncludeContextOnSave" xml:space="preserve"><value>Context lines</value></data>
   <data name="AlwaysOnTop" xml:space="preserve"><value>Always on top</value></data>
@@ -212,28 +198,8 @@
   <data name="MenuSaveAs" xml:space="preserve"><value>Save to file…</value></data>
   <data name="SaveSelectionTitle" xml:space="preserve"><value>Save selection</value></data>
   <data name="SelectionLines" xml:space="preserve"><value>{0} lines selected (Ctrl/Cmd+C to copy)</value></data>
-  <data name="LicTitle" xml:space="preserve"><value>License</value></data>
-  <data name="LicStatusLabel" xml:space="preserve"><value>Status:</value></data>
-  <data name="LicKeyLabel" xml:space="preserve"><value>License key</value></data>
-  <data name="LicActivate" xml:space="preserve"><value>Activate</value></data>
-  <data name="LicRevalidate" xml:space="preserve"><value>Re-check</value></data>
-  <data name="LicDeactivate" xml:space="preserve"><value>Deactivate</value></data>
-  <data name="LicBuyPrompt" xml:space="preserve"><value>Don't have a UwView Pro license? You can purchase one here.</value></data>
-  <data name="LicBuy" xml:space="preserve"><value>Buy…</value></data>
-  <data name="LicNotConfigured" xml:space="preserve"><value>(Note) organization_id is not set, so activation will not work. Set the real value before release.</value></data>
-  <data name="LicEmptyKey" xml:space="preserve"><value>Please enter a key</value></data>
-  <data name="LicWorking" xml:space="preserve"><value>Working…</value></data>
-  <data name="LicActivated" xml:space="preserve"><value>Activated. Pro features are enabled.</value></data>
-  <data name="LicFailed" xml:space="preserve"><value>Activation failed</value></data>
-  <data name="LicRevalidated" xml:space="preserve"><value>Re-checked</value></data>
-  <data name="LicOffline" xml:space="preserve"><value>Offline or validation failed (valid within grace)</value></data>
-  <data name="LicDeactivated" xml:space="preserve"><value>License deactivated</value></data>
-  <data name="LicButton" xml:space="preserve"><value>License</value></data>
-  <data name="LicButtonTip" xml:space="preserve"><value>Manage your UwView Pro license</value></data>
-  <data name="ProLocked" xml:space="preserve"><value>Pro features require a license</value></data>
   <data name="SettingsTitle" xml:space="preserve"><value>Settings</value></data>
   <data name="SettingsOpen" xml:space="preserve"><value>Settings…</value></data>
-  <data name="LicSectionTitle" xml:space="preserve"><value>License</value></data>
   <data name="AboutMenu" xml:space="preserve"><value>About</value></data>
   <data name="FileMenu" xml:space="preserve"><value>File</value></data>
   <data name="HelpMenu" xml:space="preserve"><value>Help</value></data>
@@ -271,8 +237,6 @@
   <data name="MultiOpening" xml:space="preserve"><value>Opening… {0}</value></data>
   <data name="MultiFileChanged" xml:space="preserve"><value>This file changed after the search (lines may have shifted): {0}</value></data>
   <data name="MultiCannotOpen" xml:space="preserve"><value>{0} cannot be opened in the app (zip, pbf and the like were not searched)</value></data>
-  <data name="MergedSourceMissing" xml:space="preserve"><value>The original file is gone; its contents are in the bundled text of the main tab: {0}</value></data>
-  <data name="MergedZipEntryNoTab" xml:space="preserve"><value>Files inside a zip cannot be opened in a tab; their contents are in the bundled text of the main tab: {0}</value></data>
   <data name="MainTabCannotClose" xml:space="preserve"><value>The main tab cannot be closed (the result list and the file list are based on it)</value></data>
   <data name="ExportBookmarksMenu" xml:space="preserve"><value>Export bookmarks…</value></data>
   <data name="BookmarksNotRestored" xml:space="preserve"><value>{0} has changed since it was last opened, so its bookmarks were not restored</value></data>
@@ -390,7 +354,7 @@
   <data name="BannerCloseTip" xml:space="preserve"><value>Close this notice</value></data>
   <data name="CmdTitle" xml:space="preserve"><value>Command Line</value></data>
   <data name="CmdMenu" xml:space="preserve"><value>Command Line…</value></data>
-  <data name="TipCmdButton" xml:space="preserve"><value>Command line (search files with the same syntax as uvf / uvp)</value></data>
+  <data name="TipCmdButton" xml:space="preserve"><value>Command line (search files with the same syntax as uvf)</value></data>
   <data name="CmdBaseFolder" xml:space="preserve"><value>Base folder</value></data>
   <data name="CmdPickFolder" xml:space="preserve"><value>Choose…</value></data>
   <data name="TipCmdPickFolder" xml:space="preserve"><value>Relative paths in the file pattern are resolved from this folder (like the folder you run the command in)</value></data>
@@ -434,31 +398,9 @@
   <data name="CmdShownInWindow" xml:space="preserve"><value>The results are shown in the main window</value></data>
   <data name="CmdRebuild" xml:space="preserve"><value>Rebuild…</value></data>
   <data name="TipCmdRebuild" xml:space="preserve"><value>Rebuilds the index without the missing files (the previous index is moved to .bak-date; same as --rebuild)</value></data>
-  <data name="CmdRebuildAsk" xml:space="preserve"><value>The previous index is moved to .bak-date, and a new one is made from the files that exist now. The contents of the missing files will not be in the new index. Rebuild?</value></data>
-  <data name="CmdRebuildYes" xml:space="preserve"><value>Rebuild</value></data>
   <data name="TipCmdFileList" xml:space="preserve"><value>Double-click to open it in the main window</value></data>
-  <data name="CmdRebuildNo" xml:space="preserve"><value>Cancel</value></data>
   <data name="TipCmdHistory" xml:space="preserve"><value>Values you ran before (newest first). Picking one restores the base folder, both fields and the exclusion check together</value></data>
   <data name="CmdHistoryEmpty" xml:space="preserve"><value>(no history yet)</value></data>
-  <data name="CmdMultiOpenTitle" xml:space="preserve"><value>Open</value></data>
-  <data name="CmdMultiOpenAsk" xml:space="preserve"><value>You picked {0} files. How do you want to open them?
-Bundling puts them into one index (.uwvz) that you search as number:line (they go into the Command line dialog).</value></data>
-  <data name="CmdMultiOpenSeparate" xml:space="preserve"><value>Open in separate tabs</value></data>
-  <data name="CmdMultiOpenBundle" xml:space="preserve"><value>Bundle into one</value></data>
-  <data name="CmdMultiOpenDontAsk" xml:space="preserve"><value>Don't ask again (open in separate tabs)</value></data>
-  <data name="CmdNoCommonFolder" xml:space="preserve"><value>These files have no common folder, so they cannot be bundled. They open in separate tabs</value></data>
-  <data name="CmdOneFolderAtATime" xml:space="preserve"><value>Drop one folder at a time</value></data>
-  <data name="CmdIndexElsewhere" xml:space="preserve"><value>Where to save the index (the base folder is not writable; elsewhere, the command cannot share it)</value></data>
-  <data name="CmdMergedTabTitle" xml:space="preserve"><value>{0} — {1} ({2} files)</value></data>
-  <data name="CmdMergedChangedTitle" xml:space="preserve"><value>Bundled index</value></data>
-  <data name="CmdMergedAppendAsk" xml:space="preserve"><value>{0}
-({1})</value></data>
-  <data name="CmdMergedAppendOpen" xml:space="preserve"><value>Add and open</value></data>
-  <data name="CmdMergedRebuildOpen" xml:space="preserve"><value>Rebuild and open</value></data>
-  <data name="CmdMergedOpenAsIs" xml:space="preserve"><value>Open as it is</value></data>
-  <data name="CmdMergedCancel" xml:space="preserve"><value>Cancel</value></data>
-  <data name="CmdMergedUnchecked" xml:space="preserve"><value>Opened without checking against the original files ({0})</value></data>
-  <data name="CmdMergedStale" xml:space="preserve"><value>The original files changed; this may be out of date ({0})</value></data>
   <data name="CmdSaved" xml:space="preserve"><value>Saved: {0}</value></data>
   <data name="CmdWritten" xml:space="preserve"><value>Written:</value></data>
   <data name="CmdOpenWritten" xml:space="preserve"><value>Open</value></data>
@@ -467,12 +409,11 @@ Bundling puts them into one index (.uwvz) that you search as number:line (they g
   <data name="TipCmdRevealWritten" xml:space="preserve"><value>Opens the folder that holds the written file</value></data>
   <data name="CmdCopyPowerShell" xml:space="preserve"><value>Copy (PowerShell)</value></data>
   <data name="TipCmdCopyPowerShell" xml:space="preserve"><value>Copies it in a form you can paste into PowerShell (its quoting rules differ)</value></data>
-  <data name="CmdYes" xml:space="preserve"><value>Yes</value></data>
   <data name="CmdExpandedIn" xml:space="preserve"><value>Expanded ({0} s)</value></data>
   <data name="CmdRanIn" xml:space="preserve"><value>took {0} s</value></data>
   <data name="CmdShownIn" xml:space="preserve"><value>{0} s to show in the window</value></data>
   <data name="WatchOriginalFile" xml:space="preserve"><value>Watch the original of converted files</value></data>
-  <data name="WatchOriginalFileHint" xml:space="preserve"><value>Word, Excel and PDF files (opened through their extracted text) and files stored as UTF-8 (UwView Pro) are shown from a converted copy. When this is on, a banner tells you when the original file changes, and Reload extracts it again and reopens it.</value></data>
+  <data name="WatchOriginalFileHint" xml:space="preserve"><value>Word, Excel and PDF files (opened through their extracted text) are shown from a converted copy. When this is on, a banner tells you when the original file changes, and Reload extracts it again and reopens it.</value></data>
   <data name="TipWatchOriginalFile" xml:space="preserve"><value>Tell me when the original of a converted file changes</value></data>
   <data name="OriginalChanged" xml:space="preserve"><value>The original {0} has changed (Reload to open it again)</value></data>
 </root>

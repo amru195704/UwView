@@ -58,7 +58,7 @@ internal static class PdfText
     }
 
     /// <summary>
-    /// 読めるかだけを確かめる（束ねる前の下調べ用。読めない 1 本で全体を止めず、名指しで飛ばすため）。
+    /// 読めるかだけを確かめる（中身を取り出す前に。読めない 1 本で全体を止めず、名指しで飛ばすため）。
     /// 開けるか（パスワード付きでないか）と、文字のあるページが 1 つでもあるかを見る。ふつうは 1 ページ目で終わる。
     /// </summary>
     public static OfficeRejectedException? Precheck(string path)

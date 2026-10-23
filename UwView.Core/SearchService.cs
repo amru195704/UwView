@@ -25,7 +25,7 @@ public sealed record SearchOutcome(long TotalHits, bool Truncated, bool Complete
 /// 文字列検索（§11-①）。索引と独立に IByteSource を直接スキャンする背景処理。
 /// ヒットは「マッチを含む行の行頭バイトオフセット」（昇順・1行1件）。
 /// バイトオフセット基準なのでエンコード切替・索引未完了（ページモード）でも一貫して有効。
-/// 探し方（<see cref="SearchMethod"/>）は <see cref="PreparedSearch"/>／<see cref="SearchPlan"/> が決める（uvf・uvp と同じ）:
+/// 探し方（<see cref="SearchMethod"/>）は <see cref="PreparedSearch"/>／<see cref="SearchPlan"/> が決める（CLI と同じ）:
 /// - 素の文字列: バイト列の SIMD IndexOf（-i で畳める語は ASCII の大小を畳んで）
 /// - 正規表現など: 行単位デコード + Regex.IsMatch(Span)。手がかり（必須リテラル・短い手がかり・大小無視の手がかり）があれば、
 ///   先にそのバイト列で候補行を探し、候補行だけをデコードして当てる
@@ -41,7 +41,7 @@ public static class SearchService
 
     /// <summary>
     /// <see cref="SearchOptions.MaxHits"/> を指定しなかったときの上限（0 以下＝無制限）。**初期値は無制限**。
-    /// UVP の画面は設定「1回の検索で保持する最大ヒット数」をここへ入れる（検索条件を作る場所が多いため）。
+    /// 画面が設定「1回の検索で保持する最大ヒット数」をここへ入れる（検索条件を作る場所が多いため）。
     /// 件数を絞りたいときは検索条件の <c>MaxHits</c>（CLI は -limit）で明示する。
     /// </summary>
     public static int DefaultMaxHits { get; set; }
@@ -97,7 +97,7 @@ public static class SearchService
         long fileLength = src.Length;
         long contentBytes = Math.Max(1, fileLength - bomLength);
 
-        // 探し方は uvf・uvp と同じところで決める。-i の素の文字列もバイトのまま畳める語ならバイトで探す
+        // 探し方は CLI と同じところで決める。-i の素の文字列もバイトのまま畳める語ならバイトで探す
         //（デコード＋正規表現だと長大行を先頭 64KB までしか見られず、索引ありと索引なしで
         // 同じファイルの答えが変わっていた。再レビュー 2026-09-19 の指摘E）
         var plan = (prepared ?? PreparedSearch.Create(options)).For(encoding);

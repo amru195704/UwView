@@ -12,7 +12,7 @@ using UwView.Services;
 namespace UwView.Views;
 
 /// <summary>
-/// 設定の画面の「表示」（v1.8.2 extFS E-4 §5。uvf・uvp の設定の画面の両方に入れる）。
+/// 設定の画面の「表示」（v1.8.2 extFS E-4 §5）。
 /// テーマ（OS に合わせる・ライト・ダーク）と、本文のフォント・大きさ。変えたらすぐ画面に当たり、設定に残る。
 /// </summary>
 public sealed class AppearancePanel : UserControl

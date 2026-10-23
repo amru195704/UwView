@@ -80,10 +80,9 @@ public static class TuneRunner
     public readonly record struct Row(int Threads, double GbPerSec, double SpreadPercent);
 
     /// <summary>
-    /// 1回ぶんの走査を実際に行う係（GB/s を返す）。製品ごとに<b>本番と同じ経路</b>を渡す:
-    /// uvf は平文の走査、uvp は <c>.uwvz</c> の検索（zstd 展開を含む）。
-    /// 経路が違うと1バイトあたりの手間が違い、勧める本数も変わる
-    /// （Mac 実測: 平文 7.1 GB/s・4本で頭打ち／.uwvz 2.0 GB/s・8〜16本で頭打ち。2026-09-22）。
+    /// 1回ぶんの走査を実際に行う係（GB/s を返す）。呼び手ごとに<b>本番と同じ経路</b>を渡す
+    /// （uvf は平文の走査）。経路が違うと1バイトあたりの手間が違い、勧める本数も変わる
+    /// （Mac 実測: 平文 7.1 GB/s・4本で頭打ち。2026-09-22）。
     /// </summary>
     /// <param name="path">測る対象。</param>
     /// <param name="length">先頭からこのバイト数だけ測る。</param>
@@ -95,7 +94,7 @@ public static class TuneRunner
     /// <param name="AllSame">どの本数でも変わらなかったか（差が小さい）。</param>
     /// <param name="DiskGbPerSec">
     /// 媒体から読める速さを、走査するバイト数に換算した値（測れなければ null）。
-    /// <c>.uwvz</c> を読む場合は「媒体の速さ × 圧縮率」になる（同じ土俵で CPU 側と比べるため）。
+    /// 圧縮したものを読む経路なら「媒体の速さ × 圧縮率」になる（同じ土俵で CPU 側と比べるため）。
     /// </param>
     /// <param name="MeasuredBytes">1回あたりに読んだバイト数。</param>
     /// <param name="Busy">測っている間に速さが揺れたか（ほかの処理が走っている疑い）。</param>
@@ -142,7 +141,7 @@ public static class TuneRunner
     /// <param name="scan">1回ぶんの走査（null なら平文の走査＝uvf の経路）。</param>
     /// <param name="mediumRatio">
     /// 媒体から読むバイト数に対する、走査するバイト数の倍率。平文は 1。
-    /// <c>.uwvz</c> は元の約 1/9 しか読まないので 9 前後になる（媒体で頭打ちかの判断に使う）。
+    /// 圧縮したものを読む経路では 1 より大きくなる（媒体で頭打ちかの判断に使う）。
     /// </param>
     public static Result Run(string? path, int logicalProcessors, Action<string>? status = null,
                              CancellationToken ct = default, Scan? scan = null, double mediumRatio = 1)

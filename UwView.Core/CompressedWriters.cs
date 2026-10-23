@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 namespace UwView.Core;
 
 /// <summary>
-/// 圧縮して書き出す口（uvp の <c>-out</c>・<c>-extract</c>。指示書 WideField v1.7 §11）。
+/// 圧縮して書き出す口（指示書 WideField v1.7 §11）。
 /// 読める 7 形式（gz bz2 xz lzma zst lz4 br）をすべて書ける。
 ///
 /// <list type="bullet">

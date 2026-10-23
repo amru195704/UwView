@@ -33,7 +33,7 @@ public partial class DocumentTabViewModel : ObservableObject, IAsyncDisposable
     private string _titlePrefix = "";
 
     /// <summary>
-    /// ファイル名の代わりに出す名前（束ねた索引は <c>uw-….uwvz</c> では読めないので、指定 (A) で出す。
+    /// ファイル名の代わりに出す名前（中のファイル名では分からないときに、指定 (A) で出す。
     /// 旧 Open Cluster §5.1）。null ならファイル名。
     /// </summary>
     [ObservableProperty]
@@ -42,13 +42,13 @@ public partial class DocumentTabViewModel : ObservableObject, IAsyncDisposable
     private string? _titleOverride;
 
     /// <summary>
-    /// 閉じられるか。結果セット・束ねた索引のメインは false（閉じるボタンを出さない。
+    /// 閉じられるか。結果セットのメインは false（閉じるボタンを出さない。
     /// 実装指示書_uvf複数ファイルGUI表示とタブ §5.5）。
     /// </summary>
     [ObservableProperty] private bool _canClose = true;
 
     /// <summary>
-    /// 複数ファイルの結果のメインか（uvf の結果セットのメイン・uvp の束ねた本文）。
+    /// 複数ファイルの結果のメインか（結果セットのメイン）。
     /// タブを灰色にして、ほかのタブと見分けられるようにする（9.28修正）。
     /// </summary>
     [ObservableProperty] private bool _isResultMain;

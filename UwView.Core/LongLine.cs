@@ -7,7 +7,7 @@ namespace UwView.Core;
 ///
 /// 検索は長い行を先頭の1回ぶんだけで判定し、残りを改行まで読み飛ばしていた。
 /// 固定文字列（大小無視を含む）はバイトを見るだけなので、行の後ろにあっても見落とす理由がない
-/// （再々レビュー 2026-09-19 の指摘6。UVF の索引あり／なし・Pro の通常／除外で見落としていた）。
+/// （再々レビュー 2026-09-19 の指摘6。索引あり／なし・通常／除外で見落としていた）。
 /// 読み飛ばすついでに探し、読みの境目をまたぐ一致も拾う。
 ///
 /// 固定文字列の道は ASCII 互換の文字コードに限っているので、区切りは1バイトとして扱う。
@@ -17,7 +17,7 @@ public static class LongLine
     /// <summary>span の中で探す（見つからなければ -1）。</summary>
     public delegate int Finder(ReadOnlySpan<byte> span);
 
-    /// <summary>読んだバイトを受け取る（.uwvz への追記など）。span はこの呼び出しの間だけ有効。</summary>
+    /// <summary>読んだバイトを受け取る（別のファイルへの追記など）。span はこの呼び出しの間だけ有効。</summary>
     public delegate void Observer(long fileOffset, ReadOnlySpan<byte> bytes);
 
     /// <summary>

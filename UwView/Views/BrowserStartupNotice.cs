@@ -112,8 +112,8 @@ public sealed class BrowserStartupNotice : UserControl
               "Right after a file is opened, the index is being built. The scrollbar is disabled until it finishes "
               + "(watch for \"Indexing\" at the bottom). You can still move with the keyboard and the mouse wheel.")));
         card.Children.Add(Bullet("4.",
-            T("多段階検索などの高度な検索には UwView Pro をご利用ください。編集できるアップグレードもあります。",
-              "For advanced searching such as drill-down, use UwView Pro. An upgrade that adds editing is also available.")));
+            T("有料版（UwView Pro）もあります。",
+              "A paid edition, UwView Pro, is also available.")));
 
         card.Children.Add(new StackPanel
         {
@@ -126,7 +126,7 @@ public sealed class BrowserStartupNotice : UserControl
                            () => SiteLinks.DownloadLink,
                            T("無料版 UwView の入手ページを開く", "Open the download page for the free UwView")),
                 LinkButton("open-new", T("UwView Pro を見る", "See UwView Pro"),
-                           () => SiteLinks.ProLink,
+                           () => SiteLinks.PaidEditionLink,
                            T("UwView Pro の紹介ページを開く", "Open the UwView Pro product page")),
             },
         });

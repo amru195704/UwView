@@ -19,13 +19,13 @@ public sealed class EditProgressWindow : Window
     private bool _closing;   // 呼び出し側からの「閉じる」。×を押されたのと区別する
 
     /// <summary>いま出ている進捗ダイアログ（自動テストから掴むため。親を持たないので窓一覧から辿れない）。</summary>
-    internal static EditProgressWindow? Current { get; private set; }
+    public static EditProgressWindow? Current { get; private set; }
 
     /// <summary>実行中に進捗を1度でも受け取ったか（自動テスト用）。</summary>
-    internal bool ProgressReported => _view.ProgressReported;
+    public bool ProgressReported => _view.ProgressReported;
 
     /// <summary>いま出ている件数・割合の文言（自動テスト用）。</summary>
-    internal string CountText => _view.CountText;
+    public string CountText => _view.CountText;
 
     /// <summary>「中止」が押されたとき。呼び出し側が CancellationTokenSource を Cancel する。</summary>
     public event Action? Cancelled;

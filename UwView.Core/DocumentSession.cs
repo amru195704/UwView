@@ -7,7 +7,7 @@ public enum ViewMode { Page, Line }
 
 /// <summary>
 /// 1 つの開いたファイル = 1 つのセッション（§4.7）。
-/// I/O ソース・文字コード・索引・ドキュメント・表示状態を 1 つに束ね、
+/// I/O ソース・文字コード・索引・ドキュメント・表示状態を 1 つにまとめ、
 /// タブUI はこのセッションを差し替えて表示する（状態保持で即時切替・索引再構築なし）。
 /// </summary>
 public sealed class DocumentSession : IAsyncDisposable

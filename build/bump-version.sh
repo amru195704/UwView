@@ -17,7 +17,7 @@ cd "$(dirname "$0")/.."
 FILES=(UwView/UwView.csproj UwView.Cli/UwView.Cli.csproj)
 
 # 表示する版数。.NET の <Version> は数字 4 つまでなので、5 つ目まで使う版（1.7.3.6.2 のような修正版）は
-# <InformationalVersion> に全部を書き、<Version> には先頭 4 つを書く（UVP と同じ。2026-10-02）。
+# <InformationalVersion> に全部を書き、<Version> には先頭 4 つを書く（2026-10-02）。
 # build/publish.sh も表示する版数をファイル名に使う
 current() {
   local v

@@ -26,7 +26,7 @@ Last updated: 2026-07 ・ Maintainer: **y4u (amru195704)**
 | 技術 / Tech | .NET 10, Avalonia UI 12 (custom Skia rendering) |
 | 言語 / UI languages | 日本語 / English（実行時切替）|
 | ライセンス / License | PolyForm Internal Use License 1.0.0（個人・社内業務利用は無料 / free for personal & internal business use；公式バイナリを無改変のまま無償でパッケージとして再配布することは可〔LICENSE の Additional Permission〕/ the unmodified official binaries may be redistributed free of charge as packages, per the "Additional Permission" in LICENSE；それ以外の再配布・組込みは別ライセンス / other redistribution & embedding require a separate commercial license；オープンソースではない / not open source） |
-| 価格 / Price | 本体無料 / Free（将来 Pro 版・GitHub Sponsors を予定） |
+| 価格 / Price | 本体無料 / Free（有料版 UwView Pro あり・GitHub Sponsors で支援可 / a paid edition, UwView Pro, is also available; support via GitHub Sponsors） |
 | 開発者 / Author | y4u（丸山 — GitHub: amru195704）|
 | 起源 / Origin | Windows95 時代に Vector で公開していたビューアを Avalonia で再構築 |
 
@@ -47,21 +47,20 @@ OpenStreetMap 日本全域を XML 化した実データでの計測（Apple Sili
 
 > 「行数よりストレージ容量が先に効く」— The file body stays non-resident; in practice storage capacity matters before line count does.
 
-### 最大規模実測 / Largest-scale test — OSM USA 258.68GB・45億行（UwView Pro / 2026-07-26）
+### 最大規模実測 / Largest-scale test — OSM USA 258.68GB・45億行（無料版 UwView v1.6.6 / 2026-09-21）
 
-OpenStreetMap アメリカ全土 PBF(11GB) を `osmium cat` で単一XMLに展開した `us-260726.osm` を UwView Pro で計測。上記の日本データの約5倍規模。
+OpenStreetMap アメリカ全土 PBF(11GB) を `osmium cat` で単一XMLに展開した `us-260726.osm` を、無料版の UwView で計測。上記の日本データの約5倍規模。
 
 | Metric / 指標 | Result / 実測値 |
 |------|--------|
 | File size / サイズ | 258,679,440,228 bytes (258.68 GB = 240.9 GiB) |
 | Lines / 行数 | **4,509,830,821**（45億行 / 4.5 billion） |
-| First open incl. index / 初回オープン（索引込み） | 5 min 28 s (328 s) ≈ 789 MB/s |
-| Second open onward / 2回目以降 | instant / 一瞬（`.uwvz` から復元） |
-| Search / 検索 | ~34 s regardless of term — "New York" 34.8 s (100,492 hits) / "Boston" ~34 s |
-| `.uwvz` sidecar / サイドカー | 28,608,409,551 bytes (28.61 GB ≈ 11% of original) |
+| Scroll to the end / 末尾まで行けるまで | no wait / 待たない（開いた直後から） |
+| Finish opening (line numbers) / 開き終わるまで（行番号） | 4 min 15.5 s |
+| Search and show the hit list (`uvf … -open`) / 探して一覧まで | 261.37 s |
 
 > 45億行は `int` の上限（2,147,483,647）を超える — 行番号を `long` で持つ設計が必須であることが実証された。/ 4.5 B lines exceed the `int` limit, proving the `long` line-number design was necessary.
-> 初回の5分28秒は物理的な全走査のため短縮できない。価値は「2回目以降は行番号付きで瞬時」。/ The 5 min 28 s first open cannot be shortened; the payoff is instant reopen from the 2nd time on.
+> 最初の1回はファイル全体を読むので数分かかるが、その間も末尾まで動ける。/ The first read of the whole file takes minutes, but you can move to the end while it happens.
 
 Synthetic 200 M lines / 5.1 GB: index build 9.7 s, random GetLine avg 0.005 ms, literal search 3.4 s (1,521 MB/s).
 

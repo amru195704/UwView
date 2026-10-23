@@ -1,4 +1,4 @@
-<!-- 画面の色（v1.8.2 extFS E-4。ライト／ダーク）。uvf・uvp の両方の App が読み込む。
+<!-- 画面の色（v1.8.2 extFS E-4。ライト／ダーク）。App が読み込む。
      ライトは 1.8.1 までと同じ値。名前に色の値が入っているもの（Uv_CCCCCC など）は、ライトのその色の置き場所。
      自前で描く部品（本文・ミニマップ・結果の一覧）は ThemeColors から引く。 -->
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
@@ -48,15 +48,15 @@
                 <SolidColorBrush x:Key="Uv_2F7D53" Color="#2F7D53" />  <!-- 成功の文字 -->
                 <SolidColorBrush x:Key="Uv_8A4B00" Color="#8A4B00" />  <!-- 注意の文字（茶） -->
                 <SolidColorBrush x:Key="Uv_FFF09E" Color="#FFF09E" />  <!-- 絞り込みの窓の当たりの地 -->
-                <SolidColorBrush x:Key="Uv_ProButton" Color="#6BA6E0" />  <!-- Pro のボタンの地（押せる） -->
-                <SolidColorBrush x:Key="Uv_ProButtonBorder" Color="#4F8CCB" />  <!-- Pro のボタンの枠 -->
-                <SolidColorBrush x:Key="Uv_ProButtonHover" Color="#7EB4EA" />  <!-- Pro のボタンの地（指した） -->
-                <SolidColorBrush x:Key="Uv_ProButtonHoverBorder" Color="#6BA6E0" />  <!-- Pro のボタンの枠（指した） -->
-                <SolidColorBrush x:Key="Uv_ProButtonPressed" Color="#4F8CCB" />  <!-- Pro のボタンの地（押した） -->
-                <SolidColorBrush x:Key="Uv_ProButtonText" Color="#000000" />  <!-- Pro のボタンの文字 -->
-                <SolidColorBrush x:Key="Uv_ProButtonDisabled" Color="#B9BCC0" />  <!-- Pro のボタンの地（押せない） -->
-                <SolidColorBrush x:Key="Uv_ProButtonDisabledBorder" Color="#9AA0A6" />  <!-- Pro のボタンの枠（押せない） -->
-                <SolidColorBrush x:Key="Uv_ProButtonDisabledText" Color="#5A5F66" />  <!-- Pro のボタンの文字（押せない） -->
+                <SolidColorBrush x:Key="Uv_AccentButton" Color="#6BA6E0" />  <!-- 強調ボタンの地（押せる） -->
+                <SolidColorBrush x:Key="Uv_AccentButtonBorder" Color="#4F8CCB" />  <!-- 強調ボタンの枠 -->
+                <SolidColorBrush x:Key="Uv_AccentButtonHover" Color="#7EB4EA" />  <!-- 強調ボタンの地（指した） -->
+                <SolidColorBrush x:Key="Uv_AccentButtonHoverBorder" Color="#6BA6E0" />  <!-- 強調ボタンの枠（指した） -->
+                <SolidColorBrush x:Key="Uv_AccentButtonPressed" Color="#4F8CCB" />  <!-- 強調ボタンの地（押した） -->
+                <SolidColorBrush x:Key="Uv_AccentButtonText" Color="#000000" />  <!-- 強調ボタンの文字 -->
+                <SolidColorBrush x:Key="Uv_AccentButtonDisabled" Color="#B9BCC0" />  <!-- 強調ボタンの地（押せない） -->
+                <SolidColorBrush x:Key="Uv_AccentButtonDisabledBorder" Color="#9AA0A6" />  <!-- 強調ボタンの枠（押せない） -->
+                <SolidColorBrush x:Key="Uv_AccentButtonDisabledText" Color="#5A5F66" />  <!-- 強調ボタンの文字（押せない） -->
                 <SolidColorBrush x:Key="Uv_View_Background" Color="#FFFFFF" />  <!-- 本文の地 -->
                 <SolidColorBrush x:Key="Uv_View_Text" Color="#000000" />  <!-- 本文の文字 -->
                 <SolidColorBrush x:Key="Uv_View_LineNumber" Color="#404040" />  <!-- 行番号 -->
@@ -119,15 +119,15 @@
                 <SolidColorBrush x:Key="Uv_2F7D53" Color="#6BD39A" />  <!-- 成功の文字 -->
                 <SolidColorBrush x:Key="Uv_8A4B00" Color="#E0A050" />  <!-- 注意の文字（茶） -->
                 <SolidColorBrush x:Key="Uv_FFF09E" Color="#7A6400" />  <!-- 絞り込みの窓の当たりの地 -->
-                <SolidColorBrush x:Key="Uv_ProButton" Color="#2F5F8F" />  <!-- Pro のボタンの地（押せる） -->
-                <SolidColorBrush x:Key="Uv_ProButtonBorder" Color="#4F8CCB" />  <!-- Pro のボタンの枠 -->
-                <SolidColorBrush x:Key="Uv_ProButtonHover" Color="#3A6EA3" />  <!-- Pro のボタンの地（指した） -->
-                <SolidColorBrush x:Key="Uv_ProButtonHoverBorder" Color="#6BA6E0" />  <!-- Pro のボタンの枠（指した） -->
-                <SolidColorBrush x:Key="Uv_ProButtonPressed" Color="#244C74" />  <!-- Pro のボタンの地（押した） -->
-                <SolidColorBrush x:Key="Uv_ProButtonText" Color="#F0F0F0" />  <!-- Pro のボタンの文字 -->
-                <SolidColorBrush x:Key="Uv_ProButtonDisabled" Color="#3A3D42" />  <!-- Pro のボタンの地（押せない） -->
-                <SolidColorBrush x:Key="Uv_ProButtonDisabledBorder" Color="#50555C" />  <!-- Pro のボタンの枠（押せない） -->
-                <SolidColorBrush x:Key="Uv_ProButtonDisabledText" Color="#8A8F96" />  <!-- Pro のボタンの文字（押せない） -->
+                <SolidColorBrush x:Key="Uv_AccentButton" Color="#2F5F8F" />  <!-- 強調ボタンの地（押せる） -->
+                <SolidColorBrush x:Key="Uv_AccentButtonBorder" Color="#4F8CCB" />  <!-- 強調ボタンの枠 -->
+                <SolidColorBrush x:Key="Uv_AccentButtonHover" Color="#3A6EA3" />  <!-- 強調ボタンの地（指した） -->
+                <SolidColorBrush x:Key="Uv_AccentButtonHoverBorder" Color="#6BA6E0" />  <!-- 強調ボタンの枠（指した） -->
+                <SolidColorBrush x:Key="Uv_AccentButtonPressed" Color="#244C74" />  <!-- 強調ボタンの地（押した） -->
+                <SolidColorBrush x:Key="Uv_AccentButtonText" Color="#F0F0F0" />  <!-- 強調ボタンの文字 -->
+                <SolidColorBrush x:Key="Uv_AccentButtonDisabled" Color="#3A3D42" />  <!-- 強調ボタンの地（押せない） -->
+                <SolidColorBrush x:Key="Uv_AccentButtonDisabledBorder" Color="#50555C" />  <!-- 強調ボタンの枠（押せない） -->
+                <SolidColorBrush x:Key="Uv_AccentButtonDisabledText" Color="#8A8F96" />  <!-- 強調ボタンの文字（押せない） -->
                 <SolidColorBrush x:Key="Uv_View_Background" Color="#1E1E1E" />  <!-- 本文の地 -->
                 <SolidColorBrush x:Key="Uv_View_Text" Color="#D4D4D4" />  <!-- 本文の文字 -->
                 <SolidColorBrush x:Key="Uv_View_LineNumber" Color="#8A8A8A" />  <!-- 行番号 -->

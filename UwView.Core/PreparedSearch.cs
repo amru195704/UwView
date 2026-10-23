@@ -5,7 +5,7 @@ using System.Text.RegularExpressions;
 namespace UwView.Core;
 
 /// <summary>
-/// 検索の方式（外部レビュー 2026-10-04「整理の進め方」3）。どの検索（画面・uvf・uvp・置換）も、この 4 つのどれかで探す。
+/// 検索の方式（外部レビュー 2026-10-04「整理の進め方」3）。どの検索（画面・CLI）も、この 4 つのどれかで探す。
 /// </summary>
 public enum SearchMethod
 {
@@ -107,7 +107,7 @@ public sealed class PreparedSearch
     /// 作業役が自分だけで使う正規表現を借りる（使い終わったら <see cref="ReturnRegex"/>）。返されたものを使い回し、
     /// 足りなければコンパイルして足す（同時に走る作業役の数まで）。
     /// 1 つの Regex を何本もの作業役で同時に使うと、.NET は呼ぶたびに照合の係（runner）を作り直す。
-    /// uvp の 10 並列で 9,200 万行の <c>-E -v '^ +&lt;'</c> が 1.37 → 11.5 秒になった（テスト一式 2026-10-05）。
+    /// 9,200 万行の <c>-E -v '^ +&lt;'</c> が 1.37 → 11.5 秒になった（テスト一式 2026-10-05）。
     /// </summary>
     public Regex RentRegex()
     {
@@ -145,7 +145,7 @@ public sealed class PreparedSearch
 
 /// <summary>
 /// 文字コードが分かったあとの、検索の方式と道具（<see cref="PreparedSearch.For"/>）。
-/// 方式の選び方はここ 1 か所だけにある（画面・uvf・uvp・置換と、本体に任せる判断が同じものを見る）。
+/// 方式の選び方はここ 1 か所だけにある（画面・CLI と、本体に任せる判断が同じものを見る）。
 /// </summary>
 public sealed class SearchPlan
 {

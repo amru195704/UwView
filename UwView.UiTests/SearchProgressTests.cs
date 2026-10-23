@@ -7,7 +7,7 @@ using UwView.Views;
 namespace UwView.UiTests;
 
 /// <summary>
-/// 検索の進捗ダイアログ（9.11修正「UVP と同じように POPUP で状況表示して」）。
+/// 検索の進捗ダイアログ（9.11修正「POPUP で状況表示して」）。
 ///
 /// もとは検索が終わると結果一覧がすぐ前に出ていたので、
 /// ステータスバーに出した所要時間は読む前に隠れていた。
@@ -119,7 +119,7 @@ public class SearchProgressTests
             vm.ActiveTab!.Session.CancelSearch();
             await UiHarness.Pump(30);
 
-            // 中止でもダイアログは残り、経過時間が読める（UVP と同じ扱い）
+            // 中止でもダイアログは残り、経過時間が読める
             UiHarness.ForgetProgressWindow();
             Dispatcher.UIThread.RunJobs();
         }

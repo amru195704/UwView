@@ -22,10 +22,7 @@ public static class TextProbe
     }
 
     /// <summary>
-    /// UTF-16／UTF-32 で始まるか（BOM で見る）。
-    ///
-    /// 複数を1本に束ねるときは<b>改行が1バイト</b>でなければ継ぎ目を作れないので、
-    /// これに当たるものは束ねられない（1つだけで開くぶんには読める）。
+    /// UTF-16／UTF-32 で始まるか（BOM で見る）。1文字が2バイト以上の文字コードを見分けるのに使う。
     /// </summary>
     public static bool IsWideUnicode(ReadOnlySpan<byte> head)
         => (head.Length >= 2 && head[0] == 0xFF && head[1] == 0xFE)

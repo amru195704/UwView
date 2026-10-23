@@ -9,14 +9,14 @@ public enum FileOpenAction
     ShowTab,
     /// <summary>追加タブで新しく開く。</summary>
     AddTab,
-    /// <summary>メインで開く（uvf は中身を差し替える・uvp は束ねた本文の中で移動する）。</summary>
+    /// <summary>メインで開く（メインの中身を差し替える）。</summary>
     OpenInMain,
     /// <summary>タブが上限。開かない（古いタブを勝手に閉じない）。</summary>
     RefuseFull,
 }
 
 /// <summary>
-/// 1つの結果セット（uvf）・束ねた索引（uvp）から開いたタブの組
+/// 1つの結果セットから開いたタブの組
 /// （実装指示書_uvf複数ファイルGUI表示とタブ §5.3〜§5.5）。
 ///
 /// <b>タブは最大 8 個（メイン 1 ＋ 追加 7）</b>。数えるのはこの組のタブだけ
@@ -30,10 +30,10 @@ public sealed class FileTabGroup<T>(T main) where T : class
 
     private readonly Dictionary<int, T> _extra = [];
 
-    /// <summary>メイン（uvf は今見ているファイル、uvp は束ねた本文）。</summary>
+    /// <summary>メイン（今見ているファイル）。</summary>
     public T Main { get; set; } = main;
 
-    /// <summary>メインに出ているファイルの番号（0 始まり。束ねた本文のように1本に決まらなければ -1）。</summary>
+    /// <summary>メインに出ているファイルの番号（0 始まり。1本に決まらなければ -1）。</summary>
     public int MainFile { get; set; } = -1;
 
     /// <summary>メインを含めたタブの数。</summary>

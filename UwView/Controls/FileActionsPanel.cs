@@ -89,7 +89,7 @@ public sealed class FileActionsPanel : StackPanel
     private string ProblemText(AppTargetProblem problem) => problem switch
     {
         AppTargetProblem.ZipEntry => L.Format("FileListAppZipEntry", Path.GetFileName(_display)),
-        AppTargetProblem.IndexOnly => L["FileActAppIndexOnly"],
+        AppTargetProblem.NoOriginal => L["FileActAppNoOriginal"],
         _ => L.Format("FileListAppMissing", Path.GetFileName(_display)),
     };
 
@@ -104,13 +104,13 @@ public sealed class FileActionsPanel : StackPanel
     }
 
     /// <summary>出しているパス（自動テスト用）。</summary>
-    internal string PathText => _display;
+    public string PathText => _display;
 
     /// <summary>結果の 1 行（自動テスト用）。</summary>
     internal string ResultText => _result.Text ?? "";
 
     /// <summary>［アプリで開く］が押せるか（自動テスト用）。</summary>
-    internal bool AppEnabled => _app.IsEnabled;
+    public bool AppEnabled => _app.IsEnabled;
 
     /// <summary>アプリで開くファイル（索引なら元のファイル。自動テスト用）。</summary>
     internal string? AppTargetPath => _appTarget;

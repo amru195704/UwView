@@ -171,12 +171,22 @@ public class UvfCliTests : IDisposable
     }
 
     [Fact]
-    public async Task uwvzは無料版では開かない()
+    public async Task 断ると決めたファイルは開かない()
     {
-        File.WriteAllText(P("x.log.uwvz"), "not really");
-        var r = await Uvf(P("x.log.uwvz"), "ERROR");
-        Assert.Equal(UvfExit.Error, r.Exit);
-        Assert.Contains("UwView Pro", r.Err);
+        // 呼び手が RejectFile で登録したもの（拡張子はこのテストだけのもの。ほかのテストには当たらない）
+        UvfCli.RejectFile = path => path.EndsWith(".cli-reject", StringComparison.OrdinalIgnoreCase)
+            ? ("このファイルは扱いません", "this file is not handled") : null;
+        try
+        {
+            File.WriteAllText(P("x.log.cli-reject"), "not really");
+            var r = await Uvf(P("x.log.cli-reject"), "ERROR");
+            Assert.Equal(UvfExit.Error, r.Exit);
+            Assert.True(r.Err.Contains("このファイルは扱いません") || r.Err.Contains("this file is not handled"), r.Err);
+
+            File.WriteAllText(P("x.log"), "ERROR here\n");
+            Assert.Equal(UvfExit.Found, (await Uvf(P("x.log"), "ERROR")).Exit);   // ほかのファイルは今までどおり
+        }
+        finally { UvfCli.RejectFile = null; }
     }
 
     // ── 複数ファイル（Wide Field v1.7.0 段階3）──────────────────────
@@ -250,7 +260,7 @@ public class UvfCliTests : IDisposable
     }
 
     /// <summary>
-    /// -h は単独のときだけ使い方（uvp と同じ。grep 互換で -h を先頭に書く人がいる。指示書 §8 B1）。
+    /// -h は単独のときだけ使い方（grep 互換で -h を先頭に書く人がいる。指示書 §8 B1）。
     /// </summary>
     [Fact]
     public async Task hは単独のときだけ使い方でそれ以外はファイル名なし()
@@ -439,11 +449,11 @@ public class UvfCliTests : IDisposable
     }
 
     /// <summary>
-    /// pbf は無料版では扱わない（UwView Pro の役目・指示書 段階7）。
+    /// pbf はこの版では扱わない（指示書 段階7）。
     /// テキストとして走査すると圧縮バイトを探しにいき「1件も無い」と答えてしまうので、名指しで断る。
     /// </summary>
     [Fact]
-    public async Task pbfは断ってuvpを案内する()
+    public async Task pbfは断って有料版を案内する()
     {
         // 先頭が [長さ4バイト][BlobHeader("OSMHeader")] なら pbf（中身で見分ける）
         var header = new byte[] { 0, 0, 0, 14, 0x0A, 9 };
@@ -452,7 +462,8 @@ public class UvfCliTests : IDisposable
         var run = await InDir("map.osm.pbf", "ERROR");
 
         Assert.Equal(UvfExit.Error, run.Exit);
-        Assert.Contains("uvp", run.Err);
+        Assert.Contains("pbf", run.Err);
+        Assert.Contains("paid edition", run.Err);              // 製品名だけの案内（コマンドの例は出さない）
         Assert.Empty(run.Out);
     }
 
@@ -465,7 +476,7 @@ public class UvfCliTests : IDisposable
     }
 
     /// <summary>
-    /// Word・Excel・PDF は、文字を取り出しながら探す（v1.8.3.2 から。それまでは UwView Pro の役目として断っていた）。
+    /// Word・Excel・PDF は、文字を取り出しながら探す（v1.8.3.2 から。それまでは断っていた）。
     /// .docx は中身が zip でも「zip です」とは言わない。古い形式（.doc）は読めないので、その理由を出して終了コード 2。
     /// </summary>
     [Fact]
@@ -518,7 +529,7 @@ public class UvfCliTests : IDisposable
         Assert.Equal(UvfExit.Error, run.Exit);                             // 飛ばしたもの（old.doc）があるので 2
         Assert.Equal($"a.log:1\ta timeout\nb.docx:1\tb timeout\nc.pdf:3\t{pdfLine}\nd.dat:3\t{pdfLine}\ne.bin:1\te timeout\n", run.Out);
         Assert.Contains("old.doc", run.Err);
-        Assert.DoesNotContain("UwView Pro", run.Err);
+        Assert.DoesNotContain("有料版", run.Err);
     }
 
     /// <summary>
@@ -646,7 +657,7 @@ public class UvfCliTests : IDisposable
         Assert.Contains("--json", run.Err);
     }
 
-    // ── --version / --help（uvp と同じ綴り。9.21修正）────
+    // ── --version / --help（9.21修正）────
 
     [Theory]
     [InlineData("--version")]
@@ -705,13 +716,15 @@ public class UvfCliTests : IDisposable
     {
         string log = WriteLog();
         string gz = Gzip(log);
+        string dir = Path.GetDirectoryName(log)!;
+        var before = Directory.GetFiles(dir).Order(StringComparer.Ordinal).ToArray();
 
         var plain = await Uvf(log, pattern);
         var fromGz = await Uvf(gz, pattern);
         Assert.Equal(UvfExit.Found, fromGz.Exit);
         Assert.Equal(Reference(log, pattern), fromGz.Out);
         Assert.Equal(plain.Out, fromGz.Out);
-        Assert.False(File.Exists(P("app.log.gz.uwvz")) || File.Exists(P("app.log.uwvz")), "uvf はファイルを作らない");
+        Assert.Equal(before, Directory.GetFiles(dir).Order(StringComparer.Ordinal).ToArray());   // uvf はファイルを作らない
     }
 
     [Theory]

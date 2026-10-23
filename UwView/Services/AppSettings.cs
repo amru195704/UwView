@@ -87,7 +87,7 @@ public sealed class SessionState
     public int ActiveIndex { get; set; }
 }
 
-/// <summary>UVP ライセンス永続データ（Polar・実装指示書 §1-4）。UVF では未使用。</summary>
+/// <summary>ライセンスの永続データ（この版では使わない）。</summary>
 public sealed class LicenseData
 {
     public string? Key { get; set; }
@@ -101,22 +101,22 @@ public sealed class LicenseData
     /// <summary>初回起動時刻（UTC ticks。トライアル起算。0=未設定）。</summary>
     public long FirstRunUtcTicks { get; set; }
 
-    /// <summary>初回起動時刻の封（UVP が付ける。書き換えると試用は使えない扱いになる）。</summary>
+    /// <summary>初回起動時刻の封（書き換えると試用は使えない扱いになる）。</summary>
     public string? FirstRunSeal { get; set; }
 }
 
 /// <summary>ファイル一覧の開く先（メイン・追加のタブ・外部のアプリ）。</summary>
 public enum FileListOpenMode
 {
-    /// <summary>メインに出す（uvf はメインの中身を差し替え、uvp は束ねた本文の中でその先頭へ）。</summary>
+    /// <summary>メインに出す（メインの中身を差し替える）。</summary>
     Main,
     /// <summary>追加のタブで開く（メイン＋7 個まで）。</summary>
     Tab,
-    /// <summary>元のファイルを、拡張子に合った外部のアプリで開く（.uwvz ではない）。</summary>
+    /// <summary>元のファイルを、拡張子に合った外部のアプリで開く。</summary>
     App,
 }
 
-/// <summary>ユーザー設定（言語・Ver1.1 機能・UVPライセンス）を JSON で永続化。保存不可な環境は握りつぶす。</summary>
+/// <summary>ユーザー設定（言語・Ver1.1 機能など）を JSON で永続化。保存不可な環境は握りつぶす。</summary>
 public sealed class AppSettings
 {
     // 上限（実装指示書の推奨値）
@@ -127,7 +127,7 @@ public sealed class AppSettings
     /// <summary>UI 言語（"ja" / "en"）。null なら OS の UI カルチャに従う。</summary>
     public string? Language { get; set; }
 
-    // ── UVP: Polar ライセンス認証（実装指示書_UVP_Polarライセンス認証）。UVF では未使用 ──
+    // ── ライセンス（この版では使わない）──
     public LicenseData License { get; set; } = new();
 
     // ── Ver1.1: 色分けハイライタ ──
@@ -165,7 +165,7 @@ public sealed class AppSettings
     public List<RecentEntry> RecentFiles { get; set; } = new();
     public List<string> Favorites { get; set; } = new();
 
-    // ── UVP v1.5.0: 抽出保存（F4）。直近の指定を覚えて「抽出保存」で使い回す ──
+    // ── 抽出保存。直近の指定を覚えて「抽出保存」で使い回す（この版では使わない）──
     /// <summary>既定は true（保存の行番号は従来から既定で付いていた）。</summary>
     public bool ExtractIncludeLineNumbers { get; set; } = true;
     public bool ExtractIncludeHeader { get; set; }
@@ -174,7 +174,7 @@ public sealed class AppSettings
     public bool ExtractIncludeContext { get; set; } = true;
 
     /// <summary>
-    /// UVP の未公開機能で使う予約項目（無料版では読み書きしない）。
+    /// 予約項目（この版では読み書きしない）。
     /// 公開していない機能なので、ここでは意味を書かない。
     /// </summary>
     public bool CommandModeEnabled { get; set; } = true;
@@ -216,29 +216,28 @@ public sealed class AppSettings
     public bool FileListHitsOnly { get; set; } = true;
 
     /// <summary>
-    /// 変換して開いたタブの元のファイルを見張る（既定 true）。uvf は Word・Excel・PDF から取り出した文字のタブ、
-    /// uvp はそれに加えて UTF-8 にそろえた .uwvz・gz・pbf から変換した .uwvz を単独で開いたタブ。
+    /// 変換して開いたタブの元のファイルを見張る（既定 true）。Word・Excel・PDF から取り出した文字のタブなど。
     /// 元が変わったら帯で知らせ、［読み直す］で取り出し直し・作り直す（2026-10-14 レビュー P2）。
     /// </summary>
     public bool WatchOriginalFile { get; set; } = true;
 
     /// <summary>
-    /// UVP: 1回の検索で保持する最大ヒット数（0＝無制限）。CLI（uvp）も同じ値を読む
-    /// （指示書 2026-09-15「検索上限のパラメータ化」）。無料版では使わない。
+    /// 1回の検索で保持する最大ヒット数（0＝無制限）
+    /// （指示書 2026-09-15「検索上限のパラメータ化」）。この版では使わない。
     /// </summary>
-    /// <summary>1回の検索で保持する最大ヒット数（0＝無制限・既定）。CLI（uvp）も同じ値を使う。</summary>
+    /// <summary>1回の検索で保持する最大ヒット数（0＝無制限・既定）。</summary>
     public int SearchMaxHits { get; set; }
 
     /// <summary>
     /// 検索に使うスレッド数（0＝既定の <see cref="UwView.Core.ThreadBudget.Default"/>）。
-    /// 環境変数（UVF_MAX_THREADS／UVP_MAX_THREADS）の方が優先される。`--tune --apply` がここへ書く
+    /// 環境変数（UVF_MAX_THREADS など）の方が優先される。`--tune --apply` がここへ書く
     /// （Wide Field v1.7.0 段階1-a）。
     /// </summary>
     public int MaxThreads { get; set; }
 
     /// <summary>
     /// 設定フォルダ名（%AppData%/&lt;この名前&gt;/settings.json）。
-    /// 既定は "UwView"（UVF）。UVP は起動時に "UwViewPro" へ変更し、UVF と設定・ライセンスを分離する。
+    /// 既定は "UwView"。別の名前で動くアプリは起動時に自分の名前へ変え、設定を分ける。
     /// </summary>
     public static string AppDataFolder = "UwView";
 
@@ -250,12 +249,11 @@ public sealed class AppSettings
 
     /// <summary>
     /// 独自フォルダへ切替えた直後、現行ファイルが無ければ旧共有ファイルから一度だけ移行コピーする。
-    /// （UVP を UwView 共有ファイルから UwViewPro 専用ファイルへ移す際にライセンス等を引き継ぐ）
+    /// （共有ファイルから専用ファイルへ移す際に設定を引き継ぐ）
     /// </summary>
     /// <param name="includeLicense">
     /// false の場合、ライセンス（キー・トライアル起算等）は引き継がず新規のまま起算する。
     /// 検索履歴・お気に入り・言語等の道具設定はどちらの場合も引き継ぐ。
-    /// UEP を UVP から分離する際、別のライセンスキーで認証するために使う。
     /// </param>
     public static void SeedFromLegacyIfMissing(string legacyFolder, bool includeLicense = true)
     {
@@ -324,7 +322,7 @@ public sealed class AppSettings
     }
 
     /// <summary>
-    /// 頻度集計の式の履歴（UVP v1.5.0）。検索語とは別に持つ——
+    /// 頻度集計の式の履歴（この版では使わない）。検索語とは別に持つ——
     /// 集計式は `k="([^"]+)"` のような正規表現で、検索窓の候補に混ぜると互いに邪魔になる。
     /// </summary>
     public List<string> TallyHistory { get; set; } = new();
@@ -348,7 +346,7 @@ public sealed class AppSettings
             CommandHistory.RemoveRange(CommandHistoryLimit, CommandHistory.Count - CommandHistoryLimit);
     }
 
-    /// <summary>「開く」で 2 本以上選んだとき、別々に開くか束ねるかを尋ねるか（Finder Scope §2。「次から尋ねない」で false）。</summary>
+    /// <summary>「開く」で 2 本以上選んだとき、別々に開くか、まとめて開くかを尋ねるか（Finder Scope §2。「次から尋ねない」で false）。</summary>
     public bool AskBundleOnMultiOpen { get; set; } = true;
 
     public void PushTallyHistory(string pattern)
@@ -405,7 +403,7 @@ public sealed class AppSettings
     public PerFileState? FindPerFileState(string pathKey, long length, long mtimeTicks)
     {
         var s = PerFileStates.Find(x => x.PathKey == pathKey);
-        // 別物（長さ/mtime 不一致）なら復元しない（.uwvz の検証キーと同じ考え方）
+        // 別物（長さ/mtime 不一致）なら復元しない
         return s is not null && s.Length == length && s.MtimeTicks == mtimeTicks ? s : null;
     }
 }

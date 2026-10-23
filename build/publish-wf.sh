@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # 試験用ビルド（Wide Field の開発版）— UwView / UVF
 #
-# **名前は正式名**（9.27修正「uvfWF/uvpWF は正式名に戻す」）:
+# **名前は正式名**（9.27修正「uvfWF は正式名に戻す」）:
 #   配布物   UwView-<ver>-…            アプリ  UwView.app
 #   実行体   UwView.Desktop            CLI     uvf
 #   bundle   net.y42u.uwview           表示    題名・--version に (Wide Field) を付けない
@@ -22,7 +22,9 @@ cd "$(dirname "$0")/.."
 
 export EDITION=""
 export MAC_SIGN_ID="${MAC_SIGN_ID:-9737970DAE0495030DFF12A5BB6B442C62B044F0}"
-export AC_PROFILE="${AC_PROFILE:-uwviewpro-notary}"
+# 公証のキーチェーンプロファイル名は、環境変数か build/local.env（git に入れない）の AC_PROFILE= で渡す
+if [ -z "${AC_PROFILE:-}" ] && [ -f build/local.env ]; then source build/local.env; fi
+export AC_PROFILE="${AC_PROFILE:?公証のキーチェーンプロファイル名を AC_PROFILE（または build/local.env）に入れてください}"
 
 RIDS=("$@")
 if [ ${#RIDS[@]} -eq 0 ]; then RIDS=(osx-arm64 linux-arm64 win-x64); fi

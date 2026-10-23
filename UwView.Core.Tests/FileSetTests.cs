@@ -128,13 +128,14 @@ public class FileSetTests : IDisposable
     }
 
     [Fact]
-    public void 自分が作った索引はワイルドカードの対象にしない()
+    public void 外すと決めた拡張子はワイルドカードの対象にしない()
     {
-        // uvp '*' は同じフォルダに .uwvz を作る。次の実行で自分の索引を対象に含めてはいけない
-        Make("a.log", "b.log", "%a.log.uwvz", "a.log.uwvidx");
+        // 検索のついでにファイルを作る呼び手は、作るファイルの拡張子を足す。次の実行で対象に含めてはいけない
+        FileSet.ExcludeFromWildcards(".fsderived", ".fsderived2");
+        Make("a.log", "b.log", "%a.log.fsderived", "a.log.fsderived2");
         Assert.Equal(["a.log", "b.log"], Expand("*"));
-        // 名指しで書いたときは外さない（(B) を指す正しい使い方）
-        Assert.Equal(["%a.log.uwvz"], Expand("%a.log.uwvz"));
+        // 名指しで書いたときは外さない
+        Assert.Equal(["%a.log.fsderived"], Expand("%a.log.fsderived"));
     }
 
     [Theory]

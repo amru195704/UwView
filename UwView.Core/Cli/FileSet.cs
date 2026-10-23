@@ -8,7 +8,7 @@ namespace UwView.Core.Cli;
 /// 決めごと:
 /// <list type="bullet">
 ///   <item><b>引用符で囲むのは必須。</b>シェルに展開させない（展開されると (A) が届かず、
-///         uvp が <c>.uwvz</c> の名前を決められない）</item>
+///         指定そのものを使う処理が困る）</item>
 ///   <item><b>区切りは空白とカンマの両方。</b>名前に空白を含むパス（<c>Program Files</c>）はカンマ区切りで書く</item>
 ///   <item><b>並びは「書いた順」→「名前順」</b>（ロケールに依存しないバイト順）。重複は先に出た側を採る</item>
 ///   <item>ワイルドカードは <c>*</c>（1段の中の任意の文字の並び）・<c>?</c>（任意の1文字）・<c>**</c>（フォルダーを何段でも。0段も含む）。
@@ -118,16 +118,28 @@ public static class FileSet
     public static bool HasWildcard(string text) => text.AsSpan().IndexOfAny('*', '?') >= 0;
 
     /// <summary>
-    /// ワイルドカードの展開から外す拡張子（自分たちが作った派生ファイル）。
+    /// ワイルドカードの展開から外す拡張子（既定は空）。
     ///
-    /// <c>uvp '*' 語</c> は同じフォルダに <c>.uwvz</c> を作る。次に同じ指定で走らせると
-    /// <b>自分が作った索引まで対象に含めてしまう</b>（中身は圧縮バイトなので、本文として束ねると壊れる）。
-    /// 名指しで書いたときは外さない（<c>uvp '%a.log.uwvz' 語</c> は (B) を指す正しい使い方）。
+    /// 検索のついでにファイルを作る呼び手は、自分が作るファイルの拡張子を起動時にここへ足す
+    /// （次に同じ指定で走らせたとき、作ったファイルまで対象に含めないように）。
+    /// 名指しで書いたときは外さない。
     /// </summary>
-    private static readonly string[] DerivedExtensions = [".uwvz", ".uwvidx"];
+    public static IReadOnlyList<string> WildcardExcludedExtensions => _wildcardExcluded;
+
+    private static volatile string[] _wildcardExcluded = [];
+
+    /// <summary><see cref="WildcardExcludedExtensions"/> に足す（同じものは1回だけ）。</summary>
+    public static void ExcludeFromWildcards(params string[] extensions)
+    {
+        lock (typeof(FileSet))
+            _wildcardExcluded = _wildcardExcluded.Union(extensions, StringComparer.OrdinalIgnoreCase).ToArray();
+    }
 
     private static bool IsDerived(string path)
-        => DerivedExtensions.Any(e => path.EndsWith(e, StringComparison.OrdinalIgnoreCase));
+    {
+        var list = _wildcardExcluded;
+        return list.Length > 0 && list.Any(e => path.EndsWith(e, StringComparison.OrdinalIgnoreCase));
+    }
 
     /// <summary>
     /// (A) を展開する。<paramref name="baseDirectory"/> は相対パスの起点（省略すればカレント）。
@@ -244,7 +256,7 @@ public static class FileSet
         try { Walk(full, segments, first, found, walk); }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException) { }
 
-        // 自分たちが作った派生ファイル（.uwvz など）は、ワイルドカードの対象にしない。
+        // 外すと決めた拡張子（WildcardExcludedExtensions）は、ワイルドカードの対象にしない。
         // 拾ったパスは列挙で作った絶対パスなので、正規化し直さない（8.6 万本で1本ずつ GetFullPath すると重い）
         string prefix = Path.TrimEndingDirectorySeparator(Path.GetFullPath(root)) + Path.DirectorySeparatorChar;
         var list = found.Where(path => !IsDerived(path))

@@ -15,7 +15,7 @@ namespace UwView.ViewModels;
 
 /// <summary>
 /// 「コマンドライン」ダイアログ（v1.8.0 Finder Scope）の中身。画面を出さずに確かめられるよう、
-/// 分ける・解釈・展開・実行・出力はすべてここに置く（§8）。uvf・uvp の違いは <see cref="ICommandLineBackend"/>。
+/// 分ける・解釈・展開・実行・出力はすべてここに置く（§8）。コマンドごとの違いは <see cref="ICommandLineBackend"/>。
 ///
 /// ［検索実行］は「基準フォルダーに <c>cd</c> して、コマンドの行を打った」のと同じ（§7.1）。
 /// </summary>
@@ -118,7 +118,7 @@ public sealed partial class CommandLineViewModel : ObservableObject
     [ObservableProperty] private IReadOnlyList<CommandFileRow> _files = [];
     [ObservableProperty] private string _filesSummary = "";
 
-    /// <summary>［作り直す…］を出すか（束ねた索引を Keep で使うとき。§3.3）。</summary>
+    /// <summary>［作り直す…］を出すか（バックエンドが決める。§3.3）。</summary>
     [ObservableProperty] private bool _offersRebuild;
 
     /// <summary>出力欄の行（先頭 <see cref="MaxOutputLines"/> 行まで）。</summary>
@@ -170,12 +170,12 @@ public sealed partial class CommandLineViewModel : ObservableObject
         var argv = new List<string>();
         // -open は画面の中では要らない（書いても外す。§5.1）。コマンドの行も外した形で出す
         var rest = split.Args.Contains("-open") ? [.. split.Args.Where(a => a != "-open")] : split.Args;
-        // uvp convert / cat：コマンドではファイルより前に書く語
+        // サブコマンド：コマンドではファイルより前に書く語
         if (rest.Count > 0 && _backend.IsSubcommand(rest[0])) { argv.Add(rest[0]); rest = [.. rest.Skip(1)]; }
         if (!_backend.TakesNoFile(rest))
         {
             if (FileArgument() is not { } file) return (null, ("ファイルを指定してください", "Specify the files"));
-            // 検索語も段も無い（除外の指定・--rebuild だけ）なら、一覧だけ／束ねて開くだけ（§4）
+            // 検索語も段も無い（除外の指定・--rebuild だけ）なら、バックエンドが決めた引数で走らせる（§4）
             if (argv.Count == 0 && IgnoreOptions.Take(rest).Item2.All(a => a == "--rebuild"))
                 argv.AddRange(_backend.WithoutSearch(file));
             else argv.Add(file);
@@ -224,7 +224,7 @@ public sealed partial class CommandLineViewModel : ObservableObject
         }
         watch.Stop();
         ShowFiles(list);
-        // コマンド（uvf／uvp --files）と比べられるよう、所要時間を出す
+        // コマンド（uvf --files）と比べられるよう、所要時間を出す
         if (report) Status = L.Format("CmdExpandedIn", Seconds(watch.Elapsed));
     }
 
@@ -294,7 +294,7 @@ public sealed partial class CommandLineViewModel : ObservableObject
         // --tune --apply はコマンドが設定ファイルに書く。画面が持っている設定にも入れておく（後で古い値で上書きしない）
         if (_settings is not null && argv.Contains("--tune") && argv.Contains("--apply"))
             _settings.MaxThreads = CliSettings.ReadInt(AppSettings.AppDataFolder, UwView.Core.ThreadBudget.SettingsKey, _settings.MaxThreads);
-        // --files は［ファイル展開］と同じく一覧にも出す（§5.1）。束ねた・足したあとは予告も新しくする
+        // --files は［ファイル展開］と同じく一覧にも出す（§5.1）。走らせたあとは予告も新しくする
         if (result is not null && (argv.Contains("--files") || _indexShown)) await ExpandAsync(report: false);
         if (argv.Contains("--files")) SelectedTab = 0;
         return result;

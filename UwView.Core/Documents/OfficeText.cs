@@ -25,7 +25,7 @@ public sealed class OfficeRejectedException(string japanese, string english, Exc
 /// <item>PDF：ページごとに <c>## page N</c> の 1 行、続けて読む順の行。</item>
 /// </list>
 /// 元の形式には戻せない（pbf と同じ扱い。<c>-extract</c> は取り出した文字を書く）。
-/// uvf（取り出しながら探す）と uvp（取り出した文字で .uwvz を作る）の両方が使う（v1.8.3.2 で共通に移した）。
+/// CLI（取り出しながら探す）と画面の両方が使う（v1.8.3.2 で共通に移した）。
 /// </summary>
 public static class OfficeText
 {
@@ -83,7 +83,7 @@ public static class OfficeText
     }
 
     /// <summary>
-    /// 読めるかだけを確かめる（束ねる前の下調べ用。読めない 1 本で全体を止めず、名指しで飛ばすため）。
+    /// 読めるかだけを確かめる（中身を取り出す前に。読めない 1 本で全体を止めず、名指しで飛ばすため）。
     /// PDF は開けるか・文字のあるページがあるかを見る。Word・Excel は見分けの段階で分かっているので null。
     /// </summary>
     public static OfficeRejectedException? Precheck(string path, OfficeKind kind)
@@ -96,7 +96,7 @@ public static class OfficeText
                                            $"{name} is damaged and cannot be read ({inner.Message})", inner);
     }
 
-    /// <summary>行を UTF-8（改行 LF）の前方専用のストリームにする（束ねた索引の 1 本としても使う）。</summary>
+    /// <summary>行を UTF-8（改行 LF）の前方専用のストリームにする。</summary>
     public static Stream OpenStream(string path, OfficeKind kind, bool raw, Action<double>? progress = null)
         => new LineStream(Lines(path, kind, raw, progress));
 

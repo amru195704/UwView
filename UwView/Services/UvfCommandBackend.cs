@@ -22,8 +22,8 @@ public sealed class UvfCommandBackend(UvfGuiTarget? gui = null) : ICommandLineBa
 {
     public string Tool => "uvf";
 
-    /// <summary>UwView Pro だけの書き方（無料版では実行せず、1 行の案内を出す）。</summary>
-    internal static readonly string[] ProOnly =
+    /// <summary>この版では使えない書き方（実行せず、1 行の案内を出す）。</summary>
+    internal static readonly string[] UnsupportedOptions =
         ["-uniq", "-sort", "-seq", "-head", "-tail", "-limit", "-C", "-grep", "-w", "-out", "--csv", "-replace",
          "-extract", "--info", "--rebuild", "--force", "--no-line-number"];
 
@@ -36,8 +36,8 @@ public sealed class UvfCommandBackend(UvfGuiTarget? gui = null) : ICommandLineBa
     public (string Ja, string En)? Check(IReadOnlyList<string> argv)
     {
         if (argv.Count == 0) return ("ファイルを指定してください", "Specify the files");
-        if (argv.FirstOrDefault(a => ProOnly.Contains(a)) is { } pro)
-            return ($"{pro} は UwView Pro の機能です", $"{pro} is a UwView Pro feature");
+        if (argv.FirstOrDefault(a => UnsupportedOptions.Contains(a)) is { } option)
+            return ($"{option} は有料版（UwView Pro）の機能です", $"{option} is a feature of the paid edition, UwView Pro");
         if (TakesNoFile(argv)) return null;
         var (_, ja, en) = UvfCli.Parse(argv);
         return ja is null ? null : (ja, en!);

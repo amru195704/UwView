@@ -32,7 +32,7 @@ public partial class FilterResultsView : UserControl
     public event Action? CloseRequested;
 
     /// <summary>
-    /// 一覧の「閉じる」を出すか（既定は出す）。窓の右下に自分の「閉じる」を持つ入れ物（Pro の結果の窓）は消す——
+    /// 一覧の「閉じる」を出すか（既定は出す）。窓の右下に自分の「閉じる」を持つ入れ物（別の結果の窓）は消す——
     /// 集計・並べ替えの結果を一覧に重ねると、一覧の中の「閉じる」は隠れてしまうため。
     /// </summary>
     public bool ShowCloseButton
@@ -58,7 +58,7 @@ public partial class FilterResultsView : UserControl
         // 抽出保存（F4-3）: 開いた時点で前回の指定を入れ直す。
         // 専用のボタンは置かない——「保存」と押した後の動きが同じで、
         // チェックを触っていないかぎり見分けがつかないため（9.8修正）。
-        // 復元は UVP のみ。UVF はこのオプションを出していないので触らない
+        // 復元はこのオプションを出しているときだけ。出していなければ触らない
         if (_vm.AllowExtractOptions) UwView.Services.ExtractSaveOptions.ApplyTo(_vm);
         CancelSaveButton.Click += (_, _) => _vm.CancelSave();
         CloseButton.Click += (_, _) => CloseRequested?.Invoke();
@@ -117,12 +117,12 @@ public partial class FilterResultsView : UserControl
     }
 
     /// <summary>
-    /// 右クリックメニューへ項目を足すためのフック（Pro 拡張用）。
+    /// 右クリックメニューへ項目を足すためのフック（拡張用）。
     /// 引数は選択先頭行のジャンプ先オフセット。null を返せば何も足さない。
     /// </summary>
     public Func<long, IReadOnlyList<MenuItem>?>? ExtraMenuItems { get; set; }
 
-    /// <summary>選択行の右クリック → コピー / ファイルに保存（＋Pro 拡張の項目）。</summary>
+    /// <summary>選択行の右クリック → コピー / ファイルに保存（＋拡張の項目）。</summary>
     private void ShowSelectionMenu(PointerPressedEventArgs e)
     {
         var menu = new MenuFlyout();
@@ -164,7 +164,7 @@ public partial class FilterResultsView : UserControl
     /// <summary>閉じるときに外す購読（言語切替など）。</summary>
     private Action? _detach;
 
-    // ── Pro 拡張用フック（矩形選択オーバーレイ・追加ボタンの挿入先）────
+    // ── 拡張用フック（矩形選択オーバーレイ・追加ボタンの挿入先）────
     public Avalonia.Controls.Panel ToolbarHost => ToolbarPanel;
     public Avalonia.Controls.Panel ListHost => ListArea;
     public FilterListView ResultsList => RowList;

@@ -4,7 +4,7 @@ using System.Text.Json.Nodes;
 namespace UwView.Core.Cli;
 
 /// <summary>
-/// CLI（uvf / uvp）がアプリの設定ファイルを読む係。
+/// CLI がアプリの設定ファイルを読む係。
 /// 読めない・無い・形が違うときは既定値を返す（CLI を設定ファイルの状態で止めない）。
 ///
 /// 書き込みは <c>--tune --apply</c> だけが使う（Wide Field v1.7.0 段階1-b）。

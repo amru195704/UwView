@@ -17,7 +17,7 @@ public static class CompiledRegexRoute
     /// <summary>本体に任せる入力の大きさ（展開後の目安。<see cref="SearchTuning.HandoffMinTextBytes"/>）。</summary>
     public const long MinTextBytes = SearchTuning.HandoffMinTextBytes;
 
-    /// <summary>調べる用：これが "1" なら本体に任せない（uvf は UVF_NO_HANDOFF・uvp は UVP_NO_HANDOFF）。</summary>
+    /// <summary>調べる用：これが "1" なら本体に任せない（uvf は UVF_NO_HANDOFF）。</summary>
     public static bool HandoffDisabled(string variable) => Environment.GetEnvironmentVariable(variable) == "1";
 
     /// <summary>計測用（<c>UV_TRACE=1</c>）。任せたときに、親が子へ「起動した時刻」を渡す環境変数。</summary>
@@ -68,7 +68,7 @@ public static class CompiledRegexRoute
     /// 10G の <c>[0-9]{3}-[0-9]{4}"</c> は 3 割の行に <c>-</c> があり、全行に当てると AOT 5.12 秒・本体 3.87 秒。
     /// 手がかりで絞れる式まで任せると、本体の起動の分だけ遅かった（1G の <c>[ぁ-ん]{3,}</c> 0.150 → 0.361 秒。grix テスト 2026-10-05）。
     /// 多数ファイルは任せない（ファイルを開く手間が主で、本体の起動の分だけ遅い。カーネル 8.6 万本：AOT 4.9 秒・本体 5.1 秒）。
-    /// uvp は使わない（10 並列で解釈実行の遅れが隠れる。10G：AOT 2.18 秒・本体 2.21 秒）。圧縮ファイルは読まずに false。
+    /// 並列で探す呼び手は使わない（並列で解釈実行の遅れが隠れる）。圧縮ファイルは読まずに false。
     /// </summary>
     public static bool ShortClueIsDense(string path, SearchPlan plan, int sampleBytes = 8 << 20)
         => plan.UsesShortClue && SampleClues(path, plan, sampleBytes) is { } s && s.Candidates > s.Lines * SearchTuning.MaxShortClueLineShare;

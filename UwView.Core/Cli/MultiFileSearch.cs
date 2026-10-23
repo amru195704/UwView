@@ -53,7 +53,7 @@ public static class MultiFileSearch
     /// <param name="Failed">読めなかったファイルと理由。</param>
     /// <param name="Skipped">
     /// 開いてみたら平文でなかったので探さなかったもの（<c>verifyPlain</c> のときだけ。並びは指定順）。
-    /// Pbf なら pbf、<c>Office</c> が Word・Excel・PDF なら UwView Pro の役目（v1.8.3）、そうでなければ <c>Probe</c> が zip か断る理由を持つ。
+    /// Pbf なら pbf、<c>Office</c> が Word・Excel・PDF ならその種類（v1.8.3）、そうでなければ <c>Probe</c> が zip か断る理由を持つ。
     /// </param>
     public readonly record struct Result(long Hits, bool Truncated, IReadOnlyList<(string File, string Reason)> Failed,
                                          IReadOnlyList<(string File, bool Pbf, CompressedProbe Probe, OfficeProbe Office)>? Skipped = null);
@@ -75,8 +75,8 @@ public static class MultiFileSearch
         IReadOnlyList<CompressedKind>? kinds = null, bool verifyPlain = false,
         IReadOnlyList<OfficeKind>? offices = null, bool officeRaw = false)
     {
-        // offices: Word・Excel・PDF は取り出した文字を探す（v1.8.3.2。下調べで分かったもの。開いたときに分かったものも同じ）
-        // verifyPlain: kinds で平文としたものを、開いたときに先頭で確かめる（下調べで全部を開き直さないため。
+        // offices: Word・Excel・PDF は取り出した文字を探す（v1.8.3.2。呼び手が見分けたもの。開いたときに分かったものも同じ）
+        // verifyPlain: kinds で平文としたものを、開いたときに先頭で確かめる（呼び手の見分けのために全部を開き直さないため。
         // 開くこと自体が重く、カーネル 8.6 万本を1回開くだけで約 2 秒かかる。2026-10-02）。
         // 中身が圧縮ならその場で展開して探し（並びは変えない）、pbf・zip・断るものは探さずに Skipped へ
         var skipped = new (bool Pbf, CompressedProbe Probe, OfficeProbe Office)?[files.Count];
@@ -87,7 +87,7 @@ public static class MultiFileSearch
         // xz の並列展開に回せる本数は、xz の部品の数で割る。ほかの形式は1スレッドで展開するので数に入れない。
         // ファイル数で割ると、gz＋xz＋zst＋gz では xz が 2 本しかもらえず、ほかが先に終わったあとも
         // xz だけが 2 本で走り続けて全体を待たせた（管理部の混在テスト 2026-09-24: rg -z の 1/1.85）
-        // 呼び手が下調べ済みなら、その結果を使う（1本ずつ開き直すと 8.6 万本で約 7 秒。2026-10-02）
+        // 呼び手が種類を見分け済みなら、その結果を使う（1本ずつ開き直すと 8.6 万本で約 7 秒。2026-10-02）
         kinds ??= files.Select(f => CompressedInput.Probe(f).Kind).ToArray();
         int decodeThreads = DecodeThreadsFor(kinds, threads);
 

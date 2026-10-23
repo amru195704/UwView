@@ -15,9 +15,8 @@
 
   <ItemGroup>
     <AssemblyMetadata Include="BuildNumber" Value="$(BuildNumber)" />
-    <!-- 進捗ダイアログの自動テスト用（Current/CountText 等）。UVP 側のテストからも見る -->
+    <!-- 進捗ダイアログの自動テスト用（Current/CountText 等） -->
     <InternalsVisibleTo Include="UwView.UiTests" />
-    <InternalsVisibleTo Include="UwView.Pro.App.UiTests" />
   </ItemGroup>
   
   <ItemGroup>

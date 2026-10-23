@@ -19,8 +19,8 @@ public sealed record OperationEntry(string Name, TimeSpan Elapsed, string? Detai
 /// 「さっきの検索は何秒だったか」を後から見られないので、
 /// 直前の1件をステータスバーへ出し、直近の数件はそのヒントで読めるようにする。
 ///
-/// 窓をまたいで記録したい（Pro の多段階検索の窓からも積む）ので静的に置く。
-/// UVF / UVP の共通機能なのでここ（共有プロジェクト）に置く。
+/// 窓をまたいで記録したい（別の窓からも積む）ので静的に置く。
+/// 共通機能なのでここ（共有プロジェクト）に置く。
 /// </summary>
 public static class OperationLog
 {
