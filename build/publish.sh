@@ -268,9 +268,19 @@ pack_linux() { # $1=rid  $2=arch-label(x86_64/aarch64)
 
 # Windows に同梱する展開ライブラリ（liblzma・libzstd）とそのライセンス文書を、実行ファイルの隣に置く。
 # Windows の OS には無いので、無いと xz が1スレッドの .NET 展開になる（rg -z に 1/7.95。build/native/README.md）
+# 置き場所に無い RID は黙って飛ばさずに止める（win-arm64 の zip に DLL が入っていなかった。レビュー 2026-10-24 P2-6）。
+# DLL なしで作ると決めたときだけ ALLOW_NO_NATIVE=1（.NET 向けの展開に戻るので遅いが動く）
 add_native() { # $1=rid $2=発行先
   local src="build/native/$1"
-  [ -d "$src" ] || return 0
+  if [ ! -d "$src" ]; then
+    if [ "${ALLOW_NO_NATIVE:-0}" = 1 ]; then
+      echo "  ⚠ $1: 同梱する展開ライブラリ（liblzma・libzstd）が $src に無いので、入れずに作ります（ALLOW_NO_NATIVE=1）" >&2
+      return 0
+    fi
+    echo "✗ $1: 同梱する展開ライブラリ（liblzma・libzstd）が $src にありません（build/native/win-x64/README.md）。" >&2
+    echo "  DLL なしで作るなら ALLOW_NO_NATIVE=1 を付けてください" >&2
+    exit 2
+  fi
   cp "$src"/*.dll "$2/"
   mkdir -p "$2/third-party" && cp "$src"/third-party/* "$2/third-party/"
 }
