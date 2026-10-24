@@ -12,9 +12,10 @@ public static class Utf32Rejected
 
     /// <summary>
     /// 先頭が UTF-32 の BOM で、続きの 4 バイトずつも UTF-32 として正しいか。
-    /// UTF-16LE の BOM（FF FE）の後ろの 1 字目が U+0000 だと、先頭 4 バイトが UTF-32LE の BOM と同じになる（検査課 2026-10-24 §4-2）。
-    /// 続きは、0〜0x3FFFF と 0xE0000〜0x10FFFF（サロゲートを除く）だけを UTF-32 の字とみなす。UTF-16 の「字＋改行」（41 00 0A 00＝0xA0041）の
-    /// ような並びは、使われていない面に入るので外れる。続きが無い（4 バイトだけ）ときは UTF-32 とみなす。
+    /// UTF-16LE の BOM（FF FE）の後ろの 1 字目が U+0000 だと、先頭 4 バイトが UTF-32LE の BOM と同じになり、バイトだけでは見分けきれない
+    ///（検査課 2026-10-24 §4-2・レビュー 2026-10-24 P1-2）。決まり: **UTF-32 を優先する**。続きがすべて Unicode のスカラー値（0〜0x10FFFF、
+    /// サロゲートを除く）なら UTF-32、1 つでも外れれば UTF-16LE。UTF-32 は（まだ使われていない面の字も含めて）取りこぼさない。
+    /// UTF-16LE を UTF-32 と見てしまうのは、2 字に 1 字が U+0000〜U+0010 の制御文字のもの（例 "\0A\0B\0"）だけ。続きが無いときは UTF-32。
     /// </summary>
     public static bool IsUtf32Bom(ReadOnlySpan<byte> head)
     {
@@ -27,7 +28,7 @@ public static class Utf32Rejected
         {
             uint u = le ? System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(body[i..])
                         : System.Buffers.Binary.BinaryPrimitives.ReadUInt32BigEndian(body[i..]);
-            if (!(u <= 0x3FFFF || u is >= 0xE0000 and <= 0x10FFFF) || u is >= 0xD800 and <= 0xDFFF) return false;
+            if (u > 0x10FFFF || u is >= 0xD800 and <= 0xDFFF) return false;
         }
         return true;
     }

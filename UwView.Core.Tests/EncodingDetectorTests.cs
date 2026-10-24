@@ -111,7 +111,7 @@ public class EncodingDetectorTests
     public void Real_Utf32_Text_Is_Still_Utf32(bool bigEndian)
     {
         var e = new System.Text.UTF32Encoding(bigEndian, byteOrderMark: true);
-        byte[] data = [.. e.GetPreamble(), .. e.GetBytes("東京 ERROR 😀 𠮷\r\nA\nB\n")];
+        byte[] data = [.. e.GetPreamble(), .. e.GetBytes("東京 ERROR 😀 𠮷\r\nA\nB\n"), .. e.GetBytes(char.ConvertFromUtf32(0x40000))];   // まだ使われていない面の字も
         Assert.True(Utf32Rejected.IsUtf32(Detect(data)));
         Assert.True(Utf32Rejected.IsUtf32Bom(data));
     }
@@ -122,8 +122,8 @@ public class EncodingDetectorTests
     [Theory]
     [InlineData("東京\n")]
     [InlineData("AB\n")]
-    [InlineData("A\nB\nC\n")]
     [InlineData("A\r\nB\r\n")]
+    [InlineData("ERROR 404\n")]
     public void Utf16Le_Starting_With_Nul_Is_Not_Utf32(string text)
     {
         byte[] data = [0xFF, 0xFE, .. System.Text.Encoding.Unicode.GetBytes("\0" + text)];
@@ -131,5 +131,17 @@ public class EncodingDetectorTests
         Assert.Equal("UTF-16LE", d.DisplayName);
         Assert.False(Utf32Rejected.IsUtf32(d));
         Assert.False(Utf32Rejected.IsUtf32Bom(data));
+    }
+
+    /// <summary>
+    /// 見分けきれない残り: UTF-16LE で 2 字に 1 字が U+0000〜U+0010 のものは、決まり（UTF-32 を優先）で UTF-32 とみなす（レビュー 2026-10-24 P1-2）。
+    /// </summary>
+    [Theory]
+    [InlineData("A\0B\0")]
+    [InlineData("A\nB\nC\n")]
+    public void Utf16Le_With_Every_Other_Char_A_Control_Is_Taken_As_Utf32(string text)
+    {
+        byte[] data = [0xFF, 0xFE, .. System.Text.Encoding.Unicode.GetBytes("\0" + text)];
+        Assert.True(Utf32Rejected.IsUtf32(Detect(data)));
     }
 }
