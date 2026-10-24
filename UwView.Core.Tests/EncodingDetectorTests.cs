@@ -103,4 +103,33 @@ public class EncodingDetectorTests
         Assert.True(Utf32Rejected.IsUtf32Bom(data));
         Assert.Throws<Utf32RejectedException>(() => Utf32Rejected.ThrowIf(d, "x.txt"));
     }
+
+    /// <summary>本物の UTF-32（漢字・絵文字・CJK 拡張 B・改行）は、続きを見ても UTF-32 のまま。</summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Real_Utf32_Text_Is_Still_Utf32(bool bigEndian)
+    {
+        var e = new System.Text.UTF32Encoding(bigEndian, byteOrderMark: true);
+        byte[] data = [.. e.GetPreamble(), .. e.GetBytes("東京 ERROR 😀 𠮷\r\nA\nB\n")];
+        Assert.True(Utf32Rejected.IsUtf32(Detect(data)));
+        Assert.True(Utf32Rejected.IsUtf32Bom(data));
+    }
+
+    /// <summary>
+    /// UTF-16LE で 1 字目が U+0000 だと、先頭 4 バイトが UTF-32LE の BOM と同じ（FF FE 00 00）。続きを見て UTF-16LE と判定する（検査課 2026-10-24 §4-2）。
+    /// </summary>
+    [Theory]
+    [InlineData("東京\n")]
+    [InlineData("AB\n")]
+    [InlineData("A\nB\nC\n")]
+    [InlineData("A\r\nB\r\n")]
+    public void Utf16Le_Starting_With_Nul_Is_Not_Utf32(string text)
+    {
+        byte[] data = [0xFF, 0xFE, .. System.Text.Encoding.Unicode.GetBytes("\0" + text)];
+        var d = Detect(data);
+        Assert.Equal("UTF-16LE", d.DisplayName);
+        Assert.False(Utf32Rejected.IsUtf32(d));
+        Assert.False(Utf32Rejected.IsUtf32Bom(data));
+    }
 }

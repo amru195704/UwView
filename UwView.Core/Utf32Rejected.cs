@@ -3,15 +3,34 @@ namespace UwView.Core;
 /// <summary>
 /// UTF-32 は扱わない（オーナー指示 2026-10-17「utf-32 は全てエラー。GUI で開く必要もない」、
 /// 2026-10-24「UTF-32 は対象外なので、エラーを出して終了」で無料版・Web 版にも広げた）。
-/// 見分けは BOM（FF FE 00 00・00 00 FE FF）。BOM の無い UTF-32 は、もとから UTF-32 と判定しない。
+/// 見分けは BOM（FF FE 00 00・00 00 FE FF）と、その後ろが UTF-32 として正しいか。BOM の無い UTF-32 は、もとから UTF-32 と判定しない。
 /// </summary>
 public static class Utf32Rejected
 {
-    /// <summary>先頭が UTF-32 の BOM か。</summary>
+    /// <summary>見分けに読む頭の長さ（BOM の後ろの続きも見る）。</summary>
+    public const int HeadBytes = 4096;
+
+    /// <summary>
+    /// 先頭が UTF-32 の BOM で、続きの 4 バイトずつも UTF-32 として正しいか。
+    /// UTF-16LE の BOM（FF FE）の後ろの 1 字目が U+0000 だと、先頭 4 バイトが UTF-32LE の BOM と同じになる（検査課 2026-10-24 §4-2）。
+    /// 続きは、0〜0x3FFFF と 0xE0000〜0x10FFFF（サロゲートを除く）だけを UTF-32 の字とみなす。UTF-16 の「字＋改行」（41 00 0A 00＝0xA0041）の
+    /// ような並びは、使われていない面に入るので外れる。続きが無い（4 バイトだけ）ときは UTF-32 とみなす。
+    /// </summary>
     public static bool IsUtf32Bom(ReadOnlySpan<byte> head)
-        => head.Length >= 4
-           && ((head[0] == 0xFF && head[1] == 0xFE && head[2] == 0 && head[3] == 0)
-               || (head[0] == 0 && head[1] == 0 && head[2] == 0xFE && head[3] == 0xFF));
+    {
+        if (head.Length < 4) return false;
+        bool le = head[0] == 0xFF && head[1] == 0xFE && head[2] == 0 && head[3] == 0;
+        bool be = head[0] == 0 && head[1] == 0 && head[2] == 0xFE && head[3] == 0xFF;
+        if (!le && !be) return false;
+        var body = head[4..];
+        for (int i = 0; i + 4 <= body.Length; i += 4)
+        {
+            uint u = le ? System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(body[i..])
+                        : System.Buffers.Binary.BinaryPrimitives.ReadUInt32BigEndian(body[i..]);
+            if (!(u <= 0x3FFFF || u is >= 0xE0000 and <= 0x10FFFF) || u is >= 0xD800 and <= 0xDFFF) return false;
+        }
+        return true;
+    }
 
     /// <summary>判定した文字コードが UTF-32 か。</summary>
     public static bool IsUtf32(DetectedEncoding detected) => detected.Encoding.CodePage is 12000 or 12001;
@@ -22,8 +41,8 @@ public static class Utf32Rejected
         try
         {
             using var f = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
-            Span<byte> head = stackalloc byte[4];
-            int got = f.ReadAtLeast(head, 4, throwOnEndOfStream: false);
+            Span<byte> head = stackalloc byte[HeadBytes];
+            int got = f.ReadAtLeast(head, HeadBytes, throwOnEndOfStream: false);
             return IsUtf32Bom(head[..got]);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException) { return false; }
@@ -33,7 +52,7 @@ public static class Utf32Rejected
     public static async ValueTask<bool> IsUtf32Async(IByteSource src, CancellationToken ct = default)
     {
         if (src.Length < 4) return false;
-        var head = new byte[4];
+        var head = new byte[(int)Math.Min(HeadBytes, src.Length)];
         int got = await src.ReadAsync(0, head.AsMemory(), ct);
         return IsUtf32Bom(head.AsSpan(0, got));
     }

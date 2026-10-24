@@ -937,6 +937,14 @@ public class UvfCliTests : IDisposable
         Assert.DoesNotContain("le.txt:", many.Out);
         Assert.Contains("UTF-32", many.Err);
 
+        // UTF-16LE で 1 字目が U+0000 のもの（先頭 4 バイトが UTF-32LE の BOM と同じ）は断らない（検査課 2026-10-24 §4-2）。
+        // 件数は見ない（BOM 付きの UTF-16LE で 2 行目からが見つからないのは別の弱点。testsuite/weak-points.md の 1）
+        File.WriteAllBytes(P("nul16.txt"), [0xFF, 0xFE, .. Encoding.Unicode.GetBytes("\0head\nERROR 東京\n")]);
+        var nul = await Uvf(P("nul16.txt"), "ERROR");
+        Assert.NotEqual(UvfExit.Error, nul.Exit);
+        Assert.DoesNotContain("UTF-32", nul.Err);
+        File.Delete(P("nul16.txt"));
+
         // 複数で飛ばした理由も日本語の環境なら日本語で、名前は 1 回だけ（検査課 2026-10-24 §4-1）
         string saved = Directory.GetCurrentDirectory();
         Directory.SetCurrentDirectory(_dir);

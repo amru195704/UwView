@@ -55,11 +55,12 @@ public static class EncodingDetector
         EnsureCodePagesRegistered();
 
         // 1. BOM 判定
-        // UTF-32 は扱わないが、断るために見分けはする（Utf32Rejected。BE も BOM で見分ける。2026-10-24）
-        if (s.Length >= 4 && s[0] == 0xFF && s[1] == 0xFE && s[2] == 0x00 && s[3] == 0x00)
-            return new DetectedEncoding(new UTF32Encoding(false, false), "UTF-32LE", true, 4);
-        if (s.Length >= 4 && s[0] == 0x00 && s[1] == 0x00 && s[2] == 0xFE && s[3] == 0xFF)
-            return new DetectedEncoding(new UTF32Encoding(true, false), "UTF-32BE", true, 4);
+        // UTF-32 は扱わないが、断るために見分けはする（Utf32Rejected。BE も BOM で見分ける。2026-10-24）。
+        // FF FE 00 00 でも続きが UTF-32 として正しくなければ、UTF-16LE の 1 字目が U+0000（下の UTF-16LE へ）
+        if (Utf32Rejected.IsUtf32Bom(s))
+            return s[0] == 0xFF
+                ? new DetectedEncoding(new UTF32Encoding(false, false), "UTF-32LE", true, 4)
+                : new DetectedEncoding(new UTF32Encoding(true, false), "UTF-32BE", true, 4);
         if (s.Length >= 3 && s[0] == 0xEF && s[1] == 0xBB && s[2] == 0xBF)
             return new DetectedEncoding(new UTF8Encoding(false), "UTF-8 (BOM)", true, 3);
         if (s.Length >= 2 && s[0] == 0xFF && s[1] == 0xFE)
