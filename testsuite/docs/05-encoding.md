@@ -25,7 +25,8 @@ python3 tools/run.py   --work WORK --label MACHINE --set encoding --product uvf 
 ## What is checked
 
 * `東京` must be found on the 60 known lines; `status=200` (ASCII) on 20 lines.
-* Cases the manual says are not supported are marked `documented_limit` (UTF-16 without BOM, UTF-32BE, ISO-2022-JP, Latin-1): a wrong answer there is a known limit, not a new weak point.
+* UTF-32 (LE and BE, with BOM) is not supported: the right answer is an error message and exit code 2 (no hits).
+* Cases the manual says are not supported are marked `documented_limit` (UTF-16 without BOM, ISO-2022-JP, Latin-1): a wrong answer there is a known limit, not a new weak point.
 
 ## By hand
 

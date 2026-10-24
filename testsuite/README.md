@@ -45,6 +45,7 @@ from an administrator prompt.
 | `tools/run.py` | runs the cases, checks every answer, writes `runs.csv` / `summary.csv` / `env.json` |
 | `tools/check.py` | compares generated data with `manifests/`, checks CSV columns |
 | `tools/summarize.py` | tables per episode, list of wrong answers |
+| `tools/rejudge.py` | judges a result folder again when a right answer in `gen.py` changed (measurements are kept) |
 | `testdata/` | the small data sets as committed files (encodings, newlines, Japanese, broken files) |
 | `manifests/` | SHA-256 of every generated file (large sets included) |
 | `results/` | raw results per machine and date |

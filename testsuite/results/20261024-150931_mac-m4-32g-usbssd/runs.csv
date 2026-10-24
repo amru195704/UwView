@@ -23,14 +23,14 @@ suite,run_id,timestamp,machine,os,os_version,fs,product,product_version,set,case
 1.0,20261024-150931,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),encoding,enc-utf16be-nobom-tokyo,5,,-,1,0.0161,1,0,,60,ng,24.1,exit 1 (expected 0); hits 0 (expected 60)
 1.0,20261024-150931,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),encoding,enc-utf16be-nobom-ascii,5,,-,1,0.0085,1,0,,20,ng,15.3,exit 1 (expected 0); hits 0 (expected 20)
 1.0,20261024-150931,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),encoding,enc-utf16be-nobom-ascii,5,,-,1,0.0130,1,0,,20,ng,19.6,exit 1 (expected 0); hits 0 (expected 20)
-1.0,20261024-150931,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),encoding,enc-utf32le-bom-tokyo,5,,-,1,0.0095,0,1,,60,ng,15.2,hits 1 (expected 60)
-1.0,20261024-150931,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),encoding,enc-utf32le-bom-tokyo,5,,-,1,0.0102,2,0,,60,ng,18.4,exit 2 (expected 0); hits 0 (expected 60)
-1.0,20261024-150931,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),encoding,enc-utf32le-bom-ascii,5,,-,1,0.0086,1,0,,20,ng,15.2,exit 1 (expected 0); hits 0 (expected 20)
-1.0,20261024-150931,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),encoding,enc-utf32le-bom-ascii,5,,-,1,0.0094,2,0,,20,ng,18.4,exit 2 (expected 0); hits 0 (expected 20)
-1.0,20261024-150931,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),encoding,enc-utf32be-bom-tokyo,5,,-,1,0.0087,1,0,,60,ng,15.4,exit 1 (expected 0); hits 0 (expected 60)
-1.0,20261024-150931,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),encoding,enc-utf32be-bom-tokyo,5,,-,1,0.0098,2,0,,60,ng,18.4,exit 2 (expected 0); hits 0 (expected 60)
-1.0,20261024-150931,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),encoding,enc-utf32be-bom-ascii,5,,-,1,0.0082,1,0,,20,ng,15.4,exit 1 (expected 0); hits 0 (expected 20)
-1.0,20261024-150931,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),encoding,enc-utf32be-bom-ascii,5,,-,1,0.0092,2,0,,20,ng,18.4,exit 2 (expected 0); hits 0 (expected 20)
+1.0,20261024-150931,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),encoding,enc-utf32le-bom-tokyo,5,,-,1,0.0095,0,1,,0,ng,15.2,exit 0 (expected 2); hits 1 (expected 0)
+1.0,20261024-150931,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),encoding,enc-utf32le-bom-tokyo,5,,-,1,0.0102,2,0,,0,ok,18.4,UTF-32 is not supported: error and exit code 2
+1.0,20261024-150931,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),encoding,enc-utf32le-bom-ascii,5,,-,1,0.0086,1,0,,0,ng,15.2,exit 1 (expected 2)
+1.0,20261024-150931,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),encoding,enc-utf32le-bom-ascii,5,,-,1,0.0094,2,0,,0,ok,18.4,UTF-32 is not supported: error and exit code 2
+1.0,20261024-150931,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),encoding,enc-utf32be-bom-tokyo,5,,-,1,0.0087,1,0,,0,ng,15.4,exit 1 (expected 2)
+1.0,20261024-150931,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),encoding,enc-utf32be-bom-tokyo,5,,-,1,0.0098,2,0,,0,ok,18.4,UTF-32 is not supported: error and exit code 2
+1.0,20261024-150931,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),encoding,enc-utf32be-bom-ascii,5,,-,1,0.0082,1,0,,0,ng,15.4,exit 1 (expected 2)
+1.0,20261024-150931,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),encoding,enc-utf32be-bom-ascii,5,,-,1,0.0092,2,0,,0,ok,18.4,UTF-32 is not supported: error and exit code 2
 1.0,20261024-150931,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),encoding,enc-cp932-tokyo,5,,-,1,0.0087,0,60,,60,ok,15.3,
 1.0,20261024-150931,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),encoding,enc-cp932-tokyo,5,,-,1,0.0155,0,60,,60,ok,23.9,
 1.0,20261024-150931,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),encoding,enc-cp932-ascii,5,,-,1,0.0088,0,20,,20,ok,15.4,

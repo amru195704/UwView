@@ -4,7 +4,7 @@
 
 | file | content |
 |---|---|
-| `env.json` | machine, OS, CPU, memory, file system, virtualization, product versions, options |
+| `env.json` | machine, OS, CPU, memory, file system, virtualization, product versions, options; `rejudged` lists when and why the folder was judged again with `tools/rejudge.py` (the right answers changed; exit codes, hits and seconds are the measured ones) |
 | `runs.csv` | one row per execution (written while running) |
 | `summary.csv` | one row per product × case × cache: median, min, max |
 | `failures.csv` | rows of `summary.csv` with a wrong answer, crash or timeout |
