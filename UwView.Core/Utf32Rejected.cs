@@ -48,6 +48,29 @@ public static class Utf32Rejected
         catch (Exception e) when (e is IOException or UnauthorizedAccessException) { return false; }
     }
 
+    /// <summary>
+    /// 圧縮ファイル（gz・bz2・xz・lzma・zstd）の中身の頭が UTF-32 か。画面で開くとき、全部を展開する前に断るため
+    ///（全部を展開し終えてから断っていて、大きいと待たされ、展開したファイルも隣に残った。検査課 2026-10-24 §4-3）。
+    /// 頭だけを展開して見る。読めなければ false（読めない理由は展開するときに出る）。
+    /// </summary>
+    public static async ValueTask<bool> CompressedIsUtf32Async(string path, CompressedKind kind)
+    {
+        try
+        {
+            await using var src = new Cli.CompressedStreamByteSource(path, kind, threads: 1);
+            var head = new byte[HeadBytes];
+            int got = 0;
+            while (got < head.Length)
+            {
+                int n = src.Read(got, head.AsSpan(got));
+                if (n <= 0) break;
+                got += n;
+            }
+            return IsUtf32Bom(head.AsSpan(0, got));
+        }
+        catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException or NotSupportedException) { return false; }
+    }
+
     /// <summary>任意の読み口の頭が UTF-32 か（Web 版の Blob 用）。</summary>
     public static async ValueTask<bool> IsUtf32Async(IByteSource src, CancellationToken ct = default)
     {

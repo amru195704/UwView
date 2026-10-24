@@ -317,9 +317,16 @@ public partial class MainView
             : CompressedFormats.PlainPath(file.Path, file.Kind);
         if (File.Exists(dst) && File.GetLastWriteTimeUtc(dst) >= File.GetLastWriteTimeUtc(file.Path)) return dst;
 
+        string name = Path.GetFileName(file.Path);
+        // 中身が UTF-32 なら展開する前に断る（検査課 2026-10-24 §4-3）
+        if (await Utf32Rejected.CompressedIsUtf32Async(file.Path, file.Kind))
+        {
+            await NoticeAsync(Utf32Rejected.Message(name, Ja));
+            return null;
+        }
+
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(ct);
         double fraction = 0;
-        string name = Path.GetFileName(file.Path);
         BeginTaskProgress(
             Ja ? $"展開: {name}" : $"Expanding: {name}",
             () => (fraction, Ja ? "圧縮側の読み進み" : "read from the compressed file"),

@@ -932,6 +932,13 @@ public partial class MainView : UserControl
         if (TopLevel.GetTopLevel(this) is not Window owner) return null;   // ブラウザ版は対象外
         string name = System.IO.Path.GetFileName(path);
 
+        // 中身が UTF-32 なら、開き方を尋ねる前・展開する前に断る（頭だけを展開して見る。検査課 2026-10-24 §4-3）
+        if (await Utf32Rejected.CompressedIsUtf32Async(path, kind))
+        {
+            await NoticeAsync(Utf32Rejected.Message(name, Ja));
+            return null;
+        }
+
         var method = await CompressedOpenDialog.AskAsync(owner, name, kind);
         if (method == CompressedOpenMethod.Cancel) return null;
 
