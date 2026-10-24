@@ -36,14 +36,16 @@ public class UvfCliTests : IDisposable
 
     private sealed record Result(int Exit, string Out, string Err, List<(string? File, string? Pattern)> Launched);
 
-    private static async Task<Result> Uvf(bool guiFound, params string[] args)
+    private static Task<Result> Uvf(bool guiFound, params string[] args) => Uvf(guiFound, japanese: false, args);
+
+    private static async Task<Result> Uvf(bool guiFound, bool japanese, params string[] args)
     {
         using var stdout = new MemoryStream();
         var stderr = new StringWriter();
         var launched = new List<(string?, string?)>();
         var env = new UvfEnvironment
         {
-            StdOut = stdout, StdErr = stderr, Japanese = false,
+            StdOut = stdout, StdErr = stderr, Japanese = japanese,
             LaunchGui = (f, p) => { launched.Add((f, p)); return guiFound; },
         };
         int code = await UvfCli.RunAsync(args, env);
@@ -934,5 +936,20 @@ public class UvfCliTests : IDisposable
         Assert.Contains("ok.txt:1\tERROR ok", many.Out);
         Assert.DoesNotContain("le.txt:", many.Out);
         Assert.Contains("UTF-32", many.Err);
+
+        // 複数で飛ばした理由も日本語の環境なら日本語で、名前は 1 回だけ（検査課 2026-10-24 §4-1）
+        string saved = Directory.GetCurrentDirectory();
+        Directory.SetCurrentDirectory(_dir);
+        try
+        {
+            var ja = await Uvf(true, japanese: true, "*.txt", "ERROR");
+            Assert.Equal(UvfExit.Error, ja.Exit);
+            Assert.Contains("uvf: UTF-32 のファイルは扱いません（UTF-8・UTF-16・Shift_JIS・EUC-JP にしてから開いてください）: le.txt", ja.Err);
+            Assert.DoesNotContain("not supported", ja.Err);
+            Assert.DoesNotContain("読めませんでした", ja.Err);
+            var line = ja.Err.Split('\n').Single(l => l.Contains("be.txt"));
+            Assert.Equal(1, line.Split("be.txt").Length - 1);
+        }
+        finally { Directory.SetCurrentDirectory(saved); }
     }
 }

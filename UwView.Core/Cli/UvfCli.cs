@@ -729,9 +729,7 @@ public static class UvfCli
             $"{env.ToolName}: {outcome.Hits:N0} 件（{files.Count:N0} ファイル・{watch.Elapsed.TotalSeconds:F2} 秒）",
             $"{env.ToolName}: {outcome.Hits:N0} results ({files.Count:N0} files, {watch.Elapsed.TotalSeconds:F2}s)"));
 
-        foreach (var (file, reason) in outcome.Failed)
-            env.StdErr.WriteLine(t($"{env.ToolName}: 読めませんでした: {file}（{reason}）",
-                                   $"{env.ToolName}: could not read: {file} ({reason})"));
+        foreach (var (file, error) in outcome.Failed) env.StdErr.WriteLine(FailedLine(env, file, error));
 
         if (outcome.Truncated)
         {
@@ -941,9 +939,7 @@ public static class UvfCli
             m => env.StdErr.WriteLine($"{env.ToolName}: {m}"));
 
         var (handoff, failed) = await CollectManyForGuiAsync(files, inv, limit, threads, ct);
-        foreach (var (file, reason) in failed)
-            env.StdErr.WriteLine(t($"{env.ToolName}: 読めませんでした: {file}（{reason}）",
-                                   $"{env.ToolName}: could not read: {file} ({reason})"));
+        foreach (var (file, error) in failed) env.StdErr.WriteLine(FailedLine(env, file, error));
         if (handoff.Truncated)
             env.StdErr.WriteLine(t($"{env.ToolName}: 結果が上限（{limit:N0} 件）で止まりました。画面にはそこまでを出します",
                                    $"{env.ToolName}: results stopped at the limit ({limit:N0}); the app shows them up to there"));
@@ -969,7 +965,18 @@ public static class UvfCli
     /// 画面へ渡すために複数ファイルを探す。並びは指定順（番号は <c>--files</c> と同じ）。
     /// 探せないもの（zip・pbf・読めない圧縮）も番号だけは持たせる（番号がずれると CLI と話が合わない）。
     /// </summary>
-    internal static async Task<(MultiHandoff Handoff, List<(string File, string Reason)> Failed)> CollectManyForGuiAsync(
+    /// <summary>
+    /// 複数の指定で読めなかった 1 本の知らせ。UTF-32 は断った理由を、指定した場所つきの名前で 1 回だけ出す
+    ///（「読めませんでした: d/x.txt（UTF-32 files …: x.txt）」と英語・名前 2 回になっていた。検査課 2026-10-24 §4-1）。
+    /// </summary>
+    private static string FailedLine(UvfEnvironment env, string file, Exception error)
+        => error is Utf32RejectedException
+            ? $"{env.ToolName}: {Utf32Rejected.Message(file, env.Japanese)}"
+            : env.Japanese
+                ? $"{env.ToolName}: 読めませんでした: {file}（{error.Message}）"
+                : $"{env.ToolName}: could not read: {file} ({error.Message})";
+
+    internal static async Task<(MultiHandoff Handoff, List<(string File, Exception Error)> Failed)> CollectManyForGuiAsync(
         IReadOnlyList<string> files, UvfInvocation inv, int limit, int threads, CancellationToken ct)
     {
         var entries = new MultiHandoffFile[files.Count];
@@ -988,7 +995,7 @@ public static class UvfCli
                                               canOpen ? probe.Kind : CompressedKind.None, canOpen);
         }
 
-        var failed = new List<(string File, string Reason)>();
+        var failed = new List<(string File, Exception Error)>();
         if (inv.Pattern is not { } pattern)
             return (new MultiHandoff(inv.File!, null, inv.IgnoreCase, inv.Regex, inv.Invert, false, entries, []), failed);
 
@@ -1037,7 +1044,7 @@ public static class UvfCli
                 }
                 catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
                 {
-                    lock (failed) failed.Add((files[index], e.Message));
+                    lock (failed) failed.Add((files[index], e));
                 }
                 finally
                 {

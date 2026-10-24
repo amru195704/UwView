@@ -50,12 +50,12 @@ public static class MultiFileSearch
 
     /// <param name="Hits">全ファイル合計のヒット行数。</param>
     /// <param name="Truncated">上限で打ち切ったファイルがあったか。</param>
-    /// <param name="Failed">読めなかったファイルと理由。</param>
+    /// <param name="Failed">読めなかったファイルと理由（例外のまま。文は出す側が言語を選んで作る）。</param>
     /// <param name="Skipped">
     /// 開いてみたら平文でなかったので探さなかったもの（<c>verifyPlain</c> のときだけ。並びは指定順）。
     /// Pbf なら pbf、<c>Office</c> が Word・Excel・PDF ならその種類（v1.8.3）、そうでなければ <c>Probe</c> が zip か断る理由を持つ。
     /// </param>
-    public readonly record struct Result(long Hits, bool Truncated, IReadOnlyList<(string File, string Reason)> Failed,
+    public readonly record struct Result(long Hits, bool Truncated, IReadOnlyList<(string File, Exception Error)> Failed,
                                          IReadOnlyList<(string File, bool Pbf, CompressedProbe Probe, OfficeProbe Office)>? Skipped = null);
 
     /// <summary>
@@ -101,7 +101,7 @@ public static class MultiFileSearch
         // 式の準備（正規表現のコンパイル・手がかり）は 1 回だけ。全ファイル・全作業役で使い回す
         var prepared = PreparedSearch.Create(options);
         var order = new OrderedOutput(output, files.Count);
-        var results = new (long Hits, bool Truncated, string? Reason)[files.Count];
+        var results = new (long Hits, bool Truncated, Exception? Error)[files.Count];
         int taken = -1;
         // 画面のダイアログから走らせたときだけ、進み具合を数える（コマンドでは null）
         var progress = CommandProgress.Current;
@@ -140,13 +140,13 @@ public static class MultiFileSearch
 
         long hits = 0;
         bool truncated = false;
-        var failed = new List<(string, string)>();
+        var failed = new List<(string, Exception)>();
         var notSearched = new List<(string File, bool Pbf, CompressedProbe Probe, OfficeProbe Office)>();
         for (int i = 0; i < files.Count; i++)
         {
             hits += results[i].Hits;
             truncated |= results[i].Truncated;
-            if (results[i].Reason is { } reason) failed.Add((files[i], reason));
+            if (results[i].Error is { } error) failed.Add((files[i], error));
             if (skipped[i] is { } s) notSearched.Add((files[i], s.Pbf, s.Probe, s.Office));
         }
         return new Result(hits, truncated, failed, notSearched);
@@ -232,7 +232,7 @@ public static class MultiFileSearch
         }
     }
 
-    private static async Task<(long Hits, bool Truncated, string? Reason)> OneFileAsync(
+    private static async Task<(long Hits, bool Truncated, Exception? Error)> OneFileAsync(
         string file, CompressedKind kind, PreparedSearch prepared, bool invert, bool json, bool lineNumbers, string? name,
         int index, OrderedOutput order, CancellationToken ct, int decodeThreads, byte[] small,
         (bool Pbf, CompressedProbe Probe, OfficeProbe Office)?[]? skipped = null, Trace? trace = null,
@@ -243,7 +243,7 @@ public static class MultiFileSearch
         bool direct = false;
         long hits = 0;
         bool truncated = false;
-        string? reason = null;
+        Exception? error = null;
 
         // 貯めすぎたら自分の番を待ち、以後は直接書く（-v などで巨大な出力になってもメモリを食わない）
         void GoDirect()
@@ -334,12 +334,12 @@ public static class MultiFileSearch
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidDataException)
         {
-            reason = e.Message;   // 1つ読めなくても止めない（§2.3）
+            error = e;   // 1つ読めなくても止めない（§2.3）
         }
 
         // 直接書いていたなら、残りはもう無い。どちらでも、終わったことを知らせて次の番号へ進める
         order.Complete(index, direct ? "" : buffer.GetStringBuilder().ToString());
-        return (hits, truncated, reason);
+        return (hits, truncated, error);
     }
 
     /// <summary>手元の領域に読んだファイルの中身（小さいファイル用）。</summary>
