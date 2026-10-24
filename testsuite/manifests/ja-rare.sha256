@@ -1,0 +1,6 @@
+# SHA-256 of files made by tools/gen.py (suite 1.0). Lines ending in "/" hash the sorted SHA256SUMS lines of that folder.
+a45a3fc5dd9786d3d107d1d99e3e1fa42a8bd2f505693b0f614d6edb0ead476d  utf8-rare.txt
+194a8be360a8f071a229ef64c86a697a7c7b81e6db34a99dbc51fb6f4156082f  utf16le-rare.txt
+a93e0d2f6f51118d9032571845d8e2e97004aaeee70645f6499fc286dc235b8a  cp932-gaiji.txt
+08dfc2935d1421db03016ab21b81042817e0a2cbaa39a4221143a038e822fb31  eucjp-0212.txt
+5960c83332a14654db5da70f0a7cae3718861720b7787b4cb7c7d8fe03e77e43  iso2022jp-short.txt

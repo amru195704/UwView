@@ -1,0 +1,365 @@
+{
+ "suite": "1.0",
+ "set": "ja-wave",
+ "meta": {
+  "preset": "smoke",
+  "sizes": [
+   ""
+  ],
+  "info": {}
+ },
+ "files": [
+  {
+   "path": "utf8-wave.txt",
+   "sha256": "e30ed5fdfa5d270edbac9c2c9fadb8af7a5742d8e7256cef077572061d28e12d",
+   "bytes": 440
+  },
+  {
+   "path": "cp932-wave.txt",
+   "sha256": "b984048bc625a610308b5763dc13b68df6e078bdbd7d59fb9ce5097ad252d102",
+   "bytes": 394
+  },
+  {
+   "path": "nfc-text.txt",
+   "sha256": "a06950bc91ab7aa7a1c4d6d8945704a752ebf21236b64279474be4a5dbb11f6b",
+   "bytes": 35
+  },
+  {
+   "path": "nfd-text.txt",
+   "sha256": "e4a965dc31c2887e50ad6fab8d99b0ebd9ae981ba13c6e7f63adf018adcae43e",
+   "bytes": 65
+  }
+ ],
+ "cases": [
+  {
+   "id": "wave-tilde-ff5e-utf8",
+   "episode": 9,
+   "files": "utf8-wave.txt",
+   "pattern": "～",
+   "expect": {
+    "exit": 0,
+    "hits": 1,
+    "lines": [
+     1
+    ]
+   },
+   "note": "exact code point match in UTF-8",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "wave-tilde-ff5e-cp932",
+   "episode": 9,
+   "files": "cp932-wave.txt",
+   "pattern": "～",
+   "expect": {},
+   "observe": true,
+   "note": "observe: which Unicode does 0x8160 etc. become",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "wave-wave-301c-utf8",
+   "episode": 9,
+   "files": "utf8-wave.txt",
+   "pattern": "〜",
+   "expect": {
+    "exit": 0,
+    "hits": 1,
+    "lines": [
+     2
+    ]
+   },
+   "note": "exact code point match in UTF-8",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "wave-wave-301c-cp932",
+   "episode": 9,
+   "files": "cp932-wave.txt",
+   "pattern": "〜",
+   "expect": {},
+   "observe": true,
+   "note": "observe: which Unicode does 0x8160 etc. become",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "wave-minus-ff0d-utf8",
+   "episode": 9,
+   "files": "utf8-wave.txt",
+   "pattern": "－",
+   "expect": {
+    "exit": 0,
+    "hits": 1,
+    "lines": [
+     3
+    ]
+   },
+   "note": "exact code point match in UTF-8",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "wave-minus-ff0d-cp932",
+   "episode": 9,
+   "files": "cp932-wave.txt",
+   "pattern": "－",
+   "expect": {},
+   "observe": true,
+   "note": "observe: which Unicode does 0x8160 etc. become",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "wave-minus-2212-utf8",
+   "episode": 9,
+   "files": "utf8-wave.txt",
+   "pattern": "−",
+   "expect": {
+    "exit": 0,
+    "hits": 1,
+    "lines": [
+     4
+    ]
+   },
+   "note": "exact code point match in UTF-8",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "wave-minus-2212-cp932",
+   "episode": 9,
+   "files": "cp932-wave.txt",
+   "pattern": "−",
+   "expect": {},
+   "observe": true,
+   "note": "observe: which Unicode does 0x8160 etc. become",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "wave-abc-utf8",
+   "episode": 9,
+   "files": "utf8-wave.txt",
+   "pattern": "ABC",
+   "expect": {
+    "exit": 0,
+    "hits": 1,
+    "lines": [
+     7
+    ]
+   },
+   "note": "exact code point match in UTF-8",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "wave-abc-cp932",
+   "episode": 9,
+   "files": "cp932-wave.txt",
+   "pattern": "ABC",
+   "expect": {},
+   "observe": true,
+   "note": "observe: which Unicode does 0x8160 etc. become",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "wave-abc-full-utf8",
+   "episode": 9,
+   "files": "utf8-wave.txt",
+   "pattern": "ＡＢＣ",
+   "expect": {
+    "exit": 0,
+    "hits": 1,
+    "lines": [
+     8
+    ]
+   },
+   "note": "exact code point match in UTF-8",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "wave-abc-full-cp932",
+   "episode": 9,
+   "files": "cp932-wave.txt",
+   "pattern": "ＡＢＣ",
+   "expect": {},
+   "observe": true,
+   "note": "observe: which Unicode does 0x8160 etc. become",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "wave-kata-utf8",
+   "episode": 9,
+   "files": "utf8-wave.txt",
+   "pattern": "カタカナ",
+   "expect": {
+    "exit": 0,
+    "hits": 1,
+    "lines": [
+     10
+    ]
+   },
+   "note": "exact code point match in UTF-8",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "wave-kata-cp932",
+   "episode": 9,
+   "files": "cp932-wave.txt",
+   "pattern": "カタカナ",
+   "expect": {},
+   "observe": true,
+   "note": "observe: which Unicode does 0x8160 etc. become",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "wave-kata-half-utf8",
+   "episode": 9,
+   "files": "utf8-wave.txt",
+   "pattern": "ｶﾀｶﾅ",
+   "expect": {
+    "exit": 0,
+    "hits": 1,
+    "lines": [
+     9
+    ]
+   },
+   "note": "exact code point match in UTF-8",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "wave-kata-half-cp932",
+   "episode": 9,
+   "files": "cp932-wave.txt",
+   "pattern": "ｶﾀｶﾅ",
+   "expect": {},
+   "observe": true,
+   "note": "observe: which Unicode does 0x8160 etc. become",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "wave-ideo-space-utf8",
+   "episode": 9,
+   "files": "utf8-wave.txt",
+   "pattern": "　",
+   "expect": {
+    "exit": 0,
+    "hits": 1,
+    "lines": [
+     11
+    ]
+   },
+   "note": "exact code point match in UTF-8",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "wave-ideo-space-cp932",
+   "episode": 9,
+   "files": "cp932-wave.txt",
+   "pattern": "　",
+   "expect": {},
+   "observe": true,
+   "note": "observe: which Unicode does 0x8160 etc. become",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "wave-nfc-text",
+   "episode": 9,
+   "files": "nfc-text.txt",
+   "pattern": "が",
+   "expect": {
+    "exit": 0,
+    "hits": 1,
+    "lines": [
+     1
+    ]
+   },
+   "flags": [],
+   "timed": false,
+   "note": "",
+   "kind": "search"
+  },
+  {
+   "id": "wave-nfd-text",
+   "episode": 9,
+   "files": "nfd-text.txt",
+   "pattern": "が",
+   "expect": {},
+   "observe": true,
+   "note": "observe: NFC query against NFD text (か + U+3099)",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "names-nfc-glob",
+   "episode": 9,
+   "kind": "names",
+   "files": "names/nfc/*が*.txt",
+   "pattern": "UWTEST-NAME",
+   "expect": {
+    "exit": 0,
+    "hits": 1
+   },
+   "note": "file name stored as NFC",
+   "flags": [],
+   "timed": false
+  },
+  {
+   "id": "names-nfd-glob",
+   "episode": 9,
+   "kind": "names",
+   "files": "names/nfd/*が*.txt",
+   "pattern": "UWTEST-NAME",
+   "expect": {},
+   "observe": true,
+   "note": "file name stored as NFD (as macOS Finder/Mac zip may produce)",
+   "flags": [],
+   "timed": false
+  },
+  {
+   "id": "names-all",
+   "episode": 9,
+   "kind": "names",
+   "files": "names/**/*.txt",
+   "pattern": "UWTEST-NAME",
+   "expect": {
+    "exit": 0,
+    "hits": 2
+   },
+   "note": "both names found by a plain wildcard",
+   "flags": [],
+   "timed": false
+  }
+ ]
+}

@@ -1,0 +1,4 @@
+# SHA-256 of files made by tools/gen.py (suite 1.0). Lines ending in "/" hash the sorted SHA256SUMS lines of that folder.
+bfbe800c613bee7495c2945eff996f58a9a7b89d7c41da36e73fc07228bf5c3e  lines-1M.txt
+09dea7a0ea3abb519f9bc97c5ea440f5088337e79e525309fd39499eadcfd079  lines-100M.txt
+4f17fc251f46d3cc4a1daa853aafca7633a4704bce5b405fcea7e0ea4a906200  lines-1G.txt

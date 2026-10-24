@@ -873,6 +873,8 @@ public partial class MainView : UserControl
 
         var sessions = await App.DocumentOpener.PickFilesAsync(top);
         AddSessions(sessions);
+        foreach (var name in Utf32Rejected.TakePending())   // Web 版で断った UTF-32
+            await NoticeAsync(Utf32Rejected.Message(name, Ja));
     }
 
     // ── 圧縮ファイルを開く ──
@@ -1093,6 +1095,12 @@ public partial class MainView : UserControl
     /// <summary>パス1件を開いてタブに追加（Recent/Favorites/復元用）。開けなければ null。</summary>
     private DocumentTabViewModel? OpenPath(string path)
     {
+        if (Utf32Rejected.FileIsUtf32(path))
+        {
+            // UTF-32 は扱わない。黙って失敗させず、理由を出す（オーナー指示 2026-10-24）
+            _ = NoticeAsync(Utf32Rejected.Message(System.IO.Path.GetFileName(path), Ja));
+            return null;
+        }
         if (UwView.App.DocumentOpener.OpenLocalPath(path) is not { } session) return null;
         return AddSessions(new[] { session });
     }

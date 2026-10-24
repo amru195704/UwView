@@ -310,6 +310,7 @@ public static class MultiFileSearch
             int sampled = inMemory >= 0 ? inMemory
                         : source is SequentialFileByteSource ? source.Read(0, small.AsSpan(0, (int)Math.Min(small.Length, source.Length))) : -1;
             var detected = sampled >= 0 ? EncodingDetector.Detect(small.AsSpan(0, sampled)) : EncodingDetector.Detect(source);
+            Utf32Rejected.ThrowIf(detected, Path.GetFileName(file));   // UTF-32 は飛ばして理由を出す（2026-10-24）
             if (trace is not null) Interlocked.Add(ref trace.Detect, Trace.Now - t1);
             var encoding = detected.Encoding;
 

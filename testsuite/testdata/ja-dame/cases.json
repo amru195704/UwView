@@ -1,0 +1,444 @@
+{
+ "suite": "1.0",
+ "set": "ja-dame",
+ "meta": {
+  "preset": "smoke",
+  "sizes": [
+   ""
+  ],
+  "info": {}
+ },
+ "files": [
+  {
+   "path": "cp932-dame.txt",
+   "sha256": "d2dc9f21c8ae15c4ace8002f75eaef93454ce8995fb3008a9b7593cc1c214189",
+   "bytes": 316
+  },
+  {
+   "path": "utf8-dame.txt",
+   "sha256": "5ae16517d7235439cb047913dafbb984f3653cf2be09ba5671d53856afa4bc0d",
+   "bytes": 415
+  },
+  {
+   "path": "dame-list.tsv",
+   "sha256": "32863b05686011711549863928f7246819671d14721e3362e1e3137b603461a1",
+   "bytes": 290
+  }
+ ],
+ "cases": [
+  {
+   "id": "dame-hyo-cp932",
+   "episode": 8,
+   "files": "cp932-dame.txt",
+   "pattern": "表",
+   "flags": [],
+   "expect": {
+    "exit": 0,
+    "hits": 3,
+    "lines": [
+     1,
+     16,
+     17
+    ]
+   },
+   "note": "Shift_JIS 2nd byte collides with ASCII",
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "dame-hyo-utf8",
+   "episode": 8,
+   "files": "utf8-dame.txt",
+   "pattern": "表",
+   "flags": [],
+   "expect": {
+    "exit": 0,
+    "hits": 3,
+    "lines": [
+     1,
+     16,
+     17
+    ]
+   },
+   "note": "UTF-8 control",
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "dame-so-cp932",
+   "episode": 8,
+   "files": "cp932-dame.txt",
+   "pattern": "ソ",
+   "flags": [],
+   "expect": {
+    "exit": 0,
+    "hits": 2,
+    "lines": [
+     2,
+     17
+    ]
+   },
+   "note": "Shift_JIS 2nd byte collides with ASCII",
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "dame-so-utf8",
+   "episode": 8,
+   "files": "utf8-dame.txt",
+   "pattern": "ソ",
+   "flags": [],
+   "expect": {
+    "exit": 0,
+    "hits": 2,
+    "lines": [
+     2,
+     17
+    ]
+   },
+   "note": "UTF-8 control",
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "dame-noryoku-cp932",
+   "episode": 8,
+   "files": "cp932-dame.txt",
+   "pattern": "能力",
+   "flags": [],
+   "expect": {
+    "exit": 0,
+    "hits": 1,
+    "lines": [
+     3
+    ]
+   },
+   "note": "Shift_JIS 2nd byte collides with ASCII",
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "dame-noryoku-utf8",
+   "episode": 8,
+   "files": "utf8-dame.txt",
+   "pattern": "能力",
+   "flags": [],
+   "expect": {
+    "exit": 0,
+    "hits": 1,
+    "lines": [
+     3
+    ]
+   },
+   "note": "UTF-8 control",
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "dame-backslash-cp932",
+   "episode": 8,
+   "files": "cp932-dame.txt",
+   "pattern": "\\",
+   "flags": [],
+   "expect": {
+    "exit": 0,
+    "hits": 1,
+    "lines": [
+     13
+    ]
+   },
+   "note": "Shift_JIS 2nd byte collides with ASCII",
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "dame-backslash-utf8",
+   "episode": 8,
+   "files": "utf8-dame.txt",
+   "pattern": "\\",
+   "flags": [],
+   "expect": {
+    "exit": 0,
+    "hits": 1,
+    "lines": [
+     13
+    ]
+   },
+   "note": "UTF-8 control",
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "dame-pipe-cp932",
+   "episode": 8,
+   "files": "cp932-dame.txt",
+   "pattern": "|",
+   "flags": [],
+   "expect": {
+    "exit": 0,
+    "hits": 1,
+    "lines": [
+     14
+    ]
+   },
+   "note": "Shift_JIS 2nd byte collides with ASCII",
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "dame-pipe-utf8",
+   "episode": 8,
+   "files": "utf8-dame.txt",
+   "pattern": "|",
+   "flags": [],
+   "expect": {
+    "exit": 0,
+    "hits": 1,
+    "lines": [
+     14
+    ]
+   },
+   "note": "UTF-8 control",
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "dame-bracket-cp932",
+   "episode": 8,
+   "files": "cp932-dame.txt",
+   "pattern": "[",
+   "flags": [],
+   "expect": {
+    "exit": 0,
+    "hits": 1,
+    "lines": [
+     15
+    ]
+   },
+   "note": "Shift_JIS 2nd byte collides with ASCII",
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "dame-bracket-utf8",
+   "episode": 8,
+   "files": "utf8-dame.txt",
+   "pattern": "[",
+   "flags": [],
+   "expect": {
+    "exit": 0,
+    "hits": 1,
+    "lines": [
+     15
+    ]
+   },
+   "note": "UTF-8 control",
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "dame-re-alt-cp932",
+   "episode": 8,
+   "files": "cp932-dame.txt",
+   "pattern": "表|ソ",
+   "flags": [
+    "-E"
+   ],
+   "expect": {
+    "exit": 0,
+    "hits": 4,
+    "lines": [
+     1,
+     2,
+     16,
+     17
+    ]
+   },
+   "note": "Shift_JIS 2nd byte collides with ASCII",
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "dame-re-alt-utf8",
+   "episode": 8,
+   "files": "utf8-dame.txt",
+   "pattern": "表|ソ",
+   "flags": [
+    "-E"
+   ],
+   "expect": {
+    "exit": 0,
+    "hits": 4,
+    "lines": [
+     1,
+     2,
+     16,
+     17
+    ]
+   },
+   "note": "UTF-8 control",
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "dame-re-class-cp932",
+   "episode": 8,
+   "files": "cp932-dame.txt",
+   "pattern": "[表ソ能]",
+   "flags": [
+    "-E"
+   ],
+   "expect": {
+    "exit": 0,
+    "hits": 5,
+    "lines": [
+     1,
+     2,
+     3,
+     16,
+     17
+    ]
+   },
+   "note": "Shift_JIS 2nd byte collides with ASCII",
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "dame-re-class-utf8",
+   "episode": 8,
+   "files": "utf8-dame.txt",
+   "pattern": "[表ソ能]",
+   "flags": [
+    "-E"
+   ],
+   "expect": {
+    "exit": 0,
+    "hits": 5,
+    "lines": [
+     1,
+     2,
+     3,
+     16,
+     17
+    ]
+   },
+   "note": "UTF-8 control",
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "dame-re-dot-cp932",
+   "episode": 8,
+   "files": "cp932-dame.txt",
+   "pattern": "能.",
+   "flags": [
+    "-E"
+   ],
+   "expect": {
+    "exit": 0,
+    "hits": 1,
+    "lines": [
+     3
+    ]
+   },
+   "note": "Shift_JIS 2nd byte collides with ASCII",
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "dame-re-dot-utf8",
+   "episode": 8,
+   "files": "utf8-dame.txt",
+   "pattern": "能.",
+   "flags": [
+    "-E"
+   ],
+   "expect": {
+    "exit": 0,
+    "hits": 1,
+    "lines": [
+     3
+    ]
+   },
+   "note": "UTF-8 control",
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "dame-re-backslash-cp932",
+   "episode": 8,
+   "files": "cp932-dame.txt",
+   "pattern": "\\\\",
+   "flags": [
+    "-E"
+   ],
+   "expect": {
+    "exit": 0,
+    "hits": 1,
+    "lines": [
+     13
+    ]
+   },
+   "note": "Shift_JIS 2nd byte collides with ASCII",
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "dame-re-backslash-utf8",
+   "episode": 8,
+   "files": "utf8-dame.txt",
+   "pattern": "\\\\",
+   "flags": [
+    "-E"
+   ],
+   "expect": {
+    "exit": 0,
+    "hits": 1,
+    "lines": [
+     13
+    ]
+   },
+   "note": "UTF-8 control",
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "dame-re-pipe-cp932",
+   "episode": 8,
+   "files": "cp932-dame.txt",
+   "pattern": "a\\|b",
+   "flags": [
+    "-E"
+   ],
+   "expect": {
+    "exit": 0,
+    "hits": 1,
+    "lines": [
+     14
+    ]
+   },
+   "note": "Shift_JIS 2nd byte collides with ASCII",
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "dame-re-pipe-utf8",
+   "episode": 8,
+   "files": "utf8-dame.txt",
+   "pattern": "a\\|b",
+   "flags": [
+    "-E"
+   ],
+   "expect": {
+    "exit": 0,
+    "hits": 1,
+    "lines": [
+     14
+    ]
+   },
+   "note": "UTF-8 control",
+   "timed": false,
+   "kind": "search"
+  }
+ ]
+}

@@ -1,0 +1,7 @@
+# Test data must keep its exact bytes (CRLF, CR, BOM, broken bytes).
+testdata/** -text -diff
+*.py text eol=lf
+*.md text eol=lf
+*.csv text eol=lf
+*.json text eol=lf
+*.sha256 text eol=lf

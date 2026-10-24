@@ -1,0 +1,10 @@
+# SHA-256 of files made by tools/gen.py (suite 1.0). Lines ending in "/" hash the sorted SHA256SUMS lines of that folder.
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  empty.txt
+707de8ba39c074287d1fb456236f2d21bb1bb1d9faafdd05a0acdab737081ee0  binary.bin
+da56341a69cfe1dc10d98de70e688d3c4747922b5a0d8b9faf6c09d6b0d439bb  nul-mixed.txt
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  growing.log
+6a5985ed2977e243eacc8f239fd3ccde45913cd11312610bea81261065483e86  noperm.txt
+73cb3858a687a8494ca3323053016282f3dad39d42cf62ca4e79dda2aac7d9ac  a-folder/inside.txt
+7f880e3844c1c860ceacd5aa5ba0ec61527d74e2af44b40360aea8399835b731  truncated.log.gz
+1962e96e4086e73e380e0ab5d64355a736b1d01f675dd19f800ba7e437d0f173  not-gzip.log.gz
+edeaaff3f1774ad2888673770c6d64097e391bc362d7d6fb34982ddf0efd18cb  bad-regex.txt

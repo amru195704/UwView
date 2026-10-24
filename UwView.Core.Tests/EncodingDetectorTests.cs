@@ -90,4 +90,17 @@ public class EncodingDetectorTests
         byte[] data = [.. System.Text.Encoding.ASCII.GetBytes(new string('a', 100_000) + "\n"), .. tail];
         Assert.Equal(expected, EncodingDetector.Detect(data.AsSpan()).DisplayName);
     }
+
+    /// <summary>UTF-32 は断るために BOM で見分ける（LE・BE とも。2026-10-24）。</summary>
+    [Theory]
+    [InlineData(new byte[] { 0xFF, 0xFE, 0, 0, 0x41, 0, 0, 0 }, "UTF-32LE")]
+    [InlineData(new byte[] { 0, 0, 0xFE, 0xFF, 0, 0, 0, 0x41 }, "UTF-32BE")]
+    public void Detects_Utf32_Bom_For_Rejection(byte[] data, string expected)
+    {
+        var d = Detect(data);
+        Assert.Equal(expected, d.DisplayName);
+        Assert.True(Utf32Rejected.IsUtf32(d));
+        Assert.True(Utf32Rejected.IsUtf32Bom(data));
+        Assert.Throws<Utf32RejectedException>(() => Utf32Rejected.ThrowIf(d, "x.txt"));
+    }
 }

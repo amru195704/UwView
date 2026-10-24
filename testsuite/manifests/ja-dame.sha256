@@ -1,0 +1,4 @@
+# SHA-256 of files made by tools/gen.py (suite 1.0). Lines ending in "/" hash the sorted SHA256SUMS lines of that folder.
+d2dc9f21c8ae15c4ace8002f75eaef93454ce8995fb3008a9b7593cc1c214189  cp932-dame.txt
+5ae16517d7235439cb047913dafbb984f3653cf2be09ba5671d53856afa4bc0d  utf8-dame.txt
+32863b05686011711549863928f7246819671d14721e3362e1e3137b603461a1  dame-list.tsv

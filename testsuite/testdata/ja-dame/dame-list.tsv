@@ -1,0 +1,13 @@
+char	cp932	note
+ソ	835C	2nd byte '\\'
+ポ	837C	2nd byte '|'
+予	975C	2nd byte '\\'
+十	8F5C	2nd byte '\\'
+噂	895C	2nd byte '\\'
+暴	965C	2nd byte '\\'
+本	967B	2nd byte '{'
+構	8D5C	2nd byte '\\'
+欺	8B5C	2nd byte '\\'
+申	905C	2nd byte '\\'
+能	945C	2nd byte '\\'
+表	955C	2nd byte '\\'

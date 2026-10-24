@@ -1,0 +1,383 @@
+{
+ "suite": "1.0",
+ "set": "ja-dup",
+ "meta": {
+  "preset": "smoke",
+  "sizes": [
+   ""
+  ],
+  "info": {
+   "duplicates": 396,
+   "rows": 794
+  }
+ },
+ "files": [
+  {
+   "path": "cp932-dup.txt",
+   "sha256": "87e7edf386394259501931c69f018952de6d9291be29b305a5d5145dc3f54069",
+   "bytes": 32792
+  },
+  {
+   "path": "cp932-dup.utf8.txt",
+   "sha256": "3df7df5df36bb7349a8d379cebec441cdf8af44588d244299c32960f6ae064f4",
+   "bytes": 33586
+  },
+  {
+   "path": "cp932-dup-table.tsv",
+   "sha256": "bfd9b1f4207da8f732b01751034f70ae127b825c0bd61d32fd38248b4a8fa791",
+   "bytes": 18905
+  },
+  {
+   "path": "cp932-single.txt",
+   "sha256": "99d4ec1b7b6696edf1b3c9444a78ce62b1a19fa3e375b004917a462520f8aef6",
+   "bytes": 14
+  }
+ ],
+ "cases": [
+  {
+   "id": "dup-U2235",
+   "episode": 7,
+   "files": "cp932-dup.txt",
+   "pattern": "∵",
+   "expect": {
+    "exit": 0,
+    "hits": 3,
+    "lines": [
+     18,
+     19,
+     20
+    ]
+   },
+   "note": "∵ has 3 codes: 81E6 879A FA5B",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "dup-U2235-utf8",
+   "episode": 7,
+   "files": "cp932-dup.utf8.txt",
+   "pattern": "∵",
+   "expect": {
+    "exit": 0,
+    "hits": 3,
+    "lines": [
+     18,
+     19,
+     20
+    ]
+   },
+   "note": "UTF-8 control",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "dup-U2252",
+   "episode": 7,
+   "files": "cp932-dup.txt",
+   "pattern": "≒",
+   "expect": {
+    "exit": 0,
+    "hits": 2,
+    "lines": [
+     14,
+     15
+    ]
+   },
+   "note": "≒ has 2 codes: 81E0 8790",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "dup-U2252-utf8",
+   "episode": 7,
+   "files": "cp932-dup.utf8.txt",
+   "pattern": "≒",
+   "expect": {
+    "exit": 0,
+    "hits": 2,
+    "lines": [
+     14,
+     15
+    ]
+   },
+   "note": "UTF-8 control",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "dup-UFFE2",
+   "episode": 7,
+   "files": "cp932-dup.txt",
+   "pattern": "￢",
+   "expect": {
+    "exit": 0,
+    "hits": 3,
+    "lines": [
+     5,
+     6,
+     7
+    ]
+   },
+   "note": "￢ has 3 codes: 81CA EEF9 FA54",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "dup-UFFE2-utf8",
+   "episode": 7,
+   "files": "cp932-dup.utf8.txt",
+   "pattern": "￢",
+   "expect": {
+    "exit": 0,
+    "hits": 3,
+    "lines": [
+     5,
+     6,
+     7
+    ]
+   },
+   "note": "UTF-8 control",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "dup-U2160",
+   "episode": 7,
+   "files": "cp932-dup.txt",
+   "pattern": "Ⅰ",
+   "expect": {
+    "exit": 0,
+    "hits": 2,
+    "lines": [
+     23,
+     24
+    ]
+   },
+   "note": "Ⅰ has 2 codes: 8754 FA4A",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "dup-U2160-utf8",
+   "episode": 7,
+   "files": "cp932-dup.utf8.txt",
+   "pattern": "Ⅰ",
+   "expect": {
+    "exit": 0,
+    "hits": 2,
+    "lines": [
+     23,
+     24
+    ]
+   },
+   "note": "UTF-8 control",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "dup-U2170",
+   "episode": 7,
+   "files": "cp932-dup.txt",
+   "pattern": "ⅰ",
+   "expect": {
+    "exit": 0,
+    "hits": 2,
+    "lines": [
+     769,
+     770
+    ]
+   },
+   "note": "ⅰ has 2 codes: EEEF FA40",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "dup-U2170-utf8",
+   "episode": 7,
+   "files": "cp932-dup.utf8.txt",
+   "pattern": "ⅰ",
+   "expect": {
+    "exit": 0,
+    "hits": 2,
+    "lines": [
+     769,
+     770
+    ]
+   },
+   "note": "UTF-8 control",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "dup-U9AD9",
+   "episode": 7,
+   "files": "cp932-dup.txt",
+   "pattern": "髙",
+   "expect": {
+    "exit": 0,
+    "hits": 2,
+    "lines": [
+     743,
+     744
+    ]
+   },
+   "note": "髙 has 2 codes: EEE0 FBFC",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "dup-U9AD9-utf8",
+   "episode": 7,
+   "files": "cp932-dup.utf8.txt",
+   "pattern": "髙",
+   "expect": {
+    "exit": 0,
+    "hits": 2,
+    "lines": [
+     743,
+     744
+    ]
+   },
+   "note": "UTF-8 control",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "dup-UFA11",
+   "episode": 7,
+   "files": "cp932-dup.txt",
+   "pattern": "﨑",
+   "expect": {
+    "exit": 0,
+    "hits": 2,
+    "lines": [
+     217,
+     218
+    ]
+   },
+   "note": "﨑 has 2 codes: ED95 FAB1",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "dup-UFA11-utf8",
+   "episode": 7,
+   "files": "cp932-dup.utf8.txt",
+   "pattern": "﨑",
+   "expect": {
+    "exit": 0,
+    "hits": 2,
+    "lines": [
+     217,
+     218
+    ]
+   },
+   "note": "UTF-8 control",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "dup-U222A",
+   "episode": 7,
+   "files": "cp932-dup.txt",
+   "pattern": "∪",
+   "expect": {
+    "exit": 0,
+    "hits": 2,
+    "lines": [
+     1,
+     2
+    ]
+   },
+   "note": "∪ has 2 codes: 81BE 879C",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "dup-U222A-utf8",
+   "episode": 7,
+   "files": "cp932-dup.utf8.txt",
+   "pattern": "∪",
+   "expect": {
+    "exit": 0,
+    "hits": 2,
+    "lines": [
+     1,
+     2
+    ]
+   },
+   "note": "UTF-8 control",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "dup-U2116",
+   "episode": 7,
+   "files": "cp932-dup.txt",
+   "pattern": "№",
+   "expect": {
+    "exit": 0,
+    "hits": 2,
+    "lines": [
+     43,
+     44
+    ]
+   },
+   "note": "№ has 2 codes: 8782 FA59",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "dup-U2116-utf8",
+   "episode": 7,
+   "files": "cp932-dup.utf8.txt",
+   "pattern": "№",
+   "expect": {
+    "exit": 0,
+    "hits": 2,
+    "lines": [
+     43,
+     44
+    ]
+   },
+   "note": "UTF-8 control",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "dup-single",
+   "episode": 7,
+   "files": "cp932-single.txt",
+   "pattern": "①",
+   "expect": {
+    "exit": 0,
+    "hits": 1,
+    "lines": [
+     1
+    ]
+   },
+   "note": "NEC special with a single code",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  }
+ ]
+}

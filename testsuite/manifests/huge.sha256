@@ -1,0 +1,6 @@
+# SHA-256 of files made by tools/gen.py (suite 1.0). Lines ending in "/" hash the sorted SHA256SUMS lines of that folder.
+f9d277c3f45ff544b1f28f7a1519c66a8e1ce89107131881c3438241b3889d76  huge-16M.log
+1ca19010f5ec258bbb6b960533ed25393b59886fa000d0506ec951e51b9b02b1  huge-64M.log
+984d3c2f49e9eaabaff8a8fa2e226548d07cff24295fefd38f28ed2d21b989a7  huge-1G.log
+4e223935919feedd74cbed312362109b0a239f423f7c3f4e6db22f852b111793  huge-10G.log
+d9348a746b6a70eb1b66dbe3738ce149724059dd021935f47abe9adafed7e577  huge-100G.log

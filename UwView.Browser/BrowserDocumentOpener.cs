@@ -27,6 +27,11 @@ public sealed class BrowserDocumentOpener : IDocumentOpener
             if (!double.TryParse(parts[1], NumberStyles.Float, CultureInfo.InvariantCulture, out double size)) continue;
 
             var src = new BlobByteSource(id, (long)size);
+            if (await Utf32Rejected.IsUtf32Async(src))
+            {
+                Utf32Rejected.Defer(parts[2]);   // UTF-32 は扱わない。画面が理由を出す（2026-10-24）
+                continue;
+            }
             sessions.Add(await DocumentSession.CreateAsync(parts[2], src));
         }
         return sessions;

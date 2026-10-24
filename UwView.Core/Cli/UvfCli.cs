@@ -537,6 +537,12 @@ public static class UvfCli
             Err(e.Text(ja));
             return UvfExit.Error;
         }
+        catch (Utf32RejectedException e)
+        {
+            // UTF-32 は扱わない（オーナー指示 2026-10-24）
+            Err(e.Text(ja));
+            return UvfExit.Error;
+        }
         catch (InvalidDataException) when (compressed != CompressedKind.None)
         {
             // 文字コードの判定など、検索を始める前に読めなくなった場合
@@ -892,6 +898,7 @@ public static class UvfCli
         {
             await using var src = new SequentialFileByteSource(path);
             var detected = EncodingDetector.Detect(src);
+            if (Utf32Rejected.IsUtf32(detected)) return null;   // 画面が開くときに断る
             var options = new SearchOptions(inv.Pattern!, UseRegex: inv.Regex, IgnoreCase: inv.IgnoreCase);
 
             var hits = new List<long>();
@@ -1014,6 +1021,7 @@ public static class UvfCli
                         ? new CompressedStreamByteSource(files[index], kind, decodeThreads)
                         : new SequentialFileByteSource(files[index]);
                     var detected = EncodingDetector.Detect(src);
+                    Utf32Rejected.ThrowIf(detected, Path.GetFileName(files[index]));
                     var encoding = detected.Encoding;
                     await RawGrep.RunAsync(src, detected.BomLength, encoding, options, inv.Invert,
                         (line, lineStart, text) =>
@@ -1077,6 +1085,7 @@ public static class UvfCli
             : Environment.GetEnvironmentVariable("UV_SOURCE") == "mmap" ? new MmapByteSource(path)
             : new SequentialFileByteSource(path);
         var detected = EncodingDetector.Detect(src);
+        Utf32Rejected.ThrowIf(detected, Path.GetFileName(path));
         var encoding = detected.Encoding;
 
         RawGrepOutcome outcome;

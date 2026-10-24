@@ -1,0 +1,3 @@
+work/
+results/*/stdout/
+__pycache__/

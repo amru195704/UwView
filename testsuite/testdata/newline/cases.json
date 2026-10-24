@@ -1,0 +1,282 @@
+{
+ "suite": "1.0",
+ "set": "newline",
+ "meta": {
+  "preset": "smoke",
+  "sizes": [
+   ""
+  ],
+  "info": {}
+ },
+ "files": [
+  {
+   "path": "lf.txt",
+   "sha256": "ca231d65d073a2512930fdd6d6a4c1b354747c834027bbc0ae59a20c547de730",
+   "bytes": 129
+  },
+  {
+   "path": "crlf.txt",
+   "sha256": "5d8604c45d5da02efc65f1aa218dbf019b7d8c1037032387b6c90dea1cfe2e70",
+   "bytes": 141
+  },
+  {
+   "path": "cr.txt",
+   "sha256": "17a31f31ac2b61201c459d8d58a34fd412c3fb7500ceed9937b4a949d650ed87",
+   "bytes": 129
+  },
+  {
+   "path": "mixed.txt",
+   "sha256": "f52d5b50616f30193ff620a4aaf2c57094bf1f111c3cc2a72c6fe76dda0222b4",
+   "bytes": 133
+  },
+  {
+   "path": "lf-nofinal.txt",
+   "sha256": "9b24f42f2068703b5e4eed0908d23a1a2c639187da7bb6cac5bf30b924e3a973",
+   "bytes": 128
+  },
+  {
+   "path": "crlf-nofinal.txt",
+   "sha256": "4961a05018cfbe71e7df9781a1e5c2c3c140125de7ec35b1c46066bda8068562",
+   "bytes": 139
+  },
+  {
+   "path": "bom-crlf.txt",
+   "sha256": "8136ebd2dea973db365bc77b61a4fda3e888591b34bedd979799eb0844ea6a52",
+   "bytes": 144
+  },
+  {
+   "path": "utf16le-crlf.txt",
+   "sha256": "aae3704eaca26f2c278e63d9eea0f75c45fa976c0970aa11d21d5951dc20d939",
+   "bytes": 284
+  },
+  {
+   "path": "cp932-crlf.txt",
+   "sha256": "5254b8ea5204ca3ff14c17c5b9c60cca10541ed6a4b6b5ffea54ce7ba6090117",
+   "bytes": 117
+  },
+  {
+   "path": "lfcr.txt",
+   "sha256": "17567c3cbec0482125d95ed8a595022306cb2f31f3c8d59b9b6c529977025c76",
+   "bytes": 141
+  },
+  {
+   "path": "blank.txt",
+   "sha256": "ea0c04a9881b1442e5d34e9ce4f5c0397ab70074dac9ea4d58275050feab25eb",
+   "bytes": 21
+  },
+  {
+   "path": "only-newlines.txt",
+   "sha256": "a52ad6ba5827cf2912a96fa771220536457ff5bbb1733f8963aee8850a301d52",
+   "bytes": 1000
+  }
+ ],
+ "cases": [
+  {
+   "id": "nl-lf",
+   "episode": 6,
+   "files": "lf.txt",
+   "pattern": "UWTEST-NEEDLE",
+   "expect": {
+    "exit": 0,
+    "hits": 2,
+    "lines": [
+     4,
+     12
+    ]
+   },
+   "note": "",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "nl-crlf",
+   "episode": 6,
+   "files": "crlf.txt",
+   "pattern": "UWTEST-NEEDLE",
+   "expect": {
+    "exit": 0,
+    "hits": 2,
+    "lines": [
+     4,
+     12
+    ]
+   },
+   "note": "",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "nl-cr",
+   "episode": 6,
+   "files": "cr.txt",
+   "pattern": "UWTEST-NEEDLE",
+   "expect": {
+    "exit": 0,
+    "hits": 2,
+    "lines": [
+     4,
+     12
+    ]
+   },
+   "note": "classic Mac OS newlines",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "nl-mixed",
+   "episode": 6,
+   "files": "mixed.txt",
+   "pattern": "UWTEST-NEEDLE",
+   "expect": {
+    "exit": 0,
+    "hits": 2,
+    "lines": [
+     4,
+     12
+    ]
+   },
+   "note": "LF, CRLF and CR in one file",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "nl-lf-nofinal",
+   "episode": 6,
+   "files": "lf-nofinal.txt",
+   "pattern": "UWTEST-NEEDLE",
+   "expect": {
+    "exit": 0,
+    "hits": 2,
+    "lines": [
+     4,
+     12
+    ]
+   },
+   "note": "no newline at the end",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "nl-crlf-nofinal",
+   "episode": 6,
+   "files": "crlf-nofinal.txt",
+   "pattern": "UWTEST-NEEDLE",
+   "expect": {
+    "exit": 0,
+    "hits": 2,
+    "lines": [
+     4,
+     12
+    ]
+   },
+   "note": "no newline at the end",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "nl-bom-crlf",
+   "episode": 6,
+   "files": "bom-crlf.txt",
+   "pattern": "UWTEST-NEEDLE",
+   "expect": {
+    "exit": 0,
+    "hits": 2,
+    "lines": [
+     4,
+     12
+    ]
+   },
+   "note": "UTF-8 BOM + CRLF",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "nl-utf16le-crlf",
+   "episode": 6,
+   "files": "utf16le-crlf.txt",
+   "pattern": "UWTEST-NEEDLE",
+   "expect": {
+    "exit": 0,
+    "hits": 2,
+    "lines": [
+     4,
+     12
+    ]
+   },
+   "note": "UTF-16LE BOM + CRLF",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "nl-cp932-crlf",
+   "episode": 6,
+   "files": "cp932-crlf.txt",
+   "pattern": "UWTEST-NEEDLE",
+   "expect": {
+    "exit": 0,
+    "hits": 2,
+    "lines": [
+     4,
+     12
+    ]
+   },
+   "note": "Shift_JIS + CRLF",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "nl-lfcr",
+   "episode": 6,
+   "files": "lfcr.txt",
+   "pattern": "UWTEST-NEEDLE",
+   "expect": {
+    "exit": 0,
+    "hits": 2
+   },
+   "note": "LF CR pairs (not a standard newline)",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "nl-blank",
+   "episode": 6,
+   "files": "blank.txt",
+   "pattern": "UWTEST-NEEDLE",
+   "expect": {
+    "exit": 0,
+    "hits": 1,
+    "lines": [
+     5
+    ]
+   },
+   "note": "blank lines count as lines",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "nl-only-newlines",
+   "episode": 6,
+   "files": "only-newlines.txt",
+   "pattern": "x",
+   "expect": {
+    "exit": 1,
+    "hits": 0
+   },
+   "note": "1000 empty lines",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  }
+ ]
+}

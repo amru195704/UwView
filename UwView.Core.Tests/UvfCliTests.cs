@@ -914,4 +914,25 @@ public class UvfCliTests : IDisposable
         Assert.Equal(UvfExit.Found, run.Exit);
         Assert.Equal((await Uvf(log, "(?<lv>ERROR) dev(?<d>2)", "-E")).Out, run.Out);
     }
+
+    /// <summary>UTF-32 は扱わない（オーナー指示 2026-10-24）。1 本なら理由を出して終了コード 2、複数なら飛ばして残りを探す。</summary>
+    [Fact]
+    public async Task UTF32は断って終了コード2_複数では飛ばす()
+    {
+        File.WriteAllBytes(P("le.txt"), [0xFF, 0xFE, 0, 0, .. new UTF32Encoding(false, false).GetBytes("ERROR a\nINFO b\n")]);
+        File.WriteAllBytes(P("be.txt"), [0, 0, 0xFE, 0xFF, .. new UTF32Encoding(true, false).GetBytes("ERROR a\nINFO b\n")]);
+        foreach (var f in new[] { "le.txt", "be.txt" })
+        {
+            var one = await Uvf(P(f), "ERROR");
+            Assert.Equal(UvfExit.Error, one.Exit);
+            Assert.Contains("UTF-32 files are not supported", one.Err);
+            Assert.Equal("", one.Out);
+        }
+        File.WriteAllText(P("ok.txt"), "ERROR ok\n");
+        var many = await InDir("*.txt", "ERROR");
+        Assert.Equal(UvfExit.Error, many.Exit);
+        Assert.Contains("ok.txt:1\tERROR ok", many.Out);
+        Assert.DoesNotContain("le.txt:", many.Out);
+        Assert.Contains("UTF-32", many.Err);
+    }
 }

@@ -1,0 +1,4 @@
+suite,run_id,machine,os,fs,product,product_version,set,case,episode,file_bytes,cache,runs,median_s,min_s,max_s,mb_per_s,correct,hits,expected_hits,peak_rss_mib,note
+1.0,,MACHINE,,,UwView,,huge,gui-open-huge-1G,1,1073741824,cold,3,,,,,,,,,open
+1.0,,MACHINE,,,UwView,,huge,gui-tail-huge-1G,1,1073741824,hot,3,,,,,,,,,jump to last line
+1.0,,MACHINE,,,UwView,,lines,gui-tail-lines-1G,2,8000000000,hot,3,,,,,,,,,line number shown at the end

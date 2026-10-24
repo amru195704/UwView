@@ -311,12 +311,14 @@ b.log:7	2026-09-27 11:00:00 ERROR disk full
 
 | 順 | 見分け方 | 文字コード |
 |---|---|---|
-| 1 | 先頭の BOM | UTF-8・UTF-16LE・UTF-16BE・UTF-32LE |
+| 1 | 先頭の BOM | UTF-8・UTF-16LE・UTF-16BE |
 | 2 | BOM なしで UTF-8 として正しい（ASCII だけのものも含む） | UTF-8 |
 | 3 | それ以外は Shift_JIS と EUC-JP を比べ、おかしなバイトの少ないほう | Shift_JIS か EUC-JP |
 | 4 | 決められないとき | Shift_JIS |
 
-BOM の無い UTF-16・UTF-32、UTF-32BE、そのほかの文字コード（Latin-1・GBK・ISO-2022-JP など）は見分けません。
+BOM の無い UTF-16、そのほかの文字コード（Latin-1・GBK・ISO-2022-JP など）は見分けません。
+
+**UTF-32 は扱いません。** BOM（`FF FE 00 00`・`00 00 FE FF`）で UTF-32 と分かったファイルは、理由を出して終了コード 2 で終わります。複数の指定の中にあるときは、名前を出して飛ばし、残りを探します（画面でも開きません）。UTF-8 か UTF-16 にしてから探してください。
 
 ### 6.2 Word・Excel・PDF（v1.9.0 から）
 

@@ -1,0 +1,93 @@
+suite,run_id,machine,os,fs,product,product_version,set,case,episode,file_bytes,cache,runs,median_s,min_s,max_s,mb_per_s,correct,hits,expected_hits,peak_rss_mib,note
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),encoding,enc-utf8-tokyo,5,,-,1,0.0216,0.0216,0.0216,,ok,60,60,15.1,
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),encoding,enc-utf8-tokyo,5,,-,1,0.0384,0.0384,0.0384,,ok,60,60,21.5,
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),encoding,enc-utf8-ascii,5,,-,1,0.0104,0.0104,0.0104,,ok,20,20,15.1,
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),encoding,enc-utf8-ascii,5,,-,1,0.0140,0.0140,0.0140,,ok,20,20,20.4,
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),encoding,enc-utf8-bom-tokyo,5,,-,1,0.0101,0.0101,0.0101,,ok,60,60,15.0,
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),encoding,enc-utf8-bom-tokyo,5,,-,1,0.0207,0.0207,0.0207,,ok,60,60,23.7,
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),encoding,enc-utf8-bom-ascii,5,,-,1,0.0104,0.0104,0.0104,,ok,20,20,15.0,
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),encoding,enc-utf8-bom-ascii,5,,-,1,0.0134,0.0134,0.0134,,ok,20,20,20.5,
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),encoding,enc-utf16le-bom-tokyo,5,,-,1,0.0087,0.0087,0.0087,,ng,1,60,15.1,hits 1 (expected 60)
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),encoding,enc-utf16le-bom-tokyo,5,,-,1,0.0213,0.0213,0.0213,,ok,60,60,23.6,
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),encoding,enc-utf16le-bom-ascii,5,,-,1,0.0088,0.0088,0.0088,,ng,0,20,15.0,exit 1 (expected 0); hits 0 (expected 20)
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),encoding,enc-utf16le-bom-ascii,5,,-,1,0.0131,0.0131,0.0131,,ok,20,20,20.5,
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),encoding,enc-utf16be-bom-tokyo,5,,-,1,0.0086,0.0086,0.0086,,ok,60,60,15.1,
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),encoding,enc-utf16be-bom-tokyo,5,,-,1,0.0157,0.0157,0.0157,,ok,60,60,23.7,
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),encoding,enc-utf16be-bom-ascii,5,,-,1,0.0085,0.0085,0.0085,,ok,20,20,15.0,
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),encoding,enc-utf16be-bom-ascii,5,,-,1,0.0125,0.0125,0.0125,,ok,20,20,20.5,
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),encoding,enc-utf16le-nobom-tokyo,5,,-,1,0.0091,0.0091,0.0091,,ng,0,60,15.4,exit 1 (expected 0); hits 0 (expected 60)
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),encoding,enc-utf16le-nobom-tokyo,5,,-,1,0.0153,0.0153,0.0153,,ng,0,60,24.0,exit 1 (expected 0); hits 0 (expected 60)
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),encoding,enc-utf16le-nobom-ascii,5,,-,1,0.0086,0.0086,0.0086,,ng,0,20,15.3,exit 1 (expected 0); hits 0 (expected 20)
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),encoding,enc-utf16le-nobom-ascii,5,,-,1,0.0123,0.0123,0.0123,,ng,0,20,19.6,exit 1 (expected 0); hits 0 (expected 20)
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),encoding,enc-utf16be-nobom-tokyo,5,,-,1,0.0090,0.0090,0.0090,,ng,0,60,15.4,exit 1 (expected 0); hits 0 (expected 60)
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),encoding,enc-utf16be-nobom-tokyo,5,,-,1,0.0161,0.0161,0.0161,,ng,0,60,24.1,exit 1 (expected 0); hits 0 (expected 60)
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),encoding,enc-utf16be-nobom-ascii,5,,-,1,0.0085,0.0085,0.0085,,ng,0,20,15.3,exit 1 (expected 0); hits 0 (expected 20)
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),encoding,enc-utf16be-nobom-ascii,5,,-,1,0.0130,0.0130,0.0130,,ng,0,20,19.6,exit 1 (expected 0); hits 0 (expected 20)
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),encoding,enc-utf32le-bom-tokyo,5,,-,1,0.0095,0.0095,0.0095,,ng,1,60,15.2,hits 1 (expected 60)
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),encoding,enc-utf32le-bom-tokyo,5,,-,1,0.0102,0.0102,0.0102,,ng,0,60,18.4,exit 2 (expected 0); hits 0 (expected 60)
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),encoding,enc-utf32le-bom-ascii,5,,-,1,0.0086,0.0086,0.0086,,ng,0,20,15.2,exit 1 (expected 0); hits 0 (expected 20)
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),encoding,enc-utf32le-bom-ascii,5,,-,1,0.0094,0.0094,0.0094,,ng,0,20,18.4,exit 2 (expected 0); hits 0 (expected 20)
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),encoding,enc-utf32be-bom-tokyo,5,,-,1,0.0087,0.0087,0.0087,,ng,0,60,15.4,exit 1 (expected 0); hits 0 (expected 60)
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),encoding,enc-utf32be-bom-tokyo,5,,-,1,0.0098,0.0098,0.0098,,ng,0,60,18.4,exit 2 (expected 0); hits 0 (expected 60)
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),encoding,enc-utf32be-bom-ascii,5,,-,1,0.0082,0.0082,0.0082,,ng,0,20,15.4,exit 1 (expected 0); hits 0 (expected 20)
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),encoding,enc-utf32be-bom-ascii,5,,-,1,0.0092,0.0092,0.0092,,ng,0,20,18.4,exit 2 (expected 0); hits 0 (expected 20)
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),encoding,enc-cp932-tokyo,5,,-,1,0.0087,0.0087,0.0087,,ok,60,60,15.3,
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),encoding,enc-cp932-tokyo,5,,-,1,0.0155,0.0155,0.0155,,ok,60,60,23.9,
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),encoding,enc-cp932-ascii,5,,-,1,0.0088,0.0088,0.0088,,ok,20,20,15.4,
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),encoding,enc-cp932-ascii,5,,-,1,0.0121,0.0121,0.0121,,ok,20,20,20.5,
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),encoding,enc-eucjp-tokyo,5,,-,1,0.0084,0.0084,0.0084,,ok,60,60,15.7,
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),encoding,enc-eucjp-tokyo,5,,-,1,0.0158,0.0158,0.0158,,ok,60,60,23.9,
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),encoding,enc-eucjp-ascii,5,,-,1,0.0085,0.0085,0.0085,,ok,20,20,15.3,
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),encoding,enc-eucjp-ascii,5,,-,1,0.0127,0.0127,0.0127,,ok,20,20,20.5,
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),encoding,enc-iso2022jp-tokyo,5,,-,1,0.0085,0.0085,0.0085,,ng,0,60,15.0,exit 1 (expected 0); hits 0 (expected 60)
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),encoding,enc-iso2022jp-tokyo,5,,-,1,0.0166,0.0166,0.0166,,ng,0,60,21.6,exit 1 (expected 0); hits 0 (expected 60)
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),encoding,enc-iso2022jp-ascii,5,,-,1,0.0085,0.0085,0.0085,,ok,20,20,15.0,manual 6.1: ISO-2022-JP is not detected
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),encoding,enc-iso2022jp-ascii,5,,-,1,0.0136,0.0136,0.0136,,ok,20,20,20.3,manual 6.1: ISO-2022-JP is not detected
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),encoding,enc-utf8-broken-tokyo,5,,-,1,0.0091,0.0091,0.0091,,ng,0,60,15.4,exit 1 (expected 0); hits 0 (expected 60)
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),encoding,enc-utf8-broken-tokyo,5,,-,1,0.0159,0.0159,0.0159,,ng,0,60,24.9,exit 1 (expected 0); hits 0 (expected 60)
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),encoding,enc-cp932-short,5,,-,1,0.0092,0.0092,0.0092,,ok,1,1,15.3,4-byte file: detection has little to go on
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),encoding,enc-cp932-short,5,,-,1,0.0144,0.0144,0.0144,,ok,1,1,23.7,4-byte file: detection has little to go on
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),encoding,enc-eucjp-short,5,,-,1,0.0084,0.0084,0.0084,,ok,1,1,15.3,4-byte file: detection has little to go on
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),encoding,enc-eucjp-short,5,,-,1,0.0163,0.0163,0.0163,,ok,1,1,23.6,4-byte file: detection has little to go on
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),encoding,enc-cp932-hankaku,5,,-,1,0.0087,0.0087,0.0087,,ok,1,1,15.3,mostly half-width katakana
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),encoding,enc-cp932-hankaku,5,,-,1,0.0194,0.0194,0.0194,,ok,1,1,23.7,mostly half-width katakana
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),encoding,enc-latin1-ascii,5,,-,1,0.0087,0.0087,0.0087,,ok,1,1,15.4,manual 6.1: Latin-1 is not detected; ASCII words should still be found
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),encoding,enc-latin1-ascii,5,,-,1,0.0148,0.0148,0.0148,,ok,1,1,23.7,manual 6.1: Latin-1 is not detected; ASCII words should still be found
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),ja-dup,dup-U2235,7,,-,1,0.0087,0.0087,0.0087,,ok,3,3,15.9,∵ has 3 codes: 81E6 879A FA5B
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),ja-dup,dup-U2235,7,,-,1,0.0151,0.0151,0.0151,,ok,3,3,24.4,∵ has 3 codes: 81E6 879A FA5B
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),ja-dup,dup-U2235-utf8,7,,-,1,0.0085,0.0085,0.0085,,ok,3,3,15.1,UTF-8 control
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),ja-dup,dup-U2235-utf8,7,,-,1,0.0163,0.0163,0.0163,,ok,3,3,21.9,UTF-8 control
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),ja-dup,dup-U2252,7,,-,1,0.0090,0.0090,0.0090,,ok,2,2,15.8,≒ has 2 codes: 81E0 8790
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),ja-dup,dup-U2252,7,,-,1,0.0124,0.0124,0.0124,,ok,2,2,20.7,≒ has 2 codes: 81E0 8790
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),ja-dup,dup-U2252-utf8,7,,-,1,0.0082,0.0082,0.0082,,ok,2,2,15.1,UTF-8 control
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),ja-dup,dup-U2252-utf8,7,,-,1,0.0129,0.0129,0.0129,,ok,2,2,20.5,UTF-8 control
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),ja-dup,dup-UFFE2,7,,-,1,0.0088,0.0088,0.0088,,ok,3,3,15.9,￢ has 3 codes: 81CA EEF9 FA54
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),ja-dup,dup-UFFE2,7,,-,1,0.0123,0.0123,0.0123,,ok,3,3,20.8,￢ has 3 codes: 81CA EEF9 FA54
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),ja-dup,dup-UFFE2-utf8,7,,-,1,0.0080,0.0080,0.0080,,ok,3,3,15.1,UTF-8 control
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),ja-dup,dup-UFFE2-utf8,7,,-,1,0.0131,0.0131,0.0131,,ok,3,3,20.5,UTF-8 control
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),ja-dup,dup-U2160,7,,-,1,0.0106,0.0106,0.0106,,ok,2,2,15.4,Ⅰ has 2 codes: 8754 FA4A
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),ja-dup,dup-U2160,7,,-,1,0.0134,0.0134,0.0134,,ok,2,2,20.8,Ⅰ has 2 codes: 8754 FA4A
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),ja-dup,dup-U2160-utf8,7,,-,1,0.0088,0.0088,0.0088,,ok,2,2,15.1,UTF-8 control
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),ja-dup,dup-U2160-utf8,7,,-,1,0.0131,0.0131,0.0131,,ok,2,2,20.5,UTF-8 control
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),ja-dup,dup-U2170,7,,-,1,0.0086,0.0086,0.0086,,ok,2,2,15.4,ⅰ has 2 codes: EEEF FA40
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),ja-dup,dup-U2170,7,,-,1,0.0129,0.0129,0.0129,,ok,2,2,20.7,ⅰ has 2 codes: EEEF FA40
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),ja-dup,dup-U2170-utf8,7,,-,1,0.0093,0.0093,0.0093,,ok,2,2,15.1,UTF-8 control
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),ja-dup,dup-U2170-utf8,7,,-,1,0.0125,0.0125,0.0125,,ok,2,2,20.5,UTF-8 control
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),ja-dup,dup-U9AD9,7,,-,1,0.0096,0.0096,0.0096,,ok,2,2,15.5,髙 has 2 codes: EEE0 FBFC
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),ja-dup,dup-U9AD9,7,,-,1,0.0133,0.0133,0.0133,,ok,2,2,20.8,髙 has 2 codes: EEE0 FBFC
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),ja-dup,dup-U9AD9-utf8,7,,-,1,0.0092,0.0092,0.0092,,ok,2,2,15.1,UTF-8 control
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),ja-dup,dup-U9AD9-utf8,7,,-,1,0.0130,0.0130,0.0130,,ok,2,2,20.5,UTF-8 control
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),ja-dup,dup-UFA11,7,,-,1,0.0086,0.0086,0.0086,,ok,2,2,15.7,﨑 has 2 codes: ED95 FAB1
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),ja-dup,dup-UFA11,7,,-,1,0.0128,0.0128,0.0128,,ok,2,2,20.8,﨑 has 2 codes: ED95 FAB1
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),ja-dup,dup-UFA11-utf8,7,,-,1,0.0086,0.0086,0.0086,,ok,2,2,15.1,UTF-8 control
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),ja-dup,dup-UFA11-utf8,7,,-,1,0.0125,0.0125,0.0125,,ok,2,2,20.4,UTF-8 control
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),ja-dup,dup-U222A,7,,-,1,0.0087,0.0087,0.0087,,ok,2,2,15.5,∪ has 2 codes: 81BE 879C
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),ja-dup,dup-U222A,7,,-,1,0.0126,0.0126,0.0126,,ok,2,2,20.8,∪ has 2 codes: 81BE 879C
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),ja-dup,dup-U222A-utf8,7,,-,1,0.0086,0.0086,0.0086,,ok,2,2,15.1,UTF-8 control
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),ja-dup,dup-U222A-utf8,7,,-,1,0.0131,0.0131,0.0131,,ok,2,2,20.7,UTF-8 control
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),ja-dup,dup-U2116,7,,-,1,0.0090,0.0090,0.0090,,ok,2,2,15.4,№ has 2 codes: 8782 FA59
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),ja-dup,dup-U2116,7,,-,1,0.0141,0.0141,0.0141,,ok,2,2,20.8,№ has 2 codes: 8782 FA59
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),ja-dup,dup-U2116-utf8,7,,-,1,0.0087,0.0087,0.0087,,ok,2,2,15.1,UTF-8 control
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),ja-dup,dup-U2116-utf8,7,,-,1,0.0133,0.0133,0.0133,,ok,2,2,20.5,UTF-8 control
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),ja-dup,dup-single,7,,-,1,0.0085,0.0085,0.0085,,ok,1,1,15.4,NEC special with a single code
+1.0,20261024-150931,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),ja-dup,dup-single,7,,-,1,0.0181,0.0181,0.0181,,ok,1,1,23.5,NEC special with a single code

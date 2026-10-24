@@ -1,0 +1,387 @@
+{
+ "suite": "1.0",
+ "set": "ja-rare",
+ "meta": {
+  "preset": "smoke",
+  "sizes": [
+   ""
+  ],
+  "info": {}
+ },
+ "files": [
+  {
+   "path": "utf8-rare.txt",
+   "sha256": "a45a3fc5dd9786d3d107d1d99e3e1fa42a8bd2f505693b0f614d6edb0ead476d",
+   "bytes": 176
+  },
+  {
+   "path": "utf16le-rare.txt",
+   "sha256": "194a8be360a8f071a229ef64c86a697a7c7b81e6db34a99dbc51fb6f4156082f",
+   "bytes": 194
+  },
+  {
+   "path": "cp932-gaiji.txt",
+   "sha256": "a93e0d2f6f51118d9032571845d8e2e97004aaeee70645f6499fc286dc235b8a",
+   "bytes": 25
+  },
+  {
+   "path": "eucjp-0212.txt",
+   "sha256": "08dfc2935d1421db03016ab21b81042817e0a2cbaa39a4221143a038e822fb31",
+   "bytes": 33
+  },
+  {
+   "path": "iso2022jp-short.txt",
+   "sha256": "5960c83332a14654db5da70f0a7cae3718861720b7787b4cb7c7d8fe03e77e43",
+   "bytes": 28
+  }
+ ],
+ "cases": [
+  {
+   "id": "rare-tsuchiyoshi-utf8",
+   "episode": 10,
+   "files": "utf8-rare.txt",
+   "pattern": "𠮷",
+   "expect": {
+    "exit": 0,
+    "hits": 1,
+    "lines": [
+     1
+    ]
+   },
+   "note": "",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "rare-tsuchiyoshi-utf16le",
+   "episode": 10,
+   "files": "utf16le-rare.txt",
+   "pattern": "𠮷",
+   "expect": {
+    "exit": 0,
+    "hits": 1,
+    "lines": [
+     1
+    ]
+   },
+   "note": "",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "rare-katsura-utf8",
+   "episode": 10,
+   "files": "utf8-rare.txt",
+   "pattern": "葛",
+   "expect": {
+    "exit": 0,
+    "hits": 2,
+    "lines": [
+     3,
+     4
+    ]
+   },
+   "note": "",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "rare-katsura-utf16le",
+   "episode": 10,
+   "files": "utf16le-rare.txt",
+   "pattern": "葛",
+   "expect": {
+    "exit": 0,
+    "hits": 2,
+    "lines": [
+     3,
+     4
+    ]
+   },
+   "note": "",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "rare-katsura-ivs-utf8",
+   "episode": 10,
+   "files": "utf8-rare.txt",
+   "pattern": "葛󠄀",
+   "expect": {
+    "exit": 0,
+    "hits": 1,
+    "lines": [
+     3
+    ]
+   },
+   "note": "",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "rare-katsura-ivs-utf16le",
+   "episode": 10,
+   "files": "utf16le-rare.txt",
+   "pattern": "葛󠄀",
+   "expect": {
+    "exit": 0,
+    "hits": 1,
+    "lines": [
+     3
+    ]
+   },
+   "note": "",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "rare-hokke-utf8",
+   "episode": 10,
+   "files": "utf8-rare.txt",
+   "pattern": "𩸽",
+   "expect": {
+    "exit": 0,
+    "hits": 1,
+    "lines": [
+     5
+    ]
+   },
+   "note": "",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "rare-hokke-utf16le",
+   "episode": 10,
+   "files": "utf16le-rare.txt",
+   "pattern": "𩸽",
+   "expect": {
+    "exit": 0,
+    "hits": 1,
+    "lines": [
+     5
+    ]
+   },
+   "note": "",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "rare-emoji-utf8",
+   "episode": 10,
+   "files": "utf8-rare.txt",
+   "pattern": "👍",
+   "expect": {
+    "exit": 0,
+    "hits": 1,
+    "lines": [
+     9
+    ]
+   },
+   "note": "",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "rare-emoji-utf16le",
+   "episode": 10,
+   "files": "utf16le-rare.txt",
+   "pattern": "👍",
+   "expect": {
+    "exit": 0,
+    "hits": 1,
+    "lines": [
+     9
+    ]
+   },
+   "note": "",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "rare-pua-utf8",
+   "episode": 10,
+   "files": "utf8-rare.txt",
+   "pattern": "",
+   "expect": {
+    "exit": 0,
+    "hits": 1,
+    "lines": [
+     7
+    ]
+   },
+   "note": "",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "rare-pua-utf16le",
+   "episode": 10,
+   "files": "utf16le-rare.txt",
+   "pattern": "",
+   "expect": {
+    "exit": 0,
+    "hits": 1,
+    "lines": [
+     7
+    ]
+   },
+   "note": "",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "rare-onechar-utf8",
+   "episode": 10,
+   "files": "utf8-rare.txt",
+   "pattern": "^01 .野家$",
+   "flags": [
+    "-E"
+   ],
+   "expect": {
+    "exit": 0,
+    "hits": 1,
+    "lines": [
+     1
+    ]
+   },
+   "note": "𠮷 (a surrogate pair in UTF-16) is one character for '.'",
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "rare-onechar-utf16",
+   "episode": 10,
+   "files": "utf16le-rare.txt",
+   "pattern": "^01 .野家$",
+   "flags": [
+    "-E"
+   ],
+   "expect": {
+    "exit": 0,
+    "hits": 1,
+    "lines": [
+     1
+    ]
+   },
+   "note": "same in UTF-16",
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "rare-gaiji-pua",
+   "episode": 10,
+   "files": "cp932-gaiji.txt",
+   "pattern": "",
+   "expect": {
+    "exit": 0,
+    "hits": 1,
+    "lines": [
+     1
+    ]
+   },
+   "note": "CP932 F040 = U+E000 (Microsoft table)",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "rare-gaiji-tokyo",
+   "episode": 10,
+   "files": "cp932-gaiji.txt",
+   "pattern": "東京",
+   "expect": {
+    "exit": 0,
+    "hits": 1,
+    "lines": [
+     2
+    ]
+   },
+   "note": "text after gaiji is still found",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "rare-euc0212-U4E02",
+   "episode": 10,
+   "files": "eucjp-0212.txt",
+   "pattern": "丂",
+   "expect": {
+    "exit": 0,
+    "hits": 1,
+    "lines": [
+     1
+    ]
+   },
+   "note": "EUC-JP 3-byte JIS X 0212",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "rare-euc0212-U6771",
+   "episode": 10,
+   "files": "eucjp-0212.txt",
+   "pattern": "東京",
+   "expect": {
+    "exit": 0,
+    "hits": 1,
+    "lines": [
+     2
+    ]
+   },
+   "note": "",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "rare-euc0212-U9DD7",
+   "episode": 10,
+   "files": "eucjp-0212.txt",
+   "pattern": "鷗",
+   "expect": {
+    "exit": 0,
+    "hits": 1,
+    "lines": [
+     3
+    ]
+   },
+   "note": "EUC-JP 3-byte JIS X 0212",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "rare-iso2022jp",
+   "episode": 10,
+   "files": "iso2022jp-short.txt",
+   "pattern": "東京",
+   "expect": {
+    "exit": 0,
+    "hits": 1,
+    "lines": [
+     1
+    ]
+   },
+   "documented_limit": true,
+   "note": "manual 6.1: ISO-2022-JP is not detected",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  }
+ ]
+}

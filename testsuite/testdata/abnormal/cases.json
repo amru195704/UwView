@@ -1,0 +1,221 @@
+{
+ "suite": "1.0",
+ "set": "abnormal",
+ "meta": {
+  "preset": "smoke",
+  "sizes": [
+   ""
+  ],
+  "info": {}
+ },
+ "files": [
+  {
+   "path": "empty.txt",
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "bytes": 0
+  },
+  {
+   "path": "binary.bin",
+   "sha256": "707de8ba39c074287d1fb456236f2d21bb1bb1d9faafdd05a0acdab737081ee0",
+   "bytes": 62895
+  },
+  {
+   "path": "nul-mixed.txt",
+   "sha256": "da56341a69cfe1dc10d98de70e688d3c4747922b5a0d8b9faf6c09d6b0d439bb",
+   "bytes": 35
+  },
+  {
+   "path": "growing.log",
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "bytes": 0
+  },
+  {
+   "path": "noperm.txt",
+   "sha256": "6a5985ed2977e243eacc8f239fd3ccde45913cd11312610bea81261065483e86",
+   "bytes": 14
+  },
+  {
+   "path": "a-folder/inside.txt",
+   "sha256": "73cb3858a687a8494ca3323053016282f3dad39d42cf62ca4e79dda2aac7d9ac",
+   "bytes": 2
+  },
+  {
+   "path": "truncated.log.gz",
+   "sha256": "7f880e3844c1c860ceacd5aa5ba0ec61527d74e2af44b40360aea8399835b731",
+   "bytes": 6542
+  },
+  {
+   "path": "not-gzip.log.gz",
+   "sha256": "1962e96e4086e73e380e0ab5d64355a736b1d01f675dd19f800ba7e437d0f173",
+   "bytes": 25
+  },
+  {
+   "path": "bad-regex.txt",
+   "sha256": "edeaaff3f1774ad2888673770c6d64097e391bc362d7d6fb34982ddf0efd18cb",
+   "bytes": 4
+  }
+ ],
+ "cases": [
+  {
+   "id": "ab-empty",
+   "episode": 14,
+   "files": "empty.txt",
+   "pattern": "x",
+   "expect": {
+    "exit": 1,
+    "hits": 0
+   },
+   "flags": [],
+   "timed": false,
+   "note": "",
+   "kind": "search"
+  },
+  {
+   "id": "ab-binary",
+   "episode": 14,
+   "files": "binary.bin",
+   "pattern": "UWTEST-NEEDLE",
+   "expect": {
+    "exit": 0,
+    "hits": 1
+   },
+   "note": "NUL and random bytes around a text line",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "ab-nul",
+   "episode": 14,
+   "files": "nul-mixed.txt",
+   "pattern": "UWTEST-NEEDLE",
+   "expect": {
+    "exit": 0,
+    "hits": 1,
+    "lines": [
+     2
+    ]
+   },
+   "flags": [],
+   "timed": false,
+   "note": "",
+   "kind": "search"
+  },
+  {
+   "id": "ab-growing",
+   "episode": 14,
+   "kind": "growing",
+   "files": "growing.log",
+   "pattern": "UWTEST-NEEDLE",
+   "expect": {
+    "exit_in": [
+     0,
+     1
+    ]
+   },
+   "note": "another process appends 200,000 lines while uvf reads",
+   "flags": [],
+   "timed": false
+  },
+  {
+   "id": "ab-noperm",
+   "episode": 14,
+   "kind": "noperm",
+   "files": "noperm.txt",
+   "pattern": "UWTEST-NEEDLE",
+   "expect": {
+    "exit": 2
+   },
+   "note": "permission removed at run time (skipped on Windows and as root)",
+   "flags": [],
+   "timed": false
+  },
+  {
+   "id": "ab-missing",
+   "episode": 14,
+   "files": "no-such-file.txt",
+   "pattern": "x",
+   "expect": {
+    "exit": 2
+   },
+   "flags": [],
+   "timed": false,
+   "note": "",
+   "kind": "search"
+  },
+  {
+   "id": "ab-folder",
+   "episode": 14,
+   "files": "a-folder",
+   "pattern": "x",
+   "expect": {
+    "exit_in": [
+     0,
+     2
+    ]
+   },
+   "note": "a folder given where a file is expected",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "ab-truncated-gz",
+   "episode": 14,
+   "files": "truncated.log.gz",
+   "pattern": "UWTEST-NEEDLE",
+   "expect": {
+    "exit": 2
+   },
+   "note": "cut in the middle: must report an error, not hang or crash",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "ab-not-gzip",
+   "episode": 14,
+   "files": "not-gzip.log.gz",
+   "pattern": "UWTEST-NEEDLE",
+   "expect": {
+    "exit": 2
+   },
+   "note": "manual 6: .gz that is not gzip is reported",
+   "flags": [],
+   "timed": false,
+   "kind": "search"
+  },
+  {
+   "id": "ab-bad-regex",
+   "episode": 14,
+   "files": "bad-regex.txt",
+   "pattern": "(abc",
+   "flags": [
+    "-E"
+   ],
+   "expect": {
+    "exit": 2
+   },
+   "timed": false,
+   "note": "",
+   "kind": "search"
+  },
+  {
+   "id": "ab-symlink-loop",
+   "episode": 14,
+   "kind": "symlink-loop",
+   "files": "loop/**/*.txt",
+   "pattern": "UWTEST-NEEDLE",
+   "expect": {
+    "exit_in": [
+     0,
+     1,
+     2
+    ]
+   },
+   "note": "a folder link that points to itself (made at run time, not on Windows)",
+   "flags": [],
+   "timed": false
+  }
+ ]
+}
