@@ -48,7 +48,17 @@ public partial class MainView
     {
         if (_vm is null) return;
         int index = _vm.Tabs.IndexOf(tab);
-        if (await OpenOfficeAsync(original, OfficeDocumentFile.Probe(original)) is not { } fresh || ReferenceEquals(fresh, tab)) return;
+        // 元のファイルを見分け直す。Word・Excel・PDF でなくなっていれば（別の形式に置き換わった）、ふつうの開き方で開き直す
+        //（取り出しに種類なしを渡すと ArgumentOutOfRangeException で落ちていた。レビュー 2026-10-24 P2-4）
+        var probe = OfficeDocumentFile.Probe(original);
+        DocumentTabViewModel? fresh;
+        if (probe.IsOffice) fresh = await OpenOfficeAsync(original, probe);
+        else
+        {
+            await OpenPathsAsync([original]);
+            fresh = _vm.ActiveTab;
+        }
+        if (fresh is null || ReferenceEquals(fresh, tab)) return;
         if (index >= 0 && _vm.Tabs.IndexOf(fresh) is var at and >= 0) _vm.Tabs.Move(at, Math.Min(index, _vm.Tabs.Count - 1));
         _vm.RequestClose(tab);
         _vm.ActiveTab = fresh;
