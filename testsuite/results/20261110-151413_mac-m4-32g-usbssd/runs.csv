@@ -1,0 +1,9 @@
+suite,run_id,timestamp,machine,os,os_version,fs,product,product_version,set,case,episode,file_bytes,cache,run,seconds,exit,hits,hits_reported,expected_hits,correct,peak_rss_mib,note
+1.0,20261110-151413,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),huge,huge-10G-nohit,1,10737418240,first,1,10.6437,1,0,,0,ok,18.5,"full scan, no output"
+1.0,20261110-151413,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),huge,huge-10G-nohit,1,10737418240,hot,1,10.6133,1,0,,0,ok,19.3,"full scan, no output"
+1.0,20261110-151413,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),huge,huge-10G-nohit,1,10737418240,hot,2,10.6143,1,0,,0,ok,19.3,"full scan, no output"
+1.0,20261110-151413,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),huge,huge-10G-nohit,1,10737418240,hot,3,10.6119,1,0,,0,ok,19.3,"full scan, no output"
+1.0,20261110-151413,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),huge,huge-10G-nohit,1,10737418240,first,1,10.6543,1,0,,0,ok,23.4,"full scan, no output"
+1.0,20261110-151413,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),huge,huge-10G-nohit,1,10737418240,hot,1,10.6221,1,0,,0,ok,22.5,"full scan, no output"
+1.0,20261110-151413,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),huge,huge-10G-nohit,1,10737418240,hot,2,10.6171,1,0,,0,ok,23.4,"full scan, no output"
+1.0,20261110-151413,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),huge,huge-10G-nohit,1,10737418240,hot,3,10.6208,1,0,,0,ok,23.4,"full scan, no output"
