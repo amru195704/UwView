@@ -67,6 +67,20 @@ public static class CliSettings
         }
     }
 
+    /// <summary>設定の支援の案内の記録（AppSettings.SupportBanner と同じ名前）。</summary>
+    public const string SupportBannerKey = "SupportBanner";
+
+    /// <summary>
+    /// 支援の案内を止めているか（設定の「支援の案内を表示しない」＝<c>SupportBanner.Disabled</c>、
+    /// または帯の［支援する］を押した＝<c>SupportBanner.Supported</c>）。読めなければ false（止めていない）。
+    /// CLI の <c>--version</c>／<c>--help</c> の最後の 1 行もこれで止まる（指示-20261113-05）。
+    /// </summary>
+    public static bool ReadSupportStoppedFrom(string settingsPath)
+        => Read(settingsPath, SupportBannerKey) is JsonObject o
+           && (IsTrue(o["Disabled"]) || IsTrue(o["Supported"]));
+
+    private static bool IsTrue(JsonNode? n) => n is JsonValue v && v.TryGetValue(out bool b) && b;
+
     private static JsonNode? Read(string settingsPath, string key)
     {
         try

@@ -1,0 +1,20 @@
+suite,run_id,machine,os,fs,product,product_version,set,case,episode,file_bytes,cache,runs,median_s,min_s,max_s,mb_per_s,correct,hits,expected_hits,peak_rss_mib,note
+1.0,20261113-113020,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),ja-dup,dup-U2235,7,,-,1,0.0152,0.0152,0.0152,,ok,3,3,24.4,∵ has 3 codes: 81E6 879A FA5B
+1.0,20261113-113020,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),ja-dup,dup-U2235-utf8,7,,-,1,0.0136,0.0136,0.0136,,ok,3,3,22.2,UTF-8 control
+1.0,20261113-113020,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),ja-dup,dup-U2252,7,,-,1,0.0128,0.0128,0.0128,,ok,2,2,21.0,≒ has 2 codes: 81E0 8790
+1.0,20261113-113020,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),ja-dup,dup-U2252-utf8,7,,-,1,0.0111,0.0111,0.0111,,ok,2,2,20.5,UTF-8 control
+1.0,20261113-113020,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),ja-dup,dup-UFFE2,7,,-,1,0.0118,0.0118,0.0118,,ok,3,3,20.7,￢ has 3 codes: 81CA EEF9 FA54
+1.0,20261113-113020,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),ja-dup,dup-UFFE2-utf8,7,,-,1,0.0115,0.0115,0.0115,,ok,3,3,20.5,UTF-8 control
+1.0,20261113-113020,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),ja-dup,dup-U2160,7,,-,1,0.0111,0.0111,0.0111,,ok,2,2,20.7,Ⅰ has 2 codes: 8754 FA4A
+1.0,20261113-113020,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),ja-dup,dup-U2160-utf8,7,,-,1,0.0109,0.0109,0.0109,,ok,2,2,20.5,UTF-8 control
+1.0,20261113-113020,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),ja-dup,dup-U2170,7,,-,1,0.0106,0.0106,0.0106,,ok,2,2,20.7,ⅰ has 2 codes: EEEF FA40
+1.0,20261113-113020,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),ja-dup,dup-U2170-utf8,7,,-,1,0.0100,0.0100,0.0100,,ok,2,2,20.5,UTF-8 control
+1.0,20261113-113020,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),ja-dup,dup-U9AD9,7,,-,1,0.0106,0.0106,0.0106,,ok,2,2,21.0,髙 has 2 codes: EEE0 FBFC
+1.0,20261113-113020,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),ja-dup,dup-U9AD9-utf8,7,,-,1,0.0098,0.0098,0.0098,,ok,2,2,20.5,UTF-8 control
+1.0,20261113-113020,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),ja-dup,dup-UFA11,7,,-,1,0.0097,0.0097,0.0097,,ok,2,2,20.8,﨑 has 2 codes: ED95 FAB1
+1.0,20261113-113020,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),ja-dup,dup-UFA11-utf8,7,,-,1,0.0099,0.0099,0.0099,,ok,2,2,20.5,UTF-8 control
+1.0,20261113-113020,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),ja-dup,dup-U222A,7,,-,1,0.0095,0.0095,0.0095,,ok,2,2,21.0,∪ has 2 codes: 81BE 879C
+1.0,20261113-113020,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),ja-dup,dup-U222A-utf8,7,,-,1,0.0101,0.0101,0.0101,,ok,2,2,20.5,UTF-8 control
+1.0,20261113-113020,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),ja-dup,dup-U2116,7,,-,1,0.0093,0.0093,0.0093,,ok,2,2,20.8,№ has 2 codes: 8782 FA59
+1.0,20261113-113020,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),ja-dup,dup-U2116-utf8,7,,-,1,0.0099,0.0099,0.0099,,ok,2,2,20.5,UTF-8 control
+1.0,20261113-113020,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),ja-dup,dup-single,7,,-,1,0.0115,0.0115,0.0115,,ok,1,1,23.6,NEC special with a single code

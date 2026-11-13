@@ -1,0 +1,7 @@
+suite,run_id,machine,os,fs,product,product_version,set,case,episode,file_bytes,cache,runs,median_s,min_s,max_s,mb_per_s,correct,hits,expected_hits,peak_rss_mib,note
+1.0,20261113-113015,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),encoding,enc-utf16le-nobom-tokyo,5,,-,1,0.0118,0.0118,0.0118,,ng,0,60,24.1,exit 1 (expected 0); hits 0 (expected 60)
+1.0,20261113-113015,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),encoding,enc-utf16le-nobom-ascii,5,,-,1,0.0093,0.0093,0.0093,,ng,0,20,19.7,exit 1 (expected 0); hits 0 (expected 20)
+1.0,20261113-113015,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),encoding,enc-utf16be-nobom-tokyo,5,,-,1,0.0166,0.0166,0.0166,,ng,0,60,23.5,exit 1 (expected 0); hits 0 (expected 60)
+1.0,20261113-113015,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),encoding,enc-utf16be-nobom-ascii,5,,-,1,0.0095,0.0095,0.0095,,ng,0,20,19.6,exit 1 (expected 0); hits 0 (expected 20)
+1.0,20261113-113015,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),encoding,enc-iso2022jp-tokyo,5,,-,1,0.0121,0.0121,0.0121,,ng,0,60,22.5,exit 1 (expected 0); hits 0 (expected 60)
+1.0,20261113-113015,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),encoding,enc-utf8-broken-tokyo,5,,-,1,0.0128,0.0128,0.0128,,ng,0,60,24.1,exit 1 (expected 0); hits 0 (expected 60)

@@ -130,6 +130,7 @@ namespace UwView.Cli
                 Japanese = UwView.Core.Cli.CliLanguage.IsJapanese(UwView.Core.Cli.CliLanguage.FreeSettingsFolder),
                 AppVersion = VersionText(),
                 BuildNumber = UwView.Core.AppEdition.BuildNumberOf(typeof(InProcess).Assembly),
+                SupportNotice = true,    // --version／--help の最後に支援の案内を 1 行（本体の RunCli と同じ。指示-20261113-05）
                 Expanded = expanded,     // 任せる判断で広げた一覧（同じ指定なら広げ直さない）
                 // -open: 画面が要るので本体を起動する（検索パターンとファイル、CLI が見つけた結果の置き場所を渡す）
                 LaunchGui = (file, pattern) => LaunchGui(

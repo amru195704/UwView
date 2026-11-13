@@ -95,6 +95,13 @@ public sealed class UvfEnvironment
     public double TuneMediumRatio { get; init; } = 1;
 
     /// <summary>
+    /// <c>--version</c>／<c>--help</c> の最後に支援の案内を 1 行出すか（無料版の <c>uvf</c> だけが true にする。
+    /// 既定は false＝別の名前で同じ動きを使うコマンドには出ない）。通常の出力・パイプには出さない。
+    /// 設定で止めた人（<see cref="CliSettings.ReadSupportStoppedFrom"/>）にも出さない。指示-20261113-05。
+    /// </summary>
+    public bool SupportNotice { get; init; }
+
+    /// <summary>
     /// 表示に使うコマンド名（既定は "uvf"）。同じ動きを別の名前のコマンドから使うときは、その名前を入れる。
     /// </summary>
     public string ToolName { get; init; } = "uvf";
@@ -328,6 +335,17 @@ public static class UvfCli
                                   icase, regex, invert, json, fileNames, listFiles, ignore, raw), null, null);
     }
 
+    /// <summary>
+    /// 支援の案内の 1 行（<c>--version</c>／<c>--help</c> の最後だけ。指示-20261113-05）。
+    /// 版数の 1 行目は変えない（読むスクリプトを壊さない）。
+    /// </summary>
+    private static async Task WriteSupportLineAsync(UvfEnvironment env, bool ja, CancellationToken ct)
+    {
+        if (!env.SupportNotice) return;
+        if (CliSettings.ReadSupportStoppedFrom(CliSettings.PathFor(env.SettingsFolder))) return;
+        await WriteLineAsync(env.StdOut, SupportPromptText.CliLine(ja), ct);
+    }
+
     public static async Task<int> RunAsync(IReadOnlyList<string> argv, UvfEnvironment env, CancellationToken ct = default)
     {
         bool ja = env.Japanese;
@@ -355,9 +373,11 @@ public static class UvfCli
                 case "--version" or "-version" or "--Version":
                     await WriteLineAsync(env.StdOut,
                         AppEdition.VersionLine(tool, env.AppVersion.Length > 0 ? env.AppVersion : "?", env.BuildNumber), ct);
+                    await WriteSupportLineAsync(env, ja, ct);
                     return UvfExit.Found;
                 case "--help" or "-h" or "-help" or "--Help":
                     await WriteLineAsync(env.StdOut, Usage(ja, tool), ct);
+                    await WriteSupportLineAsync(env, ja, ct);
                     return UvfExit.Found;
             }
         }

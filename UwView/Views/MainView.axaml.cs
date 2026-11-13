@@ -147,6 +147,10 @@ public partial class MainView : UserControl
                 .Concat(App.TakePendingOpen())
                 .ToArray();
             RunStartup(args);
+
+            // 支援の案内の帯（起動直後。無料版の本体だけ・条件を満たした日だけ。指示-20261113-05）
+            PreferencesWindow.SupportBannerClosed = HideSupportBanner;   // 設定で止めたら出ている帯も畳む
+            ShowSupportBannerIfDue(DateOnly.FromDateTime(DateTime.Now));
         };
     }
 

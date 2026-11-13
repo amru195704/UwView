@@ -1,0 +1,21 @@
+suite,run_id,machine,os,fs,product,product_version,set,case,episode,file_bytes,cache,runs,median_s,min_s,max_s,mb_per_s,correct,hits,expected_hits,peak_rss_mib,note
+1.0,20261113-113019,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),ja-rare,rare-tsuchiyoshi-utf8,10,,-,1,0.0118,0.0118,0.0118,,ok,1,1,22.0,
+1.0,20261113-113019,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),ja-rare,rare-tsuchiyoshi-utf16le,10,,-,1,0.0115,0.0115,0.0115,,ok,1,1,23.3,
+1.0,20261113-113019,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),ja-rare,rare-katsura-utf8,10,,-,1,0.0093,0.0093,0.0093,,ok,2,2,20.2,
+1.0,20261113-113019,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),ja-rare,rare-katsura-utf16le,10,,-,1,0.0093,0.0093,0.0093,,ok,2,2,20.7,
+1.0,20261113-113019,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),ja-rare,rare-katsura-ivs-utf8,10,,-,1,0.0093,0.0093,0.0093,,ok,1,1,20.2,
+1.0,20261113-113019,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),ja-rare,rare-katsura-ivs-utf16le,10,,-,1,0.0094,0.0094,0.0094,,ok,1,1,20.5,
+1.0,20261113-113019,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),ja-rare,rare-hokke-utf8,10,,-,1,0.0096,0.0096,0.0096,,ok,1,1,20.2,
+1.0,20261113-113019,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),ja-rare,rare-hokke-utf16le,10,,-,1,0.0100,0.0100,0.0100,,ok,1,1,20.7,
+1.0,20261113-113019,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),ja-rare,rare-emoji-utf8,10,,-,1,0.0094,0.0094,0.0094,,ok,1,1,20.2,
+1.0,20261113-113019,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),ja-rare,rare-emoji-utf16le,10,,-,1,0.0101,0.0101,0.0101,,ok,1,1,20.7,
+1.0,20261113-113019,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),ja-rare,rare-pua-utf8,10,,-,1,0.0103,0.0103,0.0103,,ok,1,1,20.2,
+1.0,20261113-113019,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),ja-rare,rare-pua-utf16le,10,,-,1,0.0091,0.0091,0.0091,,ok,1,1,20.7,
+1.0,20261113-113019,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),ja-rare,rare-onechar-utf8,10,,-,1,0.0091,0.0091,0.0091,,ng,0,1,20.4,exit 1 (expected 0); hits 0 (expected 1)
+1.0,20261113-113019,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),ja-rare,rare-onechar-utf16,10,,-,1,0.0090,0.0090,0.0090,,ng,0,1,20.6,exit 1 (expected 0); hits 0 (expected 1)
+1.0,20261113-113019,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),ja-rare,rare-gaiji-pua,10,,-,1,0.0121,0.0121,0.0121,,ok,1,1,23.6,CP932 F040 = U+E000 (Microsoft table)
+1.0,20261113-113019,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),ja-rare,rare-gaiji-tokyo,10,,-,1,0.0097,0.0097,0.0097,,ok,1,1,20.4,text after gaiji is still found
+1.0,20261113-113019,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),ja-rare,rare-euc0212-U4E02,10,,-,1,0.0116,0.0116,0.0116,,ng,0,1,23.6,exit 1 (expected 0); hits 0 (expected 1)
+1.0,20261113-113019,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),ja-rare,rare-euc0212-U6771,10,,-,1,0.0101,0.0101,0.0101,,ok,1,1,20.7,
+1.0,20261113-113019,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),ja-rare,rare-euc0212-U9DD7,10,,-,1,0.0091,0.0091,0.0091,,ng,0,1,19.5,exit 1 (expected 0); hits 0 (expected 1)
+1.0,20261113-113019,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),ja-rare,rare-iso2022jp,10,,-,1,0.0114,0.0114,0.0114,,ng,0,1,21.5,exit 1 (expected 0); hits 0 (expected 1)

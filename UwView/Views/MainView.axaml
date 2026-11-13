@@ -259,6 +259,9 @@
             </DockPanel>
         </Border>
 
+        <!-- 支援の案内の帯（ステータスバーの上。モーダルにしない。無料版だけ・条件を満たした日だけ出す。指示-20261113-05） -->
+        <ContentControl x:Name="SupportBannerHost" DockPanel.Dock="Bottom" IsVisible="False" />
+
         <!-- 本文 + ミニマップ + 縦スクロールバー（＋ 未オープン時のスタート画面） -->
         <Panel>
             <!-- 2行目に横スクロールバー（本文の幅ぶんだけ。ミニマップ・縦バーの下には置かない） -->

@@ -1,0 +1,13 @@
+suite,run_id,machine,os,fs,product,product_version,set,case,episode,file_bytes,cache,runs,median_s,min_s,max_s,mb_per_s,correct,hits,expected_hits,peak_rss_mib,note
+1.0,20261113-113017,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),newline,nl-lf,6,,-,1,0.0113,0.0113,0.0113,,ok,2,2,21.8,
+1.0,20261113-113017,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),newline,nl-crlf,6,,-,1,0.0107,0.0107,0.0107,,ok,2,2,21.6,
+1.0,20261113-113017,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),newline,nl-cr,6,,-,1,0.0120,0.0120,0.0120,,ok,2,2,23.4,classic Mac OS newlines
+1.0,20261113-113017,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),newline,nl-mixed,6,,-,1,0.0107,0.0107,0.0107,,ng,2,2,21.7,"line numbers [3, 9] (expected [4, 12])"
+1.0,20261113-113017,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),newline,nl-lf-nofinal,6,,-,1,0.0105,0.0105,0.0105,,ok,2,2,21.7,no newline at the end
+1.0,20261113-113017,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),newline,nl-crlf-nofinal,6,,-,1,0.0108,0.0108,0.0108,,ok,2,2,21.5,no newline at the end
+1.0,20261113-113017,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),newline,nl-bom-crlf,6,,-,1,0.0118,0.0118,0.0118,,ok,2,2,23.4,UTF-8 BOM + CRLF
+1.0,20261113-113017,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),newline,nl-utf16le-crlf,6,,-,1,0.0111,0.0111,0.0111,,ok,2,2,23.4,UTF-16LE BOM + CRLF
+1.0,20261113-113017,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),newline,nl-cp932-crlf,6,,-,1,0.0117,0.0117,0.0117,,ok,2,2,23.6,Shift_JIS + CRLF
+1.0,20261113-113017,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),newline,nl-lfcr,6,,-,1,0.0109,0.0109,0.0109,,ok,2,2,21.2,LF CR pairs (not a standard newline)
+1.0,20261113-113017,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),newline,nl-blank,6,,-,1,0.0107,0.0107,0.0107,,ok,1,1,21.4,blank lines count as lines
+1.0,20261113-113017,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),newline,nl-only-newlines,6,,-,1,0.0107,0.0107,0.0107,,ok,0,0,22.1,1000 empty lines

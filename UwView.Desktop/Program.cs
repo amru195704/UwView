@@ -36,6 +36,8 @@ sealed class Program
                 args[1..], CliLanguage.IsJapanese(CliLanguage.FreeSettingsFolder));
         }
 
+        // 支援の案内（帯）は無料版の本体だけが出す（同じ部品を使う別のアプリでは出ない。指示-20261113-05）
+        UwView.Core.SupportPrompt.Available = true;
         BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
         return 0;
     }
@@ -57,6 +59,7 @@ sealed class Program
             Japanese = CliLanguage.IsJapanese(CliLanguage.FreeSettingsFolder),   // アプリの設定で選んだ言語
             AppVersion = UwView.App.VersionText(typeof(UwView.App).Assembly),    // --version で出す版数
             BuildNumber = UwView.Core.AppEdition.BuildNumberOf(typeof(UwView.App).Assembly),
+            SupportNotice = true,   // --version／--help の最後に支援の案内を 1 行（無料版の uvf だけ。指示-20261113-05）
             // -open: 自分自身を GUI として起動し直す（検索パターンとファイルを渡す）。
             // CLI が先に探して結果を持っていれば、その置き場所も渡す（画面は検索し直さない）
             LaunchGui = (file, pattern) => CliHost.LaunchSelfAsGui(

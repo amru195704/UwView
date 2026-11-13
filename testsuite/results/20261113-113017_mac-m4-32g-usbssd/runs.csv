@@ -1,0 +1,13 @@
+suite,run_id,timestamp,machine,os,os_version,fs,product,product_version,set,case,episode,file_bytes,cache,run,seconds,exit,hits,hits_reported,expected_hits,correct,peak_rss_mib,note
+1.0,20261113-113017,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),newline,nl-lf,6,,-,1,0.0113,0,2,,2,ok,21.8,
+1.0,20261113-113017,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),newline,nl-crlf,6,,-,1,0.0107,0,2,,2,ok,21.6,
+1.0,20261113-113017,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),newline,nl-cr,6,,-,1,0.0120,0,2,,2,ok,23.4,classic Mac OS newlines
+1.0,20261113-113017,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),newline,nl-mixed,6,,-,1,0.0107,0,2,,2,ng,21.7,"line numbers [3, 9] (expected [4, 12])"
+1.0,20261113-113017,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),newline,nl-lf-nofinal,6,,-,1,0.0105,0,2,,2,ok,21.7,no newline at the end
+1.0,20261113-113017,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),newline,nl-crlf-nofinal,6,,-,1,0.0108,0,2,,2,ok,21.5,no newline at the end
+1.0,20261113-113017,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),newline,nl-bom-crlf,6,,-,1,0.0118,0,2,,2,ok,23.4,UTF-8 BOM + CRLF
+1.0,20261113-113017,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),newline,nl-utf16le-crlf,6,,-,1,0.0111,0,2,,2,ok,23.4,UTF-16LE BOM + CRLF
+1.0,20261113-113017,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),newline,nl-cp932-crlf,6,,-,1,0.0117,0,2,,2,ok,23.6,Shift_JIS + CRLF
+1.0,20261113-113017,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),newline,nl-lfcr,6,,-,1,0.0109,0,2,,2,ok,21.2,LF CR pairs (not a standard newline)
+1.0,20261113-113017,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),newline,nl-blank,6,,-,1,0.0107,0,1,,1,ok,21.4,blank lines count as lines
+1.0,20261113-113017,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),newline,nl-only-newlines,6,,-,1,0.0107,1,0,,0,ok,22.1,1000 empty lines

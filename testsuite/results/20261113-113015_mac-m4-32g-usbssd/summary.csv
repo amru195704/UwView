@@ -1,0 +1,28 @@
+suite,run_id,machine,os,fs,product,product_version,set,case,episode,file_bytes,cache,runs,median_s,min_s,max_s,mb_per_s,correct,hits,expected_hits,peak_rss_mib,note
+1.0,20261113-113015,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),encoding,enc-utf8-tokyo,5,,-,1,0.0288,0.0288,0.0288,,ok,60,60,21.6,
+1.0,20261113-113015,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),encoding,enc-utf8-ascii,5,,-,1,0.0115,0.0115,0.0115,,ok,20,20,20.3,
+1.0,20261113-113015,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),encoding,enc-utf8-bom-tokyo,5,,-,1,0.0125,0.0125,0.0125,,ok,60,60,23.7,
+1.0,20261113-113015,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),encoding,enc-utf8-bom-ascii,5,,-,1,0.0106,0.0106,0.0106,,ok,20,20,20.8,
+1.0,20261113-113015,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),encoding,enc-utf16le-bom-tokyo,5,,-,1,0.0123,0.0123,0.0123,,ok,60,60,23.6,
+1.0,20261113-113015,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),encoding,enc-utf16le-bom-ascii,5,,-,1,0.0088,0.0088,0.0088,,ok,20,20,20.5,
+1.0,20261113-113015,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),encoding,enc-utf16be-bom-tokyo,5,,-,1,0.0123,0.0123,0.0123,,ok,60,60,23.6,
+1.0,20261113-113015,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),encoding,enc-utf16be-bom-ascii,5,,-,1,0.0096,0.0096,0.0096,,ok,20,20,20.5,
+1.0,20261113-113015,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),encoding,enc-utf16le-nobom-tokyo,5,,-,1,0.0118,0.0118,0.0118,,ng,0,60,24.1,exit 1 (expected 0); hits 0 (expected 60)
+1.0,20261113-113015,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),encoding,enc-utf16le-nobom-ascii,5,,-,1,0.0093,0.0093,0.0093,,ng,0,20,19.7,exit 1 (expected 0); hits 0 (expected 20)
+1.0,20261113-113015,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),encoding,enc-utf16be-nobom-tokyo,5,,-,1,0.0166,0.0166,0.0166,,ng,0,60,23.5,exit 1 (expected 0); hits 0 (expected 60)
+1.0,20261113-113015,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),encoding,enc-utf16be-nobom-ascii,5,,-,1,0.0095,0.0095,0.0095,,ng,0,20,19.6,exit 1 (expected 0); hits 0 (expected 20)
+1.0,20261113-113015,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),encoding,enc-utf32le-bom-tokyo,5,,-,1,0.0089,0.0089,0.0089,,ok,0,0,18.5,UTF-32 is not supported: error and exit code 2
+1.0,20261113-113015,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),encoding,enc-utf32le-bom-ascii,5,,-,1,0.0085,0.0085,0.0085,,ok,0,0,18.5,UTF-32 is not supported: error and exit code 2
+1.0,20261113-113015,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),encoding,enc-utf32be-bom-tokyo,5,,-,1,0.0088,0.0088,0.0088,,ok,0,0,18.5,UTF-32 is not supported: error and exit code 2
+1.0,20261113-113015,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),encoding,enc-utf32be-bom-ascii,5,,-,1,0.0085,0.0085,0.0085,,ok,0,0,18.5,UTF-32 is not supported: error and exit code 2
+1.0,20261113-113015,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),encoding,enc-cp932-tokyo,5,,-,1,0.0127,0.0127,0.0127,,ok,60,60,24.0,
+1.0,20261113-113015,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),encoding,enc-cp932-ascii,5,,-,1,0.0096,0.0096,0.0096,,ok,20,20,20.5,
+1.0,20261113-113015,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),encoding,enc-eucjp-tokyo,5,,-,1,0.0124,0.0124,0.0124,,ok,60,60,23.9,
+1.0,20261113-113015,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),encoding,enc-eucjp-ascii,5,,-,1,0.0098,0.0098,0.0098,,ok,20,20,20.5,
+1.0,20261113-113015,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),encoding,enc-iso2022jp-tokyo,5,,-,1,0.0121,0.0121,0.0121,,ng,0,60,22.5,exit 1 (expected 0); hits 0 (expected 60)
+1.0,20261113-113015,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),encoding,enc-iso2022jp-ascii,5,,-,1,0.0101,0.0101,0.0101,,ok,20,20,20.3,manual 6.1: ISO-2022-JP is not detected
+1.0,20261113-113015,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),encoding,enc-utf8-broken-tokyo,5,,-,1,0.0128,0.0128,0.0128,,ng,0,60,24.1,exit 1 (expected 0); hits 0 (expected 60)
+1.0,20261113-113015,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),encoding,enc-cp932-short,5,,-,1,0.0121,0.0121,0.0121,,ok,1,1,23.6,4-byte file: detection has little to go on
+1.0,20261113-113015,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),encoding,enc-eucjp-short,5,,-,1,0.0125,0.0125,0.0125,,ok,1,1,23.5,4-byte file: detection has little to go on
+1.0,20261113-113015,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),encoding,enc-cp932-hankaku,5,,-,1,0.0124,0.0124,0.0124,,ok,1,1,23.7,mostly half-width katakana
+1.0,20261113-113015,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),encoding,enc-latin1-ascii,5,,-,1,0.0122,0.0122,0.0122,,ok,1,1,23.7,manual 6.1: Latin-1 is not detected; ASCII words should still be found

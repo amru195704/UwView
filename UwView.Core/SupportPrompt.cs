@@ -127,6 +127,23 @@ public static class SupportPrompt
         }
     }
 
+    /// <summary>
+    /// 起動したときの一連の手順（指示-20261113-05）: 使ったことを記録し、今日出す帯を決め、出すなら「出した」と記録する。
+    /// 出した時点で記録するので、ボタンを押さずに閉じても［後で］と同じ扱いになる。
+    /// 記録が変わったら <paramref name="changed"/> が true（呼び出し側が保存する）。
+    /// </summary>
+    public static SupportPromptKind Begin(SupportPromptState s, DateOnly today, out bool changed)
+    {
+        changed = RecordUse(s, today);
+        var kind = Decide(s, today);
+        if (kind != SupportPromptKind.None)
+        {
+            MarkShown(s, kind, today);
+            changed = true;
+        }
+        return kind;
+    }
+
     /// <summary>［支援する］を押した。以後は出さない。</summary>
     public static void MarkSupported(SupportPromptState s) => s.Supported = true;
 

@@ -1,3 +1,4 @@
+using System;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -62,7 +63,7 @@ public sealed class PreferencesWindow : Window
             s.WatchOriginalFile = box.IsChecked == true;
             s.Save();
         };
-        return new StackPanel
+        var panel = new StackPanel
         {
             Margin = new Thickness(6, 12, 6, 0), Spacing = 6,
             Children =
@@ -71,7 +72,45 @@ public sealed class PreferencesWindow : Window
                 new TextBlock { Text = L["WatchOriginalFileHint"], TextWrapping = TextWrapping.Wrap, Foreground = UwView.Services.ThemeColors.Text },
             },
         };
+        if (UwView.Core.SupportPrompt.Available) AddSupportSetting(panel);
+        return panel;
     }
+
+    /// <summary>
+    /// 全般: 支援の案内を表示しない（帯の［もう表示しない］と同じ項目 <c>SupportBanner.Disabled</c>。指示-20261113-05）。
+    /// 無料版の本体だけに出す。
+    /// </summary>
+    private static void AddSupportSetting(StackPanel panel)
+    {
+        bool ja = Localizer.Instance.Culture.TwoLetterISOLanguageName == "ja";
+        var settings = UwView.Services.AppSettingsRef.Current;
+        var box = new CheckBox
+        {
+            Name = "SupportBannerOffBox",
+            Content = UwView.Core.SupportPromptText.SettingLabel(ja),
+            IsChecked = settings.SupportBanner?.Disabled == true,
+            Foreground = UwView.Services.ThemeColors.Text,
+            Margin = new Thickness(0, 12, 0, 0),
+        };
+        box.IsCheckedChanged += (_, _) =>
+        {
+            var s = UwView.Services.AppSettingsRef.Current;
+            s.SupportBanner ??= new UwView.Core.SupportPromptState();
+            s.SupportBanner.Disabled = box.IsChecked == true;
+            s.Save();
+            if (s.SupportBanner.Disabled) SupportBannerClosed?.Invoke();
+        };
+        panel.Children.Add(box);
+        panel.Children.Add(new TextBlock
+        {
+            Text = UwView.Core.SupportPromptText.SettingHint(ja),
+            TextWrapping = TextWrapping.Wrap,
+            Foreground = UwView.Services.ThemeColors.Text,
+        });
+    }
+
+    /// <summary>「支援の案内を表示しない」をオンにしたとき（出ている帯を畳む。メイン画面が差し込む）。</summary>
+    internal static Action? SupportBannerClosed { get; set; }
 
     /// <summary>開く（開いていれば前に出す）。</summary>
     public static void Open(Window? owner)
