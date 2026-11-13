@@ -1,0 +1,45 @@
+suite,run_id,timestamp,machine,os,os_version,fs,product,product_version,set,case,episode,file_bytes,cache,run,seconds,exit,hits,hits_reported,expected_hits,correct,peak_rss_mib,note
+1.0,20261112-090904,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),ja-dame,dame-hyo-cp932,8,,-,1,0.0087,0,3,,3,ok,15.4,Shift_JIS 2nd byte collides with ASCII
+1.0,20261112-090904,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),ja-dame,dame-hyo-cp932,8,,-,1,0.0090,0,3,,3,ok,19.5,Shift_JIS 2nd byte collides with ASCII
+1.0,20261112-090904,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),ja-dame,dame-hyo-utf8,8,,-,1,0.0075,0,3,,3,ok,15.1,UTF-8 control
+1.0,20261112-090904,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),ja-dame,dame-hyo-utf8,8,,-,1,0.0090,0,3,,3,ok,19.1,UTF-8 control
+1.0,20261112-090904,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),ja-dame,dame-so-cp932,8,,-,1,0.0072,0,2,,2,ok,15.4,Shift_JIS 2nd byte collides with ASCII
+1.0,20261112-090904,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),ja-dame,dame-so-cp932,8,,-,1,0.0089,0,2,,2,ok,19.5,Shift_JIS 2nd byte collides with ASCII
+1.0,20261112-090904,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),ja-dame,dame-so-utf8,8,,-,1,0.0068,0,2,,2,ok,15.1,UTF-8 control
+1.0,20261112-090904,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),ja-dame,dame-so-utf8,8,,-,1,0.0083,0,2,,2,ok,19.1,UTF-8 control
+1.0,20261112-090904,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),ja-dame,dame-noryoku-cp932,8,,-,1,0.0072,0,1,,1,ok,15.3,Shift_JIS 2nd byte collides with ASCII
+1.0,20261112-090904,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),ja-dame,dame-noryoku-cp932,8,,-,1,0.0085,0,1,,1,ok,19.5,Shift_JIS 2nd byte collides with ASCII
+1.0,20261112-090904,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),ja-dame,dame-noryoku-utf8,8,,-,1,0.0067,0,1,,1,ok,15.1,UTF-8 control
+1.0,20261112-090904,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),ja-dame,dame-noryoku-utf8,8,,-,1,0.0087,0,1,,1,ok,19.1,UTF-8 control
+1.0,20261112-090904,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),ja-dame,dame-backslash-cp932,8,,-,1,0.0076,0,1,,1,ok,15.4,Shift_JIS 2nd byte collides with ASCII
+1.0,20261112-090904,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),ja-dame,dame-backslash-cp932,8,,-,1,0.0090,0,1,,1,ok,19.5,Shift_JIS 2nd byte collides with ASCII
+1.0,20261112-090904,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),ja-dame,dame-backslash-utf8,8,,-,1,0.0071,0,1,,1,ok,15.1,UTF-8 control
+1.0,20261112-090904,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),ja-dame,dame-backslash-utf8,8,,-,1,0.0088,0,1,,1,ok,19.1,UTF-8 control
+1.0,20261112-090904,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),ja-dame,dame-pipe-cp932,8,,-,1,0.0070,0,1,,1,ok,15.4,Shift_JIS 2nd byte collides with ASCII
+1.0,20261112-090904,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),ja-dame,dame-pipe-cp932,8,,-,1,0.0071,2,0,,1,ng,16.3,exit 2 (expected 0); hits 0 (expected 1)
+1.0,20261112-090904,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),ja-dame,dame-pipe-utf8,8,,-,1,0.0067,0,1,,1,ok,15.1,UTF-8 control
+1.0,20261112-090904,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),ja-dame,dame-pipe-utf8,8,,-,1,0.0074,2,0,,1,ng,16.3,exit 2 (expected 0); hits 0 (expected 1)
+1.0,20261112-090904,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),ja-dame,dame-bracket-cp932,8,,-,1,0.0068,0,1,,1,ok,15.4,Shift_JIS 2nd byte collides with ASCII
+1.0,20261112-090904,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),ja-dame,dame-bracket-cp932,8,,-,1,0.0089,0,1,,1,ok,19.5,Shift_JIS 2nd byte collides with ASCII
+1.0,20261112-090904,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),ja-dame,dame-bracket-utf8,8,,-,1,0.0072,0,1,,1,ok,15.1,UTF-8 control
+1.0,20261112-090904,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),ja-dame,dame-bracket-utf8,8,,-,1,0.0088,0,1,,1,ok,19.1,UTF-8 control
+1.0,20261112-090904,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),ja-dame,dame-re-alt-cp932,8,,-,1,0.0070,0,4,,4,ok,15.7,Shift_JIS 2nd byte collides with ASCII
+1.0,20261112-090904,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),ja-dame,dame-re-alt-cp932,8,,-,1,0.0092,0,4,,4,ok,19.6,Shift_JIS 2nd byte collides with ASCII
+1.0,20261112-090904,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),ja-dame,dame-re-alt-utf8,8,,-,1,0.0073,0,4,,4,ok,15.4,UTF-8 control
+1.0,20261112-090904,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),ja-dame,dame-re-alt-utf8,8,,-,1,0.0091,0,4,,4,ok,19.4,UTF-8 control
+1.0,20261112-090904,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),ja-dame,dame-re-class-cp932,8,,-,1,0.0075,0,5,,5,ok,15.6,Shift_JIS 2nd byte collides with ASCII
+1.0,20261112-090904,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),ja-dame,dame-re-class-cp932,8,,-,1,0.0089,0,5,,5,ok,19.6,Shift_JIS 2nd byte collides with ASCII
+1.0,20261112-090904,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),ja-dame,dame-re-class-utf8,8,,-,1,0.0074,0,5,,5,ok,15.4,UTF-8 control
+1.0,20261112-090904,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),ja-dame,dame-re-class-utf8,8,,-,1,0.0086,0,5,,5,ok,19.3,UTF-8 control
+1.0,20261112-090904,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),ja-dame,dame-re-dot-cp932,8,,-,1,0.0071,0,1,,1,ok,15.7,Shift_JIS 2nd byte collides with ASCII
+1.0,20261112-090904,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),ja-dame,dame-re-dot-cp932,8,,-,1,0.0088,0,1,,1,ok,19.6,Shift_JIS 2nd byte collides with ASCII
+1.0,20261112-090904,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),ja-dame,dame-re-dot-utf8,8,,-,1,0.0076,0,1,,1,ok,15.4,UTF-8 control
+1.0,20261112-090904,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),ja-dame,dame-re-dot-utf8,8,,-,1,0.0084,0,1,,1,ok,19.3,UTF-8 control
+1.0,20261112-090904,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),ja-dame,dame-re-backslash-cp932,8,,-,1,0.0072,0,1,,1,ok,15.7,Shift_JIS 2nd byte collides with ASCII
+1.0,20261112-090904,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),ja-dame,dame-re-backslash-cp932,8,,-,1,0.0088,0,1,,1,ok,19.6,Shift_JIS 2nd byte collides with ASCII
+1.0,20261112-090904,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),ja-dame,dame-re-backslash-utf8,8,,-,1,0.0075,0,1,,1,ok,15.4,UTF-8 control
+1.0,20261112-090904,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),ja-dame,dame-re-backslash-utf8,8,,-,1,0.0089,0,1,,1,ok,19.4,UTF-8 control
+1.0,20261112-090904,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),ja-dame,dame-re-pipe-cp932,8,,-,1,0.0074,0,1,,1,ok,15.7,Shift_JIS 2nd byte collides with ASCII
+1.0,20261112-090904,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),ja-dame,dame-re-pipe-cp932,8,,-,1,0.0088,0,1,,1,ok,19.6,Shift_JIS 2nd byte collides with ASCII
+1.0,20261112-090904,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),ja-dame,dame-re-pipe-utf8,8,,-,1,0.0073,0,1,,1,ok,15.4,UTF-8 control
+1.0,20261112-090904,,mac-m4-32g-usbssd,Darwin,macOS 26.3.1,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),ja-dame,dame-re-pipe-utf8,8,,-,1,0.0088,0,1,,1,ok,19.3,UTF-8 control

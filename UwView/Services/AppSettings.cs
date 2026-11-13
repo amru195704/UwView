@@ -130,6 +130,12 @@ public sealed class AppSettings
     // ── ライセンス（この版では使わない）──
     public LicenseData License { get; set; } = new();
 
+    /// <summary>
+    /// 支援の案内（帯）の記録（初めて使った日・使った日の数・出した日など。手元だけで持ち外部へ送らない。指示-20261112-07）。
+    /// ライセンスの記録（<see cref="LicenseData"/>）とは別に持つ。
+    /// </summary>
+    public SupportPromptState SupportBanner { get; set; } = new();
+
     // ── Ver1.1: 色分けハイライタ ──
     public HighlighterConfig Highlighters { get; set; } = new();
 

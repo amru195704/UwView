@@ -9,14 +9,16 @@ Found while building the suite (2026-10-24): Linux x86_64 (uvf 1.9.1, `smoke`) a
 
 | # | episode | case | what happens | expected | found in | status |
 |---|---|---|---|---|---|---|
-| 1 | 5, 6, 10 | `enc-utf16le-bom-*`, `nl-utf16le-crlf`, `rare-*-utf16le` | UTF-16LE files with a BOM: only the first line is found; later lines give no hits | every line is searched (manual 6.1) | uvf 1.9.1 (macOS, Linux). uvp 1.9.1 is right | open |
+| 1 | 5, 6, 10 | `enc-utf16le-bom-*`, `nl-utf16le-crlf`, `rare-*-utf16le` | UTF-16LE files with a BOM: only the first line is found; later lines give no hits | every line is searched (manual 6.1) | uvf 1.9.1 (macOS, Linux). uvp 1.9.1 is right for `enc-*`, but also wrong for `rare-*-utf16le` (macOS, 2026-11-12) | open |
 | 2 | 5 | `enc-utf16be-bom-*` | UTF-16BE with BOM: hits are right, but each result line ends with a replacement character `�` | clean line text | uvf 1.9.1 (Linux) | open |
 | 3 | 5 | `enc-utf8-broken-tokyo` | a few invalid bytes anywhere make the whole UTF-8 file be read as Shift_JIS, so no Japanese word is found | UTF-8 lines found; only the broken bytes are lost | uvf 1.9.1, uvp 1.9.1 | open (follows the detection rule of manual 6.1) |
 | 4 | 6 | `nl-cr`, `nl-mixed` | a lone CR (classic Mac) is not a line break: line numbers shift | CR, LF and CRLF each end a line | uvf 1.9.1 (Linux) | open |
-| 5 | 10 | `rare-onechar-*` | in a regular expression `.` matches half of 𠮷 (a surrogate pair); `..` is needed | `.` matches one character | uvf 1.9.1 (Linux) | open |
-| 6 | 10 | `rare-euc0212-*` | EUC-JP 3-byte characters (JIS X 0212, e.g. 丂 鷗) are not found; other text in the file is | found | uvf 1.9.1 (Linux) | open |
+| 5 | 10 | `rare-onechar-*` | in a regular expression `.` matches half of 𠮷 (a surrogate pair); `..` is needed | `.` matches one character | uvf 1.9.1 (Linux, macOS), uvp 1.9.1 (macOS) | open |
+| 6 | 10 | `rare-euc0212-*` | EUC-JP 3-byte characters (JIS X 0212, e.g. 丂 鷗) are not found; other text in the file is | found | uvf 1.9.1 (Linux, macOS), uvp 1.9.1 (macOS) | open |
 | 7 | 5 | `enc-utf32*-bom-*` | UTF-32 is not supported. uvp stops with a message (exit 2); uvf 1.9.1 tried to read UTF-32LE and found only line 1 | message and exit code 2 | uvf 1.9.1 | fixed for the next version (uvf and the free GUI refuse UTF-32 like uvp) |
+| 8 | 8 | `dame-pipe-*` | a search word of only `\|` stops with a usage error (exit 2) instead of being searched as a plain character | the line with `\|` is found | uvp 1.9.1 (macOS). uvf 1.9.1 is right | open |
+| 9 | 9 | `names-nfc-glob` | on an HFS+ disk macOS stores every file name as NFD, so a wildcard typed in NFC (`*が*.txt`) matches no name with a voiced mark, even a file created with an NFC name | the file is found | uvf 1.9.1, uvp 1.9.1 (macOS, HFS+). On APFS the name stays NFC and is found (2026-11-12) | open |
 | – | 5, 10 | `enc-utf16*-nobom-*`, `enc-iso2022jp-*`, `rare-iso2022jp` | not detected | – | uvf / uvp 1.9.1 | documented (manual 6.1) |
 
 Observations without a single right answer (episode 9): an NFC search word does not find NFD text
-(か + U+3099); on Linux (ext4) an NFC wildcard does not match an NFD file name. Recorded as `obs`.
+(か + U+3099); on Linux (ext4) and on macOS APFS an NFC wildcard does not match an NFD file name. Recorded as `obs`.

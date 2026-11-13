@@ -1,0 +1,47 @@
+suite,run_id,machine,os,fs,product,product_version,set,case,episode,file_bytes,cache,runs,median_s,min_s,max_s,mb_per_s,correct,hits,expected_hits,peak_rss_mib,note
+1.0,20261112-090906,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),ja-wave,wave-tilde-ff5e-utf8,9,,-,1,0.0084,0.0084,0.0084,,ok,1,1,15.1,exact code point match in UTF-8
+1.0,20261112-090906,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),ja-wave,wave-tilde-ff5e-utf8,9,,-,1,0.0084,0.0084,0.0084,,ok,1,1,19.1,exact code point match in UTF-8
+1.0,20261112-090906,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),ja-wave,wave-tilde-ff5e-cp932,9,,-,1,0.0074,0.0074,0.0074,,obs,2,,15.4,observe: which Unicode does 0x8160 etc. become
+1.0,20261112-090906,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),ja-wave,wave-tilde-ff5e-cp932,9,,-,1,0.0090,0.0090,0.0090,,obs,2,,19.5,observe: which Unicode does 0x8160 etc. become
+1.0,20261112-090906,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),ja-wave,wave-wave-301c-utf8,9,,-,1,0.0072,0.0072,0.0072,,ok,1,1,15.1,exact code point match in UTF-8
+1.0,20261112-090906,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),ja-wave,wave-wave-301c-utf8,9,,-,1,0.0084,0.0084,0.0084,,ok,1,1,19.1,exact code point match in UTF-8
+1.0,20261112-090906,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),ja-wave,wave-wave-301c-cp932,9,,-,1,0.0076,0.0076,0.0076,,obs,0,,15.4,observe: which Unicode does 0x8160 etc. become
+1.0,20261112-090906,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),ja-wave,wave-wave-301c-cp932,9,,-,1,0.0098,0.0098,0.0098,,obs,0,,19.5,observe: which Unicode does 0x8160 etc. become
+1.0,20261112-090906,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),ja-wave,wave-minus-ff0d-utf8,9,,-,1,0.0074,0.0074,0.0074,,ok,1,1,15.1,exact code point match in UTF-8
+1.0,20261112-090906,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),ja-wave,wave-minus-ff0d-utf8,9,,-,1,0.0087,0.0087,0.0087,,ok,1,1,19.1,exact code point match in UTF-8
+1.0,20261112-090906,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),ja-wave,wave-minus-ff0d-cp932,9,,-,1,0.0068,0.0068,0.0068,,obs,2,,15.4,observe: which Unicode does 0x8160 etc. become
+1.0,20261112-090906,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),ja-wave,wave-minus-ff0d-cp932,9,,-,1,0.0090,0.0090,0.0090,,obs,2,,19.5,observe: which Unicode does 0x8160 etc. become
+1.0,20261112-090906,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),ja-wave,wave-minus-2212-utf8,9,,-,1,0.0068,0.0068,0.0068,,ok,1,1,15.1,exact code point match in UTF-8
+1.0,20261112-090906,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),ja-wave,wave-minus-2212-utf8,9,,-,1,0.0085,0.0085,0.0085,,ok,1,1,19.1,exact code point match in UTF-8
+1.0,20261112-090906,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),ja-wave,wave-minus-2212-cp932,9,,-,1,0.0071,0.0071,0.0071,,obs,0,,15.4,observe: which Unicode does 0x8160 etc. become
+1.0,20261112-090906,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),ja-wave,wave-minus-2212-cp932,9,,-,1,0.0085,0.0085,0.0085,,obs,0,,19.5,observe: which Unicode does 0x8160 etc. become
+1.0,20261112-090906,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),ja-wave,wave-abc-utf8,9,,-,1,0.0068,0.0068,0.0068,,ok,1,1,15.1,exact code point match in UTF-8
+1.0,20261112-090906,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),ja-wave,wave-abc-utf8,9,,-,1,0.0085,0.0085,0.0085,,ok,1,1,19.1,exact code point match in UTF-8
+1.0,20261112-090906,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),ja-wave,wave-abc-cp932,9,,-,1,0.0071,0.0071,0.0071,,obs,1,,15.3,observe: which Unicode does 0x8160 etc. become
+1.0,20261112-090906,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),ja-wave,wave-abc-cp932,9,,-,1,0.0085,0.0085,0.0085,,obs,1,,19.5,observe: which Unicode does 0x8160 etc. become
+1.0,20261112-090906,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),ja-wave,wave-abc-full-utf8,9,,-,1,0.0076,0.0076,0.0076,,ok,1,1,15.1,exact code point match in UTF-8
+1.0,20261112-090906,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),ja-wave,wave-abc-full-utf8,9,,-,1,0.0084,0.0084,0.0084,,ok,1,1,19.1,exact code point match in UTF-8
+1.0,20261112-090906,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),ja-wave,wave-abc-full-cp932,9,,-,1,0.0070,0.0070,0.0070,,obs,1,,15.3,observe: which Unicode does 0x8160 etc. become
+1.0,20261112-090906,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),ja-wave,wave-abc-full-cp932,9,,-,1,0.0081,0.0081,0.0081,,obs,1,,19.4,observe: which Unicode does 0x8160 etc. become
+1.0,20261112-090906,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),ja-wave,wave-kata-utf8,9,,-,1,0.0073,0.0073,0.0073,,ok,1,1,15.1,exact code point match in UTF-8
+1.0,20261112-090906,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),ja-wave,wave-kata-utf8,9,,-,1,0.0087,0.0087,0.0087,,ok,1,1,19.1,exact code point match in UTF-8
+1.0,20261112-090906,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),ja-wave,wave-kata-cp932,9,,-,1,0.0075,0.0075,0.0075,,obs,1,,15.7,observe: which Unicode does 0x8160 etc. become
+1.0,20261112-090906,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),ja-wave,wave-kata-cp932,9,,-,1,0.0086,0.0086,0.0086,,obs,1,,19.5,observe: which Unicode does 0x8160 etc. become
+1.0,20261112-090906,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),ja-wave,wave-kata-half-utf8,9,,-,1,0.0071,0.0071,0.0071,,ok,1,1,15.1,exact code point match in UTF-8
+1.0,20261112-090906,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),ja-wave,wave-kata-half-utf8,9,,-,1,0.0085,0.0085,0.0085,,ok,1,1,19.1,exact code point match in UTF-8
+1.0,20261112-090906,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),ja-wave,wave-kata-half-cp932,9,,-,1,0.0068,0.0068,0.0068,,obs,1,,15.4,observe: which Unicode does 0x8160 etc. become
+1.0,20261112-090906,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),ja-wave,wave-kata-half-cp932,9,,-,1,0.0086,0.0086,0.0086,,obs,1,,19.5,observe: which Unicode does 0x8160 etc. become
+1.0,20261112-090906,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),ja-wave,wave-ideo-space-utf8,9,,-,1,0.0068,0.0068,0.0068,,ok,1,1,15.1,exact code point match in UTF-8
+1.0,20261112-090906,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),ja-wave,wave-ideo-space-utf8,9,,-,1,0.0087,0.0087,0.0087,,ok,1,1,19.1,exact code point match in UTF-8
+1.0,20261112-090906,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),ja-wave,wave-ideo-space-cp932,9,,-,1,0.0070,0.0070,0.0070,,obs,1,,15.4,observe: which Unicode does 0x8160 etc. become
+1.0,20261112-090906,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),ja-wave,wave-ideo-space-cp932,9,,-,1,0.0082,0.0082,0.0082,,obs,1,,19.5,observe: which Unicode does 0x8160 etc. become
+1.0,20261112-090906,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),ja-wave,wave-nfc-text,9,,-,1,0.0066,0.0066,0.0066,,ok,1,1,15.1,
+1.0,20261112-090906,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),ja-wave,wave-nfc-text,9,,-,1,0.0084,0.0084,0.0084,,ok,1,1,19.1,
+1.0,20261112-090906,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),ja-wave,wave-nfd-text,9,,-,1,0.0072,0.0072,0.0072,,obs,0,,15.0,observe: NFC query against NFD text (か + U+3099)
+1.0,20261112-090906,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),ja-wave,wave-nfd-text,9,,-,1,0.0085,0.0085,0.0085,,obs,0,,19.1,observe: NFC query against NFD text (か + U+3099)
+1.0,20261112-090906,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),ja-wave,names-nfc-glob,9,,-,1,0.0073,0.0073,0.0073,,ng,0,1,14.5,exit 2 (expected 0); hits 0 (expected 1)
+1.0,20261112-090906,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),ja-wave,names-nfc-glob,9,,-,1,0.0082,0.0082,0.0082,,ng,0,1,18.2,exit 2 (expected 0); hits 0 (expected 1)
+1.0,20261112-090906,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),ja-wave,names-nfd-glob,9,,-,1,0.0070,0.0070,0.0070,,obs,0,,14.5,file name stored as NFD (as macOS Finder/Mac zip may produce)
+1.0,20261112-090906,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),ja-wave,names-nfd-glob,9,,-,1,0.0088,0.0088,0.0088,,obs,0,,18.2,file name stored as NFD (as macOS Finder/Mac zip may produce)
+1.0,20261112-090906,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),ja-wave,names-all,9,,-,1,0.0073,0.0073,0.0073,,ok,2,2,15.9,both names found by a plain wildcard
+1.0,20261112-090906,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),ja-wave,names-all,9,,-,1,0.0096,0.0096,0.0096,,ok,2,2,19.6,both names found by a plain wildcard

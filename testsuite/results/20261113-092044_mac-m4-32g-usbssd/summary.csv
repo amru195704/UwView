@@ -1,0 +1,73 @@
+suite,run_id,machine,os,fs,product,product_version,set,case,episode,file_bytes,cache,runs,median_s,min_s,max_s,mb_per_s,correct,hits,expected_hits,peak_rss_mib,note
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),longline,oneline-1M-needle,4,1048676,first,1,0.0648,0.0648,0.0648,16,ok,1,1,18.2,needle at the very end of a single line
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),longline,oneline-1M-needle,4,1048676,cold,5,0.1569,0.1473,0.1609,7,ok,1,1,18.2,needle at the very end of a single line
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),longline,oneline-1M-needle,4,1048676,hot,5,0.0080,0.0076,0.0084,131,ok,1,1,18.2,needle at the very end of a single line
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),longline,oneline-1M-needle,4,1048676,first,1,0.1798,0.1798,0.1798,6,ok,1,1,22.3,needle at the very end of a single line
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),longline,oneline-1M-needle,4,1048676,cold,5,0.1788,0.1522,0.1986,6,ok,1,1,22.3,needle at the very end of a single line
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),longline,oneline-1M-needle,4,1048676,hot,5,0.0101,0.0098,0.0102,104,ok,1,1,22.3,needle at the very end of a single line
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),longline,oneline-1M-nohit,4,1048676,first,1,0.1591,0.1591,0.1591,7,ok,0,0,16.3,
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),longline,oneline-1M-nohit,4,1048676,cold,5,0.1665,0.1530,0.1717,6,ok,0,0,16.3,
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),longline,oneline-1M-nohit,4,1048676,hot,5,0.0068,0.0066,0.0074,154,ok,0,0,16.3,
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),longline,oneline-1M-nohit,4,1048676,first,1,0.2078,0.2078,0.2078,5,ok,0,0,20.4,
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),longline,oneline-1M-nohit,4,1048676,cold,5,0.1747,0.0740,0.1818,6,ok,0,0,20.4,
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),longline,oneline-1M-nohit,4,1048676,hot,5,0.0085,0.0079,0.0087,123,ok,0,0,20.4,
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),longline,longmix-1M-needle,4,1158358,first,1,0.0581,0.0581,0.0581,20,ok,1,1,16.4,line numbers after a 1M line
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),longline,longmix-1M-needle,4,1158358,cold,5,0.1657,0.0671,0.1779,7,ok,1,1,16.5,line numbers after a 1M line
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),longline,longmix-1M-needle,4,1158358,hot,5,0.0072,0.0064,0.0076,161,ok,1,1,16.4,line numbers after a 1M line
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),longline,longmix-1M-needle,4,1158358,first,1,0.1672,0.1672,0.1672,7,ok,1,1,20.5,line numbers after a 1M line
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),longline,longmix-1M-needle,4,1158358,cold,5,0.1566,0.0691,0.1971,7,ok,1,1,20.5,line numbers after a 1M line
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),longline,longmix-1M-needle,4,1158358,hot,5,0.0084,0.0081,0.0102,138,ok,1,1,20.5,line numbers after a 1M line
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),longline,oneline-10M-needle,4,10486036,first,1,0.2054,0.2054,0.2054,51,ok,1,1,48.5,needle at the very end of a single line
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),longline,oneline-10M-needle,4,10486036,cold,5,0.2061,0.1855,0.2170,51,ok,1,1,48.5,needle at the very end of a single line
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),longline,oneline-10M-needle,4,10486036,hot,5,0.0150,0.0147,0.0160,699,ok,1,1,48.5,needle at the very end of a single line
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),longline,oneline-10M-needle,4,10486036,first,1,0.2021,0.2021,0.2021,52,ok,1,1,52.5,needle at the very end of a single line
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),longline,oneline-10M-needle,4,10486036,cold,5,0.1908,0.1302,0.2330,55,ok,1,1,52.5,needle at the very end of a single line
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),longline,oneline-10M-needle,4,10486036,hot,5,0.0161,0.0160,0.0166,651,ok,1,1,52.4,needle at the very end of a single line
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),longline,oneline-10M-nohit,4,10486036,first,1,0.0799,0.0799,0.0799,131,ok,0,0,20.3,
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),longline,oneline-10M-nohit,4,10486036,cold,5,0.1842,0.1649,0.1935,57,ok,0,0,20.3,
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),longline,oneline-10M-nohit,4,10486036,hot,5,0.0084,0.0079,0.0096,1248,ok,0,0,20.4,
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),longline,oneline-10M-nohit,4,10486036,first,1,0.1846,0.1846,0.1846,57,ok,0,0,24.4,
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),longline,oneline-10M-nohit,4,10486036,cold,5,0.2099,0.1874,0.2410,50,ok,0,0,24.5,
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),longline,oneline-10M-nohit,4,10486036,hot,5,0.0103,0.0099,0.0103,1018,ok,0,0,24.5,
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),longline,longmix-10M-needle,4,10595795,first,1,0.1933,0.1933,0.1933,55,ok,1,1,24.3,line numbers after a 10M line
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),longline,longmix-10M-needle,4,10595795,cold,5,0.1902,0.1753,0.1977,56,ok,1,1,24.3,line numbers after a 10M line
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),longline,longmix-10M-needle,4,10595795,hot,5,0.0087,0.0084,0.0092,1218,ok,1,1,24.3,line numbers after a 10M line
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),longline,longmix-10M-needle,4,10595795,first,1,0.2530,0.2530,0.2530,42,ok,1,1,28.3,line numbers after a 10M line
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),longline,longmix-10M-needle,4,10595795,cold,5,0.1998,0.0951,0.2142,53,ok,1,1,28.4,line numbers after a 10M line
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),longline,longmix-10M-needle,4,10595795,hot,5,0.0103,0.0099,0.0108,1029,ok,1,1,28.5,line numbers after a 10M line
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),longline,oneline-100M-needle,4,104859953,first,1,0.5819,0.5819,0.5819,180,ok,1,1,299.5,needle at the very end of a single line
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),longline,oneline-100M-needle,4,104859953,cold,5,0.6608,0.5755,0.6649,159,ok,1,1,299.5,needle at the very end of a single line
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),longline,oneline-100M-needle,4,104859953,hot,5,0.2688,0.2639,0.2790,390,ok,1,1,299.5,needle at the very end of a single line
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),longline,oneline-100M-needle,4,104859953,first,1,0.6859,0.6859,0.6859,153,ok,1,1,303.6,needle at the very end of a single line
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),longline,oneline-100M-needle,4,104859953,cold,5,0.6952,0.5780,0.7067,151,ok,1,1,303.6,needle at the very end of a single line
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),longline,oneline-100M-needle,4,104859953,hot,5,0.3478,0.3277,0.3661,301,ok,1,1,303.6,needle at the very end of a single line
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),longline,oneline-100M-nohit,4,104859953,first,1,0.4161,0.4161,0.4161,252,ok,0,0,20.3,
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),longline,oneline-100M-nohit,4,104859953,cold,5,0.4254,0.4194,0.4355,246,ok,0,0,20.3,
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),longline,oneline-100M-nohit,4,104859953,hot,5,0.0173,0.0171,0.0176,6061,ok,0,0,20.4,
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),longline,oneline-100M-nohit,4,104859953,first,1,0.4414,0.4414,0.4414,238,ok,0,0,24.4,
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),longline,oneline-100M-nohit,4,104859953,cold,5,0.4333,0.3390,0.4738,242,ok,0,0,24.4,
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),longline,oneline-100M-nohit,4,104859953,hot,5,0.0191,0.0187,0.0199,5490,ok,0,0,24.5,
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),longline,longmix-100M-needle,4,104969777,first,1,0.4168,0.4168,0.4168,252,ok,1,1,24.2,line numbers after a 100M line
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),longline,longmix-100M-needle,4,104969777,cold,5,0.4285,0.4213,0.4290,245,ok,1,1,24.3,line numbers after a 100M line
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),longline,longmix-100M-needle,4,104969777,hot,5,0.0177,0.0177,0.0181,5930,ok,1,1,24.3,line numbers after a 100M line
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),longline,longmix-100M-needle,4,104969777,first,1,0.4352,0.4352,0.4352,241,ok,1,1,28.4,line numbers after a 100M line
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),longline,longmix-100M-needle,4,104969777,cold,5,0.4419,0.4234,0.4480,238,ok,1,1,28.4,line numbers after a 100M line
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),longline,longmix-100M-needle,4,104969777,hot,5,0.0194,0.0190,0.0202,5411,ok,1,1,28.4,line numbers after a 100M line
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),longline,oneline-1G-needle,4,1073764834,first,1,6.6556,6.6556,6.6556,161,ok,1,1,2878.5,needle at the very end of a single line
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),longline,oneline-1G-needle,4,1073764834,cold,5,6.6422,6.5389,6.6876,162,ok,1,1,2878.5,needle at the very end of a single line
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),longline,oneline-1G-needle,4,1073764834,hot,5,3.6452,3.6017,3.6959,295,ok,1,1,2878.6,needle at the very end of a single line
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),longline,oneline-1G-needle,4,1073764834,first,1,6.5053,6.5053,6.5053,165,ok,1,1,2882.5,needle at the very end of a single line
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),longline,oneline-1G-needle,4,1073764834,cold,5,6.6551,6.3437,6.6651,161,ok,1,1,2882.6,needle at the very end of a single line
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),longline,oneline-1G-needle,4,1073764834,hot,5,3.8650,3.6611,3.9274,278,ok,1,1,2882.6,needle at the very end of a single line
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),longline,oneline-1G-nohit,4,1073764834,first,1,2.8577,2.8577,2.8577,376,ok,0,0,20.3,
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),longline,oneline-1G-nohit,4,1073764834,cold,5,2.7833,2.7541,2.8534,386,ok,0,0,20.3,
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),longline,oneline-1G-nohit,4,1073764834,hot,5,0.1029,0.1023,0.1043,10435,ok,0,0,20.4,
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),longline,oneline-1G-nohit,4,1073764834,first,1,2.8768,2.8768,2.8768,373,ok,0,0,24.4,
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),longline,oneline-1G-nohit,4,1073764834,cold,5,2.8754,2.7827,2.9227,373,ok,0,0,24.4,
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),longline,oneline-1G-nohit,4,1073764834,hot,5,0.1050,0.1043,0.1059,10226,ok,0,0,24.5,
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),longline,longmix-1G-needle,4,1073875113,first,1,2.8867,2.8867,2.8867,372,ok,1,1,24.2,line numbers after a 1G line
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),longline,longmix-1G-needle,4,1073875113,cold,5,2.8453,2.8279,2.8499,377,ok,1,1,24.3,line numbers after a 1G line
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),longline,longmix-1G-needle,4,1073875113,hot,5,0.1026,0.1019,0.1041,10467,ok,1,1,24.4,line numbers after a 1G line
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),longline,longmix-1G-needle,4,1073875113,first,1,2.7723,2.7723,2.7723,387,ok,1,1,28.4,line numbers after a 1G line
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),longline,longmix-1G-needle,4,1073875113,cold,5,2.8445,2.8094,2.8635,378,ok,1,1,28.4,line numbers after a 1G line
+1.0,20261113-092044,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),longline,longmix-1G-needle,4,1073875113,hot,5,0.1060,0.1053,0.1091,10131,ok,1,1,28.4,line numbers after a 1G line

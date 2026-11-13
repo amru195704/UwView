@@ -1,0 +1,7 @@
+suite,run_id,machine,os,fs,product,product_version,set,case,episode,file_bytes,cache,runs,median_s,min_s,max_s,mb_per_s,correct,hits,expected_hits,peak_rss_mib,note
+1.0,20261113-093018,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),newline,nl-cr,6,,-,1,0.0105,0.0105,0.0105,,ng,1,2,15.1,hits 1 (expected 2)
+1.0,20261113-093018,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),newline,nl-cr,6,,-,1,0.0088,0.0088,0.0088,,ng,1,2,19.1,hits 1 (expected 2)
+1.0,20261113-093018,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),newline,nl-mixed,6,,-,1,0.0110,0.0110,0.0110,,ng,2,2,15.1,"line numbers [3, 9] (expected [4, 12])"
+1.0,20261113-093018,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),newline,nl-mixed,6,,-,1,0.0086,0.0086,0.0086,,ng,2,2,19.1,"line numbers [3, 9] (expected [4, 12])"
+1.0,20261113-093018,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),newline,nl-utf16le-crlf,6,,-,1,0.0104,0.0104,0.0104,,ng,0,2,15.0,exit 1 (expected 0); hits 0 (expected 2)
+1.0,20261113-093018,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.1 (build 26.10.17.09),newline,nl-utf16le-crlf,6,,-,1,0.0081,0.0081,0.0081,,ng,0,2,19.2,exit 1 (expected 0); hits 0 (expected 2)
