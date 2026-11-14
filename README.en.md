@@ -10,7 +10,7 @@
 📖 **[uvf command manual](2-doc/uvf_コマンド操作マニュアル.md)** · 🖥 **[GUI manual](2-doc/UwView_操作マニュアル.md)** ([PDF](2-doc/UwView_操作マニュアル.pdf)) — both in Japanese · 🧾 **[v2.0.0 release notes](https://github.com/amru195704/UwView/releases/tag/v2.0.0)**  
 ▶ **[Watch on YouTube (English)](https://www.youtube.com/playlist?list=PLBJs4svTLd_w)** · [Japanese](https://www.youtube.com/playlist?list=PLVa-Z1XEnkKs) · [Channel @uwviewapp](https://www.youtube.com/@uwviewapp)
 
-> **The latest release is v2.0.0 "Full Spectrum".** It fixes how UTF-32 and UTF-16 files are told apart, among other fixes, and adds a support message bar at the bottom of the window (not modal; you can turn it off in Settings) ([release notes](https://github.com/amru195704/UwView/releases/tag/v2.0.0)).
+> **The latest release is v2.0.0 "Fixed Star".** It fixes how UTF-32 and UTF-16 files are told apart, among other fixes, and adds a support message bar at the bottom of the window (not modal; you can turn it off in Settings) ([release notes](https://github.com/amru195704/UwView/releases/tag/v2.0.0)).
 > Since v1.9.0, the free edition can **search the text inside Word, Excel and PDF files**, and adds a dark theme, fonts, key bindings (vi/less preset), bookmarks in the result list and brace patterns `{a,b}` ([release notes](https://github.com/amru195704/UwView/releases/tag/v1.9.0)).
 > The previous release, v1.8.1.9 "Finder Scope", added the Command Line: search from the window with the same arguments as `uvf`.
 > Search many files with a single wildcard. Mix plain text with **seven compressed formats** (gz, bz2, xz, lzma, zst, lz4, br) in one run — no external commands needed.

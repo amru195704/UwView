@@ -10,7 +10,7 @@
 📖 **[uvf コマンド操作マニュアル](2-doc/uvf_コマンド操作マニュアル.md)** ・ 🖥 **[GUI の操作マニュアル](2-doc/UwView_操作マニュアル.md)**（[PDF](2-doc/UwView_操作マニュアル.pdf)） ・ 🧾 **[v2.0.0 リリースノート](https://github.com/amru195704/UwView/releases/tag/v2.0.0)**  
 ▶ **[動画で見る（YouTube・日本語）](https://www.youtube.com/playlist?list=PLVa-Z1XEnkKs)** ・ [English](https://www.youtube.com/playlist?list=PLBJs4svTLd_w) ・ [チャンネル @uwviewapp](https://www.youtube.com/@uwviewapp)
 
-> **最新版は v2.0.0「Full Spectrum」。** UTF-32・UTF-16 の見分けの直しなどを入れ、画面の下に支援の案内の帯（閉じなくても作業でき、設定で止められます）が加わりました（[リリースノート](https://github.com/amru195704/UwView/releases/tag/v2.0.0)）。
+> **最新版は v2.0.0「Fixed Star」。** UTF-32・UTF-16 の見分けの直しなどを入れ、画面の下に支援の案内の帯（閉じなくても作業でき、設定で止められます）が加わりました（[リリースノート](https://github.com/amru195704/UwView/releases/tag/v2.0.0)）。
 > v1.9.0 から、無料版でも **Word・Excel・PDF の中の文字を探せる**ようになり、ダークテーマ・フォント・キーの割り当て（vi・less 風）、結果一覧へのブックマーク、ファイル指定の波かっこ `{a,b}` が入りました（[リリースノート](https://github.com/amru195704/UwView/releases/tag/v1.9.0)）。
 > 前の版 v1.8.1.9「Finder Scope」で、画面に「コマンドライン」が入り、`uvf` と同じ書き方で画面から検索できるようになりました。
 > 複数のファイルを、ワイルドカード1つでまとめて探せます。平文と **7 種類の圧縮ファイル**（gz・bz2・xz・lzma・zst・lz4・br）を混ぜても1回で済み、外部のコマンドは要りません。

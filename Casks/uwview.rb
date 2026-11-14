@@ -2,8 +2,8 @@ cask "uwview" do
   arch arm: "arm64", intel: "x64"
 
   version "2.0.0"
-  sha256 arm:   "c41e03fa6689b0d3cdc0c911a005013e6104a9c74fa685eaf00926ff97781ad8",
-         intel: "4f76a0eb73b3d692317cfdc1717f1c7eca3287c7c7f754d349ccc2b26d099be8"
+  sha256 arm:   "858fa142f871c490ee86f2092b845a89786e5b94ea7af1dd5373feca10bed31d",
+         intel: "2cb6cd273b7231938ca841645cf2cd7c44fe926d8c809b5e98aaafc500c28538"
 
   url "https://github.com/amru195704/UwView/releases/download/v#{version}/UwView-#{version}-mac-#{arch}.dmg"
   name "UwView"

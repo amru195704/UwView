@@ -9,11 +9,11 @@
     "architecture": {
         "64bit": {
             "url": "https://github.com/amru195704/UwView/releases/download/v2.0.0/UwView-2.0.0-win-x64.zip",
-            "hash": "d0b2280a4a49cf4cea54e6cf1919e6343f370c5f0725ff5f36624c2d2cf63f92"
+            "hash": "ed42aec01a8f3227235863f5f7743a9bead8bd4ac418356e8f7896ed1f3bf7bd"
         },
         "arm64": {
             "url": "https://github.com/amru195704/UwView/releases/download/v2.0.0/UwView-2.0.0-win-arm64.zip",
-            "hash": "409622d7943339448ee5d0d7293b8e6252e4ebff216395473a8a6edf1006db2c"
+            "hash": "094317d5b4191c9df16a29742d78ee53416be939330b242ea1c546cdc154bc31"
         }
     },
     "bin": "uvf.exe",
