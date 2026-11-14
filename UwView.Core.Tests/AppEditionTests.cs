@@ -25,8 +25,8 @@ public class AppEditionTests : IDisposable
         AppEdition.Version = "1.7.3.3";
 
         Assert.False(AppEdition.IsTestBuild);
-        Assert.Equal("UwView(uvf)-Full Spectrum(v1.7.3.3)", AppEdition.TitleFor("UwView(uvf)"));
-        Assert.Equal("Other(cmd)-Full Spectrum(v1.7.3.3)", AppEdition.TitleFor("Other(cmd)"));   // 名前は渡されたまま
+        Assert.Equal("UwView(uvf)-Fixed Star(v1.7.3.3)", AppEdition.TitleFor("UwView(uvf)"));
+        Assert.Equal("Other(cmd)-Fixed Star(v1.7.3.3)", AppEdition.TitleFor("Other(cmd)"));   // 名前は渡されたまま
         Assert.Equal("UwView", AppEdition.Decorate("UwView"));             // 題名以外（About・--version）は足さない
     }
 
