@@ -565,7 +565,7 @@ gz・bz2・xz・lzma・zstd のファイルを開くと、開き方を聞きま�
 
 ### 全般（変換して開いたファイルの元を見張る・支援の案内）
 
-<img src="images/uvf-settings-general.png" alt="設定の「全般」のタブ。［変換して開いたファイルの元を見張る］のチェックと説明" style="width:70%">
+<img src="images/uvf-settings-general.png" alt="設定の「全般」のタブ。［変換して開いたファイルの元を見張る］と［支援の案内を表示しない］のチェックと説明" style="width:70%">
 
 | 部品 | 意味 |
 |---|---|
