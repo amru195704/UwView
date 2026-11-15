@@ -1,0 +1,23 @@
+suite,run_id,machine,os,fs,product,product_version,set,case,episode,file_bytes,cache,runs,median_s,min_s,max_s,mb_per_s,correct,hits,expected_hits,peak_rss_mib,note
+1.0,20261115-124023,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),abnormal,ab-empty,14,,-,1,0.0103,0.0103,0.0103,,ok,0,0,15.1,
+1.0,20261115-124023,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),abnormal,ab-empty,14,,-,1,0.0130,0.0130,0.0130,,ok,0,0,22.4,
+1.0,20261115-124023,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),abnormal,ab-binary,14,,-,1,0.0094,0.0094,0.0094,,ok,1,1,15.7,NUL and random bytes around a text line
+1.0,20261115-124023,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),abnormal,ab-binary,14,,-,1,0.0165,0.0165,0.0165,,ok,1,1,26.3,NUL and random bytes around a text line
+1.0,20261115-124023,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),abnormal,ab-nul,14,,-,1,0.0076,0.0076,0.0076,,ok,1,1,15.1,
+1.0,20261115-124023,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),abnormal,ab-nul,14,,-,1,0.0111,0.0111,0.0111,,ok,1,1,22.0,
+1.0,20261115-124023,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),abnormal,ab-growing,14,,-,1,0.0075,0.0075,0.0075,,ok,1,,15.3,"another process appends 200,000 lines while uvf reads"
+1.0,20261115-124023,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),abnormal,ab-growing,14,,-,1,0.0227,0.0227,0.0227,,ng,0,,24.1,"exit 2 (expected one of [0, 1])"
+1.0,20261115-124023,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),abnormal,ab-noperm,14,,-,1,0.0159,0.0159,0.0159,,ok,0,,14.6,permission removed at run time (skipped on Windows and as root)
+1.0,20261115-124023,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),abnormal,ab-noperm,14,,-,1,0.0155,0.0155,0.0155,,ok,0,,18.8,permission removed at run time (skipped on Windows and as root)
+1.0,20261115-124023,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),abnormal,ab-missing,14,,-,1,0.0070,0.0070,0.0070,,ok,0,,14.1,
+1.0,20261115-124023,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),abnormal,ab-missing,14,,-,1,0.0082,0.0082,0.0082,,ok,0,,18.5,
+1.0,20261115-124023,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),abnormal,ab-folder,14,,-,1,0.0064,0.0064,0.0064,,ok,0,,14.1,a folder given where a file is expected
+1.0,20261115-124023,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),abnormal,ab-folder,14,,-,1,0.0081,0.0081,0.0081,,ok,0,,18.5,a folder given where a file is expected
+1.0,20261115-124023,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),abnormal,ab-truncated-gz,14,,-,1,0.0078,0.0078,0.0078,,ok,0,,15.0,"cut in the middle: must report an error, not hang or crash"
+1.0,20261115-124023,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),abnormal,ab-truncated-gz,14,,-,1,0.0091,0.0091,0.0091,,ok,0,,19.1,"cut in the middle: must report an error, not hang or crash"
+1.0,20261115-124023,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),abnormal,ab-not-gzip,14,,-,1,0.0073,0.0073,0.0073,,ok,0,,14.1,manual 6: .gz that is not gzip is reported
+1.0,20261115-124023,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),abnormal,ab-not-gzip,14,,-,1,0.0087,0.0087,0.0087,,ok,0,,18.5,manual 6: .gz that is not gzip is reported
+1.0,20261115-124023,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),abnormal,ab-bad-regex,14,,-,1,0.0089,0.0089,0.0089,,ok,0,,14.6,
+1.0,20261115-124023,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),abnormal,ab-bad-regex,14,,-,1,0.0077,0.0077,0.0077,,ok,0,,16.5,
+1.0,20261115-124023,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),abnormal,ab-symlink-loop,14,,-,1,0.0104,0.0104,0.0104,,ok,1,,15.8,"a folder link that points to itself (made at run time, not on Windows)"
+1.0,20261115-124023,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),abnormal,ab-symlink-loop,14,,-,1,0.0147,0.0147,0.0147,,ok,1,,23.6,"a folder link that points to itself (made at run time, not on Windows)"

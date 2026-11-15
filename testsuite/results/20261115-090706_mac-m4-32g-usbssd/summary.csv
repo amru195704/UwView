@@ -1,0 +1,101 @@
+suite,run_id,machine,os,fs,product,product_version,set,case,episode,file_bytes,cache,runs,median_s,min_s,max_s,mb_per_s,correct,hits,expected_hits,peak_rss_mib,note
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),compress,comp-1G-plain,11,1073741824,first,1,2.6910,2.6910,2.6910,399,ok,3,3,19.3,plain
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),compress,comp-1G-plain,11,1073741824,cold,5,2.7761,2.6687,2.7823,387,ok,3,3,19.5,plain
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),compress,comp-1G-plain,11,1073741824,hot,5,0.0996,0.0982,0.1020,10781,ok,3,3,19.3,plain
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),compress,comp-1G-plain,11,1073741824,first,1,3.5734,3.5734,3.5734,300,ok,3,3,84.7,plain
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),compress,comp-1G-plain,11,1073741824,cold,5,0.2254,0.1366,0.2517,4764,ok,3,3,27.4,plain
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),compress,comp-1G-plain,11,1073741824,hot,5,0.0132,0.0129,0.0136,81344,ok,3,3,27.4,plain
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),compress,comp-1G-plain-rare,11,1073741824,first,1,2.8038,2.8038,2.8038,383,ok,99123,99123,19.4,"plain, many hits"
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),compress,comp-1G-plain-rare,11,1073741824,cold,5,2.7188,2.6748,2.7745,395,ok,99123,99123,19.4,"plain, many hits"
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),compress,comp-1G-plain-rare,11,1073741824,hot,5,0.1134,0.1123,0.1155,9469,ok,99123,99123,19.5,"plain, many hits"
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),compress,comp-1G-plain-rare,11,1073741824,first,1,0.8703,0.8703,0.8703,1234,ok,99123,99123,85.0,"plain, many hits"
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),compress,comp-1G-plain-rare,11,1073741824,cold,5,0.8850,0.7743,0.9644,1213,ok,99123,99123,85.9,"plain, many hits"
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),compress,comp-1G-plain-rare,11,1073741824,hot,5,0.1495,0.1479,0.1519,7182,ok,99123,99123,85.1,"plain, many hits"
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),compress,comp-1G-gz,11,259936055,first,1,0.8792,0.8792,0.8792,296,ok,3,3,88.1,gz
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),compress,comp-1G-gz,11,259936055,cold,5,0.8860,0.7697,0.9519,293,ok,3,3,88.2,gz
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),compress,comp-1G-gz,11,259936055,hot,5,0.7140,0.7081,0.7153,364,ok,3,3,88.0,gz
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),compress,comp-1G-gz,11,259936055,first,1,1.5716,1.5716,1.5716,165,ok,3,3,143.8,gz
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),compress,comp-1G-gz,11,259936055,cold,5,0.1823,0.1363,0.2466,1426,ok,3,3,28.4,gz
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),compress,comp-1G-gz,11,259936055,hot,5,0.0139,0.0136,0.0142,18700,ok,3,3,28.4,gz
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),compress,comp-1G-gz-rare,11,259936055,first,1,0.9012,0.9012,0.9012,288,ok,99123,99123,93.2,"gz, many hits"
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),compress,comp-1G-gz-rare,11,259936055,cold,5,0.8888,0.7828,0.9781,292,ok,99123,99123,88.4,"gz, many hits"
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),compress,comp-1G-gz-rare,11,259936055,hot,5,0.7126,0.7125,0.7164,365,ok,99123,99123,88.2,"gz, many hits"
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),compress,comp-1G-gz-rare,11,259936055,first,1,0.8304,0.8304,0.8304,313,ok,99123,99123,83.8,"gz, many hits"
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),compress,comp-1G-gz-rare,11,259936055,cold,5,0.8714,0.7720,0.8885,298,ok,99123,99123,86.0,"gz, many hits"
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),compress,comp-1G-gz-rare,11,259936055,hot,5,0.1506,0.1449,0.1574,1726,ok,99123,99123,88.5,"gz, many hits"
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),compress,comp-1G-bz2,11,160746291,first,1,13.4196,13.4196,13.4196,12,ok,3,3,91.4,bz2
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),compress,comp-1G-bz2,11,160746291,cold,5,13.5975,13.5518,13.6568,12,ok,3,3,91.5,bz2
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),compress,comp-1G-bz2,11,160746291,hot,5,13.3834,13.3412,13.4758,12,ok,3,3,91.4,bz2
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),compress,comp-1G-bz2,11,160746291,first,1,14.3305,14.3305,14.3305,11,ok,3,3,132.8,bz2
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),compress,comp-1G-bz2,11,160746291,cold,5,0.2516,0.1488,0.2691,639,ok,3,3,32.6,bz2
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),compress,comp-1G-bz2,11,160746291,hot,5,0.0194,0.0192,0.0194,8286,ok,3,3,32.6,bz2
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),compress,comp-1G-bz2-rare,11,160746291,first,1,13.6045,13.6045,13.6045,12,ok,99123,99123,91.6,"bz2, many hits"
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),compress,comp-1G-bz2-rare,11,160746291,cold,5,13.5396,13.5302,13.6408,12,ok,99123,99123,91.6,"bz2, many hits"
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),compress,comp-1G-bz2-rare,11,160746291,hot,5,13.4335,13.3983,13.4925,12,ok,99123,99123,91.5,"bz2, many hits"
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),compress,comp-1G-bz2-rare,11,160746291,first,1,0.9004,0.9004,0.9004,179,ok,99123,99123,89.9,"bz2, many hits"
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),compress,comp-1G-bz2-rare,11,160746291,cold,5,0.8754,0.7783,0.8893,184,ok,99123,99123,89.7,"bz2, many hits"
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),compress,comp-1G-bz2-rare,11,160746291,hot,5,0.1566,0.1544,0.1632,1026,ok,99123,99123,92.0,"bz2, many hits"
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),compress,comp-1G-xz,11,177005408,first,1,6.8577,6.8577,6.8577,26,ok,3,3,96.0,xz
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),compress,comp-1G-xz,11,177005408,cold,5,6.8895,6.8407,6.9244,26,ok,3,3,96.0,xz
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),compress,comp-1G-xz,11,177005408,hot,5,6.6407,6.6338,6.6568,27,ok,3,3,96.0,xz
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),compress,comp-1G-xz,11,177005408,first,1,7.5177,7.5177,7.5177,24,ok,3,3,140.0,xz
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),compress,comp-1G-xz,11,177005408,cold,5,0.2468,0.1509,0.2616,717,ok,3,3,29.2,xz
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),compress,comp-1G-xz,11,177005408,hot,5,0.0141,0.0138,0.0142,12554,ok,3,3,29.2,xz
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),compress,comp-1G-xz-rare,11,177005408,first,1,6.8809,6.8809,6.8809,26,ok,99123,99123,96.1,"xz, many hits"
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),compress,comp-1G-xz-rare,11,177005408,cold,5,6.8270,6.7409,6.9356,26,ok,99123,99123,96.1,"xz, many hits"
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),compress,comp-1G-xz-rare,11,177005408,hot,5,7.4764,7.1964,8.0170,24,ok,99123,99123,103.1,"xz, many hits"
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),compress,comp-1G-xz-rare,11,177005408,first,1,0.8941,0.8941,0.8941,198,ok,99123,99123,85.0,"xz, many hits"
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),compress,comp-1G-xz-rare,11,177005408,cold,5,0.8834,0.7729,0.8879,200,ok,99123,99123,86.7,"xz, many hits"
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),compress,comp-1G-xz-rare,11,177005408,hot,5,0.1538,0.1516,0.1614,1151,ok,99123,99123,88.7,"xz, many hits"
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),compress,comp-1G-lzma,11,176977836,first,1,6.0371,6.0371,6.0371,29,ok,3,3,96.0,lzma
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),compress,comp-1G-lzma,11,176977836,cold,5,6.0226,5.9137,6.0434,29,ok,3,3,96.0,lzma
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),compress,comp-1G-lzma,11,176977836,hot,5,5.8170,5.8027,5.8611,30,ok,3,3,96.0,lzma
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),compress,comp-1G-lzma,11,176977836,first,1,6.6482,6.6482,6.6482,27,ok,3,3,139.2,lzma
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),compress,comp-1G-lzma,11,176977836,cold,5,0.2491,0.1412,0.2643,710,ok,3,3,29.2,lzma
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),compress,comp-1G-lzma,11,176977836,hot,5,0.0140,0.0139,0.0143,12641,ok,3,3,29.2,lzma
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),compress,comp-1G-lzma-rare,11,176977836,first,1,6.0414,6.0414,6.0414,29,ok,99123,99123,96.1,"lzma, many hits"
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),compress,comp-1G-lzma-rare,11,176977836,cold,5,6.0076,5.9460,6.0685,29,ok,99123,99123,96.1,"lzma, many hits"
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),compress,comp-1G-lzma-rare,11,176977836,hot,5,5.8167,5.8068,5.9550,30,ok,99123,99123,96.1,"lzma, many hits"
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),compress,comp-1G-lzma-rare,11,176977836,first,1,0.8007,0.8007,0.8007,221,ok,99123,99123,84.3,"lzma, many hits"
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),compress,comp-1G-lzma-rare,11,176977836,cold,5,0.8746,0.7802,0.8839,202,ok,99123,99123,86.3,"lzma, many hits"
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),compress,comp-1G-lzma-rare,11,176977836,hot,5,0.1498,0.1464,0.1524,1181,ok,99123,99123,88.4,"lzma, many hits"
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),compress,comp-1G-zst,11,275320363,first,1,0.9521,0.9521,0.9521,289,ok,3,3,90.5,zst
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),compress,comp-1G-zst,11,275320363,cold,5,0.9757,0.9605,0.9985,282,ok,3,3,90.5,zst
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),compress,comp-1G-zst,11,275320363,hot,5,0.7838,0.7814,0.8197,351,ok,3,3,90.5,zst
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),compress,comp-1G-zst,11,275320363,first,1,1.5910,1.5910,1.5910,173,ok,3,3,149.8,zst
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),compress,comp-1G-zst,11,275320363,cold,5,0.1581,0.1307,0.2469,1741,ok,3,3,29.7,zst
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),compress,comp-1G-zst,11,275320363,hot,5,0.0142,0.0140,0.0151,19389,ok,3,3,29.7,zst
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),compress,comp-1G-zst-rare,11,275320363,first,1,0.9766,0.9766,0.9766,282,ok,99123,99123,90.6,"zst, many hits"
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),compress,comp-1G-zst-rare,11,275320363,cold,5,0.9862,0.9707,1.0102,279,ok,99123,99123,90.6,"zst, many hits"
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),compress,comp-1G-zst-rare,11,275320363,hot,5,0.7831,0.7813,0.7968,352,ok,99123,99123,91.6,"zst, many hits"
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),compress,comp-1G-zst-rare,11,275320363,first,1,0.8653,0.8653,0.8653,318,ok,99123,99123,74.3,"zst, many hits"
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),compress,comp-1G-zst-rare,11,275320363,cold,5,0.8703,0.7694,0.8845,316,ok,99123,99123,88.6,"zst, many hits"
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),compress,comp-1G-zst-rare,11,275320363,hot,5,0.1592,0.1495,0.1776,1729,ok,99123,99123,74.5,"zst, many hits"
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),compress,comp-1G-lz4,11,434788486,first,1,1.3081,1.3081,1.3081,332,ok,3,3,103.3,lz4
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),compress,comp-1G-lz4,11,434788486,cold,5,1.2958,1.2106,1.3400,336,ok,3,3,103.4,lz4
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),compress,comp-1G-lz4,11,434788486,hot,5,0.3675,0.3669,0.3719,1183,ok,3,3,103.7,lz4
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),compress,comp-1G-lz4,11,434788486,first,1,1.9696,1.9696,1.9696,221,ok,3,3,156.6,lz4
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),compress,comp-1G-lz4,11,434788486,cold,5,0.2593,0.1555,0.2641,1677,ok,3,3,34.4,lz4
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),compress,comp-1G-lz4,11,434788486,hot,5,0.0153,0.0151,0.0162,28418,ok,3,3,34.5,lz4
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),compress,comp-1G-lz4-rare,11,434788486,first,1,1.3005,1.3005,1.3005,334,ok,99123,99123,103.3,"lz4, many hits"
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),compress,comp-1G-lz4-rare,11,434788486,cold,5,1.3016,1.1937,1.3128,334,ok,99123,99123,103.3,"lz4, many hits"
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),compress,comp-1G-lz4-rare,11,434788486,hot,5,0.3674,0.3667,0.3719,1183,ok,99123,99123,103.7,"lz4, many hits"
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),compress,comp-1G-lz4-rare,11,434788486,first,1,0.7523,0.7523,0.7523,578,ok,99123,99123,75.6,"lz4, many hits"
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),compress,comp-1G-lz4-rare,11,434788486,cold,5,0.8843,0.8806,0.8977,492,ok,99123,99123,81.6,"lz4, many hits"
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),compress,comp-1G-lz4-rare,11,434788486,hot,5,0.1567,0.1530,0.1701,2775,ok,99123,99123,81.6,"lz4, many hits"
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),compress,comp-1G-br,11,214931298,first,1,1.3383,1.3383,1.3383,161,ok,3,3,105.6,br
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),compress,comp-1G-br,11,214931298,cold,5,1.3746,1.3284,1.4623,156,ok,3,3,105.7,br
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),compress,comp-1G-br,11,214931298,hot,5,1.2185,1.2144,1.2254,176,ok,3,3,105.7,br
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),compress,comp-1G-br,11,214931298,first,1,1.6067,1.6067,1.6067,134,ok,3,3,153.3,br
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),compress,comp-1G-br,11,214931298,cold,5,0.2567,0.1675,0.3202,837,ok,3,3,28.9,br
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),compress,comp-1G-br,11,214931298,hot,5,0.0144,0.0142,0.0146,14926,ok,3,3,28.9,br
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),compress,comp-1G-br-rare,11,214931298,first,1,1.4438,1.4438,1.4438,149,ok,99123,99123,105.7,"br, many hits"
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),compress,comp-1G-br-rare,11,214931298,cold,5,1.3698,1.2658,1.4176,157,ok,99123,99123,105.8,"br, many hits"
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),compress,comp-1G-br-rare,11,214931298,hot,5,1.2070,1.1564,1.2101,178,ok,99123,99123,110.8,"br, many hits"
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),compress,comp-1G-br-rare,11,214931298,first,1,0.8619,0.8619,0.8619,249,ok,99123,99123,86.4,"br, many hits"
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),compress,comp-1G-br-rare,11,214931298,cold,5,0.8764,0.7610,0.8903,245,ok,99123,99123,86.4,"br, many hits"
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),compress,comp-1G-br-rare,11,214931298,hot,5,0.1525,0.1490,0.1539,1409,ok,99123,99123,87.5,"br, many hits"
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),compress,comp-sample-zip,11,,-,1,0.0275,0.0275,0.0275,,ok,0,,14.3,manual 6: uvf refuses zip with a message (exit 2); the paid edition reads zip
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),compress,comp-sample-zip,11,,-,1,0.0217,0.0217,0.0217,,ng,1,,30.5,exit 0 (expected 2)
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),compress,comp-sample-targz,11,,-,1,0.0078,0.0078,0.0078,,ok,0,,14.0,manual 6: uvf refuses tar.gz with a message (exit 2); the paid edition reads zip
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),compress,comp-sample-targz,11,,-,1,0.0084,0.0084,0.0084,,ok,0,,18.5,manual 6: uvf refuses tar.gz with a message (exit 2); the paid edition reads zip

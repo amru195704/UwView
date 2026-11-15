@@ -1,0 +1,41 @@
+suite,run_id,machine,os,fs,product,product_version,set,case,episode,file_bytes,cache,runs,median_s,min_s,max_s,mb_per_s,correct,hits,expected_hits,peak_rss_mib,note
+1.0,20261115-092906,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),many,many-10K-needle,12,,first,1,1.0380,1.0380,1.0380,,ok,11,11,42.8,files excluded by .ignore must be skipped
+1.0,20261115-092906,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),many,many-10K-needle,12,,cold,5,1.0615,0.9680,1.1056,,ok,11,11,42.9,files excluded by .ignore must be skipped
+1.0,20261115-092906,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),many,many-10K-needle,12,,hot,5,0.7300,0.7189,0.7546,,ok,11,11,42.8,files excluded by .ignore must be skipped
+1.0,20261115-092906,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),many,many-10K-needle,12,,first,1,1.5339,1.5339,1.5339,,ok,11,11,126.8,files excluded by .ignore must be skipped
+1.0,20261115-092906,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),many,many-10K-needle,12,,cold,5,0.8624,0.7772,0.9368,,ok,11,11,61.0,files excluded by .ignore must be skipped
+1.0,20261115-092906,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),many,many-10K-needle,12,,hot,5,0.6564,0.6461,0.6612,,ok,11,11,61.1,files excluded by .ignore must be skipped
+1.0,20261115-092906,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),many,many-10K-noignore,12,,first,1,0.8927,0.8927,0.8927,,ok,61,61,44.2,
+1.0,20261115-092906,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),many,many-10K-noignore,12,,cold,5,0.8528,0.7998,0.8995,,ok,61,61,44.4,
+1.0,20261115-092906,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),many,many-10K-noignore,12,,hot,5,0.5619,0.5606,0.5687,,ok,61,61,44.5,
+1.0,20261115-092906,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),many,many-10K-noignore,12,,first,1,0.7823,0.7823,0.7823,,ok,61,61,115.1,
+1.0,20261115-092906,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),many,many-10K-noignore,12,,cold,5,0.6090,0.5931,0.7034,,ok,61,61,56.2,
+1.0,20261115-092906,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),many,many-10K-noignore,12,,hot,5,0.4946,0.4937,0.4948,,ok,61,61,56.9,
+1.0,20261115-092906,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),many,many-10K-tokyo,12,,first,1,1.0238,1.0238,1.0238,,ok,20184,20184,42.8,
+1.0,20261115-092906,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),many,many-10K-tokyo,12,,cold,5,1.0767,1.0652,1.0910,,ok,20184,20184,43.0,
+1.0,20261115-092906,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),many,many-10K-tokyo,12,,hot,5,0.7276,0.7058,0.7400,,ok,20184,20184,43.1,
+1.0,20261115-092906,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),many,many-10K-tokyo,12,,first,1,0.9071,0.9071,0.9071,,ok,20184,20184,62.0,
+1.0,20261115-092906,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),many,many-10K-tokyo,12,,cold,5,0.8732,0.7829,0.9502,,ok,20184,20184,62.2,
+1.0,20261115-092906,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),many,many-10K-tokyo,12,,hot,5,0.6780,0.6720,0.6980,,ok,20184,20184,63.0,
+1.0,20261115-092906,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),many,many-10K-files,12,,-,1,0.6451,0.6451,0.6451,,ok,10000,10000,40.0,--files lists what the wildcard expands to
+1.0,20261115-092906,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),many,many-10K-files,12,,-,1,0.6257,0.6257,0.6257,,ok,10000,10000,40.7,--files lists what the wildcard expands to
+1.0,20261115-092906,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),many,many-100K-needle,12,,first,1,10.1188,10.1188,10.1188,,ok,101,101,179.7,files excluded by .ignore must be skipped
+1.0,20261115-092906,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),many,many-100K-needle,12,,cold,5,8.3067,8.2627,11.5104,,ok,101,101,179.8,files excluded by .ignore must be skipped
+1.0,20261115-092906,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),many,many-100K-needle,12,,hot,5,6.0366,6.0109,6.0540,,ok,101,101,182.7,files excluded by .ignore must be skipped
+1.0,20261115-092906,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),many,many-100K-needle,12,,first,1,13.4033,13.4033,13.4033,,ok,101,101,474.5,files excluded by .ignore must be skipped
+1.0,20261115-092906,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),many,many-100K-needle,12,,cold,5,5.2129,5.1299,5.2335,,ok,101,101,232.9,files excluded by .ignore must be skipped
+1.0,20261115-092906,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),many,many-100K-needle,12,,hot,5,4.8737,4.8210,4.9080,,ok,101,101,241.6,files excluded by .ignore must be skipped
+1.0,20261115-092906,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),many,many-100K-noignore,12,,first,1,7.0421,7.0421,7.0421,,ok,151,151,161.4,
+1.0,20261115-092906,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),many,many-100K-noignore,12,,cold,5,7.1039,7.0766,8.0825,,ok,151,151,161.5,
+1.0,20261115-092906,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),many,many-100K-noignore,12,,hot,5,4.7946,4.6405,4.8454,,ok,151,151,161.4,
+1.0,20261115-092906,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),many,many-100K-noignore,12,,first,1,4.7585,4.7585,4.7585,,ok,151,151,490.9,
+1.0,20261115-092906,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),many,many-100K-noignore,12,,cold,5,4.1211,3.9446,4.1437,,ok,151,151,221.3,
+1.0,20261115-092906,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),many,many-100K-noignore,12,,hot,5,3.7483,3.7069,3.7969,,ok,151,151,229.6,
+1.0,20261115-092906,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),many,many-100K-tokyo,12,,first,1,8.2986,8.2986,8.2986,,ok,204500,204500,179.5,
+1.0,20261115-092906,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),many,many-100K-tokyo,12,,cold,5,8.3863,8.3611,8.4314,,ok,204500,204500,182.9,
+1.0,20261115-092906,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),many,many-100K-tokyo,12,,hot,5,6.0038,5.9526,6.1782,,ok,204500,204500,182.4,
+1.0,20261115-092906,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),many,many-100K-tokyo,12,,first,1,5.3304,5.3304,5.3304,,ok,204500,204500,231.9,
+1.0,20261115-092906,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),many,many-100K-tokyo,12,,cold,5,5.2535,5.1974,5.3332,,ok,204500,204500,246.6,
+1.0,20261115-092906,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),many,many-100K-tokyo,12,,hot,5,4.9678,4.9508,5.0192,,ok,204500,204500,262.3,
+1.0,20261115-092906,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),many,many-100K-files,12,,-,1,4.6640,4.6640,4.6640,,ok,100000,100000,188.8,--files lists what the wildcard expands to
+1.0,20261115-092906,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),many,many-100K-files,12,,-,1,4.6938,4.6938,4.6938,,ok,100000,100000,170.5,--files lists what the wildcard expands to
