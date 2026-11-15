@@ -18,6 +18,7 @@ Found while building the suite (2026-10-24): Linux x86_64 (uvf 1.9.1, `smoke`) a
 | 7 | 5 | `enc-utf32*-bom-*` | UTF-32 is not supported. uvp stops with a message (exit 2); uvf 1.9.1 tried to read UTF-32LE and found only line 1 | message and exit code 2 | uvf 1.9.1 | fixed for the next version (uvf and the free GUI refuse UTF-32 like uvp) |
 | 8 | 8 | `dame-pipe-*` | a search word of only `\|` stops with a usage error (exit 2) instead of being searched as a plain character | the line with `\|` is found | uvp 1.9.1 (macOS). uvf 1.9.1 is right | open |
 | 9 | 9 | `names-nfc-glob` | on an HFS+ disk macOS stores every file name as NFD, so a wildcard typed in NFC (`*が*.txt`) matches no name with a voiced mark, even a file created with an NFC name | the file is found | uvf 1.9.1, uvp 1.9.1 (macOS, HFS+). On APFS the name stays NFC and is found (2026-11-12) | open |
+| 10 | 14 | `ab-growing` | a log file that another process is still appending to: uvp stops with an error (exit 2) and finds nothing | the lines written so far are searched (exit 0 or 1) | uvp 1.9.2 (macOS, 2026-11-15). uvf 1.9.1 is right | open |
 | – | 5, 10 | `enc-utf16*-nobom-*`, `enc-iso2022jp-*`, `rare-iso2022jp` | not detected | – | uvf / uvp 1.9.1 | documented (manual 6.1) |
 
 Observations without a single right answer (episode 9): an NFC search word does not find NFD text
