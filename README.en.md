@@ -189,10 +189,17 @@ brew install --cask amru195704/uwview/uwview
 scoop bucket add uwview https://github.com/amru195704/scoop-uwview
 scoop install uwview
 ```
-**Linux, or to install by hand**: download the dmg / zip / tar.gz from [GitHub Releases](https://github.com/amru195704/UwView/releases/latest).
+**Linux (Snap)**
+```bash
+sudo snap install uwview
+sudo snap alias uwview.uvf uvf                 # type uvf instead of uwview.uvf (once)
+sudo snap connect uwview:removable-media       # to read USB and other removable media (/media, /mnt)
+```
+The snap can read files under your home folder and, after the connect command, removable media. Copy files such as `/var/log` under your home folder first.
+**To install by hand**: download the dmg / zip / tar.gz from [GitHub Releases](https://github.com/amru195704/UwView/releases/latest).
 
-Both Homebrew and Scoop fetch from the official GitHub Releases and check the SHA256. **The `uvf` command works straight away.**
-To update: `brew upgrade --cask uwview` / `scoop update uwview`.
+Both Homebrew and Scoop fetch from the official GitHub Releases and check the SHA256. **The `uvf` command works straight away.** The Snap carries the official Linux build unmodified.
+To update: `brew upgrade --cask uwview` / `scoop update uwview` / `sudo snap refresh uwview`.
 
 ---
 

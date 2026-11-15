@@ -192,10 +192,17 @@ brew install --cask amru195704/uwview/uwview
 scoop bucket add uwview https://github.com/amru195704/scoop-uwview
 scoop install uwview
 ```
-**Linux・手で入れる場合**は [GitHub Releases](https://github.com/amru195704/UwView/releases/latest) から dmg／zip／tar.gz を。
+**Linux（Snap）**
+```bash
+sudo snap install uwview
+sudo snap alias uwview.uvf uvf                 # uvf と打てるようにする（最初の 1 回）
+sudo snap connect uwview:removable-media       # USB などの外付け（/media・/mnt）も読むとき
+```
+Snap の中から読めるのは、ホームフォルダの下と（上の connect をしたら）外付けの媒体です。`/var/log` などはホームの下に写してから開きます。
+**手で入れる場合**は [GitHub Releases](https://github.com/amru195704/UwView/releases/latest) から dmg／zip／tar.gz を。
 
-Homebrew と Scoop は、どちらも公式の GitHub Releases から取得して SHA256 を照合します。**`uvf` コマンドもそのまま使えます。**
-更新は `brew upgrade --cask uwview` ／ `scoop update uwview`。
+Homebrew と Scoop は、どちらも公式の GitHub Releases から取得して SHA256 を照合します。**`uvf` コマンドもそのまま使えます。** Snap は公式の Linux 版を無改変のまま詰めたものです。
+更新は `brew upgrade --cask uwview` ／ `scoop update uwview` ／ `sudo snap refresh uwview`。
 
 ---
 
