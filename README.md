@@ -6,7 +6,7 @@
 
 **CLI（`uvf`）は ripgrep と同等の速さで探し、GUI は klogg と同等の速さで開きます。** 違うのは、その2つが**1回でつながる**ことです。`uvf ファイル '語' -open` と打てば、探し終えた瞬間に GUI が開き、ヒットした行が並びます。**GUI はもう一度探しません。**
 
-📥 **[ダウンロード（無料）](https://github.com/amru195704/UwView/releases/latest)** ・ 🌐 **[公式サイト](https://uvp.y42u.net/)** ・ 🧪 **[ブラウザで試す](https://amru195704.github.io/UwView/)**  
+📥 **[ダウンロード（無料）](https://github.com/amru195704/UwView/releases/latest)** ・ 🌐 **[公式サイト](https://uvp.y42u.net/)** ・ 🧪 **[ブラウザで試す](https://amru195704.github.io/UwView/)** ・ 👤 **[作者の GitHub](https://github.com/amru195704)**  
 📖 **[uvf コマンド操作マニュアル](2-doc/uvf_コマンド操作マニュアル.md)** ・ 🖥 **[GUI の操作マニュアル](2-doc/UwView_操作マニュアル.md)**（[PDF](2-doc/UwView_操作マニュアル.pdf)） ・ 🧾 **[v2.0.0 リリースノート](https://github.com/amru195704/UwView/releases/tag/v2.0.0)**  
 ▶ **[動画で見る（YouTube・日本語）](https://www.youtube.com/playlist?list=PLVa-Z1XEnkKs)** ・ [English](https://www.youtube.com/playlist?list=PLBJs4svTLd_w) ・ [チャンネル @uwviewapp](https://www.youtube.com/@uwviewapp)
 
@@ -309,6 +309,8 @@ GUI の使い方（検索・結果一覧・ファイル一覧とタブ・ハイ�
 > ソースからのビルド・改変したバイナリ・他の製品への組込みは対象外で、別途ご相談ください。
 
 ## 作者の関連プロダクト
+
+作者の GitHub: **[amru195704](https://github.com/amru195704)**（比較ツール [UwDiff](https://github.com/amru195704/UwDiff) ほか）
 
 測量士・土地家屋調査士向けの iOS アプリ群（同じ作者 y4u。UwView とは独立した製品です）:
 **[GeoConverter Pro](https://gcpro.y42u.net/)**（座標変換）・**[GeoPrism JP](https://gmp.y42u.net/)**（測地系のズレの可視化）・**[GeoDiveExa](https://y42u.net/tec001/)**（RTK-GNSS 位置調査）

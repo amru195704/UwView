@@ -6,7 +6,7 @@
 
 **The CLI (`uvf`) searches as fast as ripgrep, and the GUI opens files as fast as klogg.** The difference is that the two **connect in a single pass**. Type `uvf file 'word' -open` and the GUI opens the moment the search ends, with the hits already listed. **The GUI does not search again.**
 
-📥 **[Download (free)](https://github.com/amru195704/UwView/releases/latest)** · 🌐 **[Official site](https://uvp.y42u.net/en/)** · 🧪 **[Try it in your browser](https://amru195704.github.io/UwView/)**  
+📥 **[Download (free)](https://github.com/amru195704/UwView/releases/latest)** · 🌐 **[Official site](https://uvp.y42u.net/en/)** · 🧪 **[Try it in your browser](https://amru195704.github.io/UwView/)** · 👤 **[Author on GitHub](https://github.com/amru195704)**  
 📖 **[uvf command manual](2-doc/uvf_コマンド操作マニュアル.md)** · 🖥 **[GUI manual](2-doc/UwView_操作マニュアル.md)** ([PDF](2-doc/UwView_操作マニュアル.pdf)) — both in Japanese · 🧾 **[v2.0.0 release notes](https://github.com/amru195704/UwView/releases/tag/v2.0.0)**  
 ▶ **[Watch on YouTube (English)](https://www.youtube.com/playlist?list=PLBJs4svTLd_w)** · [Japanese](https://www.youtube.com/playlist?list=PLVa-Z1XEnkKs) · [Channel @uwviewapp](https://www.youtube.com/@uwviewapp)
 
@@ -310,6 +310,8 @@ Japanese reference translation: [LICENSEjp.txt](LICENSEjp.txt) (the English text
 > Building from source, modified binaries and bundling into another product are not covered — please get in touch for those.
 
 ## Other products by the same author
+
+The author on GitHub: **[amru195704](https://github.com/amru195704)** (including the comparison tool [UwDiff](https://github.com/amru195704/UwDiff))
 
 iOS apps for surveyors and land investigators by the same author (y4u), independent of UwView:
 **[GeoConverter Pro](https://gcpro.y42u.net/)** (coordinate conversion) · **[GeoPrism JP](https://gmp.y42u.net/)** (visualising datum shifts) · **[GeoDiveExa](https://y42u.net/tec001/)** (RTK-GNSS surveying)
