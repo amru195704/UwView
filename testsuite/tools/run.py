@@ -284,8 +284,13 @@ def count_listed_files(path):
 REPORTED_RE = re.compile(r"(\d[\d,]*) results?")
 
 
-def judge(case, code, hits, lines, timed_out):
-    exp = case.get("expect", {})
+def expect_for(case, product=None):
+    """The right answer for this product: "expect_by_product" (if it names the product) replaces "expect"."""
+    return case.get("expect_by_product", {}).get(product, case.get("expect", {}))
+
+
+def judge(case, code, hits, lines, timed_out, product=None):
+    exp = expect_for(case, product)
     if timed_out:
         return "timeout", "no answer within the time limit"
     if code < 0 or code > 2:
@@ -445,7 +450,7 @@ def main():
                 total += 1
                 common = {"product": prod, "product_version": env["products"][prod]["version"], "set": s["set"],
                           "case": case["id"], "episode": case["episode"], "file_bytes": case.get("bytes", ""),
-                          "expected_hits": case.get("expect", {}).get("hits", case.get("expect", {}).get("files", ""))}
+                          "expected_hits": expect_for(case, prod).get("hits", expect_for(case, prod).get("files", ""))}
                 if case.get("missing"):
                     record(cache="-", run=0, correct="missing", note=case["missing"], **common)
                     continue
@@ -491,7 +496,7 @@ def main():
                         hits, lines = scan_output(out_path)
                     m = REPORTED_RE.search(err)
                     reported = int(m.group(1).replace(",", "")) if m else ""
-                    verdict, why = judge(case, code, hits, lines, tout)
+                    verdict, why = judge(case, code, hits, lines, tout, prod)
                     note = why or case.get("note", "")
                     if err.strip():  # kept next to stdout, not in the CSV (messages may change between versions)
                         with open(out_path[:-4] + ".err", "w", encoding="utf-8") as ef:

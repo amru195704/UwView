@@ -159,7 +159,7 @@ class SetWriter:
         return self.add_file(rel, w)
 
     def case(self, **kw):
-        """id, episode, files (str), pattern, flags=[], expect={}, bytes, timed, note"""
+        """id, episode, files (str), pattern, flags=[], expect={}, expect_by_product={product: expect}, bytes, timed, note"""
         kw.setdefault("flags", [])
         kw.setdefault("expect", {})
         kw.setdefault("timed", False)

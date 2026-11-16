@@ -96,6 +96,6 @@ suite,run_id,machine,os,fs,product,product_version,set,case,episode,file_bytes,c
 1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),compress,comp-1G-br-rare,11,214931298,cold,5,0.8764,0.7610,0.8903,245,ok,99123,99123,86.4,"br, many hits"
 1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),compress,comp-1G-br-rare,11,214931298,hot,5,0.1525,0.1490,0.1539,1409,ok,99123,99123,87.5,"br, many hits"
 1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),compress,comp-sample-zip,11,,-,1,0.0275,0.0275,0.0275,,ok,0,,14.3,manual 6: uvf refuses zip with a message (exit 2); the paid edition reads zip
-1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),compress,comp-sample-zip,11,,-,1,0.0217,0.0217,0.0217,,ng,1,,30.5,exit 0 (expected 2)
+1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),compress,comp-sample-zip,11,,-,1,0.0217,0.0217,0.0217,,ok,1,1,30.5,manual 6: uvf refuses zip with a message (exit 2); the paid edition reads zip
 1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvf,uvf 1.9.1 (build 26.10.16.09),compress,comp-sample-targz,11,,-,1,0.0078,0.0078,0.0078,,ok,0,,14.0,manual 6: uvf refuses tar.gz with a message (exit 2); the paid edition reads zip
 1.0,20261115-090706,mac-m4-32g-usbssd,Darwin,hfs,uvp,uvp 1.9.2 (build 26.11.13.10),compress,comp-sample-targz,11,,-,1,0.0084,0.0084,0.0084,,ok,0,,18.5,manual 6: uvf refuses tar.gz with a message (exit 2); the paid edition reads zip

@@ -683,9 +683,11 @@ def gen_compress(sw, sizes):
             sw.case(id="comp-%s-%s-rare" % (lab, fmt), episode=11, files=f, pattern="status=503",
                     expect={"exit": 0, "hits": info["hits"]["rare"]}, bytes=b, timed=True, quiet=True,
                     raw_bytes=info["bytes"], note=fmt + ", many hits")
+        sample_hits = sum(1 for ln in sample.split(b"\n") if b"UWTEST-NEEDLE" in ln)
         for fmt in ("zip", "tar.gz"):
+            extra = {"expect_by_product": {"uvp": {"exit": 0, "hits": sample_hits}}} if fmt == "zip" else {}
             sw.case(id="comp-sample-%s" % fmt.replace(".", ""), episode=11, files="c-sample." + fmt,
-                    pattern="UWTEST-NEEDLE", expect={"exit": 2},
+                    pattern="UWTEST-NEEDLE", expect={"exit": 2}, **extra,
                     note="manual 6: uvf refuses %s with a message (exit 2); the paid edition reads zip" % fmt)
     return meta
 
