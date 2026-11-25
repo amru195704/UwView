@@ -62,7 +62,7 @@ public class PathLabelTests : IDisposable
     [AvaloniaFact]
     public void 長いパスは窓の幅で折り返し親の窓からはみ出さない()
     {
-        string path = "/Volumes/BIWIN/26work/cmc296data/2608/20260805result/cmcOut0805_296_4/依頼②-⑤_調査と修正案.pdf";
+        string path = "/Volumes/BIWIN/26work/tyb2cmc296/cmc296data/2608/20260805result/cmcOut0805_296_4/依頼②-⑤_調査と修正案.pdf";
         var window = new Avalonia.Controls.Window { Width = 400, Height = 300 };
         window.Show();
         try
