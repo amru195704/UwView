@@ -14,7 +14,8 @@
 set -euo pipefail
 
 RID="$1"; PROJ="$2"; OUTDIR="$3"
-GIT=/Volumes/BIWIN/26-git
+# UwView・UwViewPro を並べて置いてある親フォルダ（スクリプトの場所から決める。2026-11-25 に 26-git 直下 → 26-git/Uw へ移った）
+GIT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 DOCKER_DIR=/Volumes/BIWIN/Docker
 IMAGE=uwview-aot:10.0
 
