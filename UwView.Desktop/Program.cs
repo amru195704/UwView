@@ -38,7 +38,18 @@ sealed class Program
 
         // 支援の案内（帯）は無料版の本体だけが出す（同じ部品を使う別のアプリでは出ない。指示-20261113-05）
         UwView.Core.SupportPrompt.Available = true;
-        BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
+        try
+        {
+            BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
+        }
+        catch (Exception ex) when (ex.Message.Contains("XOpenDisplay", StringComparison.Ordinal))
+        {
+            // 画面の無い環境（Linux で DISPLAY が無い）: 例外の中身を出して落ちず、CLI を案内する（UwDiff・UwVCmp と同じ）
+            Console.Error.WriteLine(CliLanguage.IsJapanese(CliLanguage.FreeSettingsFolder)
+                ? "UwView: 画面を出す先（DISPLAY）がありません。画面の無い所では CLI の uvf を使ってください。"
+                : "UwView: no display (DISPLAY is not set). Use the uvf command where there is no screen.");
+            return 1;
+        }
         return 0;
     }
 
