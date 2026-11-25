@@ -299,6 +299,8 @@ GUI の使い方（検索・結果一覧・ファイル一覧とタブ・ハイ�
 ただし、**公式バイナリを無改変のままパッケージとして再配布することはできます**（下記）。
 日本語の参考訳: [LICENSEjp.txt](LICENSEjp.txt)（正文は英語版）
 
+同梱しているオープンソースの部品（.NET・Avalonia・SkiaSharp など）の著作権表示とライセンスの全文は、配布物の `third-party/` フォルダー（一覧は [`THIRD-PARTY-NOTICES.txt`](third-party/THIRD-PARTY-NOTICES.txt)。macOS は `UwView.app/Contents/Resources/third-party/`）にあります。
+
 > **パッケージ化・パッケージマネージャへの登録について**
 > **Homebrew・Scoop・winget などのマニフェストから、公式の配布物（[GitHub Releases](https://github.com/amru195704/UwView/releases/latest)）を
 > 参照する形は、再配布にあたりません。** 利用者の環境が公式の配布元から直接ダウンロードするためです。

@@ -1,0 +1,86 @@
+Third-party notices / 同梱しているもののライセンス
+==================================================
+
+UwView includes the following open-source components. The copyright notices and
+full license texts are the files in this folder (third-party/; on macOS:
+UwView.app/Contents/Resources/third-party/).
+
+UwView は次のオープンソースの部品を含みます。著作権表示とライセンスの全文は、
+このフォルダー（third-party/。macOS は UwView.app/Contents/Resources/third-party/）の
+各ファイルにあります。
+
+Component / 部品 — Used for / 用途 — License — Full text / 全文
+--------------------------------------------------------------------------
+
+- .NET runtime and libraries 10.0 (including System.IO.Hashing,
+  System.Text.Encoding.CodePages, Microsoft.Extensions.*)
+  runtime / 実行環境 — MIT (+ third-party notices)
+  dotnet-LICENSE.txt, dotnet-THIRD-PARTY-NOTICES.txt
+
+- Avalonia 12.0.5 (Avalonia, Avalonia.Desktop, Avalonia.Themes.Fluent,
+  Avalonia.Fonts.Inter, Avalonia.Skia, Avalonia.HarfBuzz, Avalonia.Native,
+  Avalonia.Win32, Avalonia.X11, Avalonia.FreeDesktop and others / ほか)
+  GUI / 画面 — MIT
+  Avalonia-LICENSE.txt
+
+- Inter font (via Avalonia.Fonts.Inter)
+  GUI font / 画面の字体 — SIL Open Font License 1.1
+  Inter-font-OFL.txt
+
+- ANGLE (Avalonia.Angle.Windows.Natives; Windows only / Windows 版のみ)
+  GUI drawing on Windows / Windows の描画 — BSD-style / BSD 系
+  ANGLE-LICENSE.txt
+
+- SkiaSharp 3.119.4, HarfBuzzSharp 8.3.1.3
+  drawing, text shaping / 描画・文字の配置 — MIT
+  SkiaSharp-LICENSE.txt
+
+- Skia, HarfBuzz, FreeType, libpng and others (native libraries of
+  SkiaSharp / HarfBuzzSharp)
+  同上の中身 — BSD 3-Clause (Skia) and others / ほか
+  SkiaSharp-THIRD-PARTY-NOTICES.txt
+
+- MicroCom.Runtime (via Avalonia)
+  GUI / 画面 — MIT
+  MicroCom-LICENSE.txt
+
+- Tmds.DBus.Protocol (Linux; via Avalonia)
+  desktop integration / デスクトップとの連携 — MIT
+  Tmds.DBus-LICENSE.txt
+
+- CommunityToolkit.Mvvm 8.4.0 (.NET Community Toolkit)
+  GUI / 画面 — MIT (+ third-party notices)
+  CommunityToolkit-LICENSE.txt, CommunityToolkit-THIRD-PARTY-NOTICES.txt
+
+- SharpCompress 0.50.4
+  bzip2 / xz / lzma decoding / 展開 — MIT
+  SharpCompress-LICENSE.txt
+
+- Microsoft.IO.RecyclableMemoryStream 3.0.1 (via SharpCompress)
+  Copyright (c) Microsoft Corporation. All rights reserved.
+  buffers / バッファー — MIT (same text as dotnet-LICENSE.txt / 文面は同じ)
+
+- ZstdSharp.Port 0.8.1 (port of Zstandard)
+  zstd decoding / 展開 — MIT (+ Zstandard: BSD)
+  ZstdSharp-LICENSE.txt
+
+- K4os.Compression.LZ4(.Streams) 1.3.8, K4os.Hash.xxHash (ports of LZ4 / xxHash)
+  lz4 decoding / 展開 — MIT (+ LZ4 / xxHash: BSD 2-Clause)
+  K4os-LICENSE.txt
+
+- PdfPig 0.1.16 (UglyToad.PdfPig)
+  PDF text extraction / PDF の文字の取り出し — Apache License 2.0
+  PdfPig-LICENSE.txt
+
+- liblzma (XZ Utils 5.8.4), libzstd (zstd 1.5.7)
+  Windows x64 package only / Windows x64 版のみ同梱
+  xz / zstd decoding / 展開 — 0BSD (liblzma), BSD 3-Clause (libzstd)
+  liblzma-COPYING.0BSD.txt, liblzma-COPYING.MinGW-w64-runtime.txt,
+  libzstd-LICENSE.txt
+
+On macOS and Linux, UwView also uses the operating system's zlib / libbz2 /
+liblzma (and liblz4 on Linux) when they are available; otherwise it uses the
+managed decoders above. These OS libraries are not included in the packages.
+
+macOS・Linux では、OS の zlib・libbz2・liblzma（Linux は liblz4 も）があれば使い、
+無ければ上の部品で展開します（OS のライブラリは配布物に含みません）。

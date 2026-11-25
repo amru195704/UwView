@@ -297,6 +297,8 @@ require a separate commercial (redistribution) license → [Issues](https://gith
 **Packaging the unmodified official binaries is allowed, though** — see below.
 Japanese reference translation: [LICENSEjp.txt](LICENSEjp.txt) (the English text is binding).
 
+Copyright notices and full license texts of the bundled open-source components (.NET, Avalonia, SkiaSharp and others) are in the `third-party/` folder of every package (list: [`THIRD-PARTY-NOTICES.txt`](third-party/THIRD-PARTY-NOTICES.txt); on macOS: `UwView.app/Contents/Resources/third-party/`).
+
 > **On packaging and package-manager submissions**
 > **A Homebrew, Scoop or winget manifest that points at the official download
 > ([GitHub Releases](https://github.com/amru195704/UwView/releases/latest)) is not redistribution** — the user's own

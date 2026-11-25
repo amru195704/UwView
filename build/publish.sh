@@ -61,7 +61,7 @@ publish_one() {
   echo "$pubdir"
 }
 
-# 同梱するライブラリのライセンス文書（PdfPig・Apache 2.0。v1.8.3.2）。Linux・Windows は本体の隣の third-party/、
+# 同梱するライブラリのライセンス文書（一覧 THIRD-PARTY-NOTICES.txt と各ライブラリの全文。PdfPig は v1.8.3.2・ほかは 2026-11-26）。Linux・Windows は本体の隣の third-party/、
 # mac は .app の Contents/Resources/third-party/ に移す（Contents/MacOS には実行するものだけを置く。署名のため）
 add_third_party() { # $1=発行先
   mkdir -p "$1/third-party" && cp third-party/* "$1/third-party/"
