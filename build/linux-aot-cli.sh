@@ -31,8 +31,11 @@ fi
 
 # x86_64 は arm64 の中からクロスでつなぐ。後処理の objcopy も x86_64 用を使う（arm64 用は x86_64 を扱えない）。
 # リンカー・C ライブラリはイメージ（dotnet-aot/Dockerfile）に入れてある（1.7.3.5 のリリースで追加・2026-09-28）
-CROSS=""
-[ "${RID}" = linux-x64 ] && CROSS="-p:ObjCopyName=x86_64-linux-gnu-objcopy"
+# 古い glibc（イメージの中の /sysroots/focal＝Ubuntu 20.04・glibc 2.31）に対してリンクする。イメージ自身（Ubuntu 24.04）の
+# glibc でリンクすると 2.38 以上が要る実行ファイルになり、Ubuntu 22.04・Debian 12・RHEL 9 系で起動しなかった（2026-11-25）。
+# 約束する下限は glibc 2.34（RHEL 9 系）。作ったあと下で確かめる
+CROSS="-p:SysRoot=/sysroots/focal"
+[ "${RID}" = linux-x64 ] && CROSS="${CROSS} -p:ObjCopyName=x86_64-linux-gnu-objcopy"
 
 mkdir -p "${OUTDIR}" "${DOCKER_DIR}/nuget"
 docker run --rm \
@@ -50,3 +53,15 @@ docker run --rm \
     dotnet publish '/work/${PROJ}' -c Release -r '${RID}' -p:DebugType=none ${CROSS} -o /tmp/pub 1>&2
     cp /tmp/pub/* /out/
   "
+
+# 作った実行ファイルが要る glibc の版を確かめる（2.34 を超えたら止める。超えるのは、イメージが古い版のままのとき）
+for f in "${OUTDIR}"/*; do
+  [ -f "$f" ] && [ -x "$f" ] || continue
+  need="$(objdump -T "$f" 2>/dev/null | grep -oE 'GLIBC_[0-9.]+' | sed 's/GLIBC_//' | sort -u -V | tail -1)"
+  [ -n "$need" ] || continue
+  echo "  $(basename "$f") (${RID}) が要る glibc: ${need}" >&2
+  if [ "$(printf '%s\n' "$need" 2.34 | sort -V | tail -1)" != 2.34 ]; then
+    echo "glibc の下限（2.34）を超えています: $(basename "$f") は ${need} が要ります。ビルド用イメージを作り直してください: docker build -t ${IMAGE} ${DOCKER_DIR}/dotnet-aot" >&2
+    exit 1
+  fi
+done
