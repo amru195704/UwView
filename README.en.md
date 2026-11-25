@@ -245,7 +245,7 @@ the GUI (search, hit list, file list and tabs, highlighter, keys) is covered in 
 read results from many files (file list, up to 8 tabs) / colour several keywords (32 colours, 7 presets, `.uwvhl`) / minimap /
 encoding detection (UTF-8, Shift-JIS, EUC-JP, UTF-16) / live tail / tabs, bookmarks, horizontal scroll, session restore / identical rendering on every OS
 
-**Runs on**: .NET 10 / Avalonia UI 12.x / Windows, macOS, Linux. On Linux, the `uvf` command needs glibc 2.38 or later (Ubuntu 24.04, Debian 13 or later; it does not start on Ubuntu 22.04). The GUI runs on glibc 2.27 or later.
+**Runs on**: .NET 10 / Avalonia UI 12.x / Windows, macOS, Linux. Linux needs glibc 2.34 or later (Ubuntu 22.04, Debian 12, RHEL 9 family or later). The `uvf` command in v2.0.0 needed glibc 2.38 or later; this is fixed in v2.0.1.
 
 **Known limitation**: if a compressed file contains **a single line longer than 64 MiB** and that line matches, the search may stop (the file is not damaged). We favour speed, so no fix is planned; decompress such files before opening them.
 
