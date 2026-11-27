@@ -24,7 +24,25 @@ public static class AppDataLocation
             return folder == Environment.SpecialFolder.LocalApplicationData
                 ? Path.Combine(home, ".local", "share")
                 : Path.Combine(home, ".config");
-        throw new InvalidOperationException("設定の置き場所（ホームフォルダ）が決められません。環境変数 HOME を設定してください。");
+        throw new InvalidOperationException(UnusableMessage);
+    }
+
+    /// <summary>置き場所が決められないときの文言。</summary>
+    public const string UnusableMessage = "設定の置き場所（ホームフォルダ）が決められません。環境変数 HOME を絶対パスで設定してください。";
+
+    /// <summary>
+    /// 入口で先に確かめる（2026-11-27 検査の軽微: HOME が相対パスなどのとき、例外を受けずスタックトレースを出して落ちていた）。
+    /// 使えれば null、使えなければ文言。入口はこれを見て、文言を出して終わる。
+    /// </summary>
+    public static string? Problem()
+    {
+        try
+        {
+            Root(Environment.SpecialFolder.ApplicationData);
+            Root(Environment.SpecialFolder.LocalApplicationData);
+            return null;
+        }
+        catch (InvalidOperationException e) { return e.Message; }
     }
 
     /// <summary>根の下のフォルダ（例: Root()/UwVCmp）。</summary>
