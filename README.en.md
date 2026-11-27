@@ -27,7 +27,7 @@
 | **Search 50 GB and read the hits in the GUI** | klogg (open + search) 108.1 s | **`uvf … -open` 50.76 s (2.13× faster than klogg)** |
 | **Search 258 GB / 4.5 billion lines and hand the hits to the GUI** | klogg needs 258 s just to finish opening | **`uvf … -open` 261.37 s**, search done and hit list shown |
 
-**Every figure in this table is the free edition (`uvf` and the GUI).** There is also a paid edition, [UwView Pro](https://uvp.y42u.net/en/pro-en/) (14-day free trial).
+**Every figure in this table is the free edition (`uvf` and the GUI).** There is also a paid edition, [UwView Pro](https://uvp.y42u.net/en/pro-en/) (7-day free trial).
 
 **Where we lose, first.**
 
@@ -174,7 +174,7 @@ Mouse wheel, dragging the scroll bar or `Cmd/Ctrl+End` — all reach the end str
 
 ## The paid edition (UwView Pro)
 
-If you keep coming back to the same files or logs, there is a paid edition, **[UwView Pro](https://uvp.y42u.net/en/pro-en/)** (14-day free trial). See the product page for its features and prices.
+If you keep coming back to the same files or logs, there is a paid edition, **[UwView Pro](https://uvp.y42u.net/en/pro-en/)** (7-day free trial). See the product page for its features and prices.
 
 ---
 
