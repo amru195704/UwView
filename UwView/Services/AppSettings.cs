@@ -248,7 +248,7 @@ public sealed class AppSettings
     public static string AppDataFolder = "UwView";
 
     private static string DirFor(string folder) =>
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), folder);
+        UwView.Core.AppDataLocation.Folder(folder);   // ~/.config が無くても今いるフォルダに書かない（2026-11-27）
 
     [JsonIgnore]
     public static string FilePath => Path.Combine(DirFor(AppDataFolder), "settings.json");

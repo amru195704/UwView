@@ -16,7 +16,7 @@ public static class CliSettings
     public const string SearchMaxHitsKey = "SearchMaxHits";
 
     public static string PathFor(string appDataFolder) => Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), appDataFolder, "settings.json");
+        AppDataLocation.Root(), appDataFolder, "settings.json");   // ~/.config が無くても今いるフォルダを読まない（2026-11-27）
 
     /// <summary>
     /// 設定の「1回の検索で保持する最大ヒット数」（0＝無制限）。設定が無ければ無制限。
